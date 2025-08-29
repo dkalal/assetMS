@@ -10,3 +10,4 @@ django-extensions>=3.2.3  # Useful Django extensions
 whitenoise>=6.6.0  # For serving static files in production
 gunicorn>=21.2.0  # Production WSGI server
 psycopg2-binary>=2.9.9  # PostgreSQL database adapter (recommended for production)
+XlsxWriter>=3.2.0 # Excel writer engine for pandas

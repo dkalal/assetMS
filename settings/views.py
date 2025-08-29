@@ -16,6 +16,7 @@ from .permissions import SettingsPermissions, require_setting_permission
 
 import json
 import logging
+from django.core.mail import send_mail
 
 logger = logging.getLogger(__name__)
 
@@ -311,6 +312,57 @@ def api_users_management(request):
 
 @api_admin_required
 @require_POST
+def api_delete_user(request):
+    """Delete a user securely with enterprise safeguards."""
+    try:
+        user_id = request.POST.get('user_id')
+        if not user_id:
+            return JsonResponse({'success': False, 'error': 'User ID is required'})
+
+        user = User.objects.get(id=user_id)
+
+        # Prevent self-deletion
+        if user.id == request.user.id:
+            return JsonResponse({'success': False, 'error': 'You cannot delete your own account'})
+
+        # Prevent deleting the last active admin
+        if user.role == 'admin':
+            active_admins = User.objects.filter(role='admin', is_active=True).exclude(id=user.id).count()
+            if active_admins == 0:
+                return JsonResponse({'success': False, 'error': 'Cannot delete the last active admin user'})
+
+        full_name = user.get_full_name() or user.username or user.email
+        email = user.email
+
+        # Perform deletion
+        user.delete()
+
+        # Access log (actor is request.user, subject has been deleted)
+        try:
+            AccessLog.objects.create(
+                user=request.user,
+                action='account_deleted',
+                ip_address=request.META.get('REMOTE_ADDR', '127.0.0.1'),
+                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                details=f'Deleted user {full_name} ({email})'
+            )
+        except Exception:
+            pass
+
+        # Audit log
+        try:
+            log_audit(request.user, 'delete', None, f'Deleted user {full_name} ({email})')
+        except Exception:
+            pass
+
+        return JsonResponse({'success': True, 'message': 'User deleted successfully'})
+    except User.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'User not found'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@api_admin_required
+@require_POST
 def api_invite_user(request):
     """Enterprise user invitation system"""
     try:
@@ -340,11 +392,32 @@ def api_invite_user(request):
         # Generate invitation token
         invitation_token = user.generate_invitation_token()
         
-        # For demo purposes, skip email sending
-        invitation_link = f"{request.build_absolute_uri('/')[:-1]}/users/accept-invitation/{invitation_token}/"
+        # Build invitation link
+        invitation_link = f"{request.build_absolute_uri('/')[:-1]}/accept-invitation/{invitation_token}/"
         
-        # Simulate email sending (in production, implement proper email service)
-        email_sent = True  # Simulate successful email
+        # Send invitation email
+        email_subject = f"You're invited to Asset Management System"
+        email_body = (
+            f"Hello {first_name} {last_name},\n\n"
+            f"You have been invited to join the Asset Management System as a {role}.\n\n"
+            f"To accept the invitation and set your password, please click the link below:\n"
+            f"{invitation_link}\n\n"
+            f"If you did not expect this invitation, you can ignore this email.\n\n"
+            f"Regards,\n"
+            f"AssetMS Team"
+        )
+        try:
+            send_mail(
+                subject=email_subject,
+                message=email_body,
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None),
+                recipient_list=[email],
+                fail_silently=False,
+            )
+            logger.info(f"Invitation email sent to {email}")
+        except Exception as mail_err:
+            # Log but continue to return the link so admins can copy manually
+            logger.error(f"Failed to send invitation email to {email}: {mail_err}")
             
         # Log the invitation
         log_audit(request.user, 'create', None, f'Invited user {email} with role {role}')

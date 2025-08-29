@@ -250,3 +250,14 @@ LOGGING = {
         },
     },
 }
+
+# Email configuration
+# Defaults to console backend in DEBUG. Configure environment variables for real SMTP in production.
+EMAIL_BACKEND = _env('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend' if DEBUG else 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = _env('EMAIL_HOST', '')
+EMAIL_PORT = int(_env('EMAIL_PORT', '587'))
+EMAIL_HOST_USER = _env('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = _env('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = _env('EMAIL_USE_TLS', 'True').lower() == 'true'
+EMAIL_USE_SSL = _env('EMAIL_USE_SSL', 'False').lower() == 'true'
+DEFAULT_FROM_EMAIL = _env('DEFAULT_FROM_EMAIL', 'AssetMS <no-reply@assetms.local>')

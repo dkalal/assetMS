@@ -418,8 +418,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const submitBtn = this.querySelector('button[type="submit"]');
         const feedback = document.getElementById('editFeedback');
         
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Updating...';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Updating...';
+        }
         
         try {
             const formData = new FormData();
@@ -448,8 +450,10 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             feedback.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>Network error occurred</div>';
         } finally {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = 'Update User';
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Update User';
+            }
         }
     });
     
@@ -463,9 +467,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const feedback = document.getElementById('inviteFeedback');
         
         // Show loading state
-        btnText.classList.add('d-none');
-        btnSpinner.classList.remove('d-none');
-        submitBtn.disabled = true;
+        if (btnText) btnText.classList.add('d-none');
+        if (btnSpinner) btnSpinner.classList.remove('d-none');
+        if (submitBtn) submitBtn.disabled = true;
         
         try {
             const formData = new FormData();
@@ -505,9 +509,9 @@ document.addEventListener('DOMContentLoaded', function() {
             feedback.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>Network error occurred</div>';
         } finally {
             // Reset button state
-            btnText.classList.remove('d-none');
-            btnSpinner.classList.add('d-none');
-            submitBtn.disabled = false;
+            if (btnText) btnText.classList.remove('d-none');
+            if (btnSpinner) btnSpinner.classList.add('d-none');
+            if (submitBtn) submitBtn.disabled = false;
         }
     });
     
@@ -592,6 +596,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                 onclick="toggleUserStatus(${user.id}, ${user.is_active})" 
                                 title="${user.is_active ? 'Deactivate' : 'Activate'} User">
                             <i class="bi bi-${user.is_active ? 'pause' : 'play'}"></i>
+                        </button>
+                        <button class="btn btn-outline-danger" 
+                                onclick="deleteUser(${user.id})" 
+                                title="Delete User">
+                            <i class="bi bi-trash"></i>
                         </button>
                     </div>
                 </td>
@@ -863,6 +872,45 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     // Session details functionality
+    
+    // Global delete user handler
+    window.deleteUser = async function(userId) {
+        const user = usersData.users.find(u => u.id === userId);
+        const name = user ? `${user.first_name} ${user.last_name}` : 'this user';
+        if (!confirm(`Permanently delete ${name}? This action cannot be undone.`)) {
+            return;
+        }
+        const button = document.querySelector(`button[onclick="deleteUser(${userId})"]`);
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        }
+        try {
+            const formData = new FormData();
+            formData.append('user_id', userId);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            const response = await fetch('/settings/api/delete-user/', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            if (data.success) {
+                showToast(data.message, 'success');
+                loadUsers();
+                loadSessionStats();
+            } else {
+                showToast(data.error || 'Failed to delete user', 'error');
+            }
+        } catch (err) {
+            showToast('Network error occurred. Please try again.', 'error');
+        } finally {
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = '<i class="bi bi-trash"></i>';
+            }
+        }
+    };
+
     window.showSessionDetails = async function() {
         const modal = document.getElementById('sessionDetailModal');
         modal.classList.add('active');

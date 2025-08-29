@@ -37,6 +37,9 @@ pytest_debug.log
 # Node (if used for front-end tooling)
 node_modules/
 
+# Tooling
+.amazonq/
+
 # Build artifacts
 build/
 dist/

@@ -399,52 +399,55 @@
               </div>
               <div id="role-permissions" class="d-none">
                 <h6 class="fw-bold mb-3">Permissions for <span id="selected-role-name" class="text-primary"></span>:</h6>
+                <div class="alert alert-info py-2 px-3 mb-3 small" role="status">
+                  Permissions are derived from the selected role and enforced by the server. To change what a user can do, update their role using the Edit Role action. These checkboxes are read-only indicators.
+                </div>
                 <div class="permissions-grid row g-2">
                   <div class="col-6">
                     <div class="form-check">
-                      <input class="form-check-input" type="checkbox" id="perm-view-assets">
+                      <input class="form-check-input" type="checkbox" id="perm-view-assets" disabled>
                       <label class="form-check-label small" for="perm-view-assets">View Assets</label>
                     </div>
                   </div>
                   <div class="col-6">
                     <div class="form-check">
-                      <input class="form-check-input" type="checkbox" id="perm-create-assets">
+                      <input class="form-check-input" type="checkbox" id="perm-create-assets" disabled>
                       <label class="form-check-label small" for="perm-create-assets">Create Assets</label>
                     </div>
                   </div>
                   <div class="col-6">
                     <div class="form-check">
-                      <input class="form-check-input" type="checkbox" id="perm-edit-assets">
+                      <input class="form-check-input" type="checkbox" id="perm-edit-assets" disabled>
                       <label class="form-check-label small" for="perm-edit-assets">Edit Assets</label>
                     </div>
                   </div>
                   <div class="col-6">
                     <div class="form-check">
-                      <input class="form-check-input" type="checkbox" id="perm-delete-assets">
+                      <input class="form-check-input" type="checkbox" id="perm-delete-assets" disabled>
                       <label class="form-check-label small" for="perm-delete-assets">Delete Assets</label>
                     </div>
                   </div>
                   <div class="col-6">
                     <div class="form-check">
-                      <input class="form-check-input" type="checkbox" id="perm-manage-users">
+                      <input class="form-check-input" type="checkbox" id="perm-manage-users" disabled>
                       <label class="form-check-label small" for="perm-manage-users">Manage Users</label>
                     </div>
                   </div>
                   <div class="col-6">
                     <div class="form-check">
-                      <input class="form-check-input" type="checkbox" id="perm-view-reports">
+                      <input class="form-check-input" type="checkbox" id="perm-view-reports" disabled>
                       <label class="form-check-label small" for="perm-view-reports">View Reports</label>
                     </div>
                   </div>
                   <div class="col-6">
                     <div class="form-check">
-                      <input class="form-check-input" type="checkbox" id="perm-export-data">
+                      <input class="form-check-input" type="checkbox" id="perm-export-data" disabled>
                       <label class="form-check-label small" for="perm-export-data">Export Data</label>
                     </div>
                   </div>
                   <div class="col-6">
                     <div class="form-check">
-                      <input class="form-check-input" type="checkbox" id="perm-system-admin">
+                      <input class="form-check-input" type="checkbox" id="perm-system-admin" disabled>
                       <label class="form-check-label small" for="perm-system-admin">System Admin</label>
                     </div>
                   </div>

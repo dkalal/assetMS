@@ -20,6 +20,7 @@ urlpatterns = [
     # API endpoints
     path('api/users/', views.api_users_management, name='api_users_management'),
     path('api/invite-user/', views.api_invite_user, name='api_invite_user'),
+    path('api/delete-user/', views.api_delete_user, name='api_delete_user'),
     path('api/session-stats/', views.api_session_stats, name='api_session_stats'),
     path('api/access-logs/', views.api_access_logs, name='api_access_logs'),
     path('api/session-details/', views.api_session_details, name='api_session_details'),

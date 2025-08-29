@@ -14,8 +14,20 @@
     <a href="{{ reports_url }}" class="btn btn-pill btn-sm {% if request.path|slice:":9" == "/reports/" %}btn-outline-primary active{% else %}btn-outline-secondary{% endif %}" {% if request.path|slice:":9" == "/reports/" %}aria-current="page"{% endif %}>Reports</a>
     <a href="{{ audit_url }}" class="btn btn-pill btn-sm {% if request.path|slice:":7" == "/audit/" %}btn-outline-primary active{% else %}btn-outline-secondary{% endif %}" {% if request.path|slice:":7" == "/audit/" %}aria-current="page"{% endif %}>Audit</a>
   </nav>
-  <form class="flex-grow-1 d-flex align-items-center mx-4" role="search" aria-label="Asset search">
-    <input type="search" class="form-control glass search-input" placeholder="Search assets..." aria-label="Search assets">
+  <form class="flex-grow-1 d-flex align-items-center mx-4" role="search" aria-label="Asset search" method="get" action="{{ asset_list_url }}">
+    {# Preserve existing filters except search/page #}
+    {% for k, v in request.GET.items %}
+      {% if k != 'search' and k != 'page' %}
+        <input type="hidden" name="{{ k }}" value="{{ v }}">
+      {% endif %}
+    {% endfor %}
+    <label for="global-asset-search" class="visually-hidden">Search assets</label>
+    <div class="input-group">
+      <input id="global-asset-search" type="search" name="search" class="form-control glass search-input" placeholder="Search assets..." aria-label="Search assets" value="{{ request.GET.search|default:'' }}">
+      <button type="button" class="btn btn-outline-secondary search-clear d-none" aria-label="Clear search">
+        <!-- <i class="bi bi-x-circle"></i> -->
+      </button>
+    </div>
   </form>
   <div class="d-flex align-items-center gap-2">
     {% if user.is_authenticated %}
