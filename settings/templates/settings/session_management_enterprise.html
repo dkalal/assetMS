@@ -1,0 +1,762 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Session Management - Enterprise Asset Management{% endblock %}
+
+{% csrf_token %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h2 font-bold mb-2">
+      <i class="bi bi-people text-primary me-2"></i>
+      Session Management
+    </h1>
+    <p class="text-muted">Monitor and manage user sessions across the enterprise</p>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-secondary btn-sm" id="refreshSessions">
+      <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+    </button>
+    <button class="btn btn-outline-info btn-sm" id="exportReport">
+      <i class="bi bi-download me-1"></i>Export Report
+    </button>
+    <button class="btn btn-outline-warning btn-sm" id="cleanupSessions">
+      <i class="bi bi-trash3 me-1"></i>Cleanup Expired
+    </button>
+  </div>
+</div>
+
+<!-- Session Statistics -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 mb-6">
+  <div class="card">
+    <div class="card-body text-center">
+      <div class="mb-3">
+        <i class="bi bi-circle-fill display-4 text-success"></i>
+      </div>
+      <h3 class="font-bold mb-1" id="activeSessions">0</h3>
+      <p class="text-muted mb-0">Active Sessions</p>
+      <small class="text-success" id="activeChange">+0 from last hour</small>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body text-center">
+      <div class="mb-3">
+        <i class="bi bi-people display-4 text-info"></i>
+      </div>
+      <h3 class="font-bold mb-1" id="uniqueUsers">0</h3>
+      <p class="text-muted mb-0">Unique Users</p>
+      <small class="text-info" id="usersChange">+0 today</small>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body text-center">
+      <div class="mb-3">
+        <i class="bi bi-layers display-4 text-warning"></i>
+      </div>
+      <h3 class="font-bold mb-1" id="concurrentSessions">0</h3>
+      <p class="text-muted mb-0">Concurrent Sessions</p>
+      <small class="text-warning" id="concurrentAvg">Avg: 0 per user</small>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body text-center">
+      <div class="mb-3">
+        <i class="bi bi-shield-exclamation display-4 text-danger"></i>
+      </div>
+      <h3 class="font-bold mb-1" id="failedLogins">0</h3>
+      <p class="text-muted mb-0">Failed Logins (24h)</p>
+      <small class="text-danger" id="lockedAccounts">0 locked accounts</small>
+    </div>
+  </div>
+</div>
+
+<!-- Session Analytics -->
+<div class="row mb-4">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="bi bi-pie-chart me-2"></i>Sessions by Context
+        </h5>
+      </div>
+      <div class="card-body">
+        <canvas id="contextChart" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="bi bi-bar-chart me-2"></i>Sessions by Role
+        </h5>
+      </div>
+      <div class="card-body">
+        <canvas id="roleChart" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Active Sessions Table -->
+<div class="card">
+  <div class="card-header">
+    <div class="d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">
+        <i class="bi bi-list-ul me-2"></i>Active Sessions
+      </h5>
+      <div class="d-flex gap-2">
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="autoRefresh" checked>
+          <label class="form-check-label" for="autoRefresh">Auto Refresh</label>
+        </div>
+        <span class="badge bg-primary" id="sessionCount">0 Sessions</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <div class="enterprise-table-container">
+      <div class="enterprise-table-wrapper" style="max-height: 500px;">
+        <table class="enterprise-table" id="sessionsTable">
+          <thead>
+            <tr>
+              <th style="width: 40px;">Status</th>
+              <th>User</th>
+              <th>Role</th>
+              <th>IP Address</th>
+              <th>Browser</th>
+              <th>Context</th>
+              <th>Duration</th>
+              <th>Last Activity</th>
+              <th style="width: 120px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="sessionsTableBody">
+            <tr>
+              <td colspan="9" class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Loading sessions...</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Session Details Modal -->
+<div class="modal fade" id="sessionDetailsModal" tabindex="-1" aria-labelledby="sessionDetailsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="sessionDetailsModalLabel">
+          <i class="bi bi-info-circle me-2"></i>Session Details
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="sessionDetailsContent">
+        <!-- Content loaded dynamically -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-danger" id="terminateSessionBtn">
+          <i class="bi bi-power me-1"></i>Terminate Session
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Actions Modal -->
+<div class="modal fade" id="bulkActionsModal" tabindex="-1" aria-labelledby="bulkActionsModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="bulkActionsModalLabel">
+          <i class="bi bi-gear me-2"></i>Bulk Session Actions
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Select Action:</label>
+          <select class="form-select" id="bulkActionSelect">
+            <option value="">Choose action...</option>
+            <option value="terminate_user">Terminate All User Sessions</option>
+            <option value="terminate_inactive">Terminate Inactive Sessions</option>
+            <option value="extend_timeout">Extend Session Timeout</option>
+          </select>
+        </div>
+        <div class="mb-3" id="bulkActionOptions" style="display: none;">
+          <!-- Dynamic options based on selected action -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="executeBulkAction">Execute Action</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Avoid conflicts with existing classes
+if (typeof window.SessionManagementDashboard !== 'undefined') {
+  delete window.SessionManagementDashboard;
+}
+
+class SessionManagementDashboard {
+  constructor() {
+    this.refreshInterval = null;
+    this.contextChart = null;
+    this.roleChart = null;
+    this.currentSessionId = null;
+    this.init();
+  }
+
+  init() {
+    console.log('Initializing SessionManagementDashboard...');
+    this.bindEvents();
+    this.loadSessionData();
+    this.startAutoRefresh();
+    console.log('SessionManagementDashboard initialized');
+  }
+
+  bindEvents() {
+    document.getElementById('refreshSessions').addEventListener('click', () => this.loadSessionData());
+    document.getElementById('exportReport').addEventListener('click', () => this.exportReport());
+    document.getElementById('cleanupSessions').addEventListener('click', () => this.cleanupSessions());
+    
+    document.getElementById('autoRefresh').addEventListener('change', (e) => {
+      if (e.target.checked) {
+        this.startAutoRefresh();
+      } else {
+        this.stopAutoRefresh();
+      }
+    });
+
+    // Bulk actions
+    document.getElementById('bulkActionSelect').addEventListener('change', (e) => {
+      this.showBulkActionOptions(e.target.value);
+    });
+
+    document.getElementById('executeBulkAction').addEventListener('click', () => this.executeBulkAction());
+  }
+
+  async loadSessionData() {
+    try {
+      console.log('Loading session data...');
+      
+      // Load session statistics
+      const statsResponse = await fetch('/settings/api/session-stats/');
+      console.log('Stats response status:', statsResponse.status);
+      
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        console.log('Stats data:', statsData);
+        
+        if (statsData.success) {
+          this.updateStatistics(statsData);
+          this.updateCharts(statsData);
+        } else {
+          console.warn('Stats API returned success=false:', statsData);
+          // Use default data
+          this.updateStatistics({
+            active_sessions: 0,
+            unique_users_today: 0,
+            max_concurrent_per_user: 0,
+            failed_logins_24h: 0,
+            role_breakdown: {},
+            context_breakdown: {}
+          });
+        }
+      } else {
+        console.error('Stats API failed:', statsResponse.status);
+        this.updateStatistics({
+          active_sessions: 0,
+          unique_users_today: 0,
+          max_concurrent_per_user: 0,
+          failed_logins_24h: 0,
+          role_breakdown: {},
+          context_breakdown: {}
+        });
+      }
+
+      // Load session details
+      const sessionsResponse = await fetch('/settings/api/session-details/');
+      console.log('Sessions response status:', sessionsResponse.status);
+      
+      if (sessionsResponse.ok) {
+        const sessionsData = await sessionsResponse.json();
+        console.log('Sessions data:', sessionsData);
+        
+        if (sessionsData.success && sessionsData.sessions) {
+          this.renderSessionsTable(sessionsData.sessions);
+          document.getElementById('sessionCount').textContent = `${sessionsData.sessions.length} Sessions`;
+        } else {
+          console.warn('Sessions API returned no data:', sessionsData);
+          this.renderSessionsTable([]);
+          document.getElementById('sessionCount').textContent = '0 Sessions';
+        }
+      } else {
+        console.error('Sessions API failed:', sessionsResponse.status);
+        this.renderSessionsTable([]);
+        document.getElementById('sessionCount').textContent = '0 Sessions';
+      }
+
+    } catch (error) {
+      console.error('Error loading session data:', error);
+      this.showNotification('Failed to load session data', 'error');
+      
+      // Show empty state
+      this.renderSessionsTable([]);
+      this.updateStatistics({
+        active_sessions: 0,
+        unique_users_today: 0,
+        max_concurrent_per_user: 0,
+        failed_logins_24h: 0,
+        role_breakdown: {},
+        context_breakdown: {}
+      });
+    }
+  }
+
+  updateStatistics(data) {
+    document.getElementById('activeSessions').textContent = data.active_sessions || 0;
+    document.getElementById('uniqueUsers').textContent = data.unique_users_today || 0;
+    document.getElementById('concurrentSessions').textContent = data.max_concurrent_per_user || 0;
+    document.getElementById('failedLogins').textContent = data.failed_logins_24h || 0;
+    
+    // Update change indicators
+    document.getElementById('concurrentAvg').textContent = `Avg: ${data.avg_concurrent_per_user || 0} per user`;
+    document.getElementById('lockedAccounts').textContent = `${data.locked_accounts || 0} locked accounts`;
+  }
+
+  updateCharts(data) {
+    try {
+      // Context Chart
+      const contextCtx = document.getElementById('contextChart');
+      if (contextCtx) {
+        if (this.contextChart) this.contextChart.destroy();
+        
+        const contextData = data.context_breakdown || { 'web': 1, 'mobile': 0 };
+        const hasData = Object.values(contextData).some(v => v > 0);
+        
+        if (!hasData) {
+          contextData['No Active Sessions'] = 1;
+        }
+        
+        this.contextChart = new Chart(contextCtx.getContext('2d'), {
+          type: 'doughnut',
+          data: {
+            labels: Object.keys(contextData).map(k => k.charAt(0).toUpperCase() + k.slice(1)),
+            datasets: [{
+              data: Object.values(contextData),
+              backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom'
+              }
+            }
+          }
+        });
+      }
+
+      // Role Chart
+      const roleCtx = document.getElementById('roleChart');
+      if (roleCtx) {
+        if (this.roleChart) this.roleChart.destroy();
+        
+        const roleData = data.role_breakdown || { 'admin': 0, 'manager': 0, 'user': 0 };
+        const hasData = Object.values(roleData).some(v => v > 0);
+        
+        if (!hasData) {
+          roleData['No Active Sessions'] = 1;
+        }
+        
+        this.roleChart = new Chart(roleCtx.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: Object.keys(roleData).map(k => k.charAt(0).toUpperCase() + k.slice(1)),
+            datasets: [{
+              label: 'Active Sessions',
+              data: Object.values(roleData),
+              backgroundColor: '#3b82f6',
+              borderRadius: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  stepSize: 1
+                }
+              }
+            },
+            plugins: {
+              legend: {
+                display: false
+              }
+            }
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error updating charts:', error);
+    }
+  }
+
+  renderSessionsTable(sessions) {
+    const tbody = document.getElementById('sessionsTableBody');
+    
+    if (sessions.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="9" class="text-center py-4">
+            <i class="bi bi-inbox display-4 text-muted mb-3"></i>
+            <p class="text-muted mb-0">No active sessions found</p>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = sessions.map(session => `
+      <tr ${session.is_current ? 'class="table-warning"' : ''}>
+        <td>
+          <div class="d-flex align-items-center">
+            <div class="status-indicator ${this.getStatusClass(session)} me-2"></div>
+            ${session.is_current ? '<span class="badge bg-warning text-dark">YOU</span>' : ''}
+          </div>
+        </td>
+        <td>
+          <div class="d-flex align-items-center">
+            <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+              <span class="text-white fw-bold" style="font-size: 0.8rem;">${this.getInitials(session.user)}</span>
+            </div>
+            <div>
+              <div class="font-medium">${session.user}</div>
+              <small class="text-muted">ID: ${session.id}</small>
+            </div>
+          </div>
+        </td>
+        <td>
+          <span class="badge bg-${this.getRoleBadgeColor(session.user_role)}">${session.user_role}</span>
+        </td>
+        <td>
+          <code class="small">${session.ip_address}</code>
+        </td>
+        <td>
+          <div class="d-flex align-items-center">
+            <i class="bi bi-${this.getBrowserIcon(session.browser)} me-1"></i>
+            <span class="small">${session.browser}</span>
+          </div>
+        </td>
+        <td>
+          <span class="badge bg-secondary">${session.session_context}</span>
+        </td>
+        <td>
+          <span class="small">${session.duration}</span>
+        </td>
+        <td>
+          <span class="small" title="${session.last_activity}">
+            ${this.formatRelativeTime(session.last_activity)}
+          </span>
+        </td>
+        <td>
+          <div class="table-actions">
+            <button class="table-action-btn" onclick="sessionManager.viewSessionDetails(${session.id})" title="View Details">
+              <i class="bi bi-eye"></i>
+            </button>
+            ${!session.is_current ? `
+              <button class="table-action-btn danger" onclick="sessionManager.terminateSession(${session.id})" title="Terminate">
+                <i class="bi bi-power"></i>
+              </button>
+            ` : ''}
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  getStatusClass(session) {
+    if (session.is_current_active) return 'bg-success';
+    if (session.duration_minutes < 60) return 'bg-warning';
+    return 'bg-secondary';
+  }
+
+  getRoleBadgeColor(role) {
+    const colors = {
+      'admin': 'danger',
+      'manager': 'warning',
+      'user': 'info'
+    };
+    return colors[role] || 'secondary';
+  }
+
+  getBrowserIcon(browser) {
+    const icons = {
+      'Chrome': 'browser-chrome',
+      'Firefox': 'browser-firefox',
+      'Safari': 'browser-safari',
+      'Edge': 'browser-edge'
+    };
+    return icons[browser] || 'globe';
+  }
+
+  getInitials(name) {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  }
+
+  formatRelativeTime(timestamp) {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diff = Math.floor((now - time) / 1000);
+
+    if (diff < 60) return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+  }
+
+  async viewSessionDetails(sessionId) {
+    try {
+      const response = await fetch(`/settings/api/user-session-history/?session_id=${sessionId}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        this.showSessionDetailsModal(sessionId, data);
+      }
+    } catch (error) {
+      console.error('Error loading session details:', error);
+    }
+  }
+
+  showSessionDetailsModal(sessionId, data) {
+    this.currentSessionId = sessionId;
+    
+    document.getElementById('sessionDetailsContent').innerHTML = `
+      <div class="row">
+        <div class="col-md-6">
+          <h6>Session Information</h6>
+          <table class="table table-sm">
+            <tr><td>Session ID</td><td><code>${sessionId}</code></td></tr>
+            <tr><td>User</td><td>${data.user || 'N/A'}</td></tr>
+            <tr><td>Role</td><td><span class="badge bg-info">${data.role || 'N/A'}</span></td></tr>
+            <tr><td>IP Address</td><td><code>${data.ip_address || 'N/A'}</code></td></tr>
+            <tr><td>Browser</td><td>${data.browser || 'N/A'}</td></tr>
+            <tr><td>Context</td><td>${data.context || 'N/A'}</td></tr>
+          </table>
+        </div>
+        <div class="col-md-6">
+          <h6>Activity Summary</h6>
+          <table class="table table-sm">
+            <tr><td>Created</td><td>${data.created_at || 'N/A'}</td></tr>
+            <tr><td>Last Activity</td><td>${data.last_activity || 'N/A'}</td></tr>
+            <tr><td>Duration</td><td>${data.duration || 'N/A'}</td></tr>
+            <tr><td>Status</td><td><span class="badge bg-success">Active</span></td></tr>
+          </table>
+        </div>
+      </div>
+    `;
+    
+    const modal = new bootstrap.Modal(document.getElementById('sessionDetailsModal'));
+    modal.show();
+  }
+
+  async terminateSession(sessionId) {
+    if (!confirm('Are you sure you want to terminate this session?')) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('session_id', sessionId);
+      formData.append('reason', 'admin_terminated');
+      formData.append('csrfmiddlewaretoken', this.getCSRFToken());
+
+      const response = await fetch('/settings/api/terminate-session/', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        this.showNotification('Session terminated successfully', 'success');
+        this.loadSessionData();
+      } else {
+        this.showNotification(data.error || 'Failed to terminate session', 'error');
+      }
+    } catch (error) {
+      console.error('Error terminating session:', error);
+      this.showNotification('Error terminating session', 'error');
+    }
+  }
+
+  async cleanupSessions() {
+    if (!confirm('This will cleanup all expired sessions. Continue?')) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('csrfmiddlewaretoken', this.getCSRFToken());
+      
+      const response = await fetch('/settings/api/cleanup-sessions/', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.success) {
+          this.showNotification(`Cleaned up ${data.cleaned_count || 0} expired sessions`, 'success');
+          this.loadSessionData();
+        } else {
+          this.showNotification(data.error || 'Failed to cleanup sessions', 'error');
+        }
+      } else {
+        this.showNotification(`Server error: ${response.status}`, 'error');
+      }
+    } catch (error) {
+      console.error('Cleanup error:', error);
+      this.showNotification('Error during cleanup', 'error');
+    }
+  }
+
+  async exportReport() {
+    try {
+      const response = await fetch('/settings/api/session-report/?days=7');
+      const data = await response.json();
+      
+      if (data.success) {
+        const report = JSON.stringify(data.report, null, 2);
+        const blob = new Blob([report], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `session-report-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        this.showNotification('Report exported successfully', 'success');
+      }
+    } catch (error) {
+      this.showNotification('Failed to export report', 'error');
+    }
+  }
+
+  startAutoRefresh() {
+    this.stopAutoRefresh();
+    this.refreshInterval = setInterval(() => {
+      this.loadSessionData();
+    }, 30000); // Refresh every 30 seconds
+  }
+
+  stopAutoRefresh() {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+      this.refreshInterval = null;
+    }
+  }
+
+  showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.remove();
+      }
+    }, 5000);
+  }
+
+  getCSRFToken() {
+    // Try multiple methods to get CSRF token
+    
+    // Method 1: From cookies
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'csrftoken') {
+        return value;
+      }
+    }
+    
+    // Method 2: From meta tag
+    const metaToken = document.querySelector('meta[name="csrf-token"]');
+    if (metaToken) {
+      return metaToken.getAttribute('content');
+    }
+    
+    // Method 3: From hidden input
+    const hiddenToken = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (hiddenToken) {
+      return hiddenToken.value;
+    }
+    
+    console.warn('CSRF token not found');
+    return '';
+  }
+}
+
+// Store class globally and initialize
+window.SessionManagementDashboard = SessionManagementDashboard;
+
+// Initialize session manager
+let sessionManager;
+document.addEventListener('DOMContentLoaded', function() {
+  // Prevent multiple initializations
+  if (window.sessionManager) {
+    return;
+  }
+  
+  try {
+    sessionManager = new SessionManagementDashboard();
+    window.sessionManager = sessionManager;
+    console.log('Session manager initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize session manager:', error);
+  }
+});
+</script>
+
+<style>
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.table-warning {
+  background-color: rgba(255, 193, 7, 0.1) !important;
+}
+
+.enterprise-table tbody tr.table-warning:hover {
+  background-color: rgba(255, 193, 7, 0.2) !important;
+}
+</style>
+{% endblock %}

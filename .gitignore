@@ -1,0 +1,49 @@
+# Python / Django
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+*.egg
+*.log
+
+# Virtual environments
+venv/
+.env*/
+.venv/
+.env
+
+# Django specific
+staticfiles/
+media/
+logs/
+*.sqlite3
+local_settings.py
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Coverage / pytest
+.coverage
+htmlcov/
+pytest_debug.log
+.pytest_cache/
+
+# Node (if used for front-end tooling)
+node_modules/
+
+# Build artifacts
+build/
+dist/
+
+# Secrets & configs
+*.key
+*.pem
+*.crt
+*.der
+backup.*

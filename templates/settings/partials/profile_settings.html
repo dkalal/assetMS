@@ -1,0 +1,114 @@
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-person-circle text-primary me-2"></i>
+          Personal Information
+        </h5>
+      </div>
+      <div class="card-body">
+        <form method="post" action="{% url 'settings:profile_settings' %}" enctype="multipart/form-data" id="profileForm">
+          {% csrf_token %}
+          
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="id_first_name" class="form-label">First Name *</label>
+              <input type="text" class="form-control" id="id_first_name" name="first_name" 
+                     value="{{ user.first_name|default:'' }}" required>
+            </div>
+            <div class="col-md-6">
+              <label for="id_last_name" class="form-label">Last Name *</label>
+              <input type="text" class="form-control" id="id_last_name" name="last_name" 
+                     value="{{ user.last_name|default:'' }}" required>
+            </div>
+            <div class="col-md-6">
+              <label for="id_email" class="form-label">Email Address *</label>
+              <input type="email" class="form-control" id="id_email" name="email" 
+                     value="{{ user.email|default:'' }}" required>
+            </div>
+            <div class="col-md-6">
+              <label for="id_phone_number" class="form-label">Phone Number</label>
+              <input type="tel" class="form-control" id="id_phone_number" name="phone_number" 
+                     value="{{ user.phone_number|default:'' }}">
+            </div>
+            <div class="col-12">
+              <label for="id_profile_image" class="form-label">Profile Image</label>
+              <input type="file" class="form-control" id="id_profile_image" name="profile_image" 
+                     accept="image/*">
+              <div class="form-text">Recommended size: 200x200 pixels. Max file size: 2MB.</div>
+            </div>
+          </div>
+          
+          <div class="d-flex justify-content-end mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-lg me-1"></i>
+              Update Profile
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-info-circle text-info me-2"></i>
+          Account Information
+        </h5>
+      </div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-5">Username:</dt>
+          <dd class="col-sm-7">{{ user.username }}</dd>
+          
+          <dt class="col-sm-5">Role:</dt>
+          <dd class="col-sm-7">
+            <span class="badge bg-{% if user.role == 'admin' %}danger{% elif user.role == 'manager' %}warning{% else %}secondary{% endif %}">
+              {{ user.get_role_display }}
+            </span>
+          </dd>
+          
+          <dt class="col-sm-5">Member Since:</dt>
+          <dd class="col-sm-7">{{ user.date_joined|date:"M d, Y" }}</dd>
+          
+          <dt class="col-sm-5">Last Login:</dt>
+          <dd class="col-sm-7">{{ user.last_login|date:"M d, Y H:i"|default:"Never" }}</dd>
+        </dl>
+        
+        <hr class="my-3">
+        
+        <div class="d-grid gap-2">
+          <a href="{% url 'password_change' %}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-key me-1"></i>
+            Change Password
+          </a>
+          <button type="button" class="btn btn-outline-info btn-sm" onclick="exportUserData()">
+            <i class="bi bi-download me-1"></i>
+            Export My Data
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card border-0 shadow-sm mt-3">
+      <div class="card-header bg-transparent">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-shield-exclamation text-warning me-2"></i>
+          Danger Zone
+        </h5>
+      </div>
+      <div class="card-body">
+        <p class="text-muted small mb-3">These actions cannot be undone.</p>
+        <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="deleteAccount()">
+          <i class="bi bi-trash me-1"></i>
+          Delete Account
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+

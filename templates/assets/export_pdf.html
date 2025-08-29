@@ -1,0 +1,60 @@
+{% load asset_extras %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Asset Export</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 2em; }
+        .header { display: flex; align-items: center; margin-bottom: 2em; }
+        .logo { height: 60px; margin-right: 1.5em; }
+        .title { font-size: 2em; font-weight: bold; color: #176B87; }
+        .date { margin-left: auto; color: #888; font-size: 1em; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1.5em; }
+        th, td { border: 1px solid #b4e9fc; padding: 0.5em 0.8em; font-size: 0.95em; }
+        th { background: #eaf6fb; color: #176B87; font-weight: bold; }
+        tr:nth-child(even) { background: #f7fbfd; }
+        tfoot td { font-size: 0.9em; color: #888; border: none; }
+        .footer { margin-top: 2em; color: #888; font-size: 0.95em; text-align: center; }
+        @page {
+            size: A4;
+            margin: 1.5cm;
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages) " | Asset Management System";
+                font-size: 0.9em;
+                color: #888;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="{{ logo_url }}" class="logo" alt="Logo">
+        <div class="title">Asset Export</div>
+        <div class="date">Exported: {{ export_date|date:'Y-m-d H:i' }}</div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                {% for col in columns %}
+                <th>{{ col|title }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for asset in assets %}
+            <tr>
+                {% for col in columns %}
+                <td>{{ asset|get_item:col }}</td>
+                {% endfor %}
+            </tr>
+            {% empty %}
+            <tr><td colspan="{{ columns|length }}" style="text-align:center;">No assets found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="footer">
+        &copy; {{ export_date|date:'Y' }} Your Company Name. All rights reserved. | Contact: info@yourcompany.com
+    </div>
+</body>
+</html> 

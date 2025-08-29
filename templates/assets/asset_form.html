@@ -1,0 +1,213 @@
+{% extends 'base_dashboard.html' %}
+{% load asset_extras %}
+{% block title %}Register Asset{% endblock %}
+{% block content %}
+<!-- User role for JS (CSP-compliant, non-intrusive, extensible) -->
+<div id="user-role" data-role="{{ user_role|default:'' }}" style="display:none;"></div>
+<h2 class="mb-4">Register New Asset</h2>
+<!-- Robust error display block -->
+{% if form.errors %}
+  <div class="alert alert-danger">
+    <strong>There were errors in your submission. Please correct them below.</strong>
+    <ul class="mb-0">
+      {% for field in form %}
+        {% for error in field.errors %}
+          <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+        {% endfor %}
+      {% endfor %}
+      {% for error in form.non_field_errors %}
+        <li>{{ error }}</li>
+      {% endfor %}
+    </ul>
+    <pre style="font-size:0.9em; color:#333; background:#f8f9fa; border-radius:6px; padding:8px; margin-top:8px;">{{ form.errors.as_json }}</pre>
+  </div>
+{% endif %}
+<form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label for="id_category" class="form-label">Category <span class="text-danger">*</span></label>
+            {{ form.category }}
+            {{ form.category.errors }}
+        </div>
+        <div class="col-md-6">
+            <label for="id_status" class="form-label">Status <span class="text-danger">*</span></label>
+            {{ form.status }}
+            {{ form.status.errors }}
+        </div>
+        <!-- Dynamic fields placeholder -->
+        <div class="col-12" id="dynamic-fields-container">
+            <!-- Dynamic fields will be rendered here by JS -->
+        </div>
+        <div class="col-12">
+            <label for="id_description" class="form-label">Description</label>
+            {{ form.description }}
+            {{ form.description.errors }}
+        </div>
+        <div class="col-md-6">
+            <label for="id_assigned_to" class="form-label">Assigned To</label>
+            <div class="input-group">
+                <select name="assigned_to" id="id_assigned_to" class="form-select">
+                    {% for option in form.assigned_to.field.choices %}
+                        <option value="{{ option.0 }}" {% if form.assigned_to.value == option.0 %}selected{% endif %}>{{ option.1 }}</option>
+                    {% endfor %}
+                </select>
+                {% if user_role == 'admin' %}
+                <button type="button" class="btn btn-outline-success" id="openAddUserModal" type="button">Add User</button>
+                {% endif %}
+            </div>
+            {{ form.assigned_to.errors }}
+        </div>
+        <div class="col-md-6">
+            <label for="id_images" class="form-label">Image (max 2MB)</label>
+            {{ form.images }}
+            {{ form.images.errors }}
+            <img id="image-preview" src="#" alt="Image Preview" class="img-fluid mt-2 d-none" style="max-width:150px;"/>
+        </div>
+        <div class="col-md-6">
+            <label for="id_documents" class="form-label">Document (PDF/Word, max 5MB)</label>
+            {{ form.documents }}
+            {{ form.documents.errors }}
+        </div>
+        <!-- Depreciation Details -->
+        <div class="col-12">
+            <div class="card mb-3">
+                <div class="card-header bg-warning text-dark">Depreciation Details</div>
+                <div class="card-body row g-3">
+                    <div class="col-md-3">
+                        <label for="id_purchase_value" class="form-label">Purchase Value</label>
+                        {{ form.purchase_value }}
+                        {{ form.purchase_value.errors }}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="id_purchase_date" class="form-label">Purchase Date</label>
+                        {{ form.purchase_date }}
+                        {{ form.purchase_date.errors }}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="id_depreciation_method" class="form-label">Depreciation Method</label>
+                        {{ form.depreciation_method }}
+                        {{ form.depreciation_method.errors }}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="id_useful_life_years" class="form-label">Useful Life (Years)</label>
+                        {{ form.useful_life_years }}
+                        {{ form.useful_life_years.errors }}
+                    </div>
+                </div>
+                <div class="card-footer small text-muted">
+                    All fields above are required for depreciable assets. Leave blank if not applicable.
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary">Register Asset</button>
+    </div>
+</form>
+{% if object and object.qr_code %}
+<div class="mt-4 text-center">
+    <h5>Asset QR Code</h5>
+    <img src="{{ object.qr_code.url }}" alt="Asset QR Code" class="img-fluid" style="max-width:200px;">
+    <div class="mt-2">
+        <a href="{{ object.qr_code.url }}" download class="btn btn-outline-secondary btn-sm">Download QR</a>
+    </div>
+</div>
+{% endif %}
+
+<!-- Custom Add User Modal (Admin Only) -->
+{% if user_role == 'admin' %}
+<style>
+.custom-modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.5);
+  z-index: 2000;
+  justify-content: center;
+  align-items: center;
+}
+.custom-modal-overlay.active {
+  display: flex;
+}
+.custom-modal {
+  background: #fff;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 8px 32px 0 rgba(31,38,135,0.37);
+  padding: 0;
+  overflow: hidden;
+}
+.custom-modal-header {
+  background: #00A6EB;
+  color: #fff;
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.custom-modal-body {
+  padding: 1.5rem;
+}
+.custom-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #fff;
+  cursor: pointer;
+}
+</style>
+<div id="addUserModalCustom" class="custom-modal-overlay" tabindex="-1">
+  <div class="glass-modal" role="dialog" aria-modal="true" aria-labelledby="addUserModalCustomLabel">
+    <div class="custom-modal-header d-flex align-items-center justify-content-between">
+      <h4 class="modal-title fw-bold mb-0" id="addUserModalCustomLabel">
+        <i class="bi bi-person-plus me-2 text-success"></i> Add New User
+      </h4>
+      <button type="button" class="custom-modal-close" id="closeAddUserModal" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+    <div class="custom-modal-body">
+      <form id="add-user-form">
+        <div class="mb-3">
+          <label for="new-username" class="form-label">Username</label>
+          <input type="text" class="form-control" id="new-username" name="username" required autocomplete="off">
+        </div>
+        <div class="mb-3">
+          <label for="new-email" class="form-label">Email</label>
+          <input type="email" class="form-control" id="new-email" name="email" required autocomplete="off">
+        </div>
+        <div class="mb-3">
+          <label for="new-role" class="form-label">Role</label>
+          <select class="form-select" id="new-role" name="role" required>
+            <option value="user">User</option>
+            <option value="manager">Manager</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="new-password1" class="form-label">Password</label>
+          <input type="password" class="form-control" id="new-password1" name="password1" required>
+        </div>
+        <div class="mb-3">
+          <label for="new-password2" class="form-label">Confirm Password</label>
+          <input type="password" class="form-control" id="new-password2" name="password2" required>
+        </div>
+        <div id="add-user-errors" class="alert alert-danger d-none"></div>
+        <div id="add-user-success" class="alert alert-success d-none"></div>
+        <div class="d-flex justify-content-end gap-2 mt-3">
+          <button type="button" class="btn btn-outline-secondary px-4" id="cancelAddUserModal">Cancel</button>
+          <button type="submit" class="btn btn-primary px-4 fw-bold">Add User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block extra_scripts %}
+{% load static %}
+<script src="{% static 'js/asset_form.js' %}"></script>
+{% endblock %} 

@@ -1,0 +1,1184 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}User & Access Management{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="fw-bold" style="color:var(--accent);">
+        <i class="bi bi-people-fill me-2"></i>User & Access Management
+      </h2>
+      <div class="btn-group">
+        <button class="btn btn-primary" id="inviteUserBtn" data-requires-role="admin">
+          <i class="bi bi-person-plus me-1"></i>Invite User
+        </button>
+        <button class="btn btn-outline-primary" id="viewAccessLogsBtn" data-requires-role="admin,manager">
+          <i class="bi bi-clock-history me-1"></i>Access Logs
+        </button>
+      </div>
+    </div>
+
+    <!-- User Management Section -->
+    <div class="glass p-4 mb-4 shadow-sm">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0 fw-bold">
+          <i class="bi bi-people me-2"></i>Users
+        </h4>
+        <div class="d-flex gap-2">
+          <div class="input-group" style="width: 300px;">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" id="userSearchInput" placeholder="Search users...">
+          </div>
+          <select class="form-select" id="roleFilter" style="width: 150px;">
+            <option value="">All Roles</option>
+            <option value="admin">Admin</option>
+            <option value="manager">Manager</option>
+            <option value="user">User</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead class="table-light">
+            <tr>
+              <th>User</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Last Login</th>
+              <th>Last Activity</th>
+              <th width="120">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            <tr>
+              <td colspan="6" class="text-center py-4">
+                <div class="spinner-border text-primary me-2" role="status"></div>
+                Loading users...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <nav class="d-flex justify-content-between align-items-center mt-3">
+        <button id="usersPrev" class="btn btn-outline-primary btn-sm" disabled>
+          <i class="bi bi-chevron-left"></i> Previous
+        </button>
+        <span id="usersPageInfo" class="mx-2 text-muted">Page 1 of 1</span>
+        <button id="usersNext" class="btn btn-outline-primary btn-sm" disabled>
+          Next <i class="bi bi-chevron-right"></i>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Session Management -->
+    <div class="glass p-4 mb-4 shadow-sm">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0 fw-bold">
+          <i class="bi bi-clock me-2"></i>Session Management
+        </h4>
+        <button class="btn btn-outline-info btn-sm" id="refreshSessionStats">
+          <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+        </button>
+      </div>
+      
+      <!-- Primary Metrics -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-3">
+          <div class="enterprise-metric-card active-sessions-card" onclick="showSessionDetails()">
+            <div class="metric-icon">
+              <i class="bi bi-people-fill"></i>
+            </div>
+            <div class="metric-content">
+              <div class="metric-value" id="activeSessionsCount">
+                <div class="spinner-border spinner-border-sm" role="status"></div>
+              </div>
+              <div class="metric-label">Active Sessions</div>
+              <div class="metric-action">
+                <i class="bi bi-box-arrow-up-right"></i> View Details
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="enterprise-metric-card sessions-today-card">
+            <div class="metric-icon">
+              <i class="bi bi-graph-up"></i>
+            </div>
+            <div class="metric-content">
+              <div class="metric-value" id="totalSessionsToday">
+                <div class="spinner-border spinner-border-sm" role="status"></div>
+              </div>
+              <div class="metric-label">Sessions Today</div>
+              <div class="metric-trend">+12% from yesterday</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="enterprise-metric-card locked-accounts-card">
+            <div class="metric-icon">
+              <i class="bi bi-shield-lock-fill"></i>
+            </div>
+            <div class="metric-content">
+              <div class="metric-value" id="lockedAccountsCount">
+                <div class="spinner-border spinner-border-sm" role="status"></div>
+              </div>
+              <div class="metric-label">Locked Accounts</div>
+              <div class="metric-status">Security Alert</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="enterprise-metric-card failed-logins-card">
+            <div class="metric-icon">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+            </div>
+            <div class="metric-content">
+              <div class="metric-value" id="failedLogins24h">
+                <div class="spinner-border spinner-border-sm" role="status"></div>
+              </div>
+              <div class="metric-label">Failed Logins (24h)</div>
+              <div class="metric-status">Monitor</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Secondary Metrics -->
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light">
+              <h6 class="mb-0 fw-bold">
+                <i class="bi bi-pie-chart me-2"></i>Active Sessions by Role
+              </h6>
+            </div>
+            <div class="card-body">
+              <div id="roleBreakdown">
+                <div class="text-center text-muted py-3">
+                  <div class="spinner-border spinner-border-sm me-2"></div>
+                  Loading role breakdown...
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light">
+              <h6 class="mb-0 fw-bold">
+                <i class="bi bi-activity me-2"></i>Recent Login Activity
+              </h6>
+            </div>
+            <div class="card-body">
+              <div id="recentActivity" style="max-height: 200px; overflow-y: auto;">
+                <div class="text-center text-muted py-3">
+                  <div class="spinner-border spinner-border-sm me-2"></div>
+                  Loading recent activity...
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Invite User Modal -->
+<div id="inviteUserModal" class="custom-modal-overlay">
+  <div class="custom-modal glass-modal">
+    <div class="custom-modal-header">
+      <h5 class="modal-title fw-bold mb-0">
+        <i class="bi bi-person-plus me-2"></i>Invite New User
+      </h5>
+      <button type="button" class="custom-modal-close" id="closeInviteModal">
+        <span>&times;</span>
+      </button>
+    </div>
+    <form id="inviteUserForm">
+      {% csrf_token %}
+      <div class="custom-modal-body">
+        <div id="inviteFeedback" class="mb-3"></div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="inviteFirstName" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="inviteLastName" required>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Email Address <span class="text-danger">*</span></label>
+          <input type="email" class="form-control" id="inviteEmail" required>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Role <span class="text-danger">*</span></label>
+            <select class="form-select" id="inviteRole" required>
+              <option value="">Select Role</option>
+              <option value="user">User</option>
+              <option value="manager">Manager</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Session Timeout (minutes)</label>
+            <input type="number" class="form-control" id="inviteSessionTimeout" value="60" min="15" max="480">
+          </div>
+        </div>
+        <div class="form-check mt-3">
+          <input class="form-check-input" type="checkbox" id="inviteForcePasswordChange" checked>
+          <label class="form-check-label" for="inviteForcePasswordChange">
+            Force password change on first login
+          </label>
+        </div>
+      </div>
+      <div class="custom-modal-footer d-flex justify-content-end gap-2 p-3">
+        <button type="button" class="btn btn-outline-secondary" id="cancelInvite">Cancel</button>
+        <button type="submit" class="btn btn-primary">
+          <span class="btn-text">Send Invitation</span>
+          <span class="btn-spinner d-none">
+            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+            Sending...
+          </span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Access Logs Modal -->
+<div id="accessLogsModal" class="custom-modal-overlay">
+  <div class="custom-modal glass-modal" style="max-width: 900px;">
+    <div class="custom-modal-header">
+      <h5 class="modal-title fw-bold mb-0">
+        <i class="bi bi-clock-history me-2"></i>Access Logs
+      </h5>
+      <button type="button" class="custom-modal-close" id="closeAccessLogsModal">
+        <span>&times;</span>
+      </button>
+    </div>
+    <div class="custom-modal-body">
+      <div class="table-responsive" style="max-height: 400px;">
+        <table class="table table-sm table-hover">
+          <thead class="table-light sticky-top">
+            <tr>
+              <th>User</th>
+              <th>Action</th>
+              <th>IP Address</th>
+              <th>Timestamp</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody id="accessLogsTableBody">
+            <tr>
+              <td colspan="5" class="text-center py-4">
+                <div class="spinner-border text-primary me-2" role="status"></div>
+                Loading access logs...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="custom-modal-footer d-flex justify-content-end gap-2 p-3">
+      <button type="button" class="btn btn-outline-secondary" id="closeAccessLogs">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- User Edit Modal -->
+<div id="editUserModal" class="custom-modal-overlay">
+  <div class="custom-modal glass-modal">
+    <div class="custom-modal-header">
+      <h5 class="modal-title fw-bold mb-0">
+        <i class="bi bi-person-gear me-2"></i>Edit User
+      </h5>
+      <button type="button" class="custom-modal-close" id="closeEditModal">
+        <span>&times;</span>
+      </button>
+    </div>
+    <form id="editUserForm">
+      {% csrf_token %}
+      <div class="custom-modal-body">
+        <div id="editFeedback" class="mb-3"></div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">User</label>
+          <div id="editUserInfo" class="p-2 bg-light rounded"></div>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Role</label>
+            <select class="form-select" id="editUserRole" required>
+              <option value="user">User</option>
+              <option value="manager">Manager</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Status</label>
+            <select class="form-select" id="editUserStatus">
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="custom-modal-footer d-flex justify-content-end gap-2 p-3">
+        <button type="button" class="btn btn-outline-secondary" id="cancelEdit">Cancel</button>
+        <button type="submit" class="btn btn-primary">Update User</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% include 'settings/session_detail_modal.html' %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const inviteModal = document.getElementById('inviteUserModal');
+    const accessLogsModal = document.getElementById('accessLogsModal');
+    const editModal = document.getElementById('editUserModal');
+    
+    let usersData = { page: 1, numPages: 1, users: [] };
+    let currentEditUserId = null;
+    let searchTimeout = null;
+    
+    // Toast function is now provided by enterprise-auth.js
+    
+    // Load initial data based on user role
+    if (window.enterpriseAuth && window.enterpriseAuth.canAccessUserManagement()) {
+        loadUsers();
+        loadSessionStats();
+    } else {
+        // Show access denied message
+        document.querySelector('.container').innerHTML = `
+            <div class="glass p-4 text-center">
+                <i class="bi bi-shield-lock fs-1 text-warning mb-3 d-block"></i>
+                <h3>Access Denied</h3>
+                <p class="text-muted">You don't have permission to access user management.</p>
+                <a href="/dashboard/" class="btn btn-primary">Go to Dashboard</a>
+            </div>
+        `;
+        return;
+    }
+    
+    // Search functionality with debouncing
+    document.getElementById('userSearchInput').addEventListener('input', function(e) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            loadUsers(1, e.target.value.trim());
+        }, 300);
+    });
+    
+    // Role filter
+    document.getElementById('roleFilter').addEventListener('change', function(e) {
+        loadUsers(1, document.getElementById('userSearchInput').value.trim(), e.target.value);
+    });
+    
+    // Event listeners
+    document.getElementById('inviteUserBtn').addEventListener('click', () => {
+        inviteModal.classList.add('active');
+    });
+    
+    document.getElementById('viewAccessLogsBtn').addEventListener('click', () => {
+        loadAccessLogs();
+        accessLogsModal.classList.add('active');
+    });
+    
+    // Modal close handlers
+    document.getElementById('closeInviteModal').addEventListener('click', () => {
+        inviteModal.classList.remove('active');
+        document.getElementById('inviteUserForm').reset();
+        document.getElementById('inviteFeedback').innerHTML = '';
+    });
+    
+    document.getElementById('closeAccessLogsModal').addEventListener('click', () => {
+        accessLogsModal.classList.remove('active');
+    });
+    
+    document.getElementById('closeEditModal').addEventListener('click', () => {
+        editModal.classList.remove('active');
+        document.getElementById('editUserForm').reset();
+        document.getElementById('editFeedback').innerHTML = '';
+    });
+    
+    // Edit user form submission
+    document.getElementById('editUserForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        if (!currentEditUserId) return;
+        
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const feedback = document.getElementById('editFeedback');
+        
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Updating...';
+        
+        try {
+            const formData = new FormData();
+            formData.append('user_id', currentEditUserId);
+            formData.append('role', document.getElementById('editUserRole').value);
+            formData.append('status', document.getElementById('editUserStatus').value);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            
+            const response = await fetch('/settings/api/update-user/', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                feedback.innerHTML = `<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i>${data.message}</div>`;
+                setTimeout(() => {
+                    editModal.classList.remove('active');
+                    loadUsers();
+                    loadSessionStats();
+                }, 1500);
+            } else {
+                feedback.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>${data.error}</div>`;
+            }
+        } catch (error) {
+            feedback.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>Network error occurred</div>';
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Update User';
+        }
+    });
+    
+    // Form submissions
+    document.getElementById('inviteUserForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const btnText = submitBtn.querySelector('.btn-text');
+        const btnSpinner = submitBtn.querySelector('.btn-spinner');
+        const feedback = document.getElementById('inviteFeedback');
+        
+        // Show loading state
+        btnText.classList.add('d-none');
+        btnSpinner.classList.remove('d-none');
+        submitBtn.disabled = true;
+        
+        try {
+            const formData = new FormData();
+            formData.append('first_name', document.getElementById('inviteFirstName').value);
+            formData.append('last_name', document.getElementById('inviteLastName').value);
+            formData.append('email', document.getElementById('inviteEmail').value);
+            formData.append('role', document.getElementById('inviteRole').value);
+            formData.append('session_timeout', document.getElementById('inviteSessionTimeout').value);
+            formData.append('force_password_change', document.getElementById('inviteForcePasswordChange').checked);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            
+            const response = await fetch('/settings/api/invite-user/', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                feedback.innerHTML = `
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle me-2"></i>${data.message}
+                        <div class="mt-2 small">
+                            <strong>Demo Link:</strong> <code>${data.invitation_link}</code>
+                        </div>
+                    </div>
+                `;
+                setTimeout(() => {
+                    inviteModal.classList.remove('active');
+                    loadUsers();
+                    loadSessionStats();
+                }, 3000);
+            } else {
+                feedback.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>${data.error}</div>`;
+            }
+        } catch (error) {
+            feedback.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>Network error occurred</div>';
+        } finally {
+            // Reset button state
+            btnText.classList.remove('d-none');
+            btnSpinner.classList.add('d-none');
+            submitBtn.disabled = false;
+        }
+    });
+    
+    async function loadUsers(page = 1, search = '', role = '') {
+        try {
+            const params = new URLSearchParams({ page, search, role });
+            const response = await fetch(`/settings/api/users/?${params}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                usersData = data;
+                renderUsers(data.users);
+                updatePagination();
+            }
+        } catch (error) {
+            console.error('Error loading users:', error);
+            document.getElementById('usersTableBody').innerHTML = `
+                <tr><td colspan="6" class="text-center text-danger py-4">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Error loading users
+                </td></tr>
+            `;
+        }
+    }
+    
+    function renderUsers(users) {
+        const tbody = document.getElementById('usersTableBody');
+        
+        if (!users || users.length === 0) {
+            tbody.innerHTML = `
+                <tr><td colspan="6" class="text-center text-muted py-4">
+                    <i class="bi bi-people fs-3 d-block mb-2"></i>
+                    No users found
+                </td></tr>
+            `;
+            return;
+        }
+        
+        tbody.innerHTML = '';
+        
+        users.forEach((user, index) => {
+            const tr = document.createElement('tr');
+            tr.style.animationDelay = `${index * 50}ms`;
+            tr.className = 'user-row';
+            
+            const statusBadge = user.is_active ? 
+                '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Active</span>' : 
+                '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Inactive</span>';
+            
+            const roleBadge = `<span class="badge bg-${getRoleColor(user.role)}"><i class="bi bi-person me-1"></i>${user.role}</span>`;
+            
+            const lastLogin = user.last_login ? 
+                new Date(user.last_login).toLocaleDateString() : 
+                '<span class="text-muted">Never</span>';
+                
+            const lastActivity = user.last_activity ? 
+                new Date(user.last_activity).toLocaleDateString() : 
+                '<span class="text-muted">Never</span>';
+            
+            tr.innerHTML = `
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-${getRoleColor(user.role)} d-flex align-items-center justify-content-center me-2" 
+                             style="width:32px;height:32px;font-size:0.8rem;color:white;">
+                            ${user.first_name.charAt(0)}${user.last_name.charAt(0)}
+                        </div>
+                        <div>
+                            <div class="fw-semibold">${user.first_name} ${user.last_name}</div>
+                            <small class="text-muted">${user.email}</small>
+                        </div>
+                    </div>
+                </td>
+                <td>${roleBadge}</td>
+                <td>${statusBadge}</td>
+                <td>${lastLogin}</td>
+                <td>${lastActivity}</td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary" onclick="editUser(${user.id})" title="Edit User">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-outline-${user.is_active ? 'warning' : 'success'}" 
+                                onclick="toggleUserStatus(${user.id}, ${user.is_active})" 
+                                title="${user.is_active ? 'Deactivate' : 'Activate'} User">
+                            <i class="bi bi-${user.is_active ? 'pause' : 'play'}"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+    
+    function getRoleColor(role) {
+        const colors = { admin: 'danger', manager: 'warning', user: 'secondary' };
+        return colors[role] || 'secondary';
+    }
+    
+    function updatePagination() {
+        document.getElementById('usersPrev').disabled = usersData.page <= 1;
+        document.getElementById('usersNext').disabled = usersData.page >= usersData.numPages;
+        document.getElementById('usersPageInfo').textContent = 
+            `Page ${usersData.page} of ${usersData.numPages || 1}`;
+    }
+    
+    async function loadSessionStats() {
+        try {
+            const response = await fetch('/settings/api/session-stats/');
+            const data = await response.json();
+            
+            if (data.success) {
+                // Update primary metrics
+                document.getElementById('activeSessionsCount').textContent = data.active_sessions;
+                document.getElementById('totalSessionsToday').textContent = data.total_sessions_today;
+                document.getElementById('lockedAccountsCount').textContent = data.locked_accounts;
+                document.getElementById('failedLogins24h').textContent = data.failed_logins_24h;
+                
+                // Update role breakdown
+                renderRoleBreakdown(data.role_breakdown);
+                
+                // Update recent activity
+                renderRecentActivity(data.recent_activity);
+            }
+        } catch (error) {
+            console.error('Error loading session stats:', error);
+            // Show error state
+            ['activeSessionsCount', 'totalSessionsToday', 'lockedAccountsCount', 'failedLogins24h'].forEach(id => {
+                document.getElementById(id).innerHTML = '<span class="text-muted">-</span>';
+            });
+            
+            document.getElementById('roleBreakdown').innerHTML = '<div class="text-center text-danger">Error loading data</div>';
+            document.getElementById('recentActivity').innerHTML = '<div class="text-center text-danger">Error loading data</div>';
+        }
+    }
+    
+    function renderRoleBreakdown(roleData) {
+        const container = document.getElementById('roleBreakdown');
+        
+        if (!roleData || Object.keys(roleData).length === 0) {
+            container.innerHTML = '<div class="text-center text-muted">No active sessions</div>';
+            return;
+        }
+        
+        let html = '';
+        const colors = { admin: 'danger', manager: 'warning', user: 'secondary' };
+        
+        for (const [role, count] of Object.entries(roleData)) {
+            const percentage = Math.round((count / Object.values(roleData).reduce((a, b) => a + b, 0)) * 100);
+            html += `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <span class="badge bg-${colors[role] || 'secondary'} me-2">${role}</span>
+                        <span class="small text-muted">${percentage}%</span>
+                    </div>
+                    <strong>${count}</strong>
+                </div>
+                <div class="progress mb-3" style="height: 6px;">
+                    <div class="progress-bar bg-${colors[role] || 'secondary'}" style="width: ${percentage}%"></div>
+                </div>
+            `;
+        }
+        
+        container.innerHTML = html;
+    }
+    
+    function renderRecentActivity(activities) {
+        const container = document.getElementById('recentActivity');
+        
+        if (!activities || activities.length === 0) {
+            container.innerHTML = '<div class="text-center text-muted">No recent activity</div>';
+            return;
+        }
+        
+        let html = '';
+        activities.forEach(activity => {
+            const timeAgo = getTimeAgo(new Date(activity.timestamp));
+            html += `
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <div>
+                        <div class="fw-semibold">${activity.user}</div>
+                        <small class="text-muted">
+                            <i class="bi bi-geo-alt me-1"></i>${activity.ip_address}
+                        </small>
+                    </div>
+                    <small class="text-muted">${timeAgo}</small>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+    
+    function getTimeAgo(date) {
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+        
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        return `${diffDays}d ago`;
+    }
+    
+    // Refresh button functionality
+    document.getElementById('refreshSessionStats').addEventListener('click', function() {
+        const btn = this;
+        const originalHtml = btn.innerHTML;
+        
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Refreshing...';
+        
+        loadSessionStats().finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        });
+    });
+    
+    async function loadAccessLogs() {
+        try {
+            const response = await fetch('/settings/api/access-logs/');
+            const data = await response.json();
+            
+            if (data.success) {
+                renderAccessLogs(data.logs);
+            }
+        } catch (error) {
+            console.error('Error loading access logs:', error);
+            document.getElementById('accessLogsTableBody').innerHTML = `
+                <tr><td colspan="5" class="text-center text-danger py-4">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Error loading access logs
+                </td></tr>
+            `;
+        }
+    }
+    
+    function renderAccessLogs(logs) {
+        const tbody = document.getElementById('accessLogsTableBody');
+        
+        if (!logs || logs.length === 0) {
+            tbody.innerHTML = `
+                <tr><td colspan="5" class="text-center text-muted py-4">
+                    <i class="bi bi-clock-history fs-3 d-block mb-2"></i>
+                    No access logs found
+                </td></tr>
+            `;
+            return;
+        }
+        
+        tbody.innerHTML = '';
+        
+        logs.forEach(log => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${log.user || '<span class="text-muted">Unknown</span>'}</td>
+                <td><span class="badge bg-${getActionColor(log.action)}"><i class="bi bi-${getActionIcon(log.action)} me-1"></i>${log.action}</span></td>
+                <td><code>${log.ip_address}</code></td>
+                <td>${new Date(log.timestamp).toLocaleString()}</td>
+                <td>${log.details || '<span class="text-muted">-</span>'}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+    
+    function getActionColor(action) {
+        const colors = {
+            login: 'success',
+            logout: 'secondary',
+            failed_login: 'danger',
+            password_change: 'warning',
+            account_locked: 'danger'
+        };
+        return colors[action] || 'secondary';
+    }
+    
+    function getActionIcon(action) {
+        const icons = {
+            login: 'box-arrow-in-right',
+            logout: 'box-arrow-right',
+            failed_login: 'exclamation-triangle',
+            password_change: 'key',
+            account_locked: 'lock'
+        };
+        return icons[action] || 'circle';
+    }
+    
+    // Global functions for button actions
+    window.editUser = function(userId) {
+        const user = usersData.users.find(u => u.id === userId);
+        if (user) {
+            currentEditUserId = userId;
+            document.getElementById('editUserInfo').innerHTML = `
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-${getRoleColor(user.role)} d-flex align-items-center justify-content-center me-2" 
+                         style="width:24px;height:24px;font-size:0.7rem;color:white;">
+                        ${user.first_name.charAt(0)}${user.last_name.charAt(0)}
+                    </div>
+                    <div>
+                        <strong>${user.first_name} ${user.last_name}</strong>
+                        <br><small class="text-muted">${user.email}</small>
+                    </div>
+                </div>
+            `;
+            document.getElementById('editUserRole').value = user.role;
+            document.getElementById('editUserStatus').value = user.is_active.toString();
+            editModal.classList.add('active');
+        }
+    };
+    
+    window.toggleUserStatus = async function(userId, currentStatus) {
+        const action = currentStatus ? 'deactivate' : 'activate';
+        const user = usersData.users.find(u => u.id === userId);
+        
+        if (!confirm(`Are you sure you want to ${action} ${user ? user.first_name + ' ' + user.last_name : 'this user'}?`)) {
+            return;
+        }
+        
+        // Find and disable the button
+        const button = document.querySelector(`button[onclick="toggleUserStatus(${userId}, ${currentStatus})"]`);
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        }
+        
+        try {
+            const formData = new FormData();
+            formData.append('user_id', userId);
+            formData.append('status', (!currentStatus).toString());
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            
+            const response = await fetch('/settings/api/toggle-user-status/', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast(data.message, 'success');
+                loadUsers();
+                loadSessionStats();
+            } else {
+                showToast(data.error, 'error');
+            }
+        } catch (error) {
+            showToast('Network error occurred. Please try again.', 'error');
+        } finally {
+            if (button) {
+                button.disabled = false;
+                // Button will be re-rendered with new status
+            }
+        }
+    };
+    
+    // Session details functionality
+    window.showSessionDetails = async function() {
+        const modal = document.getElementById('sessionDetailModal');
+        modal.classList.add('active');
+        
+        try {
+            const response = await fetch('/settings/api/session-details/');
+            const data = await response.json();
+            
+            if (data.success) {
+                renderSessionDetails(data.sessions);
+            }
+        } catch (error) {
+            console.error('Error loading session details:', error);
+            document.getElementById('sessionDetailTableBody').innerHTML = `
+                <tr><td colspan="6" class="text-center text-danger py-4">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Error loading session details
+                </td></tr>
+            `;
+        }
+    };
+    
+    function renderSessionDetails(sessions) {
+        const tbody = document.getElementById('sessionDetailTableBody');
+        
+        if (!sessions || sessions.length === 0) {
+            tbody.innerHTML = `
+                <tr><td colspan="6" class="text-center text-muted py-4">
+                    <i class="bi bi-clock-history fs-3 d-block mb-2"></i>
+                    No active sessions found
+                </td></tr>
+            `;
+            return;
+        }
+        
+        tbody.innerHTML = '';
+        
+        sessions.forEach(session => {
+            const tr = document.createElement('tr');
+            
+            // Highlight current session and current user sessions
+            if (session.is_current) {
+                tr.className = 'table-success';
+            } else if (session.is_current_user) {
+                tr.className = 'table-info';
+            }
+            
+            const roleColor = getRoleColor(session.user_role);
+            const timeAgo = getTimeAgo(new Date(session.last_activity));
+            const contextBadge = getContextBadge(session.session_context);
+            
+            // Build status badges
+            let statusBadges = '';
+            if (session.is_current) {
+                statusBadges += '<small class="badge bg-success ms-1">Current Session</small>';
+            } else if (session.is_current_user) {
+                statusBadges += '<small class="badge bg-info ms-1">Your Session</small>';
+            }
+            
+            tr.innerHTML = `
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-${roleColor} d-flex align-items-center justify-content-center me-2" 
+                             style="width:24px;height:24px;font-size:0.7rem;color:white;">
+                            ${session.user.charAt(0)}
+                        </div>
+                        <div>
+                            <div class="fw-semibold">${session.user}</div>
+                            <div>
+                                <small class="badge bg-${roleColor}">${session.user_role}</small>
+                                ${contextBadge}
+                                ${statusBadges}
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td><code>${session.ip_address}</code></td>
+                <td>
+                    <i class="bi bi-${getBrowserIcon(session.browser)} me-1"></i>
+                    ${session.browser}
+                </td>
+                <td>${new Date(session.created_at).toLocaleString()}</td>
+                <td>
+                    <div>${timeAgo}</div>
+                    <small class="text-muted">Duration: ${session.duration}</small>
+                </td>
+                <td>
+                    <span class="badge bg-success">
+                        <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>
+                        Active
+                    </span>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+    
+    function getBrowserIcon(browser) {
+        const icons = {
+            'Chrome': 'google',
+            'Firefox': 'firefox',
+            'Safari': 'apple',
+            'Edge': 'microsoft',
+            'Unknown': 'globe'
+        };
+        return icons[browser] || 'globe';
+    }
+    
+    function getContextBadge(context) {
+        const contexts = {
+            'web': '<small class="badge bg-primary ms-1">Web</small>',
+            'admin': '<small class="badge bg-danger ms-1">Admin</small>',
+            'api': '<small class="badge bg-warning ms-1">API</small>',
+            'mobile': '<small class="badge bg-secondary ms-1">Mobile</small>'
+        };
+        return contexts[context] || '<small class="badge bg-secondary ms-1">Unknown</small>';
+    }
+    
+    // Modal close handlers for session detail
+    document.getElementById('closeSessionDetailModal').addEventListener('click', () => {
+        document.getElementById('sessionDetailModal').classList.remove('active');
+    });
+    
+    document.getElementById('closeSessionDetail').addEventListener('click', () => {
+        document.getElementById('sessionDetailModal').classList.remove('active');
+    });
+});
+</script>
+
+<style>
+.user-row {
+    animation: fadeInUp 0.3s ease-out forwards;
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.btn-group-sm .btn {
+    transition: all 0.2s ease;
+}
+
+.btn-group-sm .btn:hover {
+    transform: scale(1.05);
+}
+
+.card.bg-gradient {
+    transition: transform 0.2s ease;
+}
+
+.card.bg-gradient:hover {
+    transform: translateY(-2px);
+}
+
+/* Enterprise Metric Cards */
+.enterprise-metric-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: 1px solid #e9ecef;
+    border-radius: 16px;
+    padding: 24px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    position: relative;
+    overflow: hidden;
+    height: 140px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.enterprise-metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--card-accent, #6c757d);
+    border-radius: 16px 16px 0 0;
+}
+
+.enterprise-metric-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    border-color: var(--card-accent, #6c757d);
+}
+
+.metric-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    background: var(--card-accent, #6c757d);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.metric-content {
+    flex: 1;
+}
+
+.metric-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #212529;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.metric-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.metric-action, .metric-trend, .metric-status {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--card-accent, #6c757d);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Card-specific colors */
+.active-sessions-card {
+    --card-accent: #0d6efd;
+}
+
+.sessions-today-card {
+    --card-accent: #198754;
+}
+
+.locked-accounts-card {
+    --card-accent: #dc3545;
+}
+
+.failed-logins-card {
+    --card-accent: #fd7e14;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .enterprise-metric-card {
+        height: auto;
+        min-height: 120px;
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+    }
+    
+    .metric-icon {
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
+    }
+    
+    .metric-value {
+        font-size: 2rem;
+    }
+}
+
+/* Enterprise Toast Notifications */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.enterprise-toast {
+    min-width: 350px;
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.enterprise-toast.success {
+    border-left: 4px solid #28a745;
+}
+
+.enterprise-toast.error {
+    border-left: 4px solid #dc3545;
+}
+
+.enterprise-toast.warning {
+    border-left: 4px solid #ffc107;
+}
+
+.enterprise-toast.info {
+    border-left: 4px solid #17a2b8;
+}
+</style>
+{% endblock %}

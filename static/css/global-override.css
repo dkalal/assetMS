@@ -1,0 +1,53 @@
+/* Global Background Override - Ensures consistent background across all pages */
+
+/* Force consistent background on all pages */
+body,
+body.authenticated,
+body[class*="dashboard"],
+body[class*="page"],
+html,
+.dashboard-container,
+.main-content,
+.container,
+.container-fluid {
+  background: linear-gradient(135deg, #eff6ff 0%, #f9fafb 100%) !important;
+}
+
+/* Override any specific page backgrounds */
+.dashboard-content,
+.dashboard-sidebar,
+.dashboard-topbar,
+.content-wrapper,
+.enterprise-container {
+  background: transparent !important;
+}
+
+/* Ensure glass components maintain their transparency */
+.glass {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Override any conflicting styles from other CSS files */
+[style*="background"] {
+  background: linear-gradient(135deg, #eff6ff 0%, #f9fafb 100%) !important;
+}
+
+/* Specific overrides for common conflicting selectors */
+.bg-light,
+.bg-primary,
+.bg-secondary,
+.bg-info,
+.bg-warning,
+.bg-danger,
+.bg-success {
+  background: transparent !important;
+}
+
+/* Maintain card and component backgrounds */
+.card,
+.modal-content,
+.dropdown-menu {
+  background: rgba(255, 255, 255, 0.95) !important;
+}

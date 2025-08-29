@@ -1,0 +1,268 @@
+<div class="row">
+  <div class="col-lg-8">
+    <!-- Theme Customization -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-palette text-primary me-2"></i>
+          Theme Customization
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="primaryColor" class="form-label">Primary Color</label>
+            <input type="color" class="form-control form-control-color w-100" id="primaryColor" 
+                   value="{{ theme_settings.primary_color|default:'#00A6EB' }}" title="Choose primary color">
+            <div class="form-text">Main brand color used throughout the application</div>
+          </div>
+          <div class="col-md-6">
+            <label for="secondaryColor" class="form-label">Secondary Color</label>
+            <input type="color" class="form-control form-control-color w-100" id="secondaryColor" 
+                   value="{{ theme_settings.secondary_color|default:'#176B87' }}" title="Choose secondary color">
+            <div class="form-text">Secondary color for accents and highlights</div>
+          </div>
+          <div class="col-md-6">
+            <label for="accentColor" class="form-label">Accent Color</label>
+            <input type="color" class="form-control form-control-color w-100" id="accentColor" 
+                   value="{{ theme_settings.accent_color|default:'#04364A' }}" title="Choose accent color">
+            <div class="form-text">Color for special elements and call-to-actions</div>
+          </div>
+          <div class="col-md-6">
+            <label for="backgroundColor" class="form-label">Background Color</label>
+            <input type="color" class="form-control form-control-color w-100" id="backgroundColor" 
+                   value="{{ theme_settings.background_color|default:'#B4E9FC' }}" title="Choose background color">
+            <div class="form-text">Main background color for the application</div>
+          </div>
+        </div>
+        
+        <div class="mt-3">
+          <label for="logoUpload" class="form-label">Company Logo</label>
+          <input type="file" class="form-control" id="logoUpload" accept="image/*">
+          <div class="form-text">Upload your company logo (recommended: 200x60px, PNG/JPG)</div>
+        </div>
+        
+        <div class="d-flex justify-content-end mt-4">
+          <button type="button" class="btn btn-outline-secondary me-2" onclick="previewTheme()">
+            <i class="bi bi-eye me-1"></i>
+            Preview
+          </button>
+          <button type="button" class="btn btn-primary" onclick="saveThemeSettings()">
+            <i class="bi bi-check-lg me-1"></i>
+            Save Theme
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- System Configuration -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-gear-wide-connected text-info me-2"></i>
+          System Configuration
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="sessionTimeout" class="form-label">Session Timeout (minutes)</label>
+            <input type="number" class="form-control" id="sessionTimeout" value="30" min="5" max="480">
+            <div class="form-text">How long before users are automatically logged out</div>
+          </div>
+          <div class="col-md-6">
+            <label for="maxLoginAttempts" class="form-label">Max Login Attempts</label>
+            <input type="number" class="form-control" id="maxLoginAttempts" value="5" min="3" max="10">
+            <div class="form-text">Number of failed attempts before account lockout</div>
+          </div>
+          <div class="col-md-6">
+            <label for="backupFrequency" class="form-label">Backup Frequency</label>
+            <select class="form-select" id="backupFrequency">
+              <option value="daily">Daily</option>
+              <option value="weekly" selected>Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+            <div class="form-text">How often to create system backups</div>
+          </div>
+          <div class="col-md-6">
+            <label for="retentionPeriod" class="form-label">Data Retention (days)</label>
+            <input type="number" class="form-control" id="retentionPeriod" value="365" min="30" max="2555">
+            <div class="form-text">How long to keep audit logs and old data</div>
+          </div>
+        </div>
+        
+        <div class="mt-3">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="maintenanceMode" checked>
+            <label class="form-check-label" for="maintenanceMode">
+              <strong>Maintenance Mode</strong>
+              <div class="form-text">Enable maintenance mode for system updates</div>
+            </label>
+          </div>
+        </div>
+        
+        <div class="mt-3">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="debugMode">
+            <label class="form-check-label" for="debugMode">
+              <strong>Debug Mode</strong>
+              <div class="form-text">Enable detailed error reporting (development only)</div>
+            </label>
+          </div>
+        </div>
+        
+        <div class="d-flex justify-content-end mt-4">
+          <button type="button" class="btn btn-primary" onclick="saveSystemConfig()">
+            <i class="bi bi-check-lg me-1"></i>
+            Save Configuration
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Management -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-database text-warning me-2"></i>
+          Data Management
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <button type="button" class="btn btn-outline-primary w-100" onclick="createBackup()">
+              <i class="bi bi-cloud-upload me-1"></i>
+              Create Backup
+            </button>
+            <div class="form-text mt-1">Create a complete system backup</div>
+          </div>
+          <div class="col-md-6">
+            <button type="button" class="btn btn-outline-success w-100" onclick="restoreBackup()">
+              <i class="bi bi-cloud-download me-1"></i>
+              Restore Backup
+            </button>
+            <div class="form-text mt-1">Restore from a previous backup</div>
+          </div>
+          <div class="col-md-6">
+            <button type="button" class="btn btn-outline-info w-100" onclick="exportData()">
+              <i class="bi bi-download me-1"></i>
+              Export All Data
+            </button>
+            <div class="form-text mt-1">Export all system data to CSV/JSON</div>
+          </div>
+          <div class="col-md-6">
+            <button type="button" class="btn btn-outline-warning w-100" onclick="cleanupData()">
+              <i class="bi bi-trash me-1"></i>
+              Cleanup Old Data
+            </button>
+            <div class="form-text mt-1">Remove data older than retention period</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-lg-4">
+    <!-- System Status -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-activity text-success me-2"></i>
+          System Status
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span>System Status</span>
+          <span class="badge bg-success">Online</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span>Database</span>
+          <span class="badge bg-success">Connected</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span>Storage</span>
+          <span class="badge bg-warning">75% Used</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span>Memory</span>
+          <span class="badge bg-info">45% Used</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+          <span>Last Backup</span>
+          <span class="text-muted small">2 days ago</span>
+        </div>
+        
+        <hr class="my-3">
+        
+        <div class="d-grid gap-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm" onclick="refreshStatus()">
+            <i class="bi bi-arrow-clockwise me-1"></i>
+            Refresh Status
+          </button>
+          <button type="button" class="btn btn-outline-info btn-sm" onclick="viewSystemLogs()">
+            <i class="bi bi-file-text me-1"></i>
+            View Logs
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-lightning text-warning me-2"></i>
+          Quick Actions
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <button type="button" class="btn btn-outline-primary btn-sm" onclick="clearCache()">
+            <i class="bi bi-arrow-clockwise me-1"></i>
+            Clear Cache
+          </button>
+          <button type="button" class="btn btn-outline-success btn-sm" onclick="optimizeDatabase()">
+            <i class="bi bi-speedometer2 me-1"></i>
+            Optimize Database
+          </button>
+          <button type="button" class="btn btn-outline-info btn-sm" onclick="generateReport()">
+            <i class="bi bi-file-earmark-text me-1"></i>
+            System Report
+          </button>
+          <button type="button" class="btn btn-outline-warning btn-sm" onclick="restartServices()">
+            <i class="bi bi-arrow-repeat me-1"></i>
+            Restart Services
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- System Information -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-info-circle text-info me-2"></i>
+          System Information
+        </h5>
+      </div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-6">Version:</dt>
+          <dd class="col-sm-6">1.0.0</dd>
+          <dt class="col-sm-6">Django:</dt>
+          <dd class="col-sm-6">5.2.4</dd>
+          <dt class="col-sm-6">Python:</dt>
+          <dd class="col-sm-6">3.13.3</dd>
+          <dt class="col-sm-6">Database:</dt>
+          <dd class="col-sm-6">SQLite</dd>
+          <dt class="col-sm-6">Uptime:</dt>
+          <dd class="col-sm-6">3 days</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+
+

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Asset Management System</title>
+    <meta name="theme-color" content="#B4E9FC">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #00A6EB;
+            --secondary: #176B87;
+            --accent: #04364A;
+            --background: linear-gradient(135deg, #B4E9FC 0%, #e3f2ff 50%, #f0f9ff 100%);
+            --surface: rgba(255,255,255,0.25);
+            --surface-elevated: rgba(255,255,255,0.35);
+            --shadow: 0 8px 32px 0 rgba(31,38,135,0.18);
+            --shadow-elevated: 0 16px 48px 0 rgba(31,38,135,0.28);
+            --text-primary: #222;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --border: 1px solid rgba(255,255,255,0.18);
+            --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            --primary: #176B87;
+            --secondary: #00A6EB;
+            --accent: #B4E9FC;
+            --background: linear-gradient(135deg, #04364A 0%, #0a2330 50%, #001122 100%);
+            --surface: rgba(30,34,40,0.35);
+            --surface-elevated: rgba(30,34,40,0.45);
+            --text-primary: #f7fafc;
+            --text-secondary: #e2e8f0;
+            --text-muted: #a0aec0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            min-height: 100vh;
+            transition: all var(--transition-normal);
+        }
+
+        .glass {
+            background: var(--surface);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(16px) saturate(180%);
+            border-radius: 24px;
+            border: var(--border);
+            transition: all var(--transition-normal);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            opacity: 0.6;
+        }
+
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            background: var(--surface);
+            border: var(--border);
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            backdrop-filter: blur(12px);
+            z-index: 10;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow);
+        }
+
+        .login-card {
+            max-width: 480px;
+            width: 100%;
+            padding: 3rem;
+        }
+
+        .brand-section {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .brand-icon {
+            width: 96px;
+            height: 96px;
+            background: transparent; /* remove blue gradient background */
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            color: white;
+            font-size: 2.5rem;
+            box-shadow: var(--shadow-elevated);
+            transition: all var(--transition-normal);
+        }
+
+        .brand-icon:hover {
+            transform: translateY(-4px) rotate(2deg);
+        }
+
+        /* Animated brand logo (spinning, matches topbar) */
+        .brand-logo {
+            height: 56px;
+            will-change: transform;
+            animation: brandLogoSpin 8s linear infinite;
+        }
+
+        @keyframes brandLogoSpin {
+            0%   { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .brand-logo { animation: none; }
+        }
+
+        .brand-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .brand-subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .form-floating {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .form-floating .form-control {
+            background: var(--surface);
+            border: var(--border);
+            border-radius: 16px;
+            padding: 1rem 1rem 1rem 3rem;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            transition: all var(--transition-normal);
+            backdrop-filter: blur(8px);
+            height: 64px;
+        }
+
+        .form-floating .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(0, 166, 235, 0.1);
+            background: var(--surface-elevated);
+            transform: translateY(-2px);
+        }
+
+        .form-floating label {
+            color: var(--text-muted);
+            font-weight: 500;
+            left: 3rem;
+            padding: 0;
+            transition: all 0.15s ease-out;
+        }
+
+        .form-floating .form-control:focus + label,
+        .form-floating .form-control:not(:placeholder-shown) + label {
+            color: var(--primary);
+            transform: scale(0.85) translateY(-0.5rem) translateX(-0.15rem);
+        }
+
+        .form-icon {
+            position: absolute;
+            left: 1.25rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 1.25rem;
+            z-index: 2;
+            transition: color 0.15s ease-out;
+        }
+
+        .form-floating .form-control:focus ~ .form-icon {
+            color: var(--primary);
+        }
+
+        .login-btn {
+            width: 100%;
+            height: 64px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 16px;
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all var(--transition-normal);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+
+        .login-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-elevated);
+        }
+
+        .login-btn:hover::before {
+            left: 100%;
+        }
+
+        .alert {
+            border: none;
+            border-radius: 16px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(8px);
+            font-weight: 500;
+        }
+
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .security-notice {
+            background: var(--surface);
+            border: var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            backdrop-filter: blur(8px);
+            transition: all var(--transition-normal);
+        }
+
+        .security-notice:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .security-notice-icon {
+            color: var(--primary);
+            font-size: 1.5rem;
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+
+        .security-notice-text {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+            .login-container { padding: 1rem; }
+            .login-card { padding: 2rem; }
+            .brand-icon { width: 80px; height: 80px; font-size: 2rem; }
+            .brand-title { font-size: 1.75rem; }
+            .theme-toggle { top: 1rem; right: 1rem; width: 44px; height: 44px; }
+        }
+    </style>
+</head>
+<body>
+
+
+    <div class="login-container">
+        <div class="glass login-card">
+            <div class="brand-section">
+                <div class="brand-icon">
+                    <img src="/static/img/logo.png" alt="Asset Management" class="brand-logo" loading="eager">
+                </div>
+                <h1 class="brand-title">Asset Management</h1>
+                <p class="brand-subtitle">Enterprise Security Platform</p>
+            </div>
+
+            {% if form.errors %}
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}{{ error }}{% endfor %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        <i class="bi bi-info-circle me-2"></i>{{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post" id="loginForm" action="{% url 'users:login' %}">
+                {% csrf_token %}
+                
+                <div class="form-floating">
+                    <input type="text" class="form-control" id="id_username" name="username" 
+                           placeholder="Username" required autocomplete="username">
+                    <label for="id_username">Username</label>
+                    <i class="bi bi-person form-icon"></i>
+                </div>
+
+                <div class="form-floating">
+                    <input type="password" class="form-control" id="id_password" name="password" 
+                           placeholder="Password" required autocomplete="current-password">
+                    <label for="id_password">Password</label>
+                    <i class="bi bi-lock form-icon"></i>
+                </div>
+
+                <button type="submit" class="btn login-btn" id="loginButton">
+                    <span class="btn-text">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Sign In Securely
+                    </span>
+                    <span class="btn-loading d-none">
+                        <span class="spinner-border spinner-border-sm me-2"></span>Authenticating...
+                    </span>
+                </button>
+            </form>
+
+            <div class="security-notice">
+                <i class="bi bi-shield-lock security-notice-icon"></i>
+                <p class="security-notice-text">
+                    Protected by enterprise-grade security.<br>
+                    All access attempts are monitored and logged.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('themeToggle');
+            const themeIcon = document.getElementById('themeIcon');
+            const form = document.getElementById('loginForm');
+            const submitBtn = document.getElementById('loginButton');
+
+            // Theme will be handled by global theme manager
+
+            // Form submission
+            form.addEventListener('submit', function() {
+                const btnText = submitBtn.querySelector('.btn-text');
+                const btnLoading = submitBtn.querySelector('.btn-loading');
+                
+                btnText.classList.add('d-none');
+                btnLoading.classList.remove('d-none');
+                submitBtn.disabled = true;
+                
+                setTimeout(() => {
+                    btnText.classList.remove('d-none');
+                    btnLoading.classList.add('d-none');
+                    submitBtn.disabled = false;
+                }, 5000);
+            });
+
+            // Focus first field
+            document.getElementById('id_username').focus();
+        });
+    </script>
+</body>
+</html>

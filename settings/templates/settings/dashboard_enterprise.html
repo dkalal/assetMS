@@ -1,0 +1,246 @@
+{% extends 'settings/dashboard_unified.html' %}
+{% load static %}
+
+{% block title %}System Settings - Enterprise Asset Management{% endblock %}
+
+{# Enterprise overrides #}
+{% block top_actions %}
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-secondary btn-sm" id="exportSettings">
+      <i class="bi bi-download me-1"></i>Export
+    </button>
+    <button class="btn btn-outline-info btn-sm" id="importSettings">
+      <i class="bi bi-upload me-1"></i>Import
+    </button>
+    {% if 'system_settings' in available_settings %}
+    <button class="btn btn-primary" id="createSettingBtn">
+      <i class="bi bi-plus-lg me-1"></i>Add Setting
+    </button>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block settings_nav %}
+  <div class="d-flex flex-wrap gap-2 mb-4">
+    {% if 'organization_settings' in available_settings %}
+    <a href="{% url 'settings:organization_settings' %}" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-building me-1"></i>Organization
+    </a>
+    {% endif %}
+    {% if 'security_settings' in available_settings %}
+    <a href="{% url 'settings:security_privacy_settings' %}" class="btn btn-outline-danger btn-sm">
+      <i class="bi bi-shield-check me-1"></i>Security
+    </a>
+    {% endif %}
+    {% if 'session_management' in available_settings %}
+    <a href="{% url 'settings:session_management' %}" class="btn btn-outline-info btn-sm">
+      <i class="bi bi-people me-1"></i>Sessions
+    </a>
+    {% endif %}
+    <button class="btn btn-outline-secondary btn-sm" id="systemHealth">
+      <i class="bi bi-heart-pulse me-1"></i>System Health
+    </button>
+  </div>
+{% endblock %}
+
+{% block settings_categories %}
+  {{ block.super }}
+  <div class="card mt-4" id="systemHealthCard" style="display: none;">
+    <div class="card-header">
+      <h5 class="mb-0">
+        <i class="bi bi-heart-pulse me-2"></i>System Health
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-3 text-center">
+          <div class="mb-2">
+            <i class="bi bi-cpu display-4 text-success"></i>
+          </div>
+          <h6>CPU Usage</h6>
+          <p class="text-success mb-0">Normal</p>
+        </div>
+        <div class="col-md-3 text-center">
+          <div class="mb-2">
+            <i class="bi bi-memory display-4 text-info"></i>
+          </div>
+          <h6>Memory</h6>
+          <p class="text-info mb-0">Optimal</p>
+        </div>
+        <div class="col-md-3 text-center">
+          <div class="mb-2">
+            <i class="bi bi-hdd display-4 text-warning"></i>
+          </div>
+          <h6>Storage</h6>
+          <p class="text-warning mb-0">75% Used</p>
+        </div>
+        <div class="col-md-3 text-center">
+          <div class="mb-2">
+            <i class="bi bi-wifi display-4 text-success"></i>
+          </div>
+          <h6>Network</h6>
+          <p class="text-success mb-0">Connected</p>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block modals %}
+  <!-- Bootstrap Edit Setting Modal -->
+  <div class="modal fade" id="editSettingModal" tabindex="-1" aria-labelledby="editSettingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editSettingModalLabel">
+            <i class="bi bi-pencil me-2"></i>Edit Setting
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="editSettingForm">
+          <div class="modal-body">
+            <div id="editFeedback" class="mb-3"></div>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label font-medium">Setting Key</label>
+                  <input type="text" class="form-control" id="editSettingKey" readonly>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label font-medium">Category</label>
+                  <input type="text" class="form-control" id="editSettingCategory" readonly>
+                </div>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label font-medium">Value</label>
+              <textarea class="form-control" id="editSettingValue" rows="3" required></textarea>
+              <div class="form-text">Enter the setting value. Format depends on the setting type.</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label font-medium">Description</label>
+              <input type="text" class="form-control" id="editSettingDescription" placeholder="Brief description of this setting">
+            </div>
+            <div class="mb-3">
+              <label class="form-label font-medium">Type</label>
+              <input type="text" class="form-control" id="editSettingType" readonly>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-lg me-1"></i>Update Setting
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap Create Setting Modal -->
+  <div class="modal fade" id="createSettingModal" tabindex="-1" aria-labelledby="createSettingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="createSettingModalLabel">
+            <i class="bi bi-plus-lg me-2"></i>Create New Setting
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="createSettingForm">
+          <div class="modal-body">
+            <div id="createFeedback" class="mb-3"></div>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label font-medium">Setting Key *</label>
+                  <input type="text" class="form-control" id="createSettingKey" required placeholder="e.g., max_file_size">
+                  <div class="form-text">Unique identifier for this setting (lowercase, underscores only)</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label font-medium">Category</label>
+                  <select class="form-select" id="createSettingCategory">
+                    <option value="general">General</option>
+                    <option value="security">Security</option>
+                    <option value="performance">Performance</option>
+                    <option value="ui">User Interface</option>
+                    <option value="integration">Integration</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label font-medium">Type *</label>
+                  <select class="form-select" id="createSettingType" required>
+                    <option value="string">String</option>
+                    <option value="integer">Integer</option>
+                    <option value="boolean">Boolean</option>
+                    <option value="json">JSON</option>
+                    <option value="float">Float</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label font-medium">Access Level</label>
+                  <select class="form-select" id="createSettingAccess">
+                    <option value="private">Private (Admin Only)</option>
+                    <option value="public">Public (All Users)</option>
+                    <option value="manager">Manager Level</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label font-medium">Value *</label>
+              <textarea class="form-control" id="createSettingValue" rows="3" required placeholder="Enter the setting value"></textarea>
+              <div class="form-text">The default value for this setting</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label font-medium">Description</label>
+              <input type="text" class="form-control" id="createSettingDescription" placeholder="Brief description of what this setting controls">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-plus-lg me-1"></i>Create Setting
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!-- View Setting Modal -->
+  <div class="modal fade" id="viewSettingModal" tabindex="-1" aria-labelledby="viewSettingModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="viewSettingModalLabel">
+            <i class="bi bi-eye me-2"></i>Setting Details
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="viewSettingContent"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" id="editFromView">
+            <i class="bi bi-pencil me-1"></i>Edit Setting
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script src="{% static 'js/settings-enterprise.js' %}"></script>
+{% endblock %}

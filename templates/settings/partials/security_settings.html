@@ -1,0 +1,204 @@
+<div class="row">
+  <div class="col-lg-8">
+    <!-- Password Security -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-key text-primary me-2"></i>
+          Password Security
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <h6 class="mb-1">Password</h6>
+            <p class="text-muted mb-0 small">Last changed: {{ user.last_login|date:"M d, Y"|default:"Never" }}</p>
+          </div>
+          <div class="col-md-4 text-end">
+            <a href="{% url 'password_change' %}" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-pencil me-1"></i>
+              Change Password
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Two-Factor Authentication -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-shield-lock text-warning me-2"></i>
+          Two-Factor Authentication
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <h6 class="mb-1">Two-Factor Authentication</h6>
+            <p class="text-muted mb-0 small">Add an extra layer of security to your account</p>
+          </div>
+          <div class="col-md-4 text-end">
+            <div class="form-check form-switch d-inline-block">
+              <input class="form-check-input" type="checkbox" id="twoFactorToggle" disabled>
+              <label class="form-check-label" for="twoFactorToggle">
+                <span class="badge bg-secondary">Coming Soon</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Session Management -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-devices text-info me-2"></i>
+          Active Sessions
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <h6 class="mb-1">Current Session</h6>
+            <p class="text-muted mb-0 small">This device • {{ user.last_login|date:"M d, Y H:i"|default:"Unknown" }}</p>
+          </div>
+          <div class="col-md-4 text-end">
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="terminateOtherSessions()">
+              <i class="bi bi-x-circle me-1"></i>
+              Terminate Other Sessions
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Privacy Settings -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-eye text-success me-2"></i>
+          Privacy Settings
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="profileVisibility" checked>
+            <label class="form-check-label" for="profileVisibility">
+              <strong>Profile Visibility</strong>
+              <div class="form-text">Allow other users to see your profile information</div>
+            </label>
+          </div>
+        </div>
+        
+        <div class="mb-3">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="activityVisibility" checked>
+            <label class="form-check-label" for="activityVisibility">
+              <strong>Activity Visibility</strong>
+              <div class="form-text">Show your recent activity to other users</div>
+            </label>
+          </div>
+        </div>
+        
+        <div class="mb-3">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+            <label class="form-check-label" for="emailNotifications">
+              <strong>Email Notifications</strong>
+              <div class="form-text">Receive email notifications for important events</div>
+            </label>
+          </div>
+        </div>
+        
+        <div class="d-flex justify-content-end">
+          <button type="button" class="btn btn-primary" onclick="savePrivacySettings()">
+            <i class="bi bi-check-lg me-1"></i>
+            Save Privacy Settings
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-lg-4">
+    <!-- Security Status -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-shield-check text-success me-2"></i>
+          Security Status
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="d-flex align-items-center mb-3">
+          <div class="flex-shrink-0">
+            <i class="bi bi-check-circle-fill text-success fs-4"></i>
+          </div>
+          <div class="flex-grow-1 ms-3">
+            <h6 class="mb-0">Strong Password</h6>
+            <small class="text-muted">Your password meets security requirements</small>
+          </div>
+        </div>
+        
+        <div class="d-flex align-items-center mb-3">
+          <div class="flex-shrink-0">
+            <i class="bi bi-exclamation-circle text-warning fs-4"></i>
+          </div>
+          <div class="flex-grow-1 ms-3">
+            <h6 class="mb-0">Two-Factor Auth</h6>
+            <small class="text-muted">Not enabled - recommended for security</small>
+          </div>
+        </div>
+        
+        <div class="d-flex align-items-center">
+          <div class="flex-shrink-0">
+            <i class="bi bi-check-circle-fill text-success fs-4"></i>
+          </div>
+          <div class="flex-grow-1 ms-3">
+            <h6 class="mb-0">Recent Login</h6>
+            <small class="text-muted">Last login: {{ user.last_login|date:"M d, Y"|default:"Unknown" }}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Security Tips -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-lightbulb text-warning me-2"></i>
+          Security Tips
+        </h5>
+      </div>
+      <div class="card-body">
+        <ul class="list-unstyled mb-0">
+          <li class="mb-2">
+            <i class="bi bi-check-circle text-success me-2"></i>
+            Use a strong, unique password
+          </li>
+          <li class="mb-2">
+            <i class="bi bi-check-circle text-success me-2"></i>
+            Enable two-factor authentication
+          </li>
+          <li class="mb-2">
+            <i class="bi bi-check-circle text-success me-2"></i>
+            Keep your browser updated
+          </li>
+          <li class="mb-2">
+            <i class="bi bi-check-circle text-success me-2"></i>
+            Log out from shared devices
+          </li>
+          <li>
+            <i class="bi bi-check-circle text-success me-2"></i>
+            Report suspicious activity
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+

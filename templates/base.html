@@ -1,0 +1,59 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Enterprise Asset Management{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{% static 'img/logo.png' %}">
+    <meta name="description" content="Professional enterprise asset management system">
+    <meta name="theme-color" content="#1e40af">
+    <!-- Content Security Policy: allow self + jsdelivr for Bootstrap and Icons; allow inline styles and scripts used by templates -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; font-src 'self' https://cdn.jsdelivr.net data:; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self';">
+    <!-- CSS: Bootstrap, Icons, and app styles -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{% static 'css/enterprise.css' %}" rel="stylesheet">
+    <link href="{% static 'css/enterprise-tables.css' %}" rel="stylesheet">
+    <link href="{% static 'css/global-override.css' %}" rel="stylesheet">
+    <link href="{% static 'css/theme-system.css' %}" rel="stylesheet">
+    <!-- Resource Hints for CDN -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+    <!-- Base layout styles extracted from inline -->
+    <link href="{% static 'css/base.css' %}" rel="stylesheet">
+
+    <!-- Add to base.html head -->
+    
+    <!-- Theme Manager - Load Early -->
+    <script src="{% static 'js/theme-manager.js' %}"></script>
+    
+    {% block extra_head %}{% endblock %}
+    {% block extra_styles %}{% endblock %}
+    
+</head>
+<body{% if user.is_authenticated %} class="authenticated"{% endif %}>
+{% if user.is_authenticated and request.resolver_match.url_name != 'login' %}
+    <div data-user-role="{{ user.role }}" style="display: none;"></div>
+    {% include 'components/auth_navbar.html' %}
+{% endif %}
+<div class="content-wrapper">
+    <div class="enterprise-container">
+        <div class="glass">
+            <div class="main-content">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/enterprise.js' %}"></script>
+<script src="{% static 'js/enterprise-tables.js' %}"></script>
+<script src="{% static 'js/table-enhancer.js' %}"></script>
+{% if user.is_authenticated %}
+<script src="{% static 'js/enterprise-auth.js' %}"></script>
+<script src="{% static 'js/session-manager.js' %}"></script>
+{% endif %}
+{% block extra_scripts %}{% endblock %}
+</body>
+</html> 

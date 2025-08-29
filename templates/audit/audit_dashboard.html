@@ -1,0 +1,114 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+{% include 'components/breadcrumbs.html' with root_label='Dashboard' root_url='/dashboard/' current_label='Audit Logs' %}
+
+<ul class="nav nav-tabs section-tabs" role="tablist" aria-label="Audit tabs">
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if not request.GET.action %}active{% endif %}" href="{% url 'audit_dashboard' %}">All</a>
+  </li>
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if request.GET.action == 'create' %}active{% endif %}" href="{% url 'audit_dashboard' %}?action=create">Create</a>
+  </li>
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if request.GET.action == 'assign' %}active{% endif %}" href="{% url 'audit_dashboard' %}?action=assign">Assign/Transfer</a>
+  </li>
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if request.GET.action == 'maintenance' %}active{% endif %}" href="{% url 'audit_dashboard' %}?action=maintenance">Maintenance</a>
+  </li>
+</ul>
+<div class="glass" style="padding:2rem;margin:2rem auto;max-width:1100px;">
+  <h2 class="mb-4">Audit Logs</h2>
+  <form method="get" class="row g-3 mb-4 align-items-end">
+    <div class="col-md-2">
+      <label class="form-label">User</label>
+      <select name="user" class="form-select">
+        <option value="">All</option>
+        {% for user in users %}
+        <option value="{{ user.id }}" {% if request.GET.user == user.id|stringformat:'s' %}selected{% endif %}>{{ user.username }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Action</label>
+      <select name="action" class="form-select">
+        <option value="">All</option>
+        {% for val, label in actions %}
+        <option value="{{ val }}" {% if request.GET.action == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Asset</label>
+      <select name="asset" class="form-select">
+        <option value="">All</option>
+        {% for asset in assets %}
+        <option value="{{ asset.id }}" {% if request.GET.asset == asset.id|stringformat:'s' %}selected{% endif %}>{{ asset }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Date From</label>
+      <input type="date" name="date_from" class="form-control" value="{{ request.GET.date_from }}">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Date To</label>
+      <input type="date" name="date_to" class="form-control" value="{{ request.GET.date_to }}">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Search</label>
+      <input type="text" name="search" class="form-control" placeholder="Details or asset info" value="{{ request.GET.search }}">
+    </div>
+    <div class="col-md-12 d-flex justify-content-end">
+      <button type="submit" class="btn btn-primary">Filter</button>
+      <a href="/audit/" class="btn btn-outline-secondary ms-2">Clear</a>
+    </div>
+  </form>
+  <div class="enterprise-table-container">
+    <div class="enterprise-table-wrapper" style="max-height: 520px;">
+      <table class="enterprise-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Action</th>
+            <th>Asset</th>
+            <th>Timestamp</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in page_obj %}
+          <tr>
+            <td>{{ log.user }}</td>
+            <td>
+              <span class="badge {% if log.action == 'delete' or log.action == 'error' %}bg-danger{% elif log.action == 'edit' %}bg-warning text-dark{% elif log.action == 'create' %}bg-success{% else %}bg-info text-dark{% endif %}">
+                {{ log.get_action_display }}
+              </span>
+            </td>
+            <td>{{ log.asset }}</td>
+            <td>{{ log.timestamp|date:'Y-m-d H:i' }}</td>
+            <td>{{ log.details }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center">No audit logs found for the selected filters.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <nav aria-label="Audit log pagination">
+    <ul class="pagination justify-content-center">
+      {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{k}}={{v}}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">Previous</a></li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">Previous</span></li>
+      {% endif %}
+      <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+      {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{k}}={{v}}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">Next</a></li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">Next</span></li>
+      {% endif %}
+    </ul>
+  </nav>
+</div>
+{% endblock %}

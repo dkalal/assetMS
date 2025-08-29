@@ -1,0 +1,96 @@
+{% load static %}
+<header class="dashboard-topbar glass" role="banner">
+  <div class="d-flex align-items-center me-4">
+    <button id="sidebar-toggle" class="btn btn-glass btn-sm me-2 d-inline-flex d-md-none" type="button" aria-label="Toggle sidebar" title="Toggle sidebar">
+      <i class="bi bi-list"></i>
+    </button>
+    <img src="{% static 'img/logo.png' %}" alt="Logo" class="app-logo" />
+  </div>
+  {% url 'asset_list' as asset_list_url %}
+  {% url 'reports_dashboard' as reports_url %}
+  {% url 'audit_dashboard' as audit_url %}
+  <nav class="d-flex align-items-center gap-2 me-4" aria-label="Secondary">
+    <a href="{{ asset_list_url }}" class="btn btn-pill btn-sm {% if request.path|slice:":8" == "/assets/" %}btn-outline-primary active{% else %}btn-outline-secondary{% endif %}" {% if request.path|slice:":8" == "/assets/" %}aria-current="page"{% endif %}>Assets</a>
+    <a href="{{ reports_url }}" class="btn btn-pill btn-sm {% if request.path|slice:":9" == "/reports/" %}btn-outline-primary active{% else %}btn-outline-secondary{% endif %}" {% if request.path|slice:":9" == "/reports/" %}aria-current="page"{% endif %}>Reports</a>
+    <a href="{{ audit_url }}" class="btn btn-pill btn-sm {% if request.path|slice:":7" == "/audit/" %}btn-outline-primary active{% else %}btn-outline-secondary{% endif %}" {% if request.path|slice:":7" == "/audit/" %}aria-current="page"{% endif %}>Audit</a>
+  </nav>
+  <form class="flex-grow-1 d-flex align-items-center mx-4" role="search" aria-label="Asset search">
+    <input type="search" class="form-control glass search-input" placeholder="Search assets..." aria-label="Search assets">
+  </form>
+  <div class="d-flex align-items-center gap-2">
+    {% if user.is_authenticated %}
+      {% if user.role == 'admin' or user.role == 'manager' %}
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'asset_bulk_import' %}">Import</a>
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'asset_export' %}">Export</a>
+        <a class="btn btn-primary btn-sm" href="{% url 'asset_register' %}">Add Asset</a>
+      {% else %}
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'asset_export' %}">Export</a>
+      {% endif %}
+    {% else %}
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'asset_export' %}">Export</a>
+    {% endif %}
+    <button id="theme-toggle-btn" class="btn btn-glass btn-sm d-flex align-items-center justify-content-center"
+      title="Toggle dark/light mode" aria-label="Toggle dark/light mode">
+      <svg id="theme-toggle-icon" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <defs>
+          <radialGradient id="sunGradient" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#FFD700"/>
+            <stop offset="100%" stop-color="#FFB300"/>
+          </radialGradient>
+          <radialGradient id="moonGradient" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#B4E9FC"/>
+            <stop offset="100%" stop-color="#176B87"/>
+          </radialGradient>
+        </defs>
+        <g id="sun-icon">
+          <circle cx="12" cy="12" r="5" fill="url(#sunGradient)" stroke="#FFC107" stroke-width="1.2"/>
+          <g stroke="#FFC107" stroke-width="1.2" stroke-linecap="round">
+            <line x1="12" y1="2" x2="12" y2="4"/>
+            <line x1="12" y1="20" x2="12" y2="22"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="2" y1="12" x2="4" y2="12"/>
+            <line x1="20" y1="12" x2="22" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </g>
+        </g>
+        <g id="moon-icon" style="display:none;">
+          <path d="M17 12.5A5.5 5.5 0 0 1 11.5 7c0-2.5 1.5-4.5 4-5a8 8 0 1 0 6.5 11c-2.5.5-4.5-1.5-5-4z"
+            fill="url(#moonGradient)" stroke="#176B87" stroke-width="1.2"/>
+        </g>
+      </svg>
+      <span class="visually-hidden">Toggle dark/light mode</span>
+    </button>
+    <div class="dropdown ms-3">
+      <button class="btn btn-avatar dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+        {% if user.profile_image %}
+          <img src="{{ user.profile_image.url }}" alt="{{ user.get_full_name|default:user.username }}" class="avatar-image">
+        {% else %}
+          <div class="avatar-initials">
+            {% with fn=user.first_name|default_if_none:'' ln=user.last_name|default_if_none:'' %}
+              {% if fn or ln %}
+                {{ fn|slice:':1' }}{{ ln|slice:':1' }}
+              {% elif user.username %}
+                {{ user.username|slice:':2'|upper }}
+              {% else %}
+                <i class="bi bi-person"></i>
+              {% endif %}
+            {% endwith %}
+          </div>
+        {% endif %}
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+        <li><a class="dropdown-item" href="{% url 'users:profile' %}">Profile</a></li>
+        <li><a class="dropdown-item" href="{% url 'settings:settings_dashboard' %}">Settings</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+          <form action="{% url 'users:logout' %}" method="post" class="mb-0">
+            {% csrf_token %}
+            <button type="submit" class="dropdown-item text-danger">Logout</button>
+          </form>
+        </li>
+      </ul>
+    </div>
+  </div>
+</header> 

@@ -1,0 +1,15 @@
+<aside class="dashboard-sidebar glass sidebar-rail" role="navigation" aria-label="Primary">
+  {% url 'dashboard' as dashboard_url %}
+  {% url 'asset_list' as asset_list_url %}
+  {% url 'reports_dashboard' as reports_url %}
+  {% url 'audit_dashboard' as audit_url %}
+  <a href="{{ dashboard_url }}" class="nav-link rail-item {% if request.path == dashboard_url %}active{% endif %}" title="Dashboard" {% if request.path == dashboard_url %}aria-current="page"{% endif %}><i class="bi bi-speedometer2"></i><span>Dashboard</span></a>
+  <a href="{{ asset_list_url }}" class="nav-link rail-item {% if request.path|slice:":8" == "/assets/" %}active{% endif %}" title="Manage Asset" {% if request.path|slice:":8" == "/assets/" %}aria-current="page"{% endif %}><i class="bi bi-box-seam"></i><span>Manage Asset</span></a>
+  {% if request.user.is_authenticated and request.user.role != 'user' %}
+  <a href="{{ reports_url }}" class="nav-link rail-item {% if request.path|slice:":9" == "/reports/" %}active{% endif %}" title="Report" {% if request.path|slice:":9" == "/reports/" %}aria-current="page"{% endif %}><i class="bi bi-graph-up"></i><span>Report</span></a>
+  <a href="{{ audit_url }}" class="nav-link rail-item {% if request.path|slice:":7" == "/audit/" %}active{% endif %}" title="Audit" {% if request.path|slice:":7" == "/audit/" %}aria-current="page"{% endif %}><i class="bi bi-clipboard-data"></i><span>Audit</span></a>
+  {% endif %}
+  <div class="flex-grow-1"></div>
+  <a href="{% url 'help_center' %}" class="nav-link rail-item" title="Help"><i class="bi bi-question-circle"></i><span>Help</span></a>
+  <a href="{% url 'users:profile' %}" class="nav-link rail-item" title="Profile"><i class="bi bi-person-circle"></i><span>Profile</span></a>
+</aside>

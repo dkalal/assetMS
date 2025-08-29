@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Asset Management System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Enhanced Theme Variables with Glassmorphism */
+        :root {
+            --primary: #00A6EB;
+            --secondary: #176B87;
+            --accent: #04364A;
+            --background: linear-gradient(135deg, #B4E9FC 0%, #e3f2ff 50%, #f0f9ff 100%);
+            --surface: rgba(255,255,255,0.25);
+            --surface-elevated: rgba(255,255,255,0.35);
+            --shadow: 0 8px 32px 0 rgba(31,38,135,0.18);
+            --shadow-elevated: 0 16px 48px 0 rgba(31,38,135,0.28);
+            --text-primary: #222;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --border: 1px solid rgba(255,255,255,0.18);
+            --border-elevated: 2px solid rgba(255,255,255,0.25);
+            --success: #00d084;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: var(--primary);
+            
+            /* Animation Variables */
+            --transition-fast: 0.15s ease-out;
+            --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            --primary: #176B87;
+            --secondary: #00A6EB;
+            --accent: #B4E9FC;
+            --background: linear-gradient(135deg, #04364A 0%, #0a2330 50%, #001122 100%);
+            --surface: rgba(30,34,40,0.35);
+            --surface-elevated: rgba(30,34,40,0.45);
+            --shadow: 0 8px 32px 0 rgba(0,0,0,0.28);
+            --shadow-elevated: 0 16px 48px 0 rgba(0,0,0,0.38);
+            --text-primary: #f7fafc;
+            --text-secondary: #e2e8f0;
+            --text-muted: #a0aec0;
+            --border: 1px solid rgba(30,34,40,0.28);
+            --border-elevated: 2px solid rgba(30,34,40,0.35);
+        }
+
+        /* Global Styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            min-height: 100vh;
+            transition: all var(--transition-normal);
+            overflow-x: hidden;
+        }
+
+        /* Enhanced Glass Effect */
+        .glass {
+            background: var(--surface);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border-radius: 24px;
+            border: var(--border);
+            transition: all var(--transition-normal);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            opacity: 0.6;
+        }
+
+        .glass-elevated {
+            background: var(--surface-elevated);
+            box-shadow: var(--shadow-elevated);
+            border: var(--border-elevated);
+        }
+
+        /* Login Container */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        /* Animated Background Elements */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .floating-element {
+            position: absolute;
+            opacity: 0.1;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .floating-element:nth-child(1) {
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .floating-element:nth-child(2) {
+            top: 60%;
+            right: 15%;
+            animation-delay: 2s;
+        }
+
+        .floating-element:nth-child(3) {
+            bottom: 20%;
+            left: 20%;
+            animation-delay: 4s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        /* Login Card */
+        .login-card {
+            max-width: 480px;
+            width: 100%;
+            padding: 3rem;
+            position: relative;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            background: var(--surface);
+            border: var(--border);
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            backdrop-filter: blur(12px);
+            z-index: 10;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow);
+        }
+
+        /* Brand Section */
+        .brand-section {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            position: relative;
+        }
+
+        .brand-icon {
+            width: 96px;
+            height: 96px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            color: white;
+            font-size: 2.5rem;
+            box-shadow: var(--shadow-elevated);
+            position: relative;
+            transition: all var(--transition-normal);
+        }
+
+        .brand-icon::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
+            border-radius: 26px;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity var(--transition-normal);
+        }
+
+        .brand-icon:hover {
+            transform: translateY(-4px) rotate(2deg);
+        }
+
+        .brand-icon:hover::before {
+            opacity: 0.3;
+        }
+
+        .brand-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.025em;
+        }
+
+        .brand-subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        /* Enhanced Form Styles */
+        .form-floating {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .form-floating .form-control {
+            background: var(--surface);
+            border: var(--border);
+            border-radius: 16px;
+            padding: 1rem 1rem 1rem 3rem;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            transition: all var(--transition-normal);
+            backdrop-filter: blur(8px);
+            height: 64px;
+        }
+
+        .form-floating .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(0, 166, 235, 0.1);
+            background: var(--surface-elevated);
+            transform: translateY(-2px);
+        }
+
+        .form-floating label {
+            color: var(--text-muted);
+            font-weight: 500;
+            left: 3rem;
+            padding: 0;
+            transition: all var(--transition-fast);
+        }
+
+        .form-floating .form-control:focus + label,
+        .form-floating .form-control:not(:placeholder-shown) + label {
+            color: var(--primary);
+            transform: scale(0.85) translateY(-0.5rem) translateX(-0.15rem);
+        }
+
+        .form-icon {
+            position: absolute;
+            left: 1.25rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 1.25rem;
+            z-index: 2;
+            transition: color var(--transition-fast);
+        }
+
+        .form-floating .form-control:focus ~ .form-icon {
+            color: var(--primary);
+        }
+
+        /* Enhanced Button */
+        .login-btn {
+            width: 100%;
+            height: 64px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 16px;
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all var(--transition-normal);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+
+        .login-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-elevated);
+        }
+
+        .login-btn:hover::before {
+            left: 100%;
+        }
+
+        .login-btn:active {
+            transform: translateY(-1px);
+        }
+
+        /* Loading State */
+        .btn-loading {
+            pointer-events: none;
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Enhanced Alerts */
+        .alert {
+            border: none;
+            border-radius: 16px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(8px);
+            font-weight: 500;
+        }
+
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .alert-success {
+            background: rgba(0, 208, 132, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(0, 208, 132, 0.2);
+        }
+
+        .alert-info {
+            background: rgba(0, 166, 235, 0.1);
+            color: var(--info);
+            border: 1px solid rgba(0, 166, 235, 0.2);
+        }
+
+        /* Security Notice */
+        .security-notice {
+            background: var(--surface);
+            border: var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            backdrop-filter: blur(8px);
+            transition: all var(--transition-normal);
+        }
+
+        .security-notice:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .security-notice-icon {
+            color: var(--primary);
+            font-size: 1.5rem;
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+
+        .security-notice-text {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        /* Additional Features */
+        .forgot-password {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .forgot-password a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color var(--transition-fast);
+        }
+
+        .forgot-password a:hover {
+            color: var(--secondary);
+            text-decoration: underline;
+        }
+
+        /* Remember Me Checkbox */
+        .remember-me {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-check {
+            padding-left: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .form-check-input {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            background: var(--surface);
+            transition: all var(--transition-fast);
+        }
+
+        .form-check-input:checked {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .form-check-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .login-container {
+                padding: 1rem;
+            }
+            
+            .login-card {
+                padding: 2rem;
+                max-width: 100%;
+                margin: 0 auto;
+            }
+            
+            .brand-icon {
+                width: 80px;
+                height: 80px;
+                font-size: 2rem;
+            }
+            
+            .brand-title {
+                font-size: 1.75rem;
+            }
+            
+            .theme-toggle {
+                top: 1rem;
+                right: 1rem;
+                width: 44px;
+                height: 44px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 1.5rem;
+            }
+            
+            .form-floating .form-control {
+                height: 56px;
+                padding: 0.875rem 0.875rem 0.875rem 2.75rem;
+            }
+            
+            .form-icon {
+                left: 1rem;
+                font-size: 1.1rem;
+            }
+            
+            .login-btn {
+                height: 56px;
+                font-size: 1rem;
+            }
+        }
+
+        /* Accessibility Enhancements */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Focus States */
+        .theme-toggle:focus,
+        .login-btn:focus,
+        .form-control:focus {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        /* High Contrast Mode Support */
+        @media (prefers-contrast: high) {
+            :root {
+                --border: 2px solid rgba(0,0,0,0.5);
+                --shadow: 0 4px 16px rgba(0,0,0,0.4);
+            }
+            
+            [data-theme="dark"] {
+                --border: 2px solid rgba(255,255,255,0.5);
+                --shadow: 0 4px 16px rgba(255,255,255,0.2);
+            }
+        }
+
+        /* Reduced Motion Support */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+            
+            .floating-element {
+                animation: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Animation -->
+    <div class="bg-animation">
+        <div class="floating-element">
+            <i class="bi bi-shield-check" style="font-size: 3rem; opacity: 0.1;"></i>
+        </div>
+        <div class="floating-element">
+            <i class="bi bi-lock" style="font-size: 2.5rem; opacity: 0.1;"></i>
+        </div>
+        <div class="floating-element">
+            <i class="bi bi-gear" style="font-size: 3.5rem; opacity: 0.1;"></i>
+        </div>
+    </div>
+
+    <div class="login-container">
+        <div class="glass glass-elevated login-card">
+            <!-- Brand Section -->
+            <div class="brand-section">
+                <div class="brand-icon">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <h1 class="brand-title">Asset Management</h1>
+                <p class="brand-subtitle">Enterprise Security Platform</p>
+            </div>
+
+            <!-- Error Messages -->
+            <div id="errorContainer" class="d-none">
+                <div class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <span id="errorMessage"></span>
+                </div>
+            </div>
+
+            <!-- Success Messages -->
+            <div id="successContainer" class="d-none">
+                <div class="alert alert-success" role="alert">
+                    <i class="bi bi-check-circle me-2"></i>
+                    <span id="successMessage"></span>
+                </div>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" novalidate>
+                <!-- Username Field -->
+                <div class="form-floating">
+                    <input 
+                        type="text" 
+                        class="form-control" 
+                        id="username" 
+                        name="username" 
+                        placeholder="Username"
+                        required
+                        autocomplete="username"
+                        aria-describedby="usernameHelp">
+                    <label for="username">Username</label>
+                    <i class="bi bi-person form-icon" aria-hidden="true"></i>
+                    <div class="invalid-feedback" id="usernameError"></div>
+                </div>
+
+                <!-- Password Field -->
+                <div class="form-floating">
+                    <input 
+                        type="password" 
+                        class="form-control" 
+                        id="password" 
+                        name="password" 
+                        placeholder="Password"
+                        required
+                        autocomplete="current-password"
+                        aria-describedby="passwordHelp">
+                    <label for="password">Password</label>
+                    <i class="bi bi-lock form-icon" aria-hidden="true"></i>
+                    <div class="invalid-feedback" id="passwordError"></div>
+                </div>
+
+                <!-- Remember Me -->
+                <div class="remember-me">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="rememberMe" name="rememberMe">
+                        <label class="form-check-label" for="rememberMe">
+                            Remember me for 30 days
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn login-btn" id="loginButton">
+                    <span class="btn-text">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>
+                        Sign In Securely
+                    </span>
+                    <span class="btn-loading d-none">
+                        <div class="loading-spinner"></div>
+                        Authenticating...
+                    </span>
+                </button>
+
+                <!-- Forgot Password -->
+                <div class="forgot-password">
+                    <a href="#" id="forgotPasswordLink">Forgot your password?</a>
+                </div>
+            </form>
+
+            <!-- Security Notice -->
+            <div class="security-notice">
+                <i class="bi bi-shield-lock security-notice-icon"></i>
+                <p class="security-notice-text">
+                    Protected by enterprise-grade security.<br>
+                    All access attempts are monitored and logged.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        class EnterpriseLoginManager {
+            constructor() {
+                this.form = document.getElementById('loginForm');
+                this.submitButton = document.getElementById('loginButton');
+                this.themeToggle = document.getElementById('themeToggle');
+                this.themeIcon = document.getElementById('themeIcon');
+                
+                this.init();
+            }
+
+            init() {
+                this.initTheme();
+                this.bindEvents();
+                this.initFormValidation();
+                this.initAccessibility();
+                this.focusFirstField();
+            }
+
+            // Theme Management
+            initTheme() {
+                const savedTheme = localStorage.getItem('theme') || 'light';
+                this.setTheme(savedTheme);
+            }
+
+            setTheme(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                localStorage.setItem('theme', theme);
+                
+                const icon = theme === 'dark' ? 'bi-sun-fill' : 'bi-moon-fill';
+                this.themeIcon.className = `bi ${icon}`;
+                
+                // Update meta theme-color for mobile browsers
+                const metaTheme = document.querySelector('meta[name="theme-color"]');
+                if (metaTheme) {
+                    metaTheme.content = theme === 'dark' ? '#04364A' : '#B4E9FC';
+                }
+            }
+
+            toggleTheme() {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                this.setTheme(newTheme);
+            }
+
+            // Event Binding
+            bindEvents() {
+                this.themeToggle.addEventListener('click', () => this.toggleTheme());
+                this.form.addEventListener('submit', (e) => this.handleSubmit(e));
+                
+                // Real-time validation
+                const inputs = this.form.querySelectorAll('input[required]');
+                inputs.forEach(input => {
+                    input.addEventListener('blur', () => this.validateField(input));
+                    input.addEventListener('input', () => this.clearFieldError(input));
+                });
+
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    if (e.altKey && e.key === 't') {
+                        e.preventDefault();
+                        this.toggleTheme();
+                    }
+                });
+            }
+
+            // Form Validation
+            initFormValidation() {
+                this.validationRules = {
+                    username: {
+                        required: true,
+                        minLength: 3,
+                        pattern: /^[a-zA-Z0-9._-]+$/,
+                        message: 'Username must be at least 3 characters and contain only letters, numbers, dots, hyphens, or underscores'
+                    },
+                    password: {
+                        required: true,
+                        minLength: 8,
+                        message: 'Password must be at least 8 characters long'
+                    }
+                };
+            }
+
+            validateField(field) {
+                const fieldName = field.name;
+                const rules = this.validationRules[fieldName];
+                const value = field.value.trim();
+
+                if (!rules) return true;
+
+                // Clear previous errors
+                this.clearFieldError(field);
+
+                // Required validation
+                if (rules.required && !value) {
+                    this.showFieldError(field, `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} is required`);
+                    return false;
+                }
+
+                // Length validation
+                if (rules.minLength && value.length < rules.minLength) {
+                    this.showFieldError(field, rules.message);
+                    return false;
+                }
+
+                // Pattern validation
+                if (rules.pattern && !rules.pattern.test(value)) {
+                    this.showFieldError(field, rules.message);
+                    return false;
+                }
+
+                return true;
+            }
+
+            validateForm() {
+                const inputs = this.form.querySelectorAll('input[required]');
+                let isValid = true;
+
+                inputs.forEach(input => {
+                    if (!this.validateField(input)) {
+                        isValid = false;
+                    }
+                });
+
+                return isValid;
+            }
+
+            showFieldError(field, message) {
+                field.classList.add('is-invalid');
+                const errorElement = document.getElementById(`${field.name}Error`);
+                if (errorElement) {
+                    errorElement.textContent = message;
+                }
+            }
+
+            clearFieldError(field) {
+                field.classList.remove('is-invalid');
+                const errorElement = document.getElementById(`${field.name}Error`);
+                if (errorElement) {
+                    errorElement.textContent = '';
+                }
+            }
+
+            // Form Submission
+            async handleSubmit(e) {
+                e.preventDefault();
+                
+                if (!this.validateForm()) {
+                    this.showError('Please correct the errors above');
+                    return;
+                }
+
+                this.setLoadingState(true);
+                this.clearMessages();
+
+                try {
+                    const formData = new FormData(this.form);
+                    const data = Object.fromEntries(formData);
+                    
+                    // Simulate API call - replace with actual endpoint
+                    const response = await this.mockLogin(data);
+                    
+                    if (response.success) {
+                        this.showSuccess('Login successful! Redirecting...');
+                        setTimeout(() => {
+                            // Replace with actual redirect logic
+                            window.location.href = '/dashboard';
+                        }, 1500);
+                    } else {
+                        this.showError(response.message || 'Login failed. Please try again.');
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    this.showError('A network error occurred. Please try again.');
+                } finally {
+                    this.setLoadingState(false);
+                }
+            }
+
+            // Mock login for demonstration
+            async mockLogin(data) {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        // Simulate successful login for demo
+                        if (data.username === 'admin' && data.password === 'password123') {
+                            resolve({ success: true });
+                        } else {
+                            resolve({ 
+                                success: false, 
+                                message: 'Invalid username or password' 
+                            });
+                        }
+                    }, 2000);
+                });
+            }
+
+            setLoadingState(loading) {
+                const btnText = this.submitButton.querySelector('.btn-text');
+                const btnLoading = this.submitButton.querySelector('.btn-loading');
+                
+                if (loading) {
+                    btnText.classList.add('d-none');
+                    btnLoading.classList.remove('d-none');
+                    this.submitButton.disabled = true;
+                    this.submitButton.classList.add('btn-loading');
+                } else {
+                    btnText.classList.remove('d-none');
+                    btnLoading.classList.add('d-none');
+                    this.submitButton.disabled = false;
+                    this.submitButton.classList.remove('btn-loading');
+                }
+            }
+
+            // Message Management
+            showError(message) {
+                const container = document.getElementById('errorContainer');
+                const messageElement = document.getElementById('errorMessage');
+                
+                messageElement.textContent = message;
+                container.classList.remove('d-none');
+                
+                // Auto-hide after 5 seconds
+                setTimeout(() => {
+                    container.classList.add('d-none');
+                }, 5000);
+            }
+
+            showSuccess(message) {
+                const container = document.getElementById('successContainer');
+                const messageElement = document.getElementById('successMessage');
+                
+                messageElement.textContent = message;
+                container.classList.remove('d-none');
+            }
+
+            clearMessages() {
+                document.getElementById('errorContainer').classList.add('d-none');
+                document.getElementById('successContainer').classList.add('d-none');
+            }
+
+            // Accessibility
+            initAccessibility() {
+                // Add ARIA live region for dynamic messages
+                const liveRegion = document.createElement('div');
+                liveRegion.setAttribute('aria-live', 'polite');
+                liveRegion.setAttribute('aria-atomic', 'true');
+                liveRegion.className = 'sr-only';
+                liveRegion.id = 'announcements';
+                document.body.appendChild(liveRegion);
+
+                // Announce theme changes
+                const originalToggleTheme = this.toggleTheme.bind(this);
+                this.toggleTheme = () => {
+                    originalToggleTheme();
+                    const theme = document.documentElement.getAttribute('data-theme');
+                    this.announce(`Switched to ${theme} theme`);
+                };
+            }
+
+            announce(message) {
+                const liveRegion = document.getElementById('announcements');
+                if (liveRegion) {
+                    liveRegion.textContent = message;
+                }
+            }
+
+            focusFirstField() {
+                // Focus first input field on page load
+                setTimeout(() => {
+                    document.getElementById('username').focus();
+                }, 100);
+            }
+
+            // Security Features
+            initSecurityFeatures() {
+                // Prevent multiple rapid submissions
+                this.lastSubmitTime = 0;
+                const originalHandleSubmit = this.handleSubmit.bind(this);
+                
+                this.handleSubmit = (e) => {
+                    const now = Date.now();
+                    if (now - this.lastSubmitTime < 1000) {
+                        e.preventDefault();
+                        return;
+                    }
+                    this.lastSubmitTime = now;
+                    return originalHandleSubmit(e);
+                };
+
+                // Clear form data on page unload for security
+                window.addEventListener('beforeunload', () => {
+                    this.form.reset();
+                });
+
+                // Detect potential bot behavior
+                this.detectBotBehavior();
+            }
+
+            detectBotBehavior() {
+                let humanScore = 0;
+                
+                // Mouse movement detection
+                document.addEventListener('mousemove', () => {
+                    humanScore += 1;
+                }, { once: true });
+
+                // Keyboard interaction detection
+                document.addEventListener('keydown', () => {
+                    humanScore += 1;
+                }, { once: true });
+
+                // Store human score for potential server-side validation
+                this.humanScore = humanScore;
+            }
+        }
+
+        // Performance Monitoring
+        class PerformanceMonitor {
+            constructor() {
+                this.startTime = performance.now();
+                this.init();
+            }
+
+            init() {
+                // Monitor page load performance
+                window.addEventListener('load', () => {
+                    this.measurePageLoad();
+                });
+
+                // Monitor form interaction performance
+                this.monitorFormPerformance();
+            }
+
+            measurePageLoad() {
+                const loadTime = performance.now() - this.startTime;
+                console.log(`Page loaded in ${loadTime.toFixed(2)}ms`);
+                
+                // Report to analytics if available
+                if (typeof gtag !== 'undefined') {
+                    gtag('event', 'page_load_time', {
+                        value: Math.round(loadTime),
+                        event_category: 'Performance'
+                    });
+                }
+            }
+
+            monitorFormPerformance() {
+                const form = document.getElementById('loginForm');
+                let interactionStart;
+
+                form.addEventListener('focusin', () => {
+                    if (!interactionStart) {
+                        interactionStart = performance.now();
+                    }
+                }, { once: true });
+
+                form.addEventListener('submit', () => {
+                    if (interactionStart) {
+                        const interactionTime = performance.now() - interactionStart;
+                        console.log(`Form interaction took ${interactionTime.toFixed(2)}ms`);
+                    }
+                });
+            }
+        }
+
+        // Enhanced Error Handling
+        class ErrorHandler {
+            constructor() {
+                this.init();
+            }
+
+            init() {
+                // Global error handling
+                window.addEventListener('error', (e) => {
+                    this.logError('JavaScript Error', e.error);
+                });
+
+                window.addEventListener('unhandledrejection', (e) => {
+                    this.logError('Unhandled Promise Rejection', e.reason);
+                });
+            }
+
+            logError(type, error) {
+                const errorInfo = {
+                    type,
+                    message: error.message || error,
+                    stack: error.stack,
+                    timestamp: new Date().toISOString(),
+                    userAgent: navigator.userAgent,
+                    url: window.location.href
+                };
+
+                console.error('Error logged:', errorInfo);
+                
+                // Send to error reporting service
+                this.reportError(errorInfo);
+            }
+
+            reportError(errorInfo) {
+                // Replace with actual error reporting service
+                // Example: Sentry, LogRocket, etc.
+                if (typeof Sentry !== 'undefined') {
+                    Sentry.captureException(new Error(errorInfo.message), {
+                        extra: errorInfo
+                    });
+                }
+            }
+        }
+
+        // Initialize application when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize core components
+            window.loginManager = new EnterpriseLoginManager();
+            window.performanceMonitor = new PerformanceMonitor();
+            window.errorHandler = new ErrorHandler();
+
+            // Initialize security features
+            window.loginManager.initSecurityFeatures();
+
+            console.log('🚀 Enterprise Login System initialized');
+            console.log('💡 Try demo credentials: admin / password123');
+            console.log('⌨️  Keyboard shortcut: Alt+T to toggle theme');
+        });
+
+        // Service Worker Registration for PWA capabilities
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    // Note: You would need to create a service worker file
+                    // const registration = await navigator.serviceWorker.register('/sw.js');
+                    // console.log('ServiceWorker registered: ', registration);
+                } catch (error) {
+                    console.log('ServiceWorker registration failed: ', error);
+                }
+            });
+        }
+
+        // Preload critical resources
+        const preloadResources = [
+            'https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css',
+            'https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css'
+        ];
+
+        preloadResources.forEach(url => {
+            const link = document.createElement('link');
+            link.rel = 'preload';
+            link.as = 'style';
+            link.href = url;
+            document.head.appendChild(link);
+        });
+    </script>
+</body>
+</html>

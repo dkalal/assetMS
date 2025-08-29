@@ -1,0 +1,656 @@
+{% extends 'base.html' %}
+{% load static %}
+{% csrf_token %}
+
+{% block title %}Organization Settings{% endblock %}
+
+{% block extra_css %}
+<style>
+    .drag-over {
+        border: 2px dashed #007bff !important;
+        background-color: #f8f9ff !important;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+    
+    .card {
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border: none;
+        transition: transform 0.2s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        border: none;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    }
+    
+    .btn-primary:disabled {
+        transform: none;
+        box-shadow: none;
+    }
+    
+    #logoPreview {
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    #logoPreview:hover {
+        border-color: #007bff;
+        background-color: #f8f9ff;
+    }
+    
+    .enterprise-alert {
+        border-radius: 8px;
+        border: none;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 8px;
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid #dee2e6;
+        font-weight: 600;
+    }
+    
+    .text-muted {
+        color: #6c757d !important;
+    }
+    
+    .required::after {
+        content: ' *';
+        color: #dc3545;
+    }
+    
+    .form-control.is-invalid {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
+    
+    .form-control.is-valid {
+        border-color: #28a745;
+        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+    }
+    
+    .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.7; }
+        100% { opacity: 1; }
+    }
+    
+    .loading {
+        animation: pulse 1.5s infinite;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-building text-primary"></i> Organization Settings</h2>
+                    <p class="text-muted">Manage your organization profile and system preferences</p>
+                </div>
+                <button class="btn btn-primary" id="saveButton">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Organization Profile -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Organization Profile</h5>
+                </div>
+                <div class="card-body">
+                    <form id="organizationForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required">Organization Name</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Legal Name</label>
+                                <input type="text" class="form-control" id="legal_name" name="legal_name">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required">Email</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Phone</label>
+                                <input type="tel" class="form-control" id="phone" name="phone">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Website</label>
+                                <input type="url" class="form-control" id="website" name="website">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Industry</label>
+                                <input type="text" class="form-control" id="industry" name="industry">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Tax ID</label>
+                                <input type="text" class="form-control" id="tax_id" name="tax_id">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Registration Number</label>
+                                <input type="text" class="form-control" id="registration_number" name="registration_number">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Address Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-map-marker-alt"></i> Address Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Address Line 1</label>
+                            <input type="text" class="form-control" id="address_line1" name="address_line1">
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Address Line 2</label>
+                            <input type="text" class="form-control" id="address_line2" name="address_line2">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">City</label>
+                            <input type="text" class="form-control" id="city" name="city">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">State/Province</label>
+                            <input type="text" class="form-control" id="state" name="state">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Postal Code</label>
+                            <input type="text" class="form-control" id="postal_code" name="postal_code">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Country</label>
+                            <input type="text" class="form-control" id="country" name="country">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logo and System Settings -->
+        <div class="col-lg-4">
+            <!-- Logo Upload -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-image"></i> Organization Logo</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div id="logoPreview" class="mb-3">
+                        <img id="currentLogo" src="" alt="Organization Logo" class="img-fluid" style="max-height: 150px; display: none;">
+                        <div id="noLogo" class="text-muted">
+                            <i class="fas fa-image fa-3x mb-2"></i>
+                            <p>No logo uploaded</p>
+                        </div>
+                    </div>
+                    <input type="file" id="logoFile" accept="image/*" class="form-control mb-2">
+                    <small class="text-muted">Recommended: 300x100px, PNG or JPG</small>
+                </div>
+            </div>
+
+            <!-- System Preferences -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-cog"></i> System Preferences</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Timezone</label>
+                        <select class="form-select" id="timezone" name="timezone">
+                            <option value="UTC">UTC</option>
+                            <option value="America/New_York">Eastern Time</option>
+                            <option value="America/Chicago">Central Time</option>
+                            <option value="America/Denver">Mountain Time</option>
+                            <option value="America/Los_Angeles">Pacific Time</option>
+                            <option value="Europe/London">London</option>
+                            <option value="Europe/Paris">Paris</option>
+                            <option value="Asia/Tokyo">Tokyo</option>
+                            <option value="Africa/Dar_es_Salaam">Dar es Salaam</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Date Format</label>
+                        <select class="form-select" id="date_format" name="date_format">
+                            <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                            <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                            <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                            <option value="DD-MM-YYYY">DD-MM-YYYY</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Currency</label>
+                        <select class="form-select" id="currency" name="currency">
+                            <option value="USD">USD - US Dollar</option>
+                            <option value="EUR">EUR - Euro</option>
+                            <option value="GBP">GBP - British Pound</option>
+                            <option value="TZS">TZS - Tanzanian Shilling</option>
+                            <option value="KES">KES - Kenyan Shilling</option>
+                            <option value="UGX">UGX - Ugandan Shilling</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Enterprise Organization Settings Manager
+(function() {
+    'use strict';
+    
+    class OrganizationSettings {
+        constructor() {
+            this.apiEndpoints = {
+                get: '/settings/api/organization/',
+                update: '/settings/api/organization/update/'
+            };
+            this.init();
+        }
+    
+    init() {
+        this.loadOrganizationData();
+        this.setupLogoUpload();
+        this.setupEventListeners();
+    }
+    
+    setupEventListeners() {
+        const saveButton = document.getElementById('saveButton');
+        if (saveButton) {
+            saveButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.saveSettings();
+            });
+        }
+    }
+    
+    async loadOrganizationData() {
+        try {
+            console.log('🔄 Loading organization data...');
+            const response = await fetch(this.apiEndpoints.get, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            });
+            
+            if (!response.ok) {
+                if (response.status === 401) {
+                    window.location.href = '/login/';
+                    return;
+                }
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            console.log('📊 Organization data loaded:', data);
+            
+            if (data.success) {
+                this.populateForm(data.organization);
+                console.log('✅ Form populated successfully');
+            } else {
+                this.showAlert(data.error || 'Failed to load organization data', 'warning');
+            }
+        } catch (error) {
+            console.error('❌ Error loading organization data:', error);
+            this.showAlert('Failed to load organization data. Please refresh the page.', 'danger');
+        }
+    }
+    
+    populateForm(org) {
+        const fields = ['name', 'legal_name', 'email', 'phone', 'website', 'industry', 
+                       'tax_id', 'registration_number', 'address_line1', 'address_line2', 
+                       'city', 'state', 'postal_code', 'country', 'timezone', 'date_format', 'currency'];
+        
+        fields.forEach(field => {
+            const element = document.getElementById(field);
+            if (element && org[field]) {
+                element.value = org[field];
+            }
+        });
+        
+        // Handle logo
+        if (org.logo) {
+            document.getElementById('currentLogo').src = org.logo;
+            document.getElementById('currentLogo').style.display = 'block';
+            document.getElementById('noLogo').style.display = 'none';
+        }
+    }
+    
+    setupLogoUpload() {
+        const logoInput = document.getElementById('logoFile');
+        
+        logoInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                // Validate file before preview
+                if (!this.validateLogo(file)) {
+                    logoInput.value = ''; // Clear invalid file
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('currentLogo').src = e.target.result;
+                    document.getElementById('currentLogo').style.display = 'block';
+                    document.getElementById('noLogo').style.display = 'none';
+                };
+                reader.onerror = () => {
+                    this.showAlert('Error reading logo file', 'danger');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Add drag and drop functionality
+        const logoPreview = document.getElementById('logoPreview');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            logoPreview.addEventListener(eventName, this.preventDefaults, false);
+        });
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            logoPreview.addEventListener(eventName, () => logoPreview.classList.add('drag-over'), false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            logoPreview.addEventListener(eventName, () => logoPreview.classList.remove('drag-over'), false);
+        });
+        
+        logoPreview.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                logoInput.files = files;
+                logoInput.dispatchEvent(new Event('change'));
+            }
+        });
+    }
+    
+    preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    async saveSettings() {
+        console.log('Save settings called');
+        const saveButton = document.getElementById('saveButton');
+        if (!saveButton) {
+            console.error('Save button not found');
+            return;
+        }
+        const originalText = saveButton.innerHTML;
+        
+        try {
+            // Show loading state
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            
+            // Validate required fields
+            if (!this.validateForm()) {
+                return;
+            }
+            
+            const formData = new FormData();
+            
+            // Collect all form data efficiently
+            const allFields = ['name', 'legal_name', 'email', 'phone', 'website', 'industry',
+                              'tax_id', 'registration_number', 'address_line1', 'address_line2',
+                              'city', 'state', 'postal_code', 'country', 'timezone', 'date_format', 'currency'];
+            
+            allFields.forEach(field => {
+                const element = document.getElementById(field);
+                if (element) {
+                    formData.append(field, element.value || '');
+                }
+            });
+            
+            // Handle logo upload with validation
+            const logoFile = document.getElementById('logoFile').files[0];
+            if (logoFile) {
+                if (this.validateLogo(logoFile)) {
+                    formData.append('logo', logoFile);
+                } else {
+                    return;
+                }
+            }
+            
+            formData.append('csrfmiddlewaretoken', this.getCSRFToken());
+            
+            console.log('🚀 Sending update request...');
+            const response = await fetch(this.apiEndpoints.update, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData,
+                credentials: 'same-origin'
+            });
+            
+            console.log('📊 Response status:', response.status);
+            
+            if (!response.ok) {
+                if (response.status === 401) {
+                    window.location.href = '/login/';
+                    return;
+                }
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            console.log('📊 Response data:', data);
+            
+            if (data.success) {
+                this.showAlert('Organization settings saved successfully!', 'success');
+                // Refresh page data to show updated values
+                setTimeout(() => this.loadOrganizationData(), 1000);
+            } else {
+                this.showAlert(data.error || 'Failed to save settings', 'danger');
+            }
+            
+        } catch (error) {
+            console.error('Error saving settings:', error);
+            this.showAlert('Network error. Please check your connection and try again.', 'danger');
+        } finally {
+            // Restore button state
+            if (saveButton) {
+                saveButton.disabled = false;
+                saveButton.innerHTML = originalText;
+            }
+        }
+    }
+    
+    // Simple global function for testing
+    window.testSave = function() {
+        console.log('Test save called');
+        alert('Save function works!');
+    }
+    }
+    
+    validateForm() {
+        console.log('🔍 Validating form...');
+        const requiredFields = [
+            { id: 'name', label: 'Organization Name' },
+            { id: 'email', label: 'Email' }
+        ];
+        
+        for (const field of requiredFields) {
+            const element = document.getElementById(field.id);
+            if (!element) {
+                console.error(`❌ Field not found: ${field.id}`);
+                this.showAlert(`System error: ${field.label} field not found`, 'danger');
+                return false;
+            }
+            
+            if (!element.value.trim()) {
+                console.warn(`⚠️ Validation failed: ${field.label} is empty`);
+                this.showAlert(`${field.label} is required`, 'warning');
+                element.focus();
+                element.classList.add('is-invalid');
+                return false;
+            } else {
+                element.classList.remove('is-invalid');
+            }
+        }
+        
+        // Validate email format
+        const email = document.getElementById('email').value;
+        if (email && !this.isValidEmail(email)) {
+            console.warn('⚠️ Email validation failed');
+            this.showAlert('Please enter a valid email address', 'warning');
+            document.getElementById('email').focus();
+            document.getElementById('email').classList.add('is-invalid');
+            return false;
+        }
+        
+        console.log('✅ Form validation passed');
+        return true;
+    }
+    
+    validateLogo(file) {
+        if (!file) return true;
+        
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+        
+        if (file.size > maxSize) {
+            this.showAlert('Logo file size must be less than 5MB', 'warning');
+            return false;
+        }
+        
+        if (!allowedTypes.includes(file.type)) {
+            this.showAlert('Logo must be a JPEG, PNG, or GIF image', 'warning');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+    
+    getCSRFToken() {
+        // Try to get from cookie first
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            const [name, value] = cookie.trim().split('=');
+            if (name === 'csrftoken') {
+                return value;
+            }
+        }
+        
+        // Fallback to meta tag or hidden input
+        const metaToken = document.querySelector('meta[name="csrf-token"]');
+        if (metaToken) {
+            return metaToken.getAttribute('content');
+        }
+        
+        const hiddenToken = document.querySelector('[name="csrfmiddlewaretoken"]');
+        if (hiddenToken) {
+            return hiddenToken.value;
+        }
+        
+        console.error('❌ CSRF token not found');
+        return '';
+    }
+    
+    showAlert(message, type) {
+        // Remove existing alerts
+        const existingAlerts = document.querySelectorAll('.enterprise-alert');
+        existingAlerts.forEach(alert => alert.remove());
+        
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed enterprise-alert`;
+        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);';
+        
+        const icon = type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle';
+        
+        alertDiv.innerHTML = `
+            <i class="fas fa-${icon} me-2"></i>${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alertDiv);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.classList.remove('show');
+                setTimeout(() => alertDiv.remove(), 150);
+            }
+        }, 5000);
+    }
+}
+
+    // Initialize when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            window.orgSettings = new OrganizationSettings();
+            console.log('✅ Organization Settings initialized');
+        } catch (error) {
+            console.error('❌ Failed to initialize Organization Settings:', error);
+        }
+    });
+    
+})(); // End IIFE
+</script>
+{% endblock %}

@@ -1,0 +1,177 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumbs.html' with root_label='Dashboard' root_url='/dashboard/' current_label='Settings' %}
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="glass p-4">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+          <h1 class="h3 mb-0">
+            <i class="bi bi-gear text-primary me-2"></i>
+            Settings
+          </h1>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetSettings()">
+              <i class="bi bi-arrow-clockwise me-1"></i>
+              Reset to Defaults
+            </button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="saveAllSettings()">
+              <i class="bi bi-check-lg me-1"></i>
+              Save All Changes
+            </button>
+          </div>
+        </div>
+
+        <!-- Settings Navigation Tabs -->
+        <ul class="nav nav-tabs mb-4" id="settingsTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link {% if active_tab == 'profile' %}active{% endif %}" 
+                    id="profile-tab" 
+                    data-bs-toggle="tab" 
+                    data-bs-target="#profile" 
+                    type="button" 
+                    role="tab" 
+                    aria-controls="profile" 
+                    aria-selected="{% if active_tab == 'profile' %}true{% else %}false{% endif %}">
+              <i class="bi bi-person-circle me-2"></i>
+              Profile
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link {% if active_tab == 'security' %}active{% endif %}" 
+                    id="security-tab" 
+                    data-bs-toggle="tab" 
+                    data-bs-target="#security" 
+                    type="button" 
+                    role="tab" 
+                    aria-controls="security" 
+                    aria-selected="{% if active_tab == 'security' %}true{% else %}false{% endif %}">
+              <i class="bi bi-shield-lock me-2"></i>
+              Security & Privacy
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link {% if active_tab == 'notifications' %}active{% endif %}" 
+                    id="notifications-tab" 
+                    data-bs-toggle="tab" 
+                    data-bs-target="#notifications" 
+                    type="button" 
+                    role="tab" 
+                    aria-controls="notifications" 
+                    aria-selected="{% if active_tab == 'notifications' %}true{% else %}false{% endif %}">
+              <i class="bi bi-bell me-2"></i>
+              Notifications
+            </button>
+          </li>
+          {% if user.role == 'admin' %}
+          <li class="nav-item" role="presentation">
+            <button class="nav-link {% if active_tab == 'system' %}active{% endif %}" 
+                    id="system-tab" 
+                    data-bs-toggle="tab" 
+                    data-bs-target="#system" 
+                    type="button" 
+                    role="tab" 
+                    aria-controls="system" 
+                    aria-selected="{% if active_tab == 'system' %}true{% else %}false{% endif %}">
+              <i class="bi bi-gear-wide-connected me-2"></i>
+              System Settings
+            </button>
+          </li>
+          {% endif %}
+        </ul>
+
+        <!-- Settings Content -->
+        <div class="tab-content" id="settingsTabContent">
+          <!-- Profile Settings Tab -->
+          <div class="tab-pane fade {% if active_tab == 'profile' %}show active{% endif %}" 
+               id="profile" 
+               role="tabpanel" 
+               aria-labelledby="profile-tab">
+            {% include 'settings/partials/profile_settings.html' %}
+          </div>
+
+          <!-- Security Settings Tab -->
+          <div class="tab-pane fade {% if active_tab == 'security' %}show active{% endif %}" 
+               id="security" 
+               role="tabpanel" 
+               aria-labelledby="security-tab">
+            {% include 'settings/partials/security_settings.html' %}
+          </div>
+
+          <!-- Notification Settings Tab -->
+          <div class="tab-pane fade {% if active_tab == 'notifications' %}show active{% endif %}" 
+               id="notifications" 
+               role="tabpanel" 
+               aria-labelledby="notifications-tab">
+            {% include 'settings/partials/notification_settings.html' %}
+          </div>
+
+          <!-- System Settings Tab (Admin Only) -->
+          {% if user.role == 'admin' %}
+          <div class="tab-pane fade {% if active_tab == 'system' %}show active{% endif %}" 
+               id="system" 
+               role="tabpanel" 
+               aria-labelledby="system-tab">
+            {% include 'settings/partials/system_settings.html' %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Saved Modal -->
+<div class="modal fade" id="settingsSavedModal" tabindex="-1" aria-labelledby="settingsSavedModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="settingsSavedModalLabel">
+          <i class="bi bi-check-circle text-success me-2"></i>
+          Settings Saved
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Your settings have been saved successfully!</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmationModalLabel">
+          <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+          Confirm Action
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmationMessage">Are you sure you want to proceed?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmActionBtn">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/settings.js' %}"></script>
+{% endblock %}
+
+

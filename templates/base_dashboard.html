@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard · Asset Management{% endblock %}
+
+{# Dashboard-specific styles only; base.html already includes core CSS/JS and CSP #}
+{% block extra_styles %}
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+  {% block dashboard_content %}{% endblock %}
+{% endblock %}
+

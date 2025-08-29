@@ -1,0 +1,127 @@
+{% extends 'base_dashboard.html' %}
+{% load asset_extras %}
+{% block title %}Bulk Import Assets{% endblock %}
+{% block content %}
+<h2 class="mb-4">Bulk Import Assets</h2>
+<div class="alert alert-info">
+  <strong>Instructions:</strong> Download the Excel template for your selected category. Fill in the required fields (e.g., status, description, assigned_to, and any dynamic fields). Example values are provided in the first row. Do not change the column headers. Only users with proper permissions can import assets. All imports are logged for auditing.
+</div>
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+<div class="glass p-4">
+  {% if step == '1' %}
+    <form method="get" action="" class="row g-3 mb-3">
+      <div class="col-md-6">
+        <label class="form-label">Select Category</label>
+        <select name="category" class="form-select" required>
+          <option value="">-- Select --</option>
+          {% for cat in categories %}
+            <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:'s' %}selected{% endif %}>{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary">Next</button>
+      </div>
+    </form>
+    {% if selected_category %}
+      <a href="{% url 'download_import_template' %}?category={{ selected_category }}" class="btn btn-outline-success mb-3">Download Excel Template</a>
+      <a href="{% url 'download_import_template' %}?category={{ selected_category }}&example=1" class="btn btn-outline-primary mb-3 ms-2">Download Example Excel</a>
+      <div class="mb-3">
+        <strong>Example Data Preview:</strong>
+        <table class="table table-bordered table-sm mt-2">
+          <thead>
+            <tr>
+              {% for col in columns %}<th>{{ col|title }}</th>{% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              {% for col in columns %}<td>{{ example_row|get_item:col }}</td>{% endfor %}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <form method="post" enctype="multipart/form-data" class="row g-3">
+        {% csrf_token %}
+        <input type="hidden" name="category" value="{{ selected_category }}">
+        <input type="hidden" name="step" value="2">
+        <div class="col-md-8">
+          <label class="form-label">Upload Filled Excel File</label>
+          <input type="file" name="import_file" class="form-control" accept=".xlsx" required>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+          <button type="submit" class="btn btn-success">Preview Import</button>
+        </div>
+      </form>
+    {% endif %}
+  {% elif step == '2' %}
+    <form method="post" action="" class="mb-3">
+      {% csrf_token %}
+      <input type="hidden" name="category" value="{{ selected_category }}">
+      <input type="hidden" name="step" value="2">
+      <input type="hidden" name="import_file" value="{{ import_file }}">
+      <button type="submit" class="btn btn-outline-secondary mb-3">Back</button>
+    </form>
+    {% if errors %}
+      <div class="alert alert-danger">
+        <ul class="mb-0">
+          {% for error in errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+    <form method="post" action="" class="mb-3">
+      {% csrf_token %}
+      <input type="hidden" name="category" value="{{ selected_category }}">
+      <input type="hidden" name="step" value="3">
+      <input type="hidden" name="import_file" value="{{ import_file }}">
+      <button type="submit" class="btn btn-success" {% if errors %}disabled{% endif %}>Confirm Import</button>
+    </form>
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover glass">
+        <thead class="table-light">
+          <tr>
+            {% for col in columns %}
+              <th>{{ col|title }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in preview_data %}
+            <tr>
+              {% for col in columns %}
+                <td>{{ row|get_item:col }}</td>
+              {% endfor %}
+            </tr>
+          {% empty %}
+            <tr><td colspan="{{ columns|length }}" class="text-center">No data found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% elif step == 'done' %}
+    <div class="alert alert-success">Import complete! {{ success_count }} assets imported successfully.</div>
+    {% if fail_count %}
+      <div class="alert alert-warning">{{ fail_count }} rows failed to import.</div>
+      <div class="table-responsive mb-3">
+        <table class="table table-bordered table-hover glass">
+          <thead class="table-light">
+            <tr><th>Row</th><th>Error</th></tr>
+          </thead>
+          <tbody>
+            {% for fail in fail_rows %}
+              <tr><td>{{ fail.row }}</td><td>{{ fail.error }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+    <a href="{% url 'asset_bulk_import' %}" class="btn btn-primary">Start Another Import</a>
+  {% endif %}
+</div>
+{% endblock %} 

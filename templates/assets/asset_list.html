@@ -1,0 +1,161 @@
+{% extends 'base_dashboard.html' %}
+{% load asset_extras %}
+{% load static %}
+{% block title %}Asset List{% endblock %}
+{% block content %}
+{% include 'components/breadcrumbs.html' with root_label='Dashboard' root_url='/dashboard/' current_label='Assets' %}
+
+<ul class="nav nav-tabs section-tabs" role="tablist" aria-label="Assets filters">
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if not request.GET.status and not request.GET.assigned %}active{% endif %}" href="{% url 'asset_list' %}">All</a>
+  </li>
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if request.GET.status == 'active' %}active{% endif %}" href="{% url 'asset_list' %}?status=active">Active</a>
+  </li>
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if request.GET.status == 'maintenance' %}active{% endif %}" href="{% url 'asset_list' %}?status=maintenance">Maintenance</a>
+  </li>
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if request.GET.assigned == 'no' %}active{% endif %}" href="{% url 'asset_list' %}?assigned=no">Unassigned</a>
+  </li>
+</ul>
+<h2 class="mb-4">All Assets</h2>
+<form method="get" class="row g-2 mb-3 align-items-end">
+    <div class="col-md-3">
+        <label class="form-label">Category</label>
+        <select name="category" class="form-select" id="category-select">
+            <option value="">All</option>
+            {% for cat in categories %}
+            <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:'s' %}selected{% endif %}>{{ cat.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Status</label>
+        <select name="status" class="form-select">
+            <option value="">All</option>
+            {% for val, label in statuses %}
+            <option value="{{ val }}" {% if request.GET.status == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Location</label>
+        <input type="text" name="location" class="form-control" value="{{ request.GET.location }}">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Search</label>
+        <input type="text" name="search" class="form-control" placeholder="Name, Model, Description" value="{{ request.GET.search }}">
+    </div>
+    <div class="col-md-2 d-flex flex-column">
+        <button type="submit" class="btn btn-primary w-100 mb-1">Filter</button>
+        <a href="?" class="btn btn-outline-secondary w-100">Clear Filters</a>
+    </div>
+    {% if dynamic_fields %}
+        <div class="w-100"></div>
+        {% for field in dynamic_fields %}
+        <div class="col-md-3">
+            <label class="form-label">{{ field.label }}</label>
+            {% if field.type == 'text' %}
+                <input type="text" name="dyn_{{ field.key }}" class="form-control" value="{{ request.GET|get_item:'dyn_'|add:field.key }}">
+            {% elif field.type == 'number' %}
+                <input type="number" name="dyn_{{ field.key }}" class="form-control" value="{{ request.GET|get_item:'dyn_'|add:field.key }}">
+            {% elif field.type == 'date' %}
+                <input type="text" name="dyn_{{ field.key }}" class="form-control" placeholder="mm/dd/yyyy" value="{{ request.GET|get_item:'dyn_'|add:field.key }}">
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% endif %}
+</form>
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <a href="{% url 'asset_register' %}" class="btn btn-primary">Register New Asset</a>
+    <div>
+      <a href="{% url 'asset_bulk_import' %}" class="btn btn-outline-primary me-2">Bulk Import</a>
+      <button id="openExportModal" class="btn btn-outline-success" type="button">Export</button>
+    </div>
+</div>
+<div class="enterprise-table-container">
+  <div class="enterprise-table-wrapper" style="max-height: 520px;">
+    <table class="enterprise-table">
+      <thead>
+        <tr>
+          <th style="width: 36px;"><input type="checkbox" id="select-all-assets" aria-label="Select all assets"></th>
+          <th>Category</th>
+          <th>Status</th>
+          <th>Assigned To</th>
+          <th>Created</th>
+          {% for field in dynamic_fields %}
+            <th>{{ field.label }}</th>
+          {% endfor %}
+          <th style="width: 120px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for asset in assets %}
+        <tr>
+          <td><input type="checkbox" class="asset-checkbox" value="{{ asset.pk }}" aria-label="Select asset {{ asset.pk }}"></td>
+          <td>{{ asset.category }}</td>
+          <td>{{ asset.status }}</td>
+          <td>{{ asset.assigned_to }}</td>
+          <td>{{ asset.created_at|date:'Y-m-d H:i' }}</td>
+          {% for field in dynamic_fields %}
+            <td>{{ asset.dynamic_data|get_item:field.key|default:'—' }}</td>
+          {% endfor %}
+          <td>
+            <a href="{% url 'asset_detail' asset.pk %}?internal=1" class="btn btn-sm btn-outline-primary">View</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="{{ dynamic_fields|length|add:'6' }}" class="text-center">No assets found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<!-- Custom Export Modal (Bootstrap-independent) -->
+<div id="exportModalCustom" class="custom-modal-overlay" tabindex="-1">
+  <div class="glass-modal" role="dialog" aria-modal="true" aria-labelledby="exportModalCustomLabel">
+    <div class="custom-modal-header d-flex align-items-center justify-content-between">
+      <h4 class="modal-title fw-bold mb-0" id="exportModalCustomLabel">
+        <i class="bi bi-box-arrow-up-right me-2 text-success"></i> Export Assets
+      </h4>
+      <button type="button" class="custom-modal-close" id="closeExportModal" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+    <div class="custom-modal-body">
+      <form id="export-form" method="post" action="{% url 'asset_export' %}">
+        {% csrf_token %}
+        <input type="hidden" name="selected_ids" id="selected-asset-ids">
+        <div class="alert alert-info py-2" id="export-summary">You are exporting all filtered assets.</div>
+        <div class="row g-3 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label">Format</label>
+            <select name="format" class="form-select" required>
+              <option value="csv">CSV</option>
+              <option value="xlsx">Excel</option>
+              <option value="pdf">PDF</option>
+            </select>
+          </div>
+          <div class="col-md-8">
+            <label class="form-label">Columns to Export</label>
+            <div class="row" id="export-columns-list">
+              <!-- Columns will be dynamically populated by JS in next step -->
+              <div class="col-12"><em>Column selection coming soon...</em></div>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-end mt-3">
+          <button type="submit" class="btn btn-success">Export</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+{% load static %}
+<script src="{% static 'js/asset_list.js' %}"></script>
+{% endblock %}

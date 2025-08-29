@@ -1,0 +1,12 @@
+Django==5.2.4
+pandas>=2.0.0
+Pillow>=10.0.0  # Required for image handling
+python-dotenv>=1.0.0  # For environment variables
+django-crispy-forms>=2.0  # For better form rendering
+crispy-bootstrap5>=2023.1  # Bootstrap 5 template pack for crispy-forms
+django-widget-tweaks>=1.5.0  # For better form field rendering
+django-debug-toolbar>=4.2.0  # For development
+django-extensions>=3.2.3  # Useful Django extensions
+whitenoise>=6.6.0  # For serving static files in production
+gunicorn>=21.2.0  # Production WSGI server
+psycopg2-binary>=2.9.9  # PostgreSQL database adapter (recommended for production)

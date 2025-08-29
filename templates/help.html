@@ -1,0 +1,305 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Help & Documentation{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumbs.html' with root_label='Dashboard' root_url='/dashboard/' current_label='Help & Documentation' %}
+
+<div class="container-fluid">
+  <div class="row">
+    <!-- Main Content -->
+    <div class="col-lg-8">
+      <div class="glass p-4 mb-4">
+        <h1 class="mb-4">
+          <i class="bi bi-question-circle text-primary me-2"></i>
+          Help & Documentation
+        </h1>
+        
+        <!-- Quick Start Guide -->
+        <section class="mb-5">
+          <h2 class="h4 mb-3 text-primary">
+            <i class="bi bi-rocket-takeoff me-2"></i>
+            Quick Start Guide
+          </h2>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                  <h5 class="card-title">
+                    <i class="bi bi-box-seam text-success me-2"></i>
+                    Register Assets
+                  </h5>
+                  <p class="card-text">Learn how to add new assets to the system with custom fields and categories.</p>
+                  <a href="#asset-management" class="btn btn-outline-primary btn-sm">Learn More</a>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                  <h5 class="card-title">
+                    <i class="bi bi-qr-code text-info me-2"></i>
+                    QR Code Scanning
+                  </h5>
+                  <p class="card-text">Use QR codes to quickly identify and track assets in the field.</p>
+                  <a href="#qr-scanning" class="btn btn-outline-info btn-sm">Learn More</a>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                  <h5 class="card-title">
+                    <i class="bi bi-graph-up text-warning me-2"></i>
+                    Generate Reports
+                  </h5>
+                  <p class="card-text">Create comprehensive reports for asset analysis and compliance.</p>
+                  <a href="#reports" class="btn btn-outline-warning btn-sm">Learn More</a>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                  <h5 class="card-title">
+                    <i class="bi bi-clipboard-data text-danger me-2"></i>
+                    Audit Trail
+                  </h5>
+                  <p class="card-text">Track all asset changes and maintain complete audit logs.</p>
+                  <a href="#audit" class="btn btn-outline-danger btn-sm">Learn More</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Detailed Documentation -->
+        <section id="asset-management" class="mb-5">
+          <h2 class="h4 mb-3 text-primary">
+            <i class="bi bi-box-seam me-2"></i>
+            Asset Management
+          </h2>
+          <div class="accordion" id="assetAccordion">
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                  <i class="bi bi-plus-circle me-2"></i>
+                  Registering New Assets
+                </button>
+              </h3>
+              <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#assetAccordion">
+                <div class="accordion-body">
+                  <ol class="mb-3">
+                    <li>Navigate to <strong>Assets</strong> in the sidebar</li>
+                    <li>Click <strong>Register New Asset</strong> button</li>
+                    <li>Select the appropriate category for your asset</li>
+                    <li>Fill in the required fields (marked with *)</li>
+                    <li>Add any custom fields specific to your asset type</li>
+                    <li>Upload images or documents if needed</li>
+                    <li>Click <strong>Save Asset</strong> to complete registration</li>
+                  </ol>
+                  <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Tip:</strong> Use descriptive names and include serial numbers for better tracking.
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                  <i class="bi bi-search me-2"></i>
+                  Finding and Filtering Assets
+                </button>
+              </h3>
+              <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#assetAccordion">
+                <div class="accordion-body">
+                  <p>Use the advanced filtering options on the Assets page:</p>
+                  <ul>
+                    <li><strong>Category:</strong> Filter by asset type (e.g., Electronics, Furniture)</li>
+                    <li><strong>Status:</strong> View Active, Maintenance, or Retired assets</li>
+                    <li><strong>Location:</strong> Search by asset location</li>
+                    <li><strong>Search:</strong> Find assets by name, model, or description</li>
+                    <li><strong>Custom Fields:</strong> Filter by any custom field values</li>
+                  </ul>
+                  <div class="alert alert-success">
+                    <i class="bi bi-lightbulb me-2"></i>
+                    <strong>Pro Tip:</strong> Use the tab navigation to quickly switch between different asset views.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
+                  <i class="bi bi-upload me-2"></i>
+                  Bulk Import
+                </button>
+              </h3>
+              <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#assetAccordion">
+                <div class="accordion-body">
+                  <ol>
+                    <li>Click <strong>Bulk Import</strong> from the Assets page</li>
+                    <li>Select the asset category</li>
+                    <li>Download the Excel template</li>
+                    <li>Fill in the template with your asset data</li>
+                    <li>Upload the completed template</li>
+                    <li>Review the preview and confirm import</li>
+                  </ol>
+                  <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Important:</strong> Ensure all required fields are filled and data formats are correct.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="qr-scanning" class="mb-5">
+          <h2 class="h4 mb-3 text-primary">
+            <i class="bi bi-qr-code me-2"></i>
+            QR Code Scanning
+          </h2>
+          <div class="row">
+            <div class="col-md-6">
+              <h5>Using the QR Scanner</h5>
+              <ol>
+                <li>Navigate to <strong>Scan</strong> in the sidebar</li>
+                <li>Click <strong>Start Scanning</strong></li>
+                <li>Point your camera at the asset's QR code</li>
+                <li>View asset details instantly</li>
+              </ol>
+            </div>
+            <div class="col-md-6">
+              <h5>Manual Lookup</h5>
+              <ol>
+                <li>Enter the asset code or ID manually</li>
+                <li>Click <strong>Lookup</strong></li>
+                <li>View complete asset information</li>
+              </ol>
+            </div>
+          </div>
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>Note:</strong> QR codes are automatically generated for all assets and can be downloaded from the asset detail page.
+          </div>
+        </section>
+
+        <section id="reports" class="mb-5">
+          <h2 class="h4 mb-3 text-primary">
+            <i class="bi bi-graph-up me-2"></i>
+            Reports & Analytics
+          </h2>
+          <p>Generate comprehensive reports for asset analysis, compliance, and decision-making:</p>
+          <ul>
+            <li><strong>Asset Summary:</strong> Overview of all assets by category and status</li>
+            <li><strong>Depreciation Reports:</strong> Track asset value over time</li>
+            <li><strong>Maintenance Reports:</strong> Monitor maintenance schedules and costs</li>
+            <li><strong>Export Options:</strong> Download reports in Excel, CSV, or PDF formats</li>
+          </ul>
+          <div class="alert alert-success">
+            <i class="bi bi-check-circle me-2"></i>
+            <strong>Available Formats:</strong> Excel (.xlsx), CSV (.csv), PDF (.pdf)
+          </div>
+        </section>
+
+        <section id="audit" class="mb-5">
+          <h2 class="h4 mb-3 text-primary">
+            <i class="bi bi-clipboard-data me-2"></i>
+            Audit Trail
+          </h2>
+          <p>The system maintains a complete audit trail of all asset-related activities:</p>
+          <ul>
+            <li><strong>Asset Creation:</strong> Track when and by whom assets were added</li>
+            <li><strong>Status Changes:</strong> Monitor asset status updates</li>
+            <li><strong>Assignments:</strong> Track asset transfers between users</li>
+            <li><strong>Maintenance:</strong> Log all maintenance activities</li>
+            <li><strong>Advanced Filtering:</strong> Filter logs by user, action, date range, and more</li>
+          </ul>
+        </section>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+      <div class="glass p-4 mb-4">
+        <h3 class="h5 mb-3">
+          <i class="bi bi-bookmark-star me-2"></i>
+          Quick Navigation
+        </h3>
+        <nav class="nav flex-column">
+          <a class="nav-link" href="#asset-management">
+            <i class="bi bi-box-seam me-2"></i>
+            Asset Management
+          </a>
+          <a class="nav-link" href="#qr-scanning">
+            <i class="bi bi-qr-code me-2"></i>
+            QR Code Scanning
+          </a>
+          <a class="nav-link" href="#reports">
+            <i class="bi bi-graph-up me-2"></i>
+            Reports & Analytics
+          </a>
+          <a class="nav-link" href="#audit">
+            <i class="bi bi-clipboard-data me-2"></i>
+            Audit Trail
+          </a>
+        </nav>
+      </div>
+
+      <div class="glass p-4 mb-4">
+        <h3 class="h5 mb-3">
+          <i class="bi bi-gear me-2"></i>
+          System Information
+        </h3>
+        <dl class="row mb-0">
+          <dt class="col-sm-6">Version:</dt>
+          <dd class="col-sm-6">1.0.0</dd>
+          <dt class="col-sm-6">Last Updated:</dt>
+          <dd class="col-sm-6">August 2025</dd>
+          <dt class="col-sm-6">Support:</dt>
+          <dd class="col-sm-6">Enterprise</dd>
+        </dl>
+      </div>
+
+      <div class="glass p-4">
+        <h3 class="h5 mb-3">
+          <i class="bi bi-headset me-2"></i>
+          Need More Help?
+        </h3>
+        <p class="mb-3">If you need additional assistance:</p>
+        <ul class="list-unstyled">
+          <li><i class="bi bi-envelope me-2"></i> Contact your system administrator</li>
+          <li><i class="bi bi-file-text me-2"></i> Check the user manual</li>
+          <li><i class="bi bi-people me-2"></i> Reach out to IT support</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Smooth scrolling for anchor links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  anchor.addEventListener('click', function (e) {
+    e.preventDefault();
+    const target = document.querySelector(this.getAttribute('href'));
+    if (target) {
+      target.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  });
+});
+</script>
+{% endblock %}
+
+
+
