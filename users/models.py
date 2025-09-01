@@ -54,6 +54,50 @@ class User(AbstractUser):
             ("can_view_audit_logs", "Can view audit logs"),
         ]
 
+class RolePermissionMatrix(models.Model):
+    """Singleton model storing role-to-permissions matrix.
+    Keeps enterprise defaults and allows admin customization.
+    """
+    SINGLETON_KEY = 'roles_permissions_singleton'
+
+    singleton = models.CharField(max_length=64, unique=True, default=SINGLETON_KEY, editable=False)
+    permissions = models.JSONField(default=dict)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'role_permission_matrix'
+
+    def __str__(self):
+        return 'Role Permission Matrix'
+
+    @staticmethod
+    def default_matrix():
+        # Match current frontend behavior
+        return {
+            'Admin': [
+                'view_assets', 'create_assets', 'edit_assets', 'delete_assets',
+                'manage_users', 'view_reports', 'export_data', 'system_admin'
+            ],
+            'Manager': [
+                'view_assets', 'create_assets', 'edit_assets', 'view_reports', 'export_data'
+            ],
+            'User': [
+                'view_assets'
+            ],
+        }
+
+    @classmethod
+    def load(cls):
+        obj, created = cls.objects.get_or_create(
+            singleton=cls.SINGLETON_KEY,
+            defaults={'permissions': cls.default_matrix()},
+        )
+        # Ensure it always has at least defaults
+        if not obj.permissions:
+            obj.permissions = cls.default_matrix()
+            obj.save(update_fields=['permissions'])
+        return obj
+
 class UserSession(models.Model):
     """Enterprise concurrent multi-session tracking"""
     SESSION_CONTEXT_CHOICES = [

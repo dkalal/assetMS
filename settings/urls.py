@@ -36,6 +36,11 @@ urlpatterns = [
     path('api/user-session-history/', views.api_user_session_history, name='api_user_session_history'),
     path('api/session-report/', views.api_session_report, name='api_session_report'),
     path('api/cleanup-sessions/', views.api_cleanup_sessions, name='api_cleanup_sessions'),
+    # Backup endpoint
+    path('api/backup/create/', views.api_create_backup, name='api_create_backup'),
+    path('api/backup/list/', views.api_list_backups, name='api_list_backups'),
+    path('api/backup/download/', views.api_download_backup, name='api_download_backup'),
+    path('api/backup/restore/', views.api_restore_backup, name='api_restore_backup'),
     
     # Organization API endpoints
     path('api/organization/', views.api_organization_profile, name='api_organization_profile'),

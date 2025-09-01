@@ -68,7 +68,7 @@
               Notifications
             </button>
           </li>
-          {% if user.role == 'admin' %}
+          {% if user.is_superuser or user.role|lower == 'admin' %}
           <li class="nav-item" role="presentation">
             <button class="nav-link {% if active_tab == 'system' %}active{% endif %}" 
                     id="system-tab" 
@@ -112,7 +112,7 @@
           </div>
 
           <!-- System Settings Tab (Admin Only) -->
-          {% if user.role == 'admin' %}
+          {% if user.is_superuser or user.role|lower == 'admin' %}
           <div class="tab-pane fade {% if active_tab == 'system' %}show active{% endif %}" 
                id="system" 
                role="tabpanel" 

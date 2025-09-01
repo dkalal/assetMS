@@ -14,6 +14,10 @@ class AssetForm(forms.ModelForm):
         if not category_id and 'initial' in kwargs and kwargs['initial']:
             category_id = kwargs['initial'].get('category')
         super().__init__(*args, **kwargs)
+        # Ensure depreciation fields are not required at the form level
+        for fname in ['purchase_value', 'purchase_date', 'depreciation_method', 'useful_life_years']:
+            if fname in self.fields:
+                self.fields[fname].required = False
         # Add dynamic fields from category
         self.dynamic_field_names = []
         AssetCategoryModel = apps.get_model('assets', 'AssetCategory')
@@ -28,6 +32,19 @@ class AssetForm(forms.ModelForm):
                     self.dynamic_field_names.append(fname)
             except AssetCategoryModel.DoesNotExist:
                 pass
+        # Always add optional warranty fields to support enterprise warranty tracking
+        if 'dyn_warranty_expiry' not in self.fields:
+            self.fields['dyn_warranty_expiry'] = forms.DateField(
+                label='Warranty Expiry (Optional)', required=False,
+                widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+            )
+            self.dynamic_field_names.append('dyn_warranty_expiry')
+        if 'dyn_warranty_provider' not in self.fields:
+            self.fields['dyn_warranty_provider'] = forms.CharField(
+                label='Warranty Provider (Optional)', required=False,
+                widget=forms.TextInput(attrs={'class': 'form-control'})
+            )
+            self.dynamic_field_names.append('dyn_warranty_provider')
 
     def _make_field(self, field):
         label = field['label']
@@ -101,13 +118,20 @@ class AssetForm(forms.ModelForm):
         purchase_date = cleaned_data.get('purchase_date')
         useful_life_years = cleaned_data.get('useful_life_years')
         depreciation_method = cleaned_data.get('depreciation_method')
+        # If any depreciation values supplied, require complete set & validate
         if purchase_value or purchase_date or useful_life_years:
             if not (purchase_value and purchase_date and useful_life_years and depreciation_method):
                 raise forms.ValidationError('All depreciation fields (value, date, method, useful life) are required for depreciable assets.')
-            if purchase_value <= 0:
+            if purchase_value is not None and purchase_value <= 0:
                 raise forms.ValidationError('Purchase value must be positive.')
-            if useful_life_years <= 0:
+            if useful_life_years is not None and useful_life_years <= 0:
                 raise forms.ValidationError('Useful life must be positive.')
+        else:
+            # No depreciation provided: coerce safe defaults to satisfy model
+            cleaned_data['depreciation_method'] = 'straight_line'
+            cleaned_data['purchase_value'] = None
+            cleaned_data['purchase_date'] = None
+            cleaned_data['useful_life_years'] = None
         return cleaned_data
 
     def save(self, commit=True):

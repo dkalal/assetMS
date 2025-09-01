@@ -35,6 +35,10 @@
             <option value="manager">Manager</option>
             <option value="user">User</option>
           </select>
+          <button class="btn btn-outline-dark d-none" id="managePermissionsBtn" title="Manage role permissions">
+            <i class="bi bi-shield-lock me-1"></i>
+            Permissions Matrix
+          </button>
         </div>
       </div>
       
@@ -337,6 +341,42 @@
 </div>
 
 {% include 'settings/session_detail_modal.html' %}
+
+<!-- Permissions Matrix Modal (Admin-only) -->
+<div id="permissionsMatrixModal" class="custom-modal-overlay">
+  <div class="custom-modal glass-modal" style="max-width: 720px;">
+    <div class="custom-modal-header">
+      <h5 class="modal-title fw-bold mb-0">
+        <i class="bi bi-shield-lock me-2"></i>Permissions Matrix
+      </h5>
+      <button type="button" class="custom-modal-close" id="closePermissionsModal">
+        <span>&times;</span>
+      </button>
+    </div>
+    <div class="custom-modal-body">
+      <div id="permissionsFeedback" class="mb-3"></div>
+      <div id="permissionsMatrixContainer" class="table-responsive">
+        <div class="text-center text-muted py-4">
+          <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+          Loading permissions...
+        </div>
+      </div>
+      <small class="text-muted d-block mt-2">
+        Changes apply instantly for future checks. Superusers always retain full access.
+      </small>
+    </div>
+    <div class="custom-modal-footer d-flex justify-content-end gap-2 p-3">
+      <button type="button" class="btn btn-outline-secondary" id="cancelPermissions">Close</button>
+      <button type="button" class="btn btn-primary d-flex align-items-center" id="savePermissionsBtn">
+        <span class="btn-text">Save Changes</span>
+        <span class="btn-spinner d-none ms-2">
+          <span class="spinner-border spinner-border-sm" role="status"></span>
+        </span>
+      </button>
+    </div>
+  </div>
+  
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -391,6 +431,111 @@ document.addEventListener('DOMContentLoaded', function() {
         loadAccessLogs();
         accessLogsModal.classList.add('active');
     });
+
+    // Permissions Matrix (admin-only; feature appears only if API accessible)
+    const managePermsBtn = document.getElementById('managePermissionsBtn');
+    const permsModal = document.getElementById('permissionsMatrixModal');
+    const permsContainer = document.getElementById('permissionsMatrixContainer');
+    const permsFeedback = document.getElementById('permissionsFeedback');
+    const savePermsBtn = document.getElementById('savePermissionsBtn');
+
+    // Probe API to decide visibility
+    (async function probePermissionsApi() {
+        try {
+            const res = await fetch('/api/roles/permissions/');
+            if (res.ok) {
+                managePermsBtn.classList.remove('d-none');
+                managePermsBtn.addEventListener('click', async () => {
+                    permsModal.classList.add('active');
+                    permsFeedback.innerHTML = '';
+                    await loadPermissionsMatrix();
+                });
+            }
+        } catch (_) { /* silently ignore for non-admins */ }
+    })();
+
+    async function loadPermissionsMatrix() {
+        permsContainer.innerHTML = `
+          <div class="text-center text-muted py-4">
+            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+            Loading permissions...
+          </div>`;
+        try {
+            const res = await fetch('/api/roles/permissions/');
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || 'Failed to load');
+            renderPermissionsMatrix(data.matrix);
+        } catch (e) {
+            permsContainer.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>${e.message || 'Error loading permissions'}</div>`;
+        }
+    }
+
+    function renderPermissionsMatrix(matrix) {
+        const roles = ['Admin', 'Manager', 'User'];
+        const known = new Set();
+        roles.forEach(r => (matrix[r] || []).forEach(p => known.add(p)));
+        const perms = Array.from(known).sort();
+        if (perms.length === 0) {
+            permsContainer.innerHTML = '<div class="text-center text-muted">No permissions defined</div>';
+            return;
+        }
+        let html = '<table class="table table-sm table-hover align-middle"><thead><tr><th>Permission</th>' +
+                   roles.map(r => `<th class="text-center">${r}</th>`).join('') + '</tr></thead><tbody>';
+        perms.forEach(code => {
+            html += '<tr>' +
+              `<td><code>${code}</code></td>` +
+              roles.map(r => {
+                  const checked = (matrix[r] || []).includes(code) ? 'checked' : '';
+                  const disabled = (r === 'Admin' && code === 'system_admin') ? 'disabled' : '';
+                  return `<td class="text-center"><input type="checkbox" class="form-check-input perm-checkbox" data-role="${r}" data-code="${code}" ${checked} ${disabled}></td>`;
+              }).join('') +
+              '</tr>';
+        });
+        html += '</tbody></table>';
+        permsContainer.innerHTML = html;
+    }
+
+    async function savePermissionsMatrix() {
+        try {
+            const btnText = savePermsBtn.querySelector('.btn-text');
+            const btnSpin = savePermsBtn.querySelector('.btn-spinner');
+            btnText.classList.add('d-none'); btnSpin.classList.remove('d-none'); savePermsBtn.disabled = true;
+
+            // Build matrix from checkboxes
+            const roles = ['Admin', 'Manager', 'User'];
+            const matrix = { Admin: [], Manager: [], User: [] };
+            document.querySelectorAll('.perm-checkbox').forEach(cb => {
+                if (cb.checked) matrix[cb.dataset.role].push(cb.dataset.code);
+            });
+
+            const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+            const res = await fetch('/api/roles/permissions/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({ matrix })
+            });
+            const data = await res.json();
+            if (data.success) {
+                permsFeedback.innerHTML = '<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i>Permissions updated</div>';
+            } else {
+                permsFeedback.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>${data.error || 'Update failed'}</div>`;
+            }
+        } catch (e) {
+            permsFeedback.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>${e.message || 'Network error'}</div>`;
+        } finally {
+            const btnText = savePermsBtn.querySelector('.btn-text');
+            const btnSpin = savePermsBtn.querySelector('.btn-spinner');
+            btnText.classList.remove('d-none'); btnSpin.classList.add('d-none'); savePermsBtn.disabled = false;
+        }
+    }
+
+    document.getElementById('closePermissionsModal').addEventListener('click', () => {
+        permsModal.classList.remove('active');
+    });
+    document.getElementById('cancelPermissions').addEventListener('click', () => {
+        permsModal.classList.remove('active');
+    });
+    savePermsBtn.addEventListener('click', savePermissionsMatrix);
     
     // Modal close handlers
     document.getElementById('closeInviteModal').addEventListener('click', () => {

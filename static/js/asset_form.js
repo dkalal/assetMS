@@ -23,6 +23,44 @@ function sanitizeHTML(str) {
     return temp.innerHTML;
 }
 
+// --- Prefill helpers for edit forms ---
+function getInitialDynamicData() {
+    const script = document.getElementById('asset-initial-dyn');
+    if (!script) return null;
+    try {
+        return JSON.parse(script.textContent);
+    } catch (e) {
+        console.warn('Failed to parse initial dynamic data JSON', e);
+        return null;
+    }
+}
+
+function prefillDynamicFields() {
+    const data = getInitialDynamicData();
+    if (!data) return;
+    for (const [key, val] of Object.entries(data)) {
+        const esc = (window.CSS && window.CSS.escape) ? window.CSS.escape(key) : key.replace(/[^a-zA-Z0-9_-]/g, '\\$&');
+        const input = document.querySelector(`[name="dyn_${esc}"]`);
+        if (!input) continue;
+        if (input.type === 'date') {
+            // Expect ISO (YYYY-MM-DD); if not, try to coerce
+            if (val && /^\d{4}-\d{2}-\d{2}$/.test(String(val))) {
+                input.value = val;
+            } else if (val) {
+                const d = new Date(val);
+                if (!isNaN(d)) {
+                    const yyyy = d.getFullYear();
+                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    input.value = `${yyyy}-${mm}-${dd}`;
+                }
+            }
+        } else {
+            input.value = (val !== undefined && val !== null) ? val : '';
+        }
+    }
+}
+
 function showDynamicFieldsLoading() {
     dynamicFieldsContainer.innerHTML = '<div class="d-flex align-items-center justify-content-center py-3"><div class="spinner-border text-primary me-2" role="status" aria-label="Loading"></div> <span>Loading fields...</span></div>';
 }
@@ -51,6 +89,8 @@ function renderDynamicFields(fields) {
     }
     html += '</tbody></table></div></div>';
     dynamicFieldsContainer.innerHTML = html;
+    // After rendering inputs, attempt to prefill using initial dynamic data (edit form)
+    prefillDynamicFields();
 }
 
 function fetchAndRenderDynamicFields(categoryId) {

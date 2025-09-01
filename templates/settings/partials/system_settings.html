@@ -52,6 +52,35 @@
             Save Theme
           </button>
         </div>
+
+        <hr class="my-4">
+        <div>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0"><i class="bi bi-archive text-secondary me-2"></i>Available Backups</h6>
+            <div>
+              <button type="button" id="refreshBackupsBtn" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+              </button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead>
+                <tr>
+                  <th>Filename</th>
+                  <th style="width: 140px;">Size</th>
+                  <th style="width: 220px;">Modified</th>
+                  <th style="width: 120px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="backupsTableBody">
+                <tr>
+                  <td colspan="4" class="text-muted small">No backups found. Create one to get started.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
 

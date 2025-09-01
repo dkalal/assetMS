@@ -12,6 +12,12 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeSettings();
     setupEventListeners();
     loadCurrentSettings();
+    // Load backups list if the container exists
+    if (document.getElementById('backupsTableBody')) {
+        loadBackupsList();
+        const btn = document.getElementById('refreshBackupsBtn');
+        if (btn) btn.addEventListener('click', loadBackupsList);
+    }
 });
 
 /**
@@ -31,6 +37,62 @@ function initializeSettings() {
     tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
+}
+
+// --- Backups listing helpers ---
+function loadBackupsList() {
+    const tbody = document.getElementById('backupsTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = `<tr><td colspan="4" class="text-muted small">Loading backups...</td></tr>`;
+    fetch('/settings/api/backup/list/')
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) throw new Error(data.error || 'Failed to load backups');
+            const backups = data.backups || [];
+            if (!backups.length) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-muted small">No backups found. Create one to get started.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = backups.map(row => {
+                const size = formatBytes(row.size_bytes || 0);
+                const modified = formatDateTime(row.modified);
+                const name = escapeHtml(row.filename || '');
+                return `
+                  <tr>
+                    <td class="text-truncate" style="max-width:420px" title="${name}">${name}</td>
+                    <td>${size}</td>
+                    <td>${modified}</td>
+                    <td>
+                      <a class="btn btn-sm btn-outline-secondary" href="/settings/api/backup/download/?filename=${encodeURIComponent(name)}">
+                        <i class="bi bi-download me-1"></i>Download
+                      </a>
+                    </td>
+                  </tr>`;
+            }).join('');
+        })
+        .catch(err => {
+            console.error('List backups error:', err);
+            tbody.innerHTML = `<tr><td colspan="4" class="text-danger small">${escapeHtml(err.message || 'Failed to load backups')}</td></tr>`;
+        });
+}
+
+function formatBytes(bytes) {
+    try {
+        const thresh = 1024;
+        if (Math.abs(bytes) < thresh) return bytes + ' B';
+        const units = ['KB','MB','GB','TB','PB'];
+        let u = -1;
+        do { bytes /= thresh; ++u; } while (Math.abs(bytes) >= thresh && u < units.length - 1);
+        return bytes.toFixed(1)+' '+units[u];
+    } catch { return bytes + ' B'; }
+}
+
+function formatDateTime(iso) {
+    try { return new Date(iso).toLocaleString(); } catch { return iso || ''; }
+}
+
+function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
 }
 
 /**
@@ -387,7 +449,38 @@ function disableAllNotifications() {
  * System management functions (admin only)
  */
 function createBackup() {
-    showInfoMessage('Backup creation initiated. You will be notified when complete.');
+    showConfirmationModal(
+        'Create Backup',
+        'This will create a backup of the system database. Continue?',
+        () => {
+            fetch('/settings/api/backup/create/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCSRFToken()
+                }
+            })
+            .then(res => res.json().then(data => ({ status: res.status, data })))
+            .then(({ status, data }) => {
+                if (status === 200 && data.success) {
+                    showSuccessMessage('Backup created successfully');
+                    if (data.filename) {
+                        showInfoMessage(`File: ${data.filename} (${(data.size_bytes/1024).toFixed(1)} KB)`);
+                    }
+                    // Refresh list if present
+                    if (document.getElementById('backupsTableBody')) {
+                        loadBackupsList();
+                    }
+                } else {
+                    showErrorMessage(data.error || 'Failed to create backup');
+                }
+            })
+            .catch(err => {
+                console.error('Backup error:', err);
+                showErrorMessage('Network error while creating backup');
+            });
+        },
+        'Create Backup'
+    );
 }
 
 function restoreBackup() {

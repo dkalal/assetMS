@@ -17,6 +17,11 @@ from .permissions import SettingsPermissions, require_setting_permission
 import json
 import logging
 from django.core.mail import send_mail
+from django.http import FileResponse
+from django.core.management import call_command
+import os
+from datetime import datetime
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
@@ -309,6 +314,156 @@ def api_users_management(request):
         
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+@api_admin_required
+@require_POST
+def api_create_backup(request):
+    """Create a system backup (database dump). Admin-only.
+
+    Generates a JSON dump of the database into BASE_DIR/backups with a timestamped filename.
+    Returns JSON with the backup filename and basic metadata. This is a synchronous, minimal
+    implementation intended to be extended (e.g., zip archives, media backups, async jobs).
+    """
+    try:
+        # Prepare backups directory
+        backups_dir = os.path.join(settings.BASE_DIR, 'backups')
+        os.makedirs(backups_dir, exist_ok=True)
+
+        # Build filename
+        ts = timezone.now().strftime('%Y%m%d-%H%M%S')
+        filename = f'backup-{ts}.json'
+        filepath = os.path.join(backups_dir, filename)
+
+        # Create dumpdata
+        with open(filepath, 'w', encoding='utf-8') as f:
+            call_command(
+                'dumpdata',
+                '--natural-foreign',
+                '--natural-primary',
+                '--indent', '2',
+                stdout=f
+            )
+
+        # Audit log
+        try:
+            log_audit(request.user, 'backup_created', None, f'Created backup {filename}')
+        except Exception:
+            pass
+
+        size_bytes = os.path.getsize(filepath)
+        return JsonResponse({
+            'success': True,
+            'message': 'Backup created successfully',
+            'filename': filename,
+            'size_bytes': size_bytes
+        })
+    except Exception as e:
+        logger.error(f"Backup creation failed: {e}")
+        return JsonResponse({'success': False, 'error': 'Failed to create backup'})
+
+@api_admin_required
+def api_list_backups(request):
+    """List available backup files in BASE_DIR/backups. Admin-only.
+    Returns file name, size (bytes), and modified timestamp (ISO).
+    """
+    try:
+        backups_dir = os.path.join(settings.BASE_DIR, 'backups')
+        os.makedirs(backups_dir, exist_ok=True)
+        entries = []
+        for name in os.listdir(backups_dir):
+            # Limit to known backup extensions
+            if not (name.endswith('.json') or name.endswith('.zip')):
+                continue
+            path = os.path.join(backups_dir, name)
+            if not os.path.isfile(path):
+                continue
+            stat = os.stat(path)
+            entries.append({
+                'filename': name,
+                'size_bytes': stat.st_size,
+                'modified': datetime.fromtimestamp(stat.st_mtime, tz=timezone.get_current_timezone()).isoformat()
+            })
+        # Sort newest first
+        entries.sort(key=lambda x: x['modified'], reverse=True)
+        return JsonResponse({'success': True, 'backups': entries})
+    except Exception as e:
+        logger.error(f"Failed to list backups: {e}")
+        return JsonResponse({'success': False, 'error': 'Failed to list backups'})
+
+@api_admin_required
+def api_download_backup(request):
+    """Download a specific backup file by safe filename. Admin-only."""
+    try:
+        name = request.GET.get('filename', '')
+        # Basic filename safety: no path separators
+        if not name or ('/' in name or '\\' in name):
+            return JsonResponse({'success': False, 'error': 'Invalid filename'})
+        backups_dir = os.path.join(settings.BASE_DIR, 'backups')
+        path = os.path.join(backups_dir, name)
+        if not (os.path.isfile(path) and (name.endswith('.json') or name.endswith('.zip'))):
+            return JsonResponse({'success': False, 'error': 'File not found'})
+        content_type = 'application/json' if name.endswith('.json') else 'application/zip'
+        resp = FileResponse(open(path, 'rb'), content_type=content_type)
+        resp['Content-Disposition'] = f'attachment; filename="{name}"'
+        return resp
+    except Exception as e:
+        logger.error(f"Failed to download backup: {e}")
+        return JsonResponse({'success': False, 'error': 'Failed to download backup'})
+
+@api_admin_required
+@require_POST
+def api_restore_backup(request):
+    """Restore system from an uploaded JSON backup. Admin-only.
+
+    Security and safety notes:
+    - Accepts only .json files produced by our dumpdata backup.
+    - Size limited to 50MB by default.
+    - Runs inside a DB transaction; if any error occurs, changes are rolled back.
+    - Logs audit event on success/failure.
+    """
+    try:
+        uploaded = request.FILES.get('backup_file')
+        if not uploaded:
+            return JsonResponse({'success': False, 'error': 'No backup file provided'})
+
+        name = uploaded.name or ''
+        if not name.lower().endswith('.json'):
+            return JsonResponse({'success': False, 'error': 'Only .json backups are supported'})
+
+        # Limit to 50 MB
+        max_size = 50 * 1024 * 1024
+        if uploaded.size and uploaded.size > max_size:
+            return JsonResponse({'success': False, 'error': 'Backup file too large (max 50MB)'})
+
+        # Save to an uploads inbox for traceability
+        backups_dir = os.path.join(settings.BASE_DIR, 'backups')
+        inbox_dir = os.path.join(backups_dir, 'uploads')
+        os.makedirs(inbox_dir, exist_ok=True)
+        ts = timezone.now().strftime('%Y%m%d-%H%M%S')
+        safe_name = f"restore-{ts}-{os.path.basename(name)}"
+        dest_path = os.path.join(inbox_dir, safe_name)
+
+        with open(dest_path, 'wb') as out:
+            for chunk in uploaded.chunks():
+                out.write(chunk)
+
+        # Attempt restore using loaddata
+        with transaction.atomic():
+            call_command('loaddata', dest_path, verbosity=0)
+
+        try:
+            log_audit(request.user, 'backup_restored', None, f'Restored from {safe_name}')
+        except Exception:
+            pass
+
+        return JsonResponse({'success': True, 'message': 'Restore completed successfully. Please reload the application.'})
+    except Exception as e:
+        logger.error(f"Backup restore failed: {e}")
+        try:
+            log_audit(request.user, 'backup_restore_failed', None, f'Restore failed: {e}')
+        except Exception:
+            pass
+        return JsonResponse({'success': False, 'error': 'Failed to restore backup'})
 
 @api_admin_required
 @require_POST

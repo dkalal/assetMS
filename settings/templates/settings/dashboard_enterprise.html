@@ -45,6 +45,46 @@
 
 {% block settings_categories %}
   {{ block.super }}
+  {% if 'system_settings' in available_settings %}
+  <div class="card mt-4">
+    <div class="card-header">
+      <h5 class="mb-0">
+        <i class="bi bi-database-gear me-2"></i>Data Management
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <p class="mb-0 text-muted">Create and manage secure system backups.</p>
+        <button type="button" class="btn btn-sm btn-primary" onclick="createBackup()">
+          <i class="bi bi-hdd-network me-1"></i>Create Backup
+        </button>
+      </div>
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="mb-0"><i class="bi bi-archive text-secondary me-2"></i>Available Backups</h6>
+        <button type="button" id="refreshBackupsBtn" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+        </button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead>
+            <tr>
+              <th>Filename</th>
+              <th style="width: 140px;">Size</th>
+              <th style="width: 220px;">Modified</th>
+              <th style="width: 120px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="backupsTableBody">
+            <tr>
+              <td colspan="4" class="text-muted small">No backups found. Create one to get started.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
   <div class="card mt-4" id="systemHealthCard" style="display: none;">
     <div class="card-header">
       <h5 class="mb-0">
@@ -243,4 +283,5 @@
 
 {% block extra_scripts %}
   <script src="{% static 'js/settings-enterprise.js' %}"></script>
+  <script src="{% static 'js/settings.js' %}"></script>
 {% endblock %}

@@ -13,6 +13,122 @@ function updateAssignedAssetsPaginationControls() {
     nextBtn.disabled = assignedAssetsPagination.page >= assignedAssetsPagination.numPages;
     pageInfo.textContent = `Page ${assignedAssetsPagination.page} of ${assignedAssetsPagination.numPages}`;
   }
+
+  // --- Admin: Backup Now button wiring ---
+  const backupBtn = document.getElementById('openBackupModal');
+  if (backupBtn) {
+    backupBtn.addEventListener('click', function() {
+      const originalText = backupBtn.innerHTML;
+      backupBtn.disabled = true;
+      backupBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Creating backup...';
+      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+      fetch('/settings/api/backup/create/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+      })
+        .then(res => res.json().then(data => ({ status: res.status, data })))
+        .then(({ status, data }) => {
+          const ok = status === 200 && data.success;
+          showToast(ok ? 'Backup created successfully' : (data.error || 'Backup failed'), ok ? 'success' : 'danger');
+          if (ok && data.filename) {
+            showToast(`File: ${data.filename} (${(data.size_bytes/1024).toFixed(1)} KB)`, 'info');
+          }
+        })
+        .catch(() => {
+          showToast('Network error while creating backup', 'danger');
+        })
+        .finally(() => {
+          backupBtn.disabled = false;
+          backupBtn.innerHTML = originalText;
+        });
+    });
+  }
+
+  function showToast(message, type = 'info') {
+    // Simple bootstrap-like toast/alert in bottom-right
+    let c = document.getElementById('global-toast-container');
+    if (!c) {
+      c = document.createElement('div');
+      c.id = 'global-toast-container';
+      c.style.position = 'fixed';
+      c.style.right = '24px';
+      c.style.bottom = '24px';
+      c.style.zIndex = '1060';
+      document.body.appendChild(c);
+    }
+    const el = document.createElement('div');
+    el.className = `alert alert-${type}`;
+    el.style.minWidth = '260px';
+    el.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)';
+    el.textContent = message;
+    c.appendChild(el);
+    setTimeout(() => { el.remove(); if (!c.childElementCount) c.remove(); }, 3500);
+  }
+}
+
+// Ensure a global toast helper exists
+if (typeof window.showToast !== 'function') {
+  window.showToast = function(message, type = 'info') {
+    let c = document.getElementById('global-toast-container');
+    if (!c) {
+      c = document.createElement('div');
+      c.id = 'global-toast-container';
+      c.style.position = 'fixed';
+      c.style.right = '24px';
+      c.style.bottom = '24px';
+      c.style.zIndex = '1060';
+      document.body.appendChild(c);
+    }
+    const el = document.createElement('div');
+    el.className = `alert alert-${type}`;
+    el.style.minWidth = '260px';
+    el.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)';
+    el.textContent = message;
+    c.appendChild(el);
+    setTimeout(() => { el.remove(); if (!c.childElementCount) c.remove(); }, 3500);
+  }
+}
+
+// Bind Backup Now button on DOM ready in an idempotent way
+document.addEventListener('DOMContentLoaded', function() {
+  const backupBtn = document.getElementById('openBackupModal');
+  if (!backupBtn || backupBtn.dataset.boundBackup === '1') return;
+  backupBtn.dataset.boundBackup = '1';
+
+  backupBtn.addEventListener('click', function() {
+    const originalText = backupBtn.innerHTML;
+    backupBtn.disabled = true;
+    backupBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Creating backup...';
+    const csrfToken = getCSRFToken();
+    fetch('/settings/api/backup/create/', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfToken },
+    })
+      .then(res => res.json().then(data => ({ status: res.status, data })))
+      .then(({ status, data }) => {
+        const ok = status === 200 && data.success;
+        window.showToast(ok ? 'Backup created successfully' : (data.error || 'Backup failed'), ok ? 'success' : 'danger');
+        if (ok && data.filename) {
+          window.showToast(`File: ${data.filename} (${(data.size_bytes/1024).toFixed(1)} KB)`, 'info');
+        }
+      })
+      .catch(() => {
+        window.showToast('Network error while creating backup', 'danger');
+      })
+      .finally(() => {
+        backupBtn.disabled = false;
+        backupBtn.innerHTML = originalText;
+      });
+  });
+});
+
+// Provide a local CSRF helper with cookie fallback (idempotent definition)
+if (typeof window.getCSRFToken !== 'function') {
+  function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+           document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1] || '';
+  }
+  window.getCSRFToken = getCSRFToken;
 }
 
 function updateUserActivityPaginationControls() {
@@ -917,6 +1033,105 @@ document.addEventListener('DOMContentLoaded', function() {
       if (e.key === 'Escape' && dynamicFieldModalCustom.classList.contains('active')) {
         closeDynamicFieldModal();
       }
+    });
+  }
+  
+  // --- Admin: Restore Backup Custom Modal Logic ---
+  const openRestoreBtn = document.getElementById('openRestoreModal');
+  const restoreModal = document.getElementById('restoreBackupModalCustom');
+  const closeRestoreBtn = document.getElementById('closeRestoreBackupModal');
+  const cancelRestoreBtn = document.getElementById('cancelRestoreBackupModal');
+  const restoreForm = document.getElementById('restore-backup-form');
+  const restoreFileInput = document.getElementById('restore-backup-file');
+  const confirmRestoreBtn = document.getElementById('confirmRestoreBackupBtn');
+  const restoreFeedback = document.getElementById('restore-backup-feedback');
+
+  function openRestoreModal() {
+    if (restoreFeedback) restoreFeedback.innerHTML = '';
+    if (restoreFileInput) restoreFileInput.value = '';
+    if (restoreModal) {
+      restoreModal.classList.add('active');
+      restoreModal.focus();
+    }
+  }
+  function closeRestoreModal() {
+    if (restoreModal) restoreModal.classList.remove('active');
+    if (restoreForm) restoreForm.reset();
+    if (restoreFeedback) restoreFeedback.innerHTML = '';
+  }
+  function showRestoreFeedback(msg, type = 'info') {
+    if (restoreFeedback) restoreFeedback.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+  }
+
+  if (openRestoreBtn && restoreModal) {
+    openRestoreBtn.addEventListener('click', openRestoreModal);
+  }
+  if (closeRestoreBtn) closeRestoreBtn.addEventListener('click', closeRestoreModal);
+  if (cancelRestoreBtn) cancelRestoreBtn.addEventListener('click', closeRestoreModal);
+  if (restoreModal) {
+    restoreModal.addEventListener('click', function(e) {
+      if (e.target === restoreModal) closeRestoreModal();
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && restoreModal.classList.contains('active')) closeRestoreModal();
+    });
+  }
+
+  if (restoreForm) {
+    restoreForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      if (restoreFeedback) restoreFeedback.innerHTML = '';
+      const file = restoreFileInput?.files?.[0];
+      if (!file) {
+        showRestoreFeedback('Please choose a backup file (.json).', 'danger');
+        return;
+      }
+      if (!file.name.toLowerCase().endsWith('.json')) {
+        showRestoreFeedback('Invalid file type. Please select a .json backup.', 'danger');
+        return;
+      }
+      // Optional client-side size check (50MB)
+      const maxSize = 50 * 1024 * 1024;
+      if (file.size > maxSize) {
+        showRestoreFeedback('File too large. Max allowed size is 50MB.', 'danger');
+        return;
+      }
+      const csrfToken = window.getCSRFToken ? window.getCSRFToken() : '';
+      const fd = new FormData();
+      fd.append('backup_file', file);
+      const originalHtml = confirmRestoreBtn ? confirmRestoreBtn.innerHTML : '';
+      if (confirmRestoreBtn) {
+        confirmRestoreBtn.disabled = true;
+        confirmRestoreBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Restoring...';
+      }
+      showRestoreFeedback('Uploading and restoring backup...', 'info');
+      fetch('/settings/api/backup/restore/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+        body: fd,
+      })
+        .then(res => res.json().then(data => ({ status: res.status, data })))
+        .then(({ status, data }) => {
+          const ok = status === 200 && data.success;
+          if (ok) {
+            showRestoreFeedback('Restore completed successfully.', 'success');
+            window.showToast('System restore completed successfully', 'success');
+            setTimeout(() => { closeRestoreModal(); }, 800);
+          } else {
+            showRestoreFeedback(data.error || 'Restore failed. Check the backup file and try again.', 'danger');
+            window.showToast(data.error || 'Restore failed', 'danger');
+          }
+        })
+        .catch(() => {
+          showRestoreFeedback('Network error while restoring. Please try again.', 'danger');
+          window.showToast('Network error while restoring', 'danger');
+        })
+        .finally(() => {
+          if (confirmRestoreBtn) {
+            confirmRestoreBtn.disabled = false;
+            confirmRestoreBtn.innerHTML = originalHtml;
+          }
+        });
     });
   }
 }); 

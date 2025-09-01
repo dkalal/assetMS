@@ -1,10 +1,11 @@
 {% extends 'base_dashboard.html' %}
 {% load asset_extras %}
-{% block title %}Register Asset{% endblock %}
+{% block title %}{% if object %}Edit Asset{% else %}Register Asset{% endif %}{% endblock %}
 {% block content %}
+{% include 'components/breadcrumbs.html' with root_label='Dashboard' root_url='/dashboard/' parent_label='Assets' parent_url='/assets/' current_label=object|yesno:'Edit Asset,Register Asset' %}
 <!-- User role for JS (CSP-compliant, non-intrusive, extensible) -->
 <div id="user-role" data-role="{{ user_role|default:'' }}" style="display:none;"></div>
-<h2 class="mb-4">Register New Asset</h2>
+<h2 class="mb-4">{% if object %}Edit Asset{% else %}Register New Asset{% endif %}</h2>
 <!-- Robust error display block -->
 {% if form.errors %}
   <div class="alert alert-danger">
@@ -73,37 +74,65 @@
         <!-- Depreciation Details -->
         <div class="col-12">
             <div class="card mb-3">
-                <div class="card-header bg-warning text-dark">Depreciation Details</div>
+                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                    <span>Depreciation</span>
+                    <span class="small text-muted">Optional — leave all blank to skip</span>
+                </div>
                 <div class="card-body row g-3">
                     <div class="col-md-3">
                         <label for="id_purchase_value" class="form-label">Purchase Value</label>
                         {{ form.purchase_value }}
+                        <div class="form-text">Initial cost (e.g., 1200.00)</div>
                         {{ form.purchase_value.errors }}
                     </div>
                     <div class="col-md-3">
                         <label for="id_purchase_date" class="form-label">Purchase Date</label>
                         {{ form.purchase_date }}
+                        <div class="form-text">Acquisition date</div>
                         {{ form.purchase_date.errors }}
                     </div>
                     <div class="col-md-3">
                         <label for="id_depreciation_method" class="form-label">Depreciation Method</label>
                         {{ form.depreciation_method }}
+                        <div class="form-text">Default is Straight Line</div>
                         {{ form.depreciation_method.errors }}
                     </div>
                     <div class="col-md-3">
                         <label for="id_useful_life_years" class="form-label">Useful Life (Years)</label>
                         {{ form.useful_life_years }}
+                        <div class="form-text">Positive integer (e.g., 3)</div>
                         {{ form.useful_life_years.errors }}
                     </div>
                 </div>
                 <div class="card-footer small text-muted">
-                    All fields above are required for depreciable assets. Leave blank if not applicable.
+                    If you enter any depreciation value, you must provide the complete set (value, date, method, useful life). Otherwise, leave all fields blank to disable depreciation for this asset.
                 </div>
             </div>
         </div>
     </div>
+    <!-- Warranty (Optional) -->
+    <div class="col-12">
+        <div class="card mb-3">
+            <div class="card-header bg-light text-dark">Warranty (Optional)</div>
+            <div class="card-body row g-3">
+                <div class="col-md-4">
+                    <label for="id_dyn_warranty_expiry" class="form-label">Warranty Expiry</label>
+                    {{ form.dyn_warranty_expiry }}
+                    {{ form.dyn_warranty_expiry.errors }}
+                </div>
+                <div class="col-md-8">
+                    <label for="id_dyn_warranty_provider" class="form-label">Warranty Provider</label>
+                    {{ form.dyn_warranty_provider }}
+                    {{ form.dyn_warranty_provider.errors }}
+                </div>
+            </div>
+            <div class="card-footer small text-muted">
+                Warranty fields are optional. Provide them if the asset includes warranty coverage.
+            </div>
+        </div>
+    </div>
     <div class="mt-4">
-        <button type="submit" class="btn btn-primary">Register Asset</button>
+        <button type="submit" class="btn btn-primary">{% if object %}Save Changes{% else %}Register Asset{% endif %}</button>
     </div>
 </form>
 {% if object and object.qr_code %}
@@ -114,6 +143,11 @@
         <a href="{{ object.qr_code.url }}" download class="btn btn-outline-secondary btn-sm">Download QR</a>
     </div>
 </div>
+{% endif %}
+
+{% if object %}
+  {# Safely embed initial dynamic data for JS to prefill on edit #}
+  {{ object.dynamic_data|json_script:"asset-initial-dyn" }}
 {% endif %}
 
 <!-- Custom Add User Modal (Admin Only) -->

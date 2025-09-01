@@ -33,6 +33,8 @@ from audit.utils import log_audit, ASSIGN_ACTION, MAINTENANCE_ACTION
 from django.core.paginator import Paginator, EmptyPage
 from django.utils.timezone import localtime
 
+from users.utils import can
+
 # Permission check: only admin/manager
 def is_admin_or_manager(user):
     return user.is_authenticated and user.role in ('admin', 'manager')
@@ -46,7 +48,8 @@ class AssetCreateView(UserPassesTestMixin, CreateView):
     success_url = reverse_lazy('asset_list')
 
     def test_func(self):
-        return self.request.user.is_authenticated and self.request.user.role in ('admin', 'manager')
+        user = self.request.user
+        return user.is_authenticated and can(user, 'create_assets')
 
     def form_valid(self, form):
         asset = form.save(commit=False)
@@ -96,30 +99,90 @@ class AssetUpdateView(UserPassesTestMixin, UpdateView):
     slug_url_kwarg = 'uuid'
 
     def test_func(self):
-        return self.request.user.is_authenticated and self.request.user.role in ('admin', 'manager')
+        user = self.request.user
+        return user.is_authenticated and can(user, 'edit_assets')
 
     def form_valid(self, form):
         old_obj = self.get_object()
+        # Capture old values for comparison
+        old_assigned = old_obj.assigned_to
+        old_status = old_obj.status
+        try:
+            old_dyn = dict(old_obj.dynamic_data or {})
+        except Exception:
+            old_dyn = {}
+
         asset = form.save(commit=False)
         assigned_to = form.cleaned_data.get('assigned_to')
         status = form.cleaned_data.get('status')
+        try:
+            new_dyn = dict(getattr(asset, 'dynamic_data', {}) or {})
+        except Exception:
+            new_dyn = {}
+
         asset.save()
+
         # Assignment logging: if assigned_to changes
-        if old_obj.assigned_to != assigned_to and assigned_to:
-            log_audit(self.request.user, ASSIGN_ACTION, asset, f'Asset assigned to {assigned_to}', related_user=assigned_to)
-        # Transfer logging: if status changes to 'transferred'
-        if old_obj.status != status and status == 'transferred':
-            log_audit(
-                self.request.user,
-                ASSIGN_ACTION,
-                asset,
-                f"Asset status set to 'transferred' (from {old_obj.assigned_to} to {assigned_to})",
-                related_user=assigned_to
-            )
-        # Maintenance logging
-        if old_obj.status != status and status == 'maintenance':
-            log_audit(self.request.user, MAINTENANCE_ACTION, asset, 'Asset marked as under maintenance')
+        if old_assigned != assigned_to:
+            if assigned_to:
+                log_audit(self.request.user, ASSIGN_ACTION, asset, f'Asset assigned to {assigned_to}', related_user=assigned_to)
+            else:
+                # Unassignment event
+                log_audit(self.request.user, 'unassign', asset, f'Asset unassigned (previously {old_assigned})')
+
+        # Status change logging (generic + specific)
+        if old_status != status:
+            # Generic status change event
+            log_audit(self.request.user, 'status_change', asset, f"Asset status changed from '{old_status}' to '{status}'")
+            # Specific transitions
+            if status == 'transferred':
+                log_audit(
+                    self.request.user,
+                    ASSIGN_ACTION,
+                    asset,
+                    f"Asset transferred (from {old_assigned} to {assigned_to})",
+                    related_user=assigned_to
+                )
+            elif status == 'maintenance':
+                log_audit(self.request.user, MAINTENANCE_ACTION, asset, 'Asset marked as under maintenance')
+            elif status == 'retired':
+                log_audit(self.request.user, 'retire', asset, 'Asset retired from active service')
+            elif status == 'lost':
+                log_audit(self.request.user, 'lost', asset, 'Asset reported lost')
+
+        # Optional: minimal dynamic data change summary (avoid large diffs)
+        try:
+            changed_keys = [k for k in set(old_dyn.keys()) | set(new_dyn.keys()) if (old_dyn.get(k) != new_dyn.get(k))]
+            if changed_keys:
+                # Limit to first 8 keys to keep logs concise
+                preview = ', '.join(changed_keys[:8]) + ('' if len(changed_keys) <= 8 else ', ...')
+                log_audit(self.request.user, 'edit', asset, f'Asset details updated (changed fields: {preview})')
+                # Specific: Warranty change tracking
+                if 'warranty_expiry' in changed_keys:
+                    log_audit(
+                        self.request.user,
+                        'warranty_change',
+                        asset,
+                        f"Warranty expiry changed from '{old_dyn.get('warranty_expiry')}' to '{new_dyn.get('warranty_expiry')}'"
+                    )
+        except Exception:
+            pass
+
         return super().form_valid(form)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        # Mirror CreateView: pass request for permission-aware form behavior
+        kwargs['initial'] = kwargs.get('initial', {})
+        kwargs['initial']['request'] = self.request
+        kwargs['request'] = self.request
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Provide user role to template/JS (e.g., to show admin-only controls)
+        context['user_role'] = getattr(self.request.user, 'role', 'user')
+        return context
 
 @require_GET
 def get_dynamic_fields(request):
@@ -331,6 +394,12 @@ class AssetDetailByUUIDView(DetailView):
 
 # Export endpoint (robust, supports GET and POST, individual/bulk)
 def asset_export(request):
+    # Authorization: require login and explicit export permission
+    user = request.user
+    if not user.is_authenticated:
+        return HttpResponse('Authentication required', status=401)
+    if not can(user, 'export_data'):
+        return HttpResponse('Forbidden: insufficient permissions', status=403)
     if request.method == 'POST':
         format = request.POST.get('format', 'csv')
         columns = request.POST.getlist('columns')
@@ -459,6 +528,9 @@ def asset_export(request):
 @login_required
 @user_passes_test(is_admin_or_manager, login_url='users:login')
 def download_import_template(request):
+    # Enforce matrix: require create permission
+    if not can(request.user, 'create_assets'):
+        return HttpResponse('Forbidden: insufficient permissions', status=403)
     # Generate Excel template for selected category
     category_id = request.GET.get('category')
     if not category_id:
@@ -514,6 +586,9 @@ class AssetBulkImportView(View):
     template_name = 'assets/asset_bulk_import.html'
 
     def get(self, request):
+        # Enforce matrix: require create permission
+        if not can(request.user, 'create_assets'):
+            return HttpResponse('Forbidden: insufficient permissions', status=403)
         # Step 1: Select category, download template
         categories = AssetCategory.objects.all()
         selected_category = request.GET.get('category')
@@ -522,6 +597,9 @@ class AssetBulkImportView(View):
         return render(request, self.template_name, context)
 
     def post(self, request):
+        # Enforce matrix: require create permission
+        if not can(request.user, 'create_assets'):
+            return HttpResponse('Forbidden: insufficient permissions', status=403)
         # Step 2: Upload and preview file
         categories = AssetCategory.objects.all()
         selected_category = request.POST.get('category')
@@ -791,11 +869,18 @@ def dashboard_chart_data_api(request):
         from django.db.models.functions import Coalesce
         from django.db.models.expressions import RawSQL
         try:
-            # Use KeyTextTransform for JSONField key extraction (Django >=3.1)
-            from django.db.models.functions import Cast
-            from django.db.models import CharField
+            # Prefer ORM aggregation with coalesced keys for performance
+            from django.db.models.functions import Cast, Coalesce
+            from django.db.models import CharField, Value as V
             qs_with_dept = qs.annotate(
-                department=Cast('dynamic_data__department', CharField())
+                department=Coalesce(
+                    Cast('dynamic_data__department', CharField()),
+                    Cast('dynamic_data__Department', CharField()),
+                    Cast('dynamic_data__dept', CharField()),
+                    Cast('dynamic_data__Dept', CharField()),
+                    Cast('dynamic_data__assigned_department', CharField()),
+                    V('Unspecified')
+                )
             )
             agg = qs_with_dept.values('department').annotate(count=Count('id')).order_by('-count')
             labels = [a['department'] or 'Unspecified' for a in agg]
@@ -803,8 +888,15 @@ def dashboard_chart_data_api(request):
         except Exception:
             # Fallback to Python loop if ORM fails
             dept_counts = {}
+            keys = ['department', 'Department', 'dept', 'Dept', 'assigned_department']
             for asset in qs:
-                dept = asset.dynamic_data.get('department', 'Unspecified')
+                # Try multiple keys and normalize value
+                raw = None
+                for k in keys:
+                    if k in asset.dynamic_data:
+                        raw = asset.dynamic_data.get(k)
+                        break
+                dept = (str(raw).strip() if raw else '') or 'Unspecified'
                 dept_counts[dept] = dept_counts.get(dept, 0) + 1
             labels = list(dept_counts.keys())
             data = list(dept_counts.values())
@@ -815,18 +907,35 @@ def dashboard_chart_data_api(request):
         from django.db.models.functions import Coalesce
         from django.db.models.expressions import RawSQL
         try:
-            from django.db.models.functions import Cast
-            from django.db.models import CharField
+            from django.db.models.functions import Cast, Coalesce
+            from django.db.models import CharField, Value as V
             qs_with_loc = qs.annotate(
-                location=Cast('dynamic_data__location', CharField())
+                location=Coalesce(
+                    Cast('dynamic_data__location', CharField()),
+                    Cast('dynamic_data__Location', CharField()),
+                    Cast('dynamic_data__site', CharField()),
+                    Cast('dynamic_data__Site', CharField()),
+                    Cast('dynamic_data__office', CharField()),
+                    Cast('dynamic_data__Office', CharField()),
+                    Cast('dynamic_data__branch', CharField()),
+                    Cast('dynamic_data__Branch', CharField()),
+                    V('Unspecified')
+                )
             )
             agg = qs_with_loc.values('location').annotate(count=Count('id')).order_by('-count')
             labels = [a['location'] or 'Unspecified' for a in agg]
             data = [a['count'] for a in agg]
         except Exception:
             loc_counts = {}
+            keys = ['location', 'Location', 'site', 'Site', 'office', 'Office', 'branch', 'Branch']
             for asset in qs:
-                loc = asset.dynamic_data.get('location', 'Unspecified')
+                # Try multiple keys and normalize value
+                raw = None
+                for k in keys:
+                    if k in asset.dynamic_data:
+                        raw = asset.dynamic_data.get(k)
+                        break
+                loc = (str(raw).strip() if raw else '') or 'Unspecified'
                 loc_counts[loc] = loc_counts.get(loc, 0) + 1
             labels = list(loc_counts.keys())
             data = list(loc_counts.values())

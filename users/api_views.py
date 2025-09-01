@@ -10,7 +10,8 @@ from django.db import transaction
 from django.contrib.sessions.models import Session
 from django.contrib.auth import update_session_auth_hash
 from .decorators import api_login_required, api_admin_required
-from .models import UserSession
+from .models import UserSession, RolePermissionMatrix
+from . import utils as user_utils
 import json
 import logging
 from django.utils.crypto import get_random_string
@@ -95,6 +96,78 @@ def api_users_list(request):
             'success': False,
             'error': str(e)
         }, status=500)
+
+@api_login_required
+@require_http_methods(["GET", "POST"])
+def api_roles_permissions(request):
+    """Admin-only API to view/update Role Permission Matrix.
+    GET -> returns current matrix
+    POST -> updates matrix (CSRF required)
+    """
+    try:
+        # Admin-only access (superuser). Consider extending to dedicated Admin role if present.
+        if not request.user.is_superuser:
+            return JsonResponse({'success': False, 'error': 'Admin privileges required'}, status=403)
+
+        if request.method == 'GET':
+            matrix = RolePermissionMatrix.load()
+            return JsonResponse({'success': True, 'matrix': matrix.permissions, 'updated_at': matrix.updated_at.isoformat()})
+
+        # POST: validate CSRF via default middleware (no csrf_exempt here)
+        if request.content_type == 'application/json':
+            data = json.loads(request.body or '{}')
+        else:
+            data = request.POST.dict()
+
+        proposed = data.get('matrix') or data.get('permissions') or {}
+
+        # Validate structure: {role: [permission_code, ...]}
+        if not isinstance(proposed, dict):
+            return JsonResponse({'success': False, 'error': 'matrix must be a JSON object'}, status=400)
+
+        allowed_roles = {'Admin', 'Manager', 'User'}
+        normalized = {}
+        for role, perms in proposed.items():
+            if role not in allowed_roles:
+                return JsonResponse({'success': False, 'error': f'Unknown role: {role}'}, status=400)
+            if not isinstance(perms, (list, tuple)):
+                return JsonResponse({'success': False, 'error': f'Permissions for {role} must be a list'}, status=400)
+            # Deduplicate and normalize to strings
+            cleaned = []
+            seen = set()
+            for p in perms:
+                if not isinstance(p, str):
+                    return JsonResponse({'success': False, 'error': f'Permission codes must be strings (role {role})'}, status=400)
+                code = p.strip()
+                if not code:
+                    continue
+                if code not in seen:
+                    seen.add(code)
+                    cleaned.append(code)
+            normalized[role] = cleaned
+
+        # Always preserve keys for all roles
+        for r in allowed_roles:
+            normalized.setdefault(r, [])
+
+        with transaction.atomic():
+            matrix = RolePermissionMatrix.load()
+            matrix.permissions = normalized
+            matrix.save(update_fields=['permissions', 'updated_at'])
+            # Invalidate cache so subsequent checks reflect new values
+            try:
+                user_utils.invalidate_permissions_cache()
+            except Exception:
+                pass
+
+        logger.info('Role Permission Matrix updated by %s', request.user.username)
+        return JsonResponse({'success': True, 'matrix': normalized})
+
+    except json.JSONDecodeError as e:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON', 'details': str(e)}, status=400)
+    except Exception as e:
+        logger.error('roles/permissions error: %s', e, exc_info=True)
+        return JsonResponse({'success': False, 'error': 'Server error', 'details': str(e)}, status=500)
 
 @csrf_exempt
 @require_http_methods(["POST"])
