@@ -11,3 +11,47 @@ whitenoise>=6.6.0  # For serving static files in production
 gunicorn>=21.2.0  # Production WSGI server
 psycopg2-binary>=2.9.9  # PostgreSQL database adapter (recommended for production)
 XlsxWriter>=3.2.0 # Excel writer engine for pandas
+
+
+asgiref==3.9.1
+Brotli==1.1.0
+cffi==1.17.1
+colorama==0.4.6
+crispy-bootstrap5==2025.6
+cssselect2==0.8.0
+diff-match-patch==20241021
+Django==5.2.4
+django-crispy-forms==2.4
+django-debug-toolbar==6.0.0
+django-extensions==4.1
+django-import-export==4.3.9
+django-widget-tweaks==1.5.0
+djangorestframework==3.16.1
+et_xmlfile==2.0.0
+Faker==37.6.0
+fonttools==4.59.1
+gunicorn==23.0.0
+numpy==2.3.2
+openpyxl==3.1.5
+packaging==25.0
+pandas==2.3.2
+pillow==11.3.0
+psycopg2-binary==2.9.10
+pycparser==2.22
+pydyf==0.11.0
+pyphen==0.17.2
+python-dateutil==2.9.0.post0
+python-dotenv==1.1.1
+pytz==2025.2
+qrcode==8.2
+six==1.17.0
+sqlparse==0.5.3
+tablib==3.8.0
+tinycss2==1.4.0
+tinyhtml5==2.0.0
+tzdata==2025.2
+weasyprint==66.0
+webencodings==0.5.1
+whitenoise==6.9.0
+xlsxwriter==3.2.5
+zopfli==0.2.3.post1
