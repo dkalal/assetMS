@@ -3,6 +3,32 @@
  * Provides modern, accessible, and performant UI components
  */
 
+// Lightweight client-side telemetry (console + optional POST)
+function telemetryEvent(evt) {
+  try {
+    const payload = {
+      name: evt.name,
+      ok: !!evt.ok,
+      status: typeof evt.status === 'number' ? evt.status : undefined,
+      duration_ms: typeof evt.duration_ms === 'number' ? Math.round(evt.duration_ms) : undefined,
+      url: evt.url,
+      ctx: evt.ctx,
+      ts: new Date().toISOString(),
+      vis: document.visibilityState,
+      ua: navigator.userAgent.slice(0, 80)
+    };
+    // Console log for local dev
+    // eslint-disable-next-line no-console
+    console.debug('[telemetry]', payload);
+    // Optional backend collection if defined globally
+    if (window.CLIENT_TELEMETRY_ENDPOINT) {
+      navigator.sendBeacon?.(window.CLIENT_TELEMETRY_ENDPOINT, new Blob([
+        JSON.stringify(payload)
+      ], { type: 'application/json' }));
+    }
+  } catch (_) { /* no-op */ }
+}
+
 class EnterpriseFramework {
   constructor() {
     this.init();
@@ -502,11 +528,101 @@ class EnterpriseFramework {
       timeout = setTimeout(later, wait);
     };
   }
+
+  telemetryEvent(event) {
+    if (window.console && console.log) {
+      console.log('Telemetry Event:', event);
+    }
+  }
 }
 
 // Initialize framework when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   window.enterpriseFramework = new EnterpriseFramework();
+  // Attempt to hydrate notifications (presentational; no backend change required)
+  (function hydrateNotifications() {
+    const badge = document.getElementById('notifBadge');
+    const trigger = document.getElementById('notifDropdown');
+    const menu = trigger ? document.querySelector(`.dropdown-menu[aria-labelledby="${trigger.id}"]`) : null;
+    if (!badge || !menu) return; // No UI present
+
+    const api = window.NOTIFICATIONS_API || '/notifications-api/?limit=5';
+
+    // Helper to render items
+    const renderItems = (items) => {
+      // Keep header and first divider, then replace items area until the final divider and footer
+      // Simple fallback: replace entire menu except header if structure is unknown
+      const header = menu.querySelector('.dropdown-header')?.outerHTML || '<li class="dropdown-header">Notifications</li>';
+      const footer = '<li><hr class="dropdown-divider"></li><li><a class="dropdown-item text-center" href="#" role="button">View all</a></li>';
+      const body = (items && items.length ? items : []).map(it => `
+        <li>
+          <a class="dropdown-item d-flex align-items-start gap-2" href="#" role="button">
+            <i class="${it.icon || 'bi bi-bell'} ${it.icon_class || ''} mt-1"></i>
+            <div>
+              <div class="fw-semibold">${(it.title || 'Notification')}</div>
+              <small class="text-muted">${(it.timestamp || it.time || '')}</small>
+            </div>
+          </a>
+        </li>`).join('');
+      menu.innerHTML = `${header}<li><hr class="dropdown-divider"></li>${body}${footer}`;
+    };
+
+    let failureCount = 0;
+    let timerId = null;
+    const BASE_INTERVAL = 90000; // 90s
+    const MAX_INTERVAL = 180000; // 3m on backoff
+
+    const scheduleNext = () => {
+      // Jitter +/- 10%
+      const jitter = Math.floor(BASE_INTERVAL * (0.9 + Math.random() * 0.2));
+      const backoff = Math.min(MAX_INTERVAL, jitter * Math.max(1, failureCount + 1));
+      clearTimeout(timerId);
+      if (document.visibilityState === 'visible') {
+        timerId = setTimeout(run, backoff);
+      }
+    };
+
+    const run = () => {
+      const t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+      fetch(api, { credentials: 'same-origin' })
+        .then(r => {
+          const t1 = (window.performance && performance.now) ? performance.now() : Date.now();
+          telemetryEvent({ name: 'notifications_fetch', ok: r.ok, status: r.status, duration_ms: t1 - t0, url: api, ctx: { failureCount } });
+          return r.ok ? r.json() : Promise.reject(new Error('HTTP'));
+        })
+        .then(data => {
+          failureCount = 0;
+          const unread = data?.unread_count;
+          if (typeof unread === 'number') {
+            badge.textContent = String(unread);
+            badge.classList.toggle('d-none', unread <= 0);
+          }
+          const items = Array.isArray(data?.items) ? data.items.slice(0, 5) : [];
+          renderItems(items);
+        })
+        .catch((err) => {
+          // Backoff on failure, do not spam UI
+          failureCount = Math.min(failureCount + 1, 3);
+          const t1 = (window.performance && performance.now) ? performance.now() : Date.now();
+          telemetryEvent({ name: 'notifications_fetch_error', ok: false, duration_ms: t1 - t0, url: api, ctx: { failureCount, error: String(err && err.message || err) } });
+        })
+        .finally(scheduleNext);
+    };
+
+    // Visibility handling
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        // Immediate refresh on resume
+        clearTimeout(timerId);
+        run();
+      } else {
+        clearTimeout(timerId);
+      }
+    });
+
+    // Initial fetch and schedule
+    run();
+  })();
 });
 
 // Export for module systems

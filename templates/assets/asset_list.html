@@ -67,17 +67,79 @@
         {% endfor %}
     {% endif %}
 </form>
-<div class="d-flex justify-content-between align-items-center mb-2">
-    <a href="{% url 'asset_register' %}" class="btn btn-primary">Register New Asset</a>
-    <div>
-      <a href="{% url 'asset_bulk_import' %}" class="btn btn-outline-primary me-2">Bulk Import</a>
-      <button id="openExportModal" class="btn btn-outline-success" type="button">Export</button>
+  <!-- Applied Filters Summary (presentational) -->
+  <div class="mb-2" aria-live="polite">
+    {% if request.GET.category or request.GET.status or request.GET.location or request.GET.search or dynamic_fields %}
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <span class="text-muted small">Filters:</span>
+        {% if request.GET.category %}
+          {% for cat in categories %}
+            {% if request.GET.category == cat.id|stringformat:'s' %}
+              <span class="badge rounded-pill bg-primary-subtle text-primary">
+                <i class="bi bi-folder2-open me-1"></i>{{ cat.name }}
+              </span>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        {% if request.GET.status %}
+          <span class="badge rounded-pill bg-info-subtle text-info">
+            <i class="bi bi-sliders me-1"></i>{{ request.GET.status|title }}
+          </span>
+        {% endif %}
+        {% if request.GET.location %}
+          <span class="badge rounded-pill bg-warning-subtle text-warning">
+            <i class="bi bi-geo-alt me-1"></i>{{ request.GET.location }}
+          </span>
+        {% endif %}
+        {% if request.GET.search %}
+          <span class="badge rounded-pill bg-success-subtle text-success">
+            <i class="bi bi-search me-1"></i>{{ request.GET.search }}
+          </span>
+        {% endif %}
+        {% if dynamic_fields %}
+          {% for field in dynamic_fields %}
+            {% with key='dyn_'|add:field.key %}
+              {% if request.GET|get_item:key %}
+                <span class="badge rounded-pill bg-secondary-subtle text-secondary">
+                  <i class="bi bi-filter me-1"></i>{{ field.label }}: {{ request.GET|get_item:key }}
+                </span>
+              {% endif %}
+            {% endwith %}
+          {% endfor %}
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div class="d-flex align-items-center gap-2">
+      <a href="{% url 'asset_register' %}" class="btn btn-primary">Register New Asset</a>
+      <a href="{% url 'asset_scan' %}" class="btn btn-outline-secondary" aria-label="Scan asset via camera">
+        <i class="bi bi-upc-scan me-1"></i> Scan
+      </a>
     </div>
-</div>
-<div class="enterprise-table-container">
-  <div class="enterprise-table-wrapper" style="max-height: 520px;">
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-secondary-subtle text-secondary" id="selected-count-badge" aria-live="polite" title="Selected assets count">0 selected</span>
+      <a href="{% url 'asset_bulk_import' %}" class="btn btn-outline-primary">Bulk Import</a>
+      <button id="openExportModal" class="btn btn-outline-success" type="button">Export</button>
+      {% if perms.assets.delete_asset %}
+      <button id="deleteSelectedAssets" class="btn btn-outline-danger" type="button" disabled>
+        <i class="bi bi-trash"></i> Delete Selected
+      </button>
+      {% endif %}
+    </div>
+  </div>
+  <div class="enterprise-table-container">
+  <div class="enterprise-table-wrapper position-relative" style="max-height: 520px; overflow:auto;">
+    <!-- Loading overlay (UI-only, hidden by default) -->
+    <div class="d-none" id="asset-table-loading-overlay" aria-hidden="true"
+         style="position:absolute; inset:0; backdrop-filter: blur(2px); background: rgba(255,255,255,.5); display:flex; align-items:center; justify-content:center; z-index: 2;">
+      <div class="text-center">
+        <div class="spinner-border text-primary" role="status" aria-label="Loading"></div>
+        <div class="small text-muted mt-2">Loading assets…</div>
+      </div>
+    </div>
     <table class="enterprise-table">
-      <thead>
+      <thead style="position: sticky; top: 0; z-index: 1; background: var(--bs-body-bg); box-shadow: 0 2px 0 rgba(0,0,0,.03);">
         <tr>
           <th style="width: 36px;"><input type="checkbox" id="select-all-assets" aria-label="Select all assets"></th>
           <th>Category</th>
@@ -102,18 +164,47 @@
             <td>{{ asset.dynamic_data|get_item:field.key|default:'—' }}</td>
           {% endfor %}
           <td>
-            <a href="{% url 'asset_detail' asset.pk %}?internal=1" class="btn btn-sm btn-outline-primary">View</a>
+            <div class="d-flex gap-1">
+              <a href="{% url 'asset_detail' asset.pk %}?internal=1" class="btn btn-sm btn-outline-primary" title="View asset details">
+                <i class="bi bi-eye"></i>
+              </a>
+              {% if perms.assets.delete_asset %}
+              <button type="button" 
+                      class="btn btn-sm btn-outline-danger delete-asset" 
+                      data-asset-id="{{ asset.pk }}" 
+                      data-asset-name="{{ asset.dynamic_data.name|default:asset.pk }}"
+                      title="Delete asset">
+                <i class="bi bi-trash"></i>
+              </button>
+              {% endif %}
+            </div>
           </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="{{ dynamic_fields|length|add:'6' }}" class="text-center">No assets found.</td>
+          <td colspan="{{ dynamic_fields|length|add:'6' }}" class="p-4">
+            <div class="glass text-center p-4 rounded-3">
+              <div class="display-6 mb-2" aria-hidden="true">🤷</div>
+              <h5 class="mb-1">No assets found</h5>
+              <p class="text-muted mb-3">Try adjusting filters or clear all to view the full list.</p>
+              <div class="d-flex justify-content-center gap-2">
+                <a href="?" class="btn btn-outline-secondary btn-sm">Clear Filters</a>
+                <a href="{% url 'asset_register' %}" class="btn btn-primary btn-sm">Register Asset</a>
+              </div>
+            </div>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
+<!-- Mobile Scan FAB -->
+<a href="{% url 'asset_scan' %}" class="btn btn-primary rounded-circle position-fixed d-sm-none"
+   style="width:56px;height:56px;right:1rem;bottom:1rem;box-shadow:0 10px 20px rgba(0,0,0,.15);"
+   aria-label="Open camera to scan asset">
+  <i class="bi bi-upc-scan" style="font-size:1.5rem;line-height:1;"></i>
+</a>
 <!-- Custom Export Modal (Bootstrap-independent) -->
 <div id="exportModalCustom" class="custom-modal-overlay" tabindex="-1">
   <div class="glass-modal" role="dialog" aria-modal="true" aria-labelledby="exportModalCustomLabel">
@@ -155,7 +246,204 @@
   </div>
 </div>
 {% endblock %}
+<!-- Include Delete Modal -->
+{% include 'components/delete_modal.html' %}
+
 {% block extra_scripts %}
 {% load static %}
 <script src="{% static 'js/asset_list.js' %}"></script>
+<script>
+(function() {
+    // Asset deletion handling
+    class AssetDeletion {
+        constructor() {
+            // Initialize elements
+            this.deleteModal = document.getElementById('deleteModalCustom');
+            this.deleteForm = document.getElementById('delete-form');
+            this.deleteAssetIds = document.getElementById('delete-asset-ids');
+            this.deleteMessage = document.getElementById('delete-message');
+            this.deleteSelectedBtn = document.getElementById('deleteSelectedAssets');
+            this.closeDeleteModal = document.getElementById('closeDeleteModal');
+            this.cancelDelete = document.getElementById('cancelDelete');
+            this.selectAllCheckbox = document.getElementById('select-all-assets');
+
+            if (!this.deleteModal) {
+                console.warn('Delete modal not found in the DOM');
+                return;
+            }
+
+            this.initializeEventListeners();
+            this.initializeDeleteButtons();
+            this.initializeCheckboxes();
+        }
+
+        initializeEventListeners() {
+            // Single asset delete buttons
+            document.querySelectorAll('.delete-asset').forEach(button => {
+                button.addEventListener('click', (e) => this.handleSingleDelete(e));
+            });
+
+            // Bulk delete
+            if (this.deleteSelectedBtn) {
+                this.deleteSelectedBtn.addEventListener('click', () => this.handleBulkDelete());
+            }
+
+            // Modal close handlers
+            if (this.closeDeleteModal) {
+                this.closeDeleteModal.addEventListener('click', () => this.hideModal());
+            }
+            if (this.cancelDelete) {
+                this.cancelDelete.addEventListener('click', () => this.hideModal());
+            }
+
+            // Form submission
+            if (this.deleteForm) {
+                this.deleteForm.addEventListener('submit', (e) => this.handleFormSubmit(e));
+            }
+        }
+
+        initializeDeleteButtons() {
+            // Initialize delete buttons state
+            if (this.deleteSelectedBtn) {
+                this.updateDeleteButton();
+            }
+        }
+
+        initializeCheckboxes() {
+            // Select all checkbox
+            if (this.selectAllCheckbox) {
+                this.selectAllCheckbox.addEventListener('change', (e) => this.handleSelectAll(e));
+            }
+
+            // Individual checkboxes
+            document.querySelectorAll('.asset-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', () => this.updateDeleteButton());
+            });
+        }
+
+        handleSingleDelete(event) {
+            if (!this.deleteModal || !this.deleteAssetIds || !this.deleteMessage) return;
+
+            const assetId = event.currentTarget.dataset.assetId;
+            this.deleteAssetIds.value = assetId;
+            this.deleteMessage.textContent = 'Are you sure you want to delete this asset? This action cannot be undone.';
+            this.showModal();
+        }
+
+        handleBulkDelete() {
+            if (!this.deleteModal || !this.deleteAssetIds || !this.deleteMessage) return;
+
+            const selectedAssets = Array.from(document.querySelectorAll('.asset-checkbox:checked'))
+                .map(cb => cb.value);
+
+            if (selectedAssets.length > 0) {
+                this.deleteAssetIds.value = selectedAssets.join(',');
+                this.deleteMessage.textContent = `Are you sure you want to delete ${selectedAssets.length} selected assets? This action cannot be undone.`;
+                this.showModal();
+            }
+        }
+
+        handleSelectAll(event) {
+            const checked = event.target.checked;
+            document.querySelectorAll('.asset-checkbox').forEach(checkbox => {
+                checkbox.checked = checked;
+            });
+            this.updateDeleteButton();
+        }
+
+        updateDeleteButton() {
+            if (!this.deleteSelectedBtn) return;
+
+            const selectedCount = document.querySelectorAll('.asset-checkbox:checked').length;
+            this.deleteSelectedBtn.disabled = selectedCount === 0;
+
+            // Update selected count badge if it exists
+            const countBadge = document.getElementById('selected-count-badge');
+            if (countBadge) {
+                countBadge.textContent = `${selectedCount} selected`;
+            }
+        }
+
+        async handleFormSubmit(event) {
+            event.preventDefault();
+            
+            try {
+                const response = await fetch('{% url "asset_bulk_delete" %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams(new FormData(event.target))
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    this.showSuccessToast(data.message);
+                    // Reload the page after successful deletion
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    throw new Error(data.message || 'Delete operation failed');
+                }
+            } catch (error) {
+                this.showErrorToast(error.message);
+            } finally {
+                this.hideModal();
+            }
+        }
+
+        showSuccessToast(message) {
+            this.showToast(message, 'success');
+        }
+
+        showErrorToast(message) {
+            this.showToast(message, 'danger');
+        }
+
+        showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+
+            // Remove toast after it's hidden
+            toast.addEventListener('hidden.bs.toast', () => {
+                document.body.removeChild(toast);
+            });
+        }
+
+        showModal() {
+            if (this.deleteModal) {
+                this.deleteModal.style.display = 'block';
+                setTimeout(() => {
+                    this.deleteModal.classList.add('show');
+                }, 10);
+            }
+        }
+
+        hideModal() {
+            if (this.deleteModal) {
+                this.deleteModal.classList.remove('show');
+                setTimeout(() => {
+                    this.deleteModal.style.display = 'none';
+                }, 150); // Match the CSS transition duration
+            }
+        }
+    }
+
+    // Initialize when DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+        new AssetDeletion();
+    });
+})();
+</script>
 {% endblock %}

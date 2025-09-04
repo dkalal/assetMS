@@ -36,23 +36,9 @@
         <div class="dropdown">
           <button class="btn btn-outline-primary dropdown-toggle d-flex align-items-center gap-2" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
             <div class="user-avatar">
-              {% if user.profile_image %}
-                <img src="{{ user.profile_image.url }}" alt="Avatar" style="width:32px;height:32px;object-fit:cover;border-radius:50%;">
-              {% else %}
-                <div style="width:32px;height:32px;background:var(--primary-600);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.875rem;">
-                  {% with fn=user.first_name|default_if_none:'' ln=user.last_name|default_if_none:'' %}
-                    {% if fn or ln %}
-                      {{ fn|slice:':1' }}{{ ln|slice:':1' }}
-                    {% elif user.username %}
-                      {{ user.username|slice:':2'|upper }}
-                    {% else %}
-                      <i class="bi bi-person"></i>
-                    {% endif %}
-                  {% endwith %}
-                </div>
-              {% endif %}
+              {% include "components/profile_avatar.html" with size=32 extra_classes="rounded-circle" %}
             </div>
-            <span class="d-none d-sm-inline">{{ user.get_full_name|default:user.username }}</span>
+            {% comment %} <span class="d-none d-sm-inline">{{ user.get_full_name|default:user.username }}</span> {% endcomment %}
           </button>
           <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
             <li><h6 class="dropdown-header">{{ user.get_full_name|default:user.username }}</h6></li>

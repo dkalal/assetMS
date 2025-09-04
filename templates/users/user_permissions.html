@@ -1,5 +1,6 @@
 {% extends 'base_dashboard.html' %}
 {% load static %}
+{% load string_extras %}
 {% block title %}User Permissions{% endblock %}
 {% block content %}
 <div class="container-fluid">
@@ -7,7 +8,7 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <h1 class="mb-0">User Permissions</h1>
-                {% if request.user.has_perm('users.can_manage_users') %}
+                {% if perms.users.can_manage_users %}
                 <div class="btn-group">
                     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#assignPermissionModal">
                         <i class="bi bi-plus-lg me-1"></i> Assign Permission
@@ -43,17 +44,7 @@
                                     <tr>
                                         <td>
                                             <div class="d-flex align-items-center">
-                                                {% if user.profile_image %}
-                                                <img src="{{ user.profile_image.url }}" 
-                                                     alt="Avatar" 
-                                                     class="rounded-circle me-2" 
-                                                     style="width:32px;height:32px;object-fit:cover;">
-                                                {% else %}
-                                                <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2" 
-                                                     style="width:32px;height:32px;font-size:1.2rem;color:#fff;">
-                                                    {{ user.first_name|slice:':1' }}{{ user.last_name|slice:':1' }}
-                                                </div>
-                                                {% endif %}
+                                                {% include "components/profile_avatar.html" with user=user size=32 extra_classes="rounded-circle me-2" %}
                                                 <span>{{ user.get_full_name|default:user.username }}</span>
                                             </div>
                                         </td>
@@ -74,7 +65,7 @@
                                         <td>
                                             <div class="d-flex flex-wrap gap-1">
                                                 {% for perm in user.user_permissions.all %}
-                                                <span class="badge bg-success">{{ perm.codename|replace:"_":" "|title }}</span>
+                                                <span class="badge bg-success">{{ perm.codename|replace:"_: "|title }}</span>
                                                 {% endfor %}
                                             </div>
                                         </td>
@@ -87,7 +78,7 @@
                                         </td>
                                         <td>
                                             <div class="btn-group">
-                                                {% if request.user.has_perm('users.can_manage_users') %}
+                                                {% if perms.users.can_manage_users %}
                                                 <button class="btn btn-sm btn-outline-primary" 
                                                         data-bs-toggle="modal" 
                                                         data-bs-target="#viewUserPermissionsModal"

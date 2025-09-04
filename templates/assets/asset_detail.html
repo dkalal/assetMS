@@ -106,7 +106,7 @@
     </div>
     {% endif %}
 
-    <!-- {% if can_view_sensitive %}
+    {% if can_view_sensitive %}
     {% if asset.purchase_value or asset.purchase_date or asset.depreciation_method or asset.useful_life_years %}
     <!-- Depreciation -->
     <div class="card shadow-sm mt-3">
@@ -142,34 +142,37 @@
         </table>
       </div>
     </div>
-    {% endif %} -->
-
+    {% endif %}
     {% endif %}
 
     {% if audit_events %}
-    <!-- Activity / Audit Log -->
-    <div class="card shadow-sm mt-3">
-      <div class="card-header bg-white fw-semibold">Activity</div>
-      <div class="card-body p-0">
-        <ul class="list-group list-group-flush">
+  <!-- Activity / Audit Log -->
+  <div class="card shadow-sm mt-3">
+    <div class="card-header bg-white fw-semibold">Activity</div>
+    <div class="card-body">
+      <div class="position-relative" style="--tl-color: var(--bs-primary);">
+        <div class="border-start" style="border-color: rgba(23,107,135,.25)!important; margin-left: .75rem;">
           {% for ev in audit_events %}
-          <li class="list-group-item d-flex justify-content-between align-items-start">
-            <div class="me-3">
-              <div class="fw-semibold">{{ ev.action|default:'event' }}</div>
+          <div class="d-flex position-relative ps-3 py-3">
+            <span aria-hidden="true" class="position-absolute translate-middle rounded-circle"
+                  style="width:10px;height:10px;left:0;margin-left:-5px;top:1.5rem;background: var(--bs-primary); box-shadow: 0 0 0 4px rgba(23,107,135,.12);"></span>
+            <div class="flex-grow-1">
+              <div class="d-flex justify-content-between">
+                <div class="fw-semibold">{{ ev.action|default:'Event' }}</div>
+                <div class="small text-muted text-nowrap ms-3">{{ ev.created_at|date:'Y-m-d H:i' }}</div>
+              </div>
               <div class="small text-muted">{{ ev.message|default:'' }}</div>
+              {% if ev.user %}<div class="small mt-1"><i class="bi bi-person me-1"></i>{{ ev.user }}</div>{% endif %}
             </div>
-            <div class="text-end small text-muted">
-              <div>{{ ev.created_at|date:'Y-m-d H:i' }}</div>
-              {% if ev.user %}<div>{{ ev.user }}</div>{% endif %}
-            </div>
-          </li>
+          </div>
           {% empty %}
-          <li class="list-group-item">No activity logged yet.</li>
+          <div class="text-muted">No activity logged yet.</div>
           {% endfor %}
-        </ul>
+        </div>
       </div>
     </div>
-    {% endif %}
+  </div>
+  {% endif %}
   </div>
 
   <!-- Sidebar column -->
@@ -192,7 +195,8 @@
         <div class="card-body">
           <img src="{{ asset.qr_code.url }}" alt="QR Code" class="img-fluid" style="max-width:220px;">
           <div class="mt-2">
-            <a href="{{ asset.qr_code.url }}" download class="btn btn-outline-secondary btn-sm">Download QR</a>
+            <a href="{{ asset.qr_code.url }}" download class="btn btn-outline-secondary btn-sm me-2">Download QR</a>
+            <button type="button" class="btn btn-outline-primary btn-sm" onclick="(function(){ const w = window.open('{{ asset.qr_code.url }}','_blank'); if(w){ w.addEventListener('load', ()=> w.print(), { once: true }); } })()">Print QR</button>
           </div>
         </div>
       </div>

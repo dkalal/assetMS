@@ -34,14 +34,14 @@
       {% if user.role == 'admin' or user.role == 'manager' %}
         <a class="btn btn-outline-secondary btn-sm" href="{% url 'asset_bulk_import' %}">Import</a>
         <a class="btn btn-outline-secondary btn-sm" href="{% url 'asset_export' %}">Export</a>
-        <a class="btn btn-primary btn-sm" href="{% url 'asset_register' %}">Add Asset</a>
+        {% comment %} <a class="btn btn-primary btn-sm" href="{% url 'asset_register' %}">Add Asset</a> {% endcomment %}
       {% else %}
         <a class="btn btn-outline-secondary btn-sm" href="{% url 'asset_export' %}">Export</a>
       {% endif %}
     {% else %}
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'asset_export' %}">Export</a>
     {% endif %}
-    <button id="theme-toggle-btn" class="btn btn-glass btn-sm d-flex align-items-center justify-content-center"
+    {% comment %} <button id="theme-toggle-btn" class="btn btn-glass btn-sm d-flex align-items-center justify-content-center"
       title="Toggle dark/light mode" aria-label="Toggle dark/light mode">
       <svg id="theme-toggle-icon" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <defs>
@@ -73,24 +73,53 @@
         </g>
       </svg>
       <span class="visually-hidden">Toggle dark/light mode</span>
-    </button>
-    <div class="dropdown ms-3">
+    </button> {% endcomment %}
+    <!-- Notifications Bell (presentational only) -->
+    <div class="dropdown ms-2" aria-label="Notifications">
+      <button class="btn btn-glass btn-sm position-relative" type="button" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+        <i class="bi bi-bell"></i>
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.65rem;" id="notifBadge" aria-label="Unread notifications count">3</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="notifDropdown" style="min-width: 320px;">
+        <li class="dropdown-header d-flex align-items-center justify-content-between">
+          <span>Notifications</span>
+          <span class="badge bg-secondary-subtle text-secondary">Demo</span>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+          <a class="dropdown-item d-flex align-items-start gap-2" href="#" role="button">
+            <i class="bi bi-exclamation-circle text-warning mt-1"></i>
+            <div>
+              <div class="fw-semibold">3 assets require manager approval</div>
+              <small class="text-muted">Just now</small>
+            </div>
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item d-flex align-items-start gap-2" href="#" role="button">
+            <i class="bi bi-upc-scan text-primary mt-1"></i>
+            <div>
+              <div class="fw-semibold">QR code scanned 20 times today</div>
+              <small class="text-muted">10m ago</small>
+            </div>
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item d-flex align-items-start gap-2" href="#" role="button">
+            <i class="bi bi-shield-lock text-info mt-1"></i>
+            <div>
+              <div class="fw-semibold">Security policy updated</div>
+              <small class="text-muted">1h ago</small>
+            </div>
+          </a>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item text-center" href="#" role="button">View all</a></li>
+      </ul>
+    </div>
+    {% comment %} <div class="dropdown ms-3">
       <button class="btn btn-avatar dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-        {% if user.profile_image %}
-          <img src="{{ user.profile_image.url }}" alt="{{ user.get_full_name|default:user.username }}" class="avatar-image">
-        {% else %}
-          <div class="avatar-initials">
-            {% with fn=user.first_name|default_if_none:'' ln=user.last_name|default_if_none:'' %}
-              {% if fn or ln %}
-                {{ fn|slice:':1' }}{{ ln|slice:':1' }}
-              {% elif user.username %}
-                {{ user.username|slice:':2'|upper }}
-              {% else %}
-                <i class="bi bi-person"></i>
-              {% endif %}
-            {% endwith %}
-          </div>
-        {% endif %}
+        {% include "components/profile_avatar.html" %}
       </button>
       <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
         <li><a class="dropdown-item" href="{% url 'users:profile' %}">Profile</a></li>
@@ -103,6 +132,6 @@
           </form>
         </li>
       </ul>
-    </div>
+    </div> {% endcomment %}
   </div>
-</header> 
+</header>

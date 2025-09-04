@@ -18,7 +18,8 @@ from django.contrib import admin
 from django.urls import path, include
 from assets.views import (
     asset_create, get_dynamic_fields, AssetListView, AssetDetailView, AssetScanView, asset_by_code, AssetDetailByUUIDView, asset_export, AssetBulkImportView, download_import_template, dashboard_summary_api, dashboard_activity_api, dashboard_chart_data_api,
-    recent_added_assets_api, recent_scans_api, recent_transfers_api, recent_maintenance_api, full_audit_log_api, user_assets_api, user_activity_api, api_create_category, api_categories, api_category_fields, api_create_field, api_update_field, api_delete_field
+    recent_added_assets_api, recent_scans_api, recent_transfers_api, recent_maintenance_api, full_audit_log_api, user_assets_api, user_activity_api, api_create_category, api_categories, api_category_fields, api_create_field, api_update_field, api_delete_field,
+    notifications_api
 )
 from django.conf import settings
 from django.conf.urls.static import static
@@ -42,6 +43,7 @@ urlpatterns = [
     path('dashboard_summary_api/', dashboard_summary_api, name='dashboard_summary_api'),
     path('dashboard_activity_api/', dashboard_activity_api, name='dashboard_activity_api'),
     path('dashboard_chart_data_api/', dashboard_chart_data_api, name='dashboard_chart_data_api'),
+    path('notifications-api/', notifications_api, name='notifications_api'),
     path('', include(('users.urls', 'users'), namespace='users')),
     path('assets/export/', asset_export, name='asset_export'),
     path('test-modal/', TemplateView.as_view(template_name='test_modal.html'), name='test_modal'),

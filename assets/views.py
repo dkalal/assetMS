@@ -20,8 +20,9 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from weasyprint import HTML
 import tempfile
-from datetime import datetime
+from datetime import datetime, date
 import openpyxl
+from openpyxl.utils.datetime import from_excel
 from django.core.files.storage import default_storage
 from django.contrib import messages
 from openpyxl.utils import get_column_letter
@@ -626,39 +627,76 @@ class AssetBulkImportView(View):
             success_count = 0
             fail_count = 0
             fail_rows = []
-            with transaction.atomic():
+            sid = transaction.savepoint()
+            try:
                 for i, row in enumerate(preview_data):
                     try:
                         # Validate required fields
                         for field in dynamic_fields:
                             if field.required and not row.get(field.key):
                                 raise ValueError(f'Missing required field {field.label}')
-                        asset = Asset(
-                            category_id=selected_category,
-                            status=row.get('status', 'active'),
-                            description=row.get('description', ''),
-                        )
-                        # Assign user if provided
-                        assigned_to = row.get('assigned_to')
-                        if assigned_to:
-                            from users.models import User
-                            user_obj = User.objects.filter(username=assigned_to).first()
-                            if user_obj:
-                                asset.assigned_to = user_obj
-                                # Log assignment/transfer
-                                log_audit(request.user, ASSIGN_ACTION, asset, f'Asset assigned to {user_obj.username} via bulk import (row {i+2})', related_user=user_obj)
-                        # Dynamic fields
-                        dyn_data = {}
-                        for field in dynamic_fields:
-                            dyn_data[field.key] = row.get(field.key)
-                        asset.dynamic_data = dyn_data
-                        asset.save()
-                        success_count += 1
-                        log_audit(request.user, 'create', asset, f'Asset imported via bulk import (row {i+2})')
+                        
+                        with transaction.atomic():
+                            asset = Asset(
+                                category_id=selected_category,
+                                status=row.get('status', 'active'),
+                                description=row.get('description', ''),
+                            )
+                            # Assign user if provided
+                            assigned_to = row.get('assigned_to')
+                            if assigned_to:
+                                from users.models import User
+                                user_obj = User.objects.filter(username=assigned_to).first()
+                                if user_obj:
+                                    asset.assigned_to = user_obj
+                            # Dynamic fields
+                            dyn_data = {}
+                            for field in dynamic_fields:
+                                value = row.get(field.key)
+                                # Convert datetime objects to ISO format strings
+                                if isinstance(value, datetime):
+                                    value = value.isoformat()
+                                # Handle date objects from Excel
+                                elif hasattr(value, 'date') and callable(getattr(value, 'date')):
+                                    value = value.date().isoformat()
+                                # Handle empty values
+                                elif value is None or value == '':
+                                    value = None
+                                dyn_data[field.key] = value
+                            asset.dynamic_data = dyn_data
+                            asset.save()  # Initial save to ensure UUID is set
+                            
+                            # Generate QR code with direct URL
+                            base_url = request.build_absolute_uri('/')[:-1]  # Remove trailing slash
+                            qr_url = f"{base_url}/assets/{asset.uuid}/"
+                            qr = qrcode.make(qr_url)
+                            buffer = BytesIO()
+                            qr.save(buffer, 'PNG')
+                            asset.qr_code.save(f"asset_{asset.uuid}.png", ContentFile(buffer.getvalue()), save=False)
+                            asset.save()  # Final save with QR code
+                            
+                            # Log audit events after successful save
+                            if asset.assigned_to:
+                                log_audit(request.user, ASSIGN_ACTION, asset, 
+                                        f'Asset assigned to {asset.assigned_to.username} via bulk import (row {i+2})', 
+                                        related_user=asset.assigned_to)
+                            log_audit(request.user, 'create', asset, f'Asset imported via bulk import (row {i+2})')
+                            success_count += 1
                     except Exception as e:
                         fail_count += 1
                         fail_rows.append({'row': i+2, 'error': str(e)})
-                # Audit log
+                
+                if fail_count > 0:
+                    transaction.savepoint_rollback(sid)
+                else:
+                    transaction.savepoint_commit(sid)
+                    
+            except Exception as e:
+                transaction.savepoint_rollback(sid)
+                fail_count += 1
+                fail_rows.append({'row': 'unknown', 'error': str(e)})
+            
+            # Audit log outside transaction
                 from assets.models import ExportLog
                 ExportLog.objects.create(
                     user=request.user,
@@ -807,15 +845,94 @@ def dashboard_activity_api(request):
 
 @login_required
 @require_GET
+def notifications_api(request):
+    """
+    Minimal read-only Notifications API (Option A)
+    - Returns recent AuditLog-derived notifications for the current user context
+    - No unread/read state (unread_count is reported as 0)
+    Query params:
+      - limit: max number of items to return (default 5, max 20)
+    """
+    user = request.user
+    role = getattr(user, 'role', 'user')
+    try:
+        limit = int(request.GET.get('limit', 5))
+    except (TypeError, ValueError):
+        limit = 5
+    limit = max(1, min(limit, 20))
+
+    # Base queryset: latest audit logs
+    logs = AuditLog.objects.all().order_by('-timestamp')
+
+    # Role-based visibility
+    # Only admins see all. Managers and regular users are restricted.
+    if role != 'admin':
+        # Users and managers: only their own actions or actions on assets assigned to them
+        logs = logs.filter(
+            Q(user=user) | Q(asset__assigned_to=user)
+        )
+
+    logs = logs[:limit]
+
+    def icon_for_action(action: str) -> str:
+        mapping = {
+            'create': 'bi-plus-circle',
+            'edit': 'bi-pencil-square',
+            'assign': 'bi-person-check',
+            'unassign': 'bi-person-dash',
+            'status_change': 'bi-arrow-left-right',
+            'maintenance': 'bi-tools',
+            'retire': 'bi-archive',
+            'lost': 'bi-exclamation-triangle',
+            'scan': 'bi-qr-code-scan',
+            'export': 'bi-filetype-csv',
+            'warranty_change': 'bi-shield-check',
+            'transfer': 'bi-arrow-repeat',
+            'view': 'bi-eye',
+        }
+        return mapping.get((action or '').lower(), 'bi-bell')
+
+    items = []
+    for log in logs:
+        title = ''
+        # Build a concise title from action and asset
+        action_label = (log.action or 'Activity').replace('_', ' ').title()
+        asset_label = str(log.asset) if getattr(log, 'asset', None) else ''
+        if asset_label:
+            title = f"{action_label}: {asset_label}"
+        else:
+            title = action_label
+
+        # Attempt to build a deep link to the asset if available
+        url = ''
+        try:
+            if log.asset and getattr(log.asset, 'uuid', None):
+                url = request.build_absolute_uri(f"/assets/{log.asset.uuid}/?internal=1")
+        except Exception:
+            url = ''
+
+        items.append({
+            'title': title,
+            'message': log.details or '',
+            'timestamp': localtime(log.timestamp).strftime('%Y-%m-%d %H:%M'),
+            'icon': icon_for_action(log.action),
+            'url': url,
+        })
+
+    return JsonResponse({
+        'unread_count': 0,  # No unread tracking in Option A
+        'items': items,
+        'limit': limit,
+    })
+
+@login_required
+@require_GET
 def dashboard_scan_logs_api(request):
     user = request.user
     role = getattr(user, 'role', 'user')
     logs = AuditLog.objects.filter(action='view').order_by('-timestamp')
     if role == 'user':
         logs = logs.filter(user=user)
-    elif role == 'manager':
-        # Example: managers see team logs if available
-        pass
     logs = logs[:5]
     data = [
         {
@@ -1252,3 +1369,42 @@ def api_delete_field(request, field_id):
     field.delete()
     log_audit(request.user, 'delete', None, f'Dynamic field deleted: {label} ({key}) in category {category.name}')
     return JsonResponse({'success': True})
+
+@login_required
+@user_passes_test(lambda u: u.is_authenticated and u.role in ('admin', 'manager'))
+@require_POST
+@csrf_protect
+def asset_delete(request, asset_id):
+    asset = Asset.objects.filter(pk=asset_id).first()
+    if not asset:
+        return JsonResponse({'success': False, 'error': 'Asset not found.'}, status=404)
+    asset_name = asset.dynamic_data.get('name', str(asset.pk))
+    asset.delete()
+    log_audit(request.user, 'delete', None, f'Asset deleted: {asset_name} (ID: {asset_id})')
+    return JsonResponse({'success': True, 'message': f'Asset {asset_name} deleted.'})
+
+@login_required
+@user_passes_test(lambda u: u.is_authenticated and u.role in ('admin', 'manager'))
+@require_POST
+@csrf_protect
+@transaction.atomic
+def asset_bulk_delete(request):
+    ids = request.POST.getlist('ids[]') or request.POST.getlist('ids')
+    # Validate IDs
+    valid_ids = [int(i) for i in ids if str(i).isdigit()]
+    if not valid_ids:
+        return JsonResponse({'success': False, 'error': 'No valid asset IDs provided.'}, status=400)
+    deleted = []
+    failed = []
+    for asset_id in valid_ids:
+        try:
+            asset = Asset.objects.get(pk=asset_id)
+            asset_name = asset.dynamic_data.get('name', str(asset.pk))
+            asset.delete()
+            log_audit(request.user, 'delete', None, f'Asset deleted: {asset_name} (ID: {asset_id})')
+            deleted.append(asset_id)
+        except Asset.DoesNotExist:
+            failed.append({'id': asset_id, 'error': 'Asset not found.'})
+        except Exception as e:
+            failed.append({'id': asset_id, 'error': str(e)})
+    return JsonResponse({'success': True, 'deleted': deleted, 'failed': failed, 'message': f'{len(deleted)} assets deleted.'})

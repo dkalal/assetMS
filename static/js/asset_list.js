@@ -114,4 +114,106 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     });
   }
-}); 
+
+  // Loading overlay for table during navigation/filtering (UI-only)
+  const overlay = document.getElementById('asset-table-loading-overlay');
+  const filterForm = document.querySelector('form[method="get"]');
+  function showOverlay() {
+    if (!overlay) return;
+    overlay.classList.remove('d-none');
+    overlay.setAttribute('aria-hidden', 'false');
+  }
+  // Show overlay on filter submit
+  if (filterForm) {
+    filterForm.addEventListener('submit', function() {
+      showOverlay();
+    });
+  }
+  // Show overlay on pagination/tab clicks
+  document.addEventListener('click', function(e) {
+    try {
+      const a = e.target.closest('a');
+      if (!a) return;
+      const href = a.getAttribute('href') || '';
+      // Trigger overlay on known navigations within list
+      if (href.includes('page=') || a.closest('.section-tabs') || a.closest('.pagination')) {
+        showOverlay();
+      }
+    } catch (_) { /* no-op */ }
+  }, true);
+
+  // CSRF helper
+  function getCSRFToken() {
+    return document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '';
+  }
+
+  // Single asset delete
+  function handleSingleDelete(assetId, assetName) {
+    if (!confirm(`Are you sure you want to delete asset '${assetName}'? This action cannot be undone.`)) return;
+    fetch(`/assets/${assetId}/delete/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCSRFToken(),
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({}),
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        document.querySelector(`button.delete-asset[data-asset-id="${assetId}"]`).closest('tr').remove();
+        alert(data.message);
+      } else {
+        alert(data.error || 'Delete failed.');
+      }
+    })
+    .catch(() => alert('Delete failed due to network or server error.'));
+  }
+
+  // Bulk asset delete
+  function handleBulkDelete() {
+    const ids = getSelectedAssetIds();
+    if (!ids.length) return alert('No assets selected.');
+    if (!confirm(`Are you sure you want to delete ${ids.length} selected asset(s)? This action cannot be undone.`)) return;
+    fetch('/assets/bulk-delete/', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCSRFToken(),
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
+      },
+      body: ids.map(id => `ids[]=${encodeURIComponent(id)}`).join('&'),
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        data.deleted.forEach(id => {
+          const btn = document.querySelector(`button.delete-asset[data-asset-id="${id}"]`);
+          if (btn) btn.closest('tr').remove();
+        });
+        alert(data.message);
+      } else {
+        alert('Bulk delete failed.');
+      }
+    })
+    .catch(() => alert('Bulk delete failed due to network or server error.'));
+  }
+
+  // Attach event listeners
+
+  // Single delete buttons
+  document.querySelectorAll('button.delete-asset').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const assetId = this.getAttribute('data-asset-id');
+      const assetName = this.getAttribute('data-asset-name');
+      handleSingleDelete(assetId, assetName);
+    });
+  });
+
+  // Bulk delete button
+  const bulkDeleteBtn = document.getElementById('deleteSelectedAssets');
+  if (bulkDeleteBtn) {
+    bulkDeleteBtn.addEventListener('click', handleBulkDelete);
+  }
+});

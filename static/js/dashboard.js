@@ -1,4 +1,30 @@
 // Dashboard Interactivity
+// Lightweight client-side telemetry (console + optional POST)
+if (typeof window !== 'undefined' && typeof window.telemetryEvent !== 'function') {
+  window.telemetryEvent = function telemetryEvent(evt) {
+    try {
+      const payload = {
+        name: evt.name,
+        ok: !!evt.ok,
+        status: typeof evt.status === 'number' ? evt.status : undefined,
+        duration_ms: typeof evt.duration_ms === 'number' ? Math.round(evt.duration_ms) : undefined,
+        url: evt.url,
+        ctx: evt.ctx,
+        ts: new Date().toISOString(),
+        vis: document.visibilityState,
+        ua: navigator.userAgent.slice(0, 80)
+      };
+      // eslint-disable-next-line no-console
+      console.debug('[telemetry]', payload);
+      if (window.CLIENT_TELEMETRY_ENDPOINT) {
+        navigator.sendBeacon?.(window.CLIENT_TELEMETRY_ENDPOINT, new Blob([
+          JSON.stringify(payload)
+        ], { type: 'application/json' }));
+      }
+    } catch (_) { /* no-op */ }
+  };
+}
+
 function setTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('theme', theme);
@@ -203,10 +229,19 @@ function fetchAndRenderActivityFeed(feed) {
             return;
     }
     setLoading(feed);
+    const t0 = (window.performance && performance.now) ? performance.now() : Date.now();
     fetch(url)
-        .then(res => res.json())
+        .then(res => {
+            const t1 = (window.performance && performance.now) ? performance.now() : Date.now();
+            window.telemetryEvent({ name: 'activity_feed_fetch', ok: res.ok, status: res.status, duration_ms: t1 - t0, url, ctx: { feed } });
+            return res.json();
+        })
         .then(data => {
             renderActivityFeed(feed, data[dataKey], type, data.page, data.num_pages, data.total);
+        })
+        .catch(err => {
+            const t1 = (window.performance && performance.now) ? performance.now() : Date.now();
+            window.telemetryEvent({ name: 'activity_feed_fetch_error', ok: false, duration_ms: t1 - t0, url, ctx: { feed, error: String(err && err.message || err) } });
         });
 }
 
@@ -242,17 +277,49 @@ function fetchAndRenderAllActivityFeeds() {
 }
 
 function loadDashboardData() {
+  const t0 = (window.performance && performance.now) ? performance.now() : Date.now();
   Promise.all([
-    fetch('/dashboard_summary_api/').then(r => r.json())
+    fetch('/dashboard_summary_api/').then(r => {
+      const t1 = (window.performance && performance.now) ? performance.now() : Date.now();
+      window.telemetryEvent({ name: 'dashboard_summary_fetch', ok: r.ok, status: r.status, duration_ms: t1 - t0, url: '/dashboard_summary_api/' });
+      return r.json();
+    })
     // Removed fetch('/dashboard_activity_api/') and renderActivityTable
   ]).then(([summary]) => {
-    const widgets = [
-      renderDashboardCards(summary)
-      // Removed legacy activity table rendering
-    ].join('');
-    document.getElementById('dashboard-widgets').innerHTML = widgets;
-  });
-}
+    // Hydrate static KPI cards if present
+    try {
+      const kpis = (summary && summary.kpis) ? summary.kpis : {};
+      const totalEl = document.getElementById('kpi-total');
+      if (totalEl && typeof kpis.total_assets !== 'undefined') totalEl.textContent = kpis.total_assets;
+
+      const activeEl = document.getElementById('kpi-active');
+      if (activeEl && typeof kpis.active_assets !== 'undefined') activeEl.textContent = kpis.active_assets;
+
+      const repairEl = document.getElementById('kpi-repair');
+      const needsRepairVal = (typeof kpis.needs_repair !== 'undefined') ? kpis.needs_repair : kpis.maintenance_assets;
+      if (repairEl && typeof needsRepairVal !== 'undefined') repairEl.textContent = needsRepairVal;
+
+      const approvalsEl = document.getElementById('kpi-approvals');
+      if (approvalsEl && typeof kpis.approvals_pending !== 'undefined') approvalsEl.textContent = kpis.approvals_pending;
+
+      // Compute retired % if possible
+      const retiredBadge = document.getElementById('kpi-retired-pct');
+      if (retiredBadge && typeof kpis.retired_assets !== 'undefined' && typeof kpis.total_assets !== 'undefined' && kpis.total_assets) {
+        const pct = Math.round((kpis.retired_assets / kpis.total_assets) * 100);
+        retiredBadge.textContent = pct + '%';
+      }
+    } catch (_) { /* no-op */ }
+
+      const widgets = [
+        renderDashboardCards(summary)
+        // Removed legacy activity table rendering
+      ].join('');
+      document.getElementById('dashboard-widgets').innerHTML = widgets;
+    }).catch((err) => {
+      const t1 = (window.performance && performance.now) ? performance.now() : Date.now();
+      window.telemetryEvent({ name: 'dashboard_summary_fetch_error', ok: false, duration_ms: t1 - t0, url: '/dashboard_summary_api/', ctx: { error: String(err && err.message || err) } });
+    });
+  }
 
 // Chart.js integration for dashboard charts
 function renderDashboardCharts() {
@@ -264,8 +331,14 @@ function renderDashboardCharts() {
     { id: 'chart-depreciation', type: 'line', chart: 'depreciation', label: 'Depreciation / Value Trend' },
   ];
   chartConfigs.forEach(cfg => {
-    fetch(`/dashboard_chart_data_api/?chart=${cfg.chart}`)
-      .then(r => r.json())
+    const url = `/dashboard_chart_data_api/?chart=${cfg.chart}`;
+    const t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+    fetch(url)
+      .then(r => {
+        const t1 = (window.performance && performance.now) ? performance.now() : Date.now();
+        window.telemetryEvent({ name: 'dashboard_chart_fetch', ok: r.ok, status: r.status, duration_ms: t1 - t0, url, ctx: { chart: cfg.chart } });
+        return r.json();
+      })
       .then(data => {
         const ctx = document.getElementById(cfg.id);
         if (!ctx) return;
@@ -307,7 +380,9 @@ function renderDashboardCharts() {
           }
         });
       })
-      .catch(() => {
+      .catch((err) => {
+        const t1 = (window.performance && performance.now) ? performance.now() : Date.now();
+        window.telemetryEvent({ name: 'dashboard_chart_fetch_error', ok: false, duration_ms: t1 - t0, url, ctx: { chart: cfg.chart, error: String(err && err.message || err) } });
         const ctx = document.getElementById(cfg.id);
         if (ctx) ctx.parentNode.querySelector('h5').innerHTML += ' <span style="color:#888;font-size:0.95rem;">(Error loading data)</span>';
       });
@@ -389,13 +464,23 @@ function renderActivityLogTable(data, page, numPages, total) {
 }
 
 function fetchAndRenderActivityLogTable(page = 1) {
-    fetch(`/full-audit-log-api/?page=${page}&page_size=10`)
-        .then(res => res.json())
+    const url = `/full-audit-log-api/?page=${page}&page_size=10`;
+    const t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+    fetch(url)
+        .then(res => {
+            const t1 = (window.performance && performance.now) ? performance.now() : Date.now();
+            window.telemetryEvent({ name: 'activity_log_fetch', ok: res.ok, status: res.status, duration_ms: t1 - t0, url });
+            return res.json();
+        })
         .then(data => {
             renderActivityLogTable(data.audit_log, data.page, data.num_pages, data.total);
             // Store current page for navigation
             window._activityLogCurrentPage = data.page;
             window._activityLogNumPages = data.num_pages;
+        })
+        .catch(err => {
+            const t1 = (window.performance && performance.now) ? performance.now() : Date.now();
+            window.telemetryEvent({ name: 'activity_log_fetch_error', ok: false, duration_ms: t1 - t0, url, ctx: { error: String(err && err.message || err) } });
         });
 }
 
@@ -491,7 +576,30 @@ document.addEventListener('DOMContentLoaded', function() {
             fetchAndRenderActivityLogTable(window._activityLogCurrentPage + 1);
         }
     });
-  // Optionally, refresh every 60s for real-time effect
-  setInterval(loadDashboardData, 60000);
-  setInterval(renderDashboardCharts, 60000);
-}); 
+  // Visibility-aware periodic refresh for KPIs and charts
+  let dashTimerId = null;
+  const DASH_BASE_INTERVAL = 120000; // 120s base
+  function scheduleNextDashboardRefresh() {
+    const jitter = Math.floor(DASH_BASE_INTERVAL * (0.9 + Math.random() * 0.2));
+    clearTimeout(dashTimerId);
+    if (document.visibilityState === 'visible') {
+      dashTimerId = setTimeout(() => {
+        loadDashboardData();
+        renderDashboardCharts();
+        scheduleNextDashboardRefresh();
+      }, jitter);
+    }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      clearTimeout(dashTimerId);
+      // Immediate refresh on resume
+      loadDashboardData();
+      renderDashboardCharts();
+      scheduleNextDashboardRefresh();
+    } else {
+      clearTimeout(dashTimerId);
+    }
+  });
+  scheduleNextDashboardRefresh();
+});

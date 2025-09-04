@@ -10,13 +10,13 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='userpermission',
-            name='permission_group',
-        ),
         migrations.AlterUniqueTogether(
             name='userpermission',
             unique_together=None,
+        ),
+        migrations.RemoveField(
+            model_name='userpermission',
+            name='permission_group',
         ),
         migrations.RemoveField(
             model_name='userpermission',

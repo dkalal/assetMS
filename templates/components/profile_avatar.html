@@ -1,0 +1,30 @@
+<!-- Accessible, reusable profile avatar component
+  Usage: include this template where needed, for example - include the file
+  `components/profile_avatar.html` with optional `user`, `size`, and `extra_classes`.
+
+   Parameters:
+     user - user object (falls back to request.user if available)
+     size - integer px (default 32)
+     extra_classes - additional CSS classes applied to the img/div
+ -->
+{% with the_user=user|default:request.user %}
+  {% with s=size|default:32 %}
+    <div class="profile-avatar" aria-label="User Profile" data-size="{{ s }}">
+      {% if the_user and the_user.profile_image %}
+        <img src="{{ the_user.profile_image.url }}" alt="{{ the_user.get_full_name|default:the_user.username }}" class="avatar-image {{ extra_classes|default:'' }}" style="width:{{ s }}px;height:{{ s }}px;object-fit:cover;border-radius:50%;" />
+      {% else %}
+        <div class="avatar-initials {{ extra_classes|default:'' }}" style="width:{{ s }}px;height:{{ s }}px;display:flex;align-items:center;justify-content:center;background:#eee;border-radius:50%;font-weight:600;">
+          {% with fn=the_user.first_name|default_if_none:'' ln=the_user.last_name|default_if_none:'' %}
+            {% if fn or ln %}
+              {{ fn|slice:':1'|upper }}{{ ln|slice:':1'|upper }}
+            {% elif the_user.username %}
+              {{ the_user.username|slice:':2'|upper }}
+            {% else %}
+              <i class="bi bi-person" aria-hidden="true"></i>
+            {% endif %}
+          {% endwith %}
+        </div>
+      {% endif %}
+    </div>
+  {% endwith %}
+{% endwith %}
