@@ -23,6 +23,12 @@ from assets.views import (
 )
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.auth import views as auth_views
+from django.views.generic import TemplateView, RedirectView
+from reports.views import reports_dashboard, generate_report
+from audit.views import audit_dashboard
+from users.views import profile
+from assets.views import AssetUpdateView, DashboardView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
