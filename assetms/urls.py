@@ -23,12 +23,6 @@ from assets.views import (
 )
 from django.conf import settings
 from django.conf.urls.static import static
-from django.contrib.auth import views as auth_views
-from django.views.generic import TemplateView, RedirectView
-from reports.views import reports_dashboard, generate_report
-from audit.views import audit_dashboard
-from users.views import profile
-from assets.views import AssetUpdateView, DashboardView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -82,4 +76,3 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
