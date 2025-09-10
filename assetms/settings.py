@@ -31,11 +31,13 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-for-local")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+# include your Railway app domain in the default ALLOWED_HOSTS fallback
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1,assetms-production.up.railway.app").split(",")
 
 # CSRF Settings for Enterprise Security
 CSRF_TRUSTED_ORIGINS = [
     'https://*.railway.app',
+    'https://assetms-production.up.railway.app',  # explicit trusted origin for Railway deployment
 ]
 
 CSRF_COOKIE_SECURE = True  # Set to True in production with HTTPS
