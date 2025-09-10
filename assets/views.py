@@ -477,7 +477,7 @@ def asset_export(request):
         if format == 'csv':
             df = pd.DataFrame(data)
             response = HttpResponse(content_type='text/csv')
-            response['Content-Disposition'] = f'attachment; filename="assets_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"'
+            response['Content-Disposition'] = f'attachment; filename="assets_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"'
             if large_export:
                 response['X-Export-Warning'] = 'Export is very large and may take time.'
             df.to_csv(response, index=False)
