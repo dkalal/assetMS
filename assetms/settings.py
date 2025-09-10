@@ -200,41 +200,61 @@ SESSION_COOKIE_AGE = 3600  # 1 hour
 # Permission Cache Settings
 PERMISSION_CACHE_TIMEOUT = 3600
 
+# ==========================
 # Logging Configuration
+# ==========================
+# Railway & most cloud platforms do not persist files.
+# So in production we log to console only.
+# In local dev (DEBUG=True), we also log to a local file for debugging.
+
+LOG_DIR = BASE_DIR / "logs"
+if DEBUG:
+    os.makedirs(LOG_DIR, exist_ok=True)
+
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "{levelname} {message}",
+            "style": "{",
         },
     },
-    'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs' / 'django.log',
-            'formatter': 'verbose',
+    "handlers": {
+        "console": {
+            "level": "DEBUG" if DEBUG else "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
         },
-        'console': {
-            'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
+        "file": {
+            "level": "DEBUG",
+            "class": "logging.FileHandler",
+            "filename": LOG_DIR / "django.log" if DEBUG else "/dev/null",
+            "formatter": "verbose",
         },
     },
-    'root': {
-        'handlers': ['console', 'file'],
-        'level': 'INFO',
+    "root": {
+        "handlers": ["console"] if not DEBUG else ["console", "file"],
+        "level": "INFO",
     },
-    'loggers': {
-        'users': {
-            'handlers': ['file', 'console'],
-            'level': 'INFO',
-            'propagate': False,
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "users": {
+            "handlers": ["console"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": False,
         },
     },
 }
+
 
 # Email configuration
 # Defaults to console backend in DEBUG. Configure environment variables for real SMTP in production.
