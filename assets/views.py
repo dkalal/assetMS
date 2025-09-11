@@ -90,6 +90,9 @@ class AssetCreateView(UserPassesTestMixin, CreateView):
 
 asset_create = user_passes_test(is_admin_or_manager, login_url='users:login')(AssetCreateView.as_view())
 
+# Time Stamp For File Names
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
 # Asset update view for admin/manager with audit logging
 class AssetUpdateView(UserPassesTestMixin, UpdateView):
     model = Asset
@@ -510,7 +513,7 @@ def asset_export(request):
             finally:
                 os.remove(temp_path)
             response = HttpResponse(pdf, content_type='application/pdf')
-            response['Content-Disposition'] = (f'attachment; filename="assets_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"')
+            response["Content-Disposition"] = f'attachment; filename="assets_{timestamp}.pdf"'
             if large_export:
                 response['X-Export-Warning'] = 'Export is very large and may take time.'
             log_audit(request.user, 'export', None, 'Assets exported as PDF')
