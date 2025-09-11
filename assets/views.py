@@ -486,7 +486,7 @@ def asset_export(request):
         elif format == 'xlsx':
             df = pd.DataFrame(data)
             response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-            response['Content-Disposition'] = f'attachment; filename="assets_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"'
+            response['Content-Disposition'] = (f'attachment; filename="assets_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"')
             if large_export:
                 response['X-Export-Warning'] = 'Export is very large and may take time.'
             with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
@@ -510,7 +510,7 @@ def asset_export(request):
             finally:
                 os.remove(temp_path)
             response = HttpResponse(pdf, content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename="assets_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"'
+            response['Content-Disposition'] = (f'attachment; filename="assets_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"')
             if large_export:
                 response['X-Export-Warning'] = 'Export is very large and may take time.'
             log_audit(request.user, 'export', None, 'Assets exported as PDF')
@@ -577,9 +577,9 @@ def download_import_template(request):
         os.remove(temp_path)
     response = HttpResponse(file_data, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     if request.GET.get('example') == '1':
-        response['Content-Disposition'] = f'attachment; filename=asset_import_example_{category.name}.xlsx'
+        response['Content-Disposition'] = (f'attachment; filename=asset_import_example_{category.name}.xlsx')
     else:
-        response['Content-Disposition'] = f'attachment; filename=asset_import_template_{category.name}.xlsx'
+        response['Content-Disposition'] = (f'attachment; filename=asset_import_template_{category.name}.xlsx')
     return response
 
 @method_decorator(user_passes_test(is_admin_or_manager, login_url='users:login'), name='dispatch')
