@@ -32,7 +32,16 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-for-local")
 DEBUG = os.environ.get("DEBUG", "True") == "True"
 
 # include your Railway app domain in the default ALLOWED_HOSTS fallback
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1,assetms-production.up.railway.app").split(",")
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "localhost",
+    "assetms-production.up.railway.app",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://assetms-production.up.railway.app",
+]
+
 
 # CSRF Settings for Enterprise Security
 CSRF_TRUSTED_ORIGINS = [
