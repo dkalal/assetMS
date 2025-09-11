@@ -486,7 +486,7 @@ def asset_export(request):
         elif format == 'xlsx':
             df = pd.DataFrame(data)
             response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-            response['Content-Disposition'] = (f'attachment; filename="assets_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"')
+            response['Content-Disposition'] = (f'attachment; filename="assets_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"')
             if large_export:
                 response['X-Export-Warning'] = 'Export is very large and may take time.'
             with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
