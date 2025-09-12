@@ -5,15 +5,17 @@ buildCommand = "pip install -r requirements.txt"
 [deploy]
 startCommand = "gunicorn assetms.wsgi:application --bind 0.0.0.0:$PORT --workers 4"
 
-# Install WeasyPrint dependencies
 [phases.setup]
 nixPkgs = [
   "glib",
-  "gobject-introspection",
   "cairo",
   "pango",
   "gdk-pixbuf",
   "harfbuzz",
   "freetype",
-  "fontconfig"
+  "fontconfig",
+  "libffi"
 ]
+
+[variables]
+PYTHONUNBUFFERED = "1"
