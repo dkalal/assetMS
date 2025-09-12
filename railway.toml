@@ -1,18 +1,23 @@
 [build]
-nixpacksVersion = "1"
+builder = "NIXPACKS"
+buildCommand = "pip install -r requirements.txt"
 
+[deploy]
+startCommand = "gunicorn assetms.wsgi:application --bind 0.0.0.0:$PORT --workers 4"
+
+# Add system dependencies needed by WeasyPrint
 [phases.setup]
-nixPkgs = [
-  "cairo",
-  "pango",
-  "gdk-pixbuf",
-  "libffi",
-  "glib",
-  "freetype",
-  "harfbuzz",
-  "fribidi",
-  "fontconfig",
-  "gobject-introspection",
-  "libxml2",
-  "libxslt"
+aptPkgs = [
+  "libpango-1.0-0",
+  "libpangoft2-1.0-0",
+  "libpangocairo-1.0-0",
+  "libgdk-pixbuf2.0-0",
+  "libffi-dev",
+  "libcairo2",
+  "libcairo2-dev",
+  "libgobject-2.0-0",
+  "libglib2.0-0",
+  "libharfbuzz0b",
+  "libfreetype6",
+  "libfontconfig1"
 ]
