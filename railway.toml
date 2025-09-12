@@ -1,0 +1,18 @@
+[build]
+nixpacksVersion = "1"
+
+[phases.setup]
+nixPkgs = [
+  "cairo",
+  "pango",
+  "gdk-pixbuf",
+  "libffi",
+  "glib",
+  "freetype",
+  "harfbuzz",
+  "fribidi",
+  "fontconfig",
+  "gobject-introspection",
+  "libxml2",
+  "libxslt"
+]
