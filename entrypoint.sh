@@ -59,6 +59,9 @@ else:
 "
 fi
 
+# Set default PORT if not provided
+PORT=${PORT:-8000}
+
 # Calculate number of workers: (2 x CPU cores) + 1, with minimum of 3
 WORKERS=${GUNICORN_WORKERS:-$(python -c "import multiprocessing; print(max(3, (2 * multiprocessing.cpu_count()) + 1))")}
 

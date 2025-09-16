@@ -56,8 +56,8 @@ USER appuser
 COPY --chown=appuser:appuser entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
-# Expose port (configurable via environment variable)
-EXPOSE $PORT
+# Expose port (Railway will set PORT environment variable)
+EXPOSE 8000
 
 # Health check to ensure the application is running
 # Note: Ensure your Django project has a /health/ endpoint that returns 200 OK
