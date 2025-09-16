@@ -1,21 +1,9 @@
 [build]
-builder = "NIXPACKS"
-buildCommand = "pip install -r requirements.txt"
+builder = "DOCKERFILE" # use Dockerfile build instead of Nixpacks
 
 [deploy]
-startCommand = "gunicorn assetms.wsgi:application --bind 0.0.0.0:$PORT --workers 4"
-
-[phases.setup]
-nixPkgs = [
-  "glib",
-  "cairo",
-  "pango",
-  "gdk-pixbuf",
-  "harfbuzz",
-  "freetype",
-  "fontconfig",
-  "libffi"
-]
+# Railway replaces ${PORT} with the real port dynamically
+startCommand = "./entrypoint.sh"
 
 [variables]
 PYTHONUNBUFFERED = "1"

@@ -1,16 +1,13 @@
-# Use Python 3.12 slim as base image for smaller footprint
+# Use Python 3.12 slim base for production
 FROM python:3.12-slim
 
-# Set environment variables for Python optimization and unbuffered output
+# Environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PORT=8000
+    PYTHONUNBUFFERED=1
 
-# Install system dependencies required by WeasyPrint and build tools
-# WeasyPrint needs: cairo, pango, gobject/glib, gdk-pixbuf, freetype, fontconfig, harfbuzz
-# Also install build dependencies for Python packages compilation
+# Install system dependencies required by WeasyPrint and Python builds
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    # WeasyPrint runtime dependencies
+    # WeasyPrint runtime deps
     libcairo2 \
     libpango-1.0-0 \
     libpangocairo-1.0-0 \
@@ -19,45 +16,39 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libfreetype6 \
     libfontconfig1 \
     libharfbuzz0b \
-    # Build dependencies for Python packages
+    # Build deps
     libffi-dev \
     pkg-config \
     gcc \
     g++ \
-    # Additional utilities
+    # Extra utilities
     curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+    && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user for security
+# Create app user
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
 # Set work directory
 WORKDIR /app
 
-# Copy requirements first for better Docker layer caching
-COPY requirements.txt .
+# Copy requirements first for caching
+COPY requirements.txt ./
+RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
-# Install Python dependencies without cache to reduce image size
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
-# Copy project files
+# Copy all project files
 COPY . .
 
-# Create logs, media, and fontconfig cache directories, set proper permissions
+# Create logs and media dirs with correct permissions
 RUN mkdir -p logs media /home/appuser/.cache/fontconfig && \
     chown -R appuser:appuser /app /home/appuser
 
 # Switch to non-root user
 USER appuser
 
-# Copy and make entrypoint script executable
-COPY --chown=appuser:appuser entrypoint.sh /app/entrypoint.sh
+# Make entrypoint executable
 RUN chmod +x /app/entrypoint.sh
 
-# Expose port (Railway will set PORT environment variable)
+# Railway injects PORT dynamically → expose default for local dev
 EXPOSE 8000
 
-# Use entrypoint script to handle migrations, static files, and start gunicorn
 ENTRYPOINT ["/app/entrypoint.sh"]

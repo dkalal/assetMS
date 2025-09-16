@@ -1,73 +1,73 @@
 #!/bin/bash
-
-# Exit on any error
 set -e
 
-echo "Starting Django application..."
+echo "🚀 Starting Django application..."
 
-# Wait for database to be ready (optional, useful for docker-compose)
-echo "Waiting for database..."
-python -c "
-import os
-import time
-import psycopg2
+# Wait for database if DATABASE_URL is set
+if [ -n "$DATABASE_URL" ]; then
+  echo "⏳ Waiting for database..."
+  python - <<'PYCODE'
+import os, time, psycopg2
 from urllib.parse import urlparse
 
-if 'DATABASE_URL' in os.environ:
-    url = urlparse(os.environ['DATABASE_URL'])
-    for i in range(30):
-        try:
-            conn = psycopg2.connect(
-                host=url.hostname,
-                port=url.port or 5432,
-                user=url.username,
-                password=url.password,
-                database=url.path[1:]
-            )
-            conn.close()
-            print('Database is ready!')
-            break
-        except psycopg2.OperationalError:
-            print(f'Database not ready, waiting... ({i+1}/30)')
-            time.sleep(2)
-    else:
-        print('Database connection timeout')
-        exit(1)
+url = urlparse(os.environ["DATABASE_URL"])
+for i in range(30):
+    try:
+        conn = psycopg2.connect(
+            host=url.hostname,
+            port=url.port or 5432,
+            user=url.username,
+            password=url.password,
+            database=url.path[1:]
+        )
+        conn.close()
+        print("✅ Database is ready!")
+        break
+    except psycopg2.OperationalError:
+        print(f"Database not ready, retrying... ({i+1}/30)")
+        time.sleep(2)
 else:
-    print('No DATABASE_URL found, skipping database check')
-"
+    print("❌ Database connection timeout")
+    exit(1)
+PYCODE
+else
+  echo "⚠️ No DATABASE_URL found, skipping database wait"
+fi
 
-# Run Django migrations
-echo "Running database migrations..."
+# Run migrations
+echo "⚙️ Running migrations..."
 python manage.py migrate --noinput
 
 # Collect static files
-echo "Collecting static files..."
+echo "📦 Collecting static files..."
 python manage.py collectstatic --noinput --clear
 
-# Create superuser if specified (optional, for initial setup)
+# Create superuser if env vars provided
 if [ "$DJANGO_SUPERUSER_USERNAME" ] && [ "$DJANGO_SUPERUSER_EMAIL" ] && [ "$DJANGO_SUPERUSER_PASSWORD" ]; then
-    echo "Creating superuser..."
-    python manage.py shell -c "
+  echo "👤 Creating superuser..."
+  python manage.py shell -c "
 from django.contrib.auth import get_user_model
 User = get_user_model()
 if not User.objects.filter(username='$DJANGO_SUPERUSER_USERNAME').exists():
-    User.objects.create_superuser('$DJANGO_SUPERUSER_USERNAME', '$DJANGO_SUPERUSER_EMAIL', '$DJANGO_SUPERUSER_PASSWORD')
-    print('Superuser created successfully')
+    User.objects.create_superuser(
+        '$DJANGO_SUPERUSER_USERNAME',
+        '$DJANGO_SUPERUSER_EMAIL',
+        '$DJANGO_SUPERUSER_PASSWORD'
+    )
+    print('✅ Superuser created')
 else:
-    print('Superuser already exists')
+    print('ℹ️ Superuser already exists')
 "
 fi
 
-# Set default PORT if not provided
+# Set PORT (Railway provides it automatically)
 PORT=${PORT:-8000}
 
-# Calculate number of workers: (2 x CPU cores) + 1, with minimum of 3
+# Auto-calc Gunicorn workers
 WORKERS=${GUNICORN_WORKERS:-$(python -c "import multiprocessing; print(max(3, (2 * multiprocessing.cpu_count()) + 1))")}
 
-echo "Starting Gunicorn with $WORKERS workers on port $PORT..."
+echo "🚀 Starting Gunicorn with $WORKERS workers on port $PORT..."
 
-# Start Gunicorn with proper signal handling (exec ensures proper signal forwarding)
 exec gunicorn assetms.wsgi:application \
     --bind 0.0.0.0:$PORT \
     --workers $WORKERS \
