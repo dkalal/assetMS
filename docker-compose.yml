@@ -38,9 +38,9 @@ services:
       PORT: 8000
       
       # Optional: Create superuser on first run
-      # DJANGO_SUPERUSER_USERNAME: admin
-      # DJANGO_SUPERUSER_EMAIL: admin@example.com
-      # DJANGO_SUPERUSER_PASSWORD: admin123
+      DJANGO_SUPERUSER_USERNAME: admin
+      DJANGO_SUPERUSER_EMAIL: admin@example.com
+      DJANGO_SUPERUSER_PASSWORD: admin123
       
       # Optional: S3 settings for production
       # AWS_ACCESS_KEY_ID: your-access-key

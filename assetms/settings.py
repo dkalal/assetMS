@@ -26,22 +26,15 @@ load_dotenv(BASE_DIR / '.env')
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-for-local")
+SECRET_KEY = os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY not set! Define it in your environment (.env or Railway variables).")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", "True") == "True"
+DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
 # include your Railway app domain in the default ALLOWED_HOSTS fallback
-ALLOWED_HOSTS = [
-    "127.0.0.1",
-    "localhost",
-    "assetms-production.up.railway.app",
-]
-
-CSRF_TRUSTED_ORIGINS = [
-    "https://assetms-production.up.railway.app",
-]
-
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
 
 # CSRF Settings for Enterprise Security
 CSRF_TRUSTED_ORIGINS = [
