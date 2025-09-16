@@ -29,8 +29,10 @@ from reports.views import reports_dashboard, generate_report
 from audit.views import audit_dashboard
 from users.views import profile
 from assets.views import AssetUpdateView, DashboardView
+from health_check import health_check
 
 urlpatterns = [
+    path('health/', health_check, name='health_check'),
     path('admin/', admin.site.urls),
     path('assets/register/', asset_create, name='asset_register'),
     path('api/dynamic-fields/', get_dynamic_fields, name='get_dynamic_fields'),
@@ -44,7 +46,8 @@ urlpatterns = [
     path('dashboard_activity_api/', dashboard_activity_api, name='dashboard_activity_api'),
     path('dashboard_chart_data_api/', dashboard_chart_data_api, name='dashboard_chart_data_api'),
     path('notifications-api/', notifications_api, name='notifications_api'),
-    path('', include(('users.urls', 'users'), namespace='users')),
+    path('', RedirectView.as_view(pattern_name='dashboard', permanent=False), name='home'),
+    path('users/', include(('users.urls', 'users'), namespace='users')),
     path('assets/export/', asset_export, name='asset_export'),
     path('test-modal/', TemplateView.as_view(template_name='test_modal.html'), name='test_modal'),
     path('assets/bulk-import/', AssetBulkImportView.as_view(), name='asset_bulk_import'),
@@ -80,5 +83,7 @@ urlpatterns = [
     path('security/privacy', RedirectView.as_view(pattern_name='settings:security_privacy_settings', permanent=False)),
 ]
 
+# Serve media and static files (required for Docker deployment)
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
