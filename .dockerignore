@@ -63,8 +63,11 @@ yarn-error.log*
 logs/
 *.log
 
-# Media files (uploaded content - exclude from image)
-media/
+# Media files (uploaded content - exclude files but keep directory structure)
+media/*
+!media/.gitkeep
+!media/*/
+!media/*/.gitkeep
 
 # Static files (will be collected during build)
 staticfiles/

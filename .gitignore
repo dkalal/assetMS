@@ -16,7 +16,11 @@ venv/
 
 # Django specific
 staticfiles/
-media/
+# Media files (keep directory structure, ignore files)
+media/*
+!media/.gitkeep
+!media/*/
+!media/*/.gitkeep
 logs/
 *.sqlite3
 local_settings.py

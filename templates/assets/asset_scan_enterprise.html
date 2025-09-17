@@ -209,15 +209,14 @@
 {% endblock %}
 
 {% block extra_scripts %}
+{% load static %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js" onerror="loadQuaggaFallback()"></script>
 <script>
 function loadQuaggaFallback() {
   const script = document.createElement('script');
-  script.src = 'https://unpkg.com/quagga@0.12.1/dist/quagga.min.js';
-  script.onerror = function() {
-    console.error('Failed to load Quagga library from both CDNs');
-    document.getElementById('start-scan').disabled = true;
-    document.getElementById('start-scan').innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Scanner Unavailable';
+  script.src = '{% static "js/quagga-fallback.js" %}';
+  script.onload = function() {
+    console.log('Using fallback scanner - manual input recommended');
   };
   document.head.appendChild(script);
 }

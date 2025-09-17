@@ -44,6 +44,10 @@ python manage.py migrate --noinput
 echo "📦 Collecting static files..."
 python manage.py collectstatic --noinput --clear
 
+# --- Ensure media directories exist ---
+echo "📁 Creating media directories..."
+mkdir -p media/qr_codes media/profile_images media/asset_images media/asset_docs media/reports
+
 # --- Create superuser (if env vars provided) ---
 if [ "$DJANGO_SUPERUSER_USERNAME" ] && [ "$DJANGO_SUPERUSER_EMAIL" ] && [ "$DJANGO_SUPERUSER_PASSWORD" ]; then
     echo "👤 Ensuring superuser exists..."
