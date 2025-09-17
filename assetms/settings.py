@@ -166,6 +166,10 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 # WhiteNoise: compressed static files
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
+# Configure WhiteNoise to serve media files in production
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_AUTOREFRESH = True
+
 # Media files (uploads)
 DEFAULT_FILE_STORAGE = os.environ.get(
     "DEFAULT_FILE_STORAGE", "django.core.files.storage.FileSystemStorage"

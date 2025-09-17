@@ -209,7 +209,19 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js" onerror="loadQuaggaFallback()"></script>
+<script>
+function loadQuaggaFallback() {
+  const script = document.createElement('script');
+  script.src = 'https://unpkg.com/quagga@0.12.1/dist/quagga.min.js';
+  script.onerror = function() {
+    console.error('Failed to load Quagga library from both CDNs');
+    document.getElementById('start-scan').disabled = true;
+    document.getElementById('start-scan').innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Scanner Unavailable';
+  };
+  document.head.appendChild(script);
+}
+</script>
 <script>
 class EnterpriseAssetScanner {
   constructor() {
@@ -276,6 +288,11 @@ class EnterpriseAssetScanner {
 
   initQuagga() {
     const video = document.getElementById('scanner-preview');
+    
+    if (typeof Quagga === 'undefined') {
+      this.showError('Quagga is not defined. Please check permissions and try again.');
+      return;
+    }
     
     Quagga.init({
       inputStream: {

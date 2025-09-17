@@ -56,13 +56,26 @@ class AssetCreateView(UserPassesTestMixin, CreateView):
         asset = form.save(commit=False)
         assigned_to = form.cleaned_data.get('assigned_to')
         asset.save()  # Save first to ensure UUID is set
+        
         # Generate QR code with direct URL
-        base_url = self.request.build_absolute_uri('/')[:-1]  # Remove trailing slash
-        qr_url = f"{base_url}/assets/{asset.uuid}/"
-        qr = qrcode.make(qr_url)
-        buffer = BytesIO()
-        qr.save(buffer, 'PNG')
-        asset.qr_code.save(f"asset_{asset.uuid}.png", ContentFile(buffer.getvalue()), save=False)
+        try:
+            import os
+            from django.conf import settings
+            
+            # Ensure QR codes directory exists
+            qr_dir = os.path.join(settings.MEDIA_ROOT, 'qr_codes')
+            os.makedirs(qr_dir, exist_ok=True)
+            
+            base_url = self.request.build_absolute_uri('/')[:-1]  # Remove trailing slash
+            qr_url = f"{base_url}/assets/{asset.uuid}/"
+            qr = qrcode.make(qr_url)
+            buffer = BytesIO()
+            qr.save(buffer, 'PNG')
+            asset.qr_code.save(f"asset_{asset.uuid}.png", ContentFile(buffer.getvalue()), save=False)
+        except Exception as e:
+            print(f"QR code generation failed: {e}")
+            # Continue without QR code if generation fails
+        
         asset.save()
         if assigned_to:
             log_audit(self.request.user, ASSIGN_ACTION, asset, f'Asset assigned to {assigned_to}', related_user=assigned_to)
@@ -670,13 +683,25 @@ class AssetBulkImportView(View):
                             asset.save()  # Initial save to ensure UUID is set
                             
                             # Generate QR code with direct URL
-                            base_url = request.build_absolute_uri('/')[:-1]  # Remove trailing slash
-                            qr_url = f"{base_url}/assets/{asset.uuid}/"
-                            qr = qrcode.make(qr_url)
-                            buffer = BytesIO()
-                            qr.save(buffer, 'PNG')
-                            asset.qr_code.save(f"asset_{asset.uuid}.png", ContentFile(buffer.getvalue()), save=False)
-                            asset.save()  # Final save with QR code
+                            try:
+                                import os
+                                from django.conf import settings
+                                
+                                # Ensure QR codes directory exists
+                                qr_dir = os.path.join(settings.MEDIA_ROOT, 'qr_codes')
+                                os.makedirs(qr_dir, exist_ok=True)
+                                
+                                base_url = request.build_absolute_uri('/')[:-1]  # Remove trailing slash
+                                qr_url = f"{base_url}/assets/{asset.uuid}/"
+                                qr = qrcode.make(qr_url)
+                                buffer = BytesIO()
+                                qr.save(buffer, 'PNG')
+                                asset.qr_code.save(f"asset_{asset.uuid}.png", ContentFile(buffer.getvalue()), save=False)
+                            except Exception as e:
+                                print(f"QR code generation failed for bulk import: {e}")
+                                # Continue without QR code if generation fails
+                            
+                            asset.save()  # Final save with or without QR code
                             
                             # Log audit events after successful save
                             if asset.assigned_to:
