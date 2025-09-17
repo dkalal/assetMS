@@ -40,13 +40,17 @@ EOF
 echo "⚙️ Running database migrations..."
 python manage.py migrate --noinput
 
+# --- Ensure media directories exist ---
+echo "📁 Creating media directories..."
+mkdir -p media/qr_codes media/profile_images media/asset_images media/asset_docs media/reports
+
 # --- Collect static files ---
 echo "📦 Collecting static files..."
 python manage.py collectstatic --noinput --clear
 
-# --- Ensure media directories exist ---
-echo "📁 Creating media directories..."
-mkdir -p media/qr_codes media/profile_images media/asset_images media/asset_docs media/reports
+# --- Copy media to staticfiles for WhiteNoise ---
+echo "📋 Copying media files to static..."
+cp -r media/* staticfiles/media/ 2>/dev/null || true
 
 # --- Create superuser (if env vars provided) ---
 if [ "$DJANGO_SUPERUSER_USERNAME" ] && [ "$DJANGO_SUPERUSER_EMAIL" ] && [ "$DJANGO_SUPERUSER_PASSWORD" ]; then
