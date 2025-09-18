@@ -178,19 +178,26 @@ WHITENOISE_STATIC_PREFIX = '/static/'
 USE_B2 = os.environ.get('USE_B2', 'False').lower() == 'true'
 
 if USE_B2:
-    # Backblaze B2 Storage
-    DEFAULT_FILE_STORAGE = 'storages.backends.b2.B2Storage'
+    # Backblaze B2 Storage using S3-compatible API
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
     
-    # B2 Settings
-    B2_APPLICATION_KEY_ID = os.environ.get('B2_APPLICATION_KEY_ID')
-    B2_APPLICATION_KEY = os.environ.get('B2_APPLICATION_KEY')
-    B2_BUCKET_NAME = os.environ.get('B2_BUCKET_NAME')
-    B2_BUCKET_REGION = os.environ.get('B2_BUCKET_REGION', 'us-east-002')
+    # B2 Settings (S3-compatible)
+    AWS_ACCESS_KEY_ID = os.environ.get('B2_APPLICATION_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = os.environ.get('B2_APPLICATION_KEY')
+    AWS_STORAGE_BUCKET_NAME = os.environ.get('B2_BUCKET_NAME')
+    AWS_S3_REGION_NAME = os.environ.get('B2_BUCKET_REGION', 'us-east-005')
+    AWS_S3_ENDPOINT_URL = f"https://s3.{AWS_S3_REGION_NAME}.backblazeb2.com"
+    
+    # Public access settings
+    AWS_DEFAULT_ACL = 'public-read'
+    AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
+    AWS_QUERYSTRING_AUTH = False
+    AWS_S3_FILE_OVERWRITE = False
     
     # Media URL from B2
-    MEDIA_URL = f"https://f002.backblazeb2.com/file/{B2_BUCKET_NAME}/"
+    MEDIA_URL = f"https://f002.backblazeb2.com/file/{os.environ.get('B2_BUCKET_NAME')}/"
     
-    # Optional: Custom domain if you have one
+    # Optional: Custom domain
     B2_CUSTOM_DOMAIN = os.environ.get('B2_CUSTOM_DOMAIN')
     if B2_CUSTOM_DOMAIN:
         MEDIA_URL = f"https://{B2_CUSTOM_DOMAIN}/"
