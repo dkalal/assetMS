@@ -42,12 +42,14 @@ services:
       # DJANGO_SUPERUSER_EMAIL: admin@example.com
       # DJANGO_SUPERUSER_PASSWORD: admin123
       
-      # Optional: S3 settings for production
-      # AWS_ACCESS_KEY_ID: your-access-key
-      # AWS_SECRET_ACCESS_KEY: your-secret-key
-      # AWS_STORAGE_BUCKET_NAME: your-bucket-name
-      # AWS_S3_REGION_NAME: us-east-1
-      # USE_S3: "True"
+      # Optional: Backblaze B2 settings for production
+      USE_B2: "True"
+      keyID: 005f70d428c6d4d0000000002
+      keyName: django-assetms
+      applicationKey: K005UuqiQj8+KkOOS57uiN5JQUAXTaI
+      B2_BUCKET_REGION: us-east-002
+      B2_BUCKET_NAME: assetms-media
+      # B2_CUSTOM_DOMAIN: media.yourdomain.com
     
     depends_on:
       db:

@@ -161,7 +161,7 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "static"]
+STATICFILES_DIRS = [str(BASE_DIR / "static")]
 
 # WhiteNoise: compressed static files
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
@@ -171,18 +171,37 @@ WHITENOISE_USE_FINDERS = True
 WHITENOISE_AUTOREFRESH = True
 WHITENOISE_STATIC_PREFIX = '/static/'
 
-# Media files (uploads)
-DEFAULT_FILE_STORAGE = os.environ.get(
-    "DEFAULT_FILE_STORAGE", "django.core.files.storage.FileSystemStorage"
-)
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+# Media files (uploads) - Backblaze B2 Configuration
+USE_B2 = os.environ.get('USE_B2', 'False').lower() == 'true'
 
-# Add media files to static files for WhiteNoise
-STATICFILES_DIRS.append((BASE_DIR / "media", "media"))
-WHITENOISE_DIRECTORIES = [
-    (BASE_DIR / "media", "/media/"),
-]
+if USE_B2:
+    # Backblaze B2 Storage
+    DEFAULT_FILE_STORAGE = 'storages.backends.b2.B2Storage'
+    
+    # B2 Settings
+    B2_APPLICATION_KEY_ID = os.environ.get('B2_APPLICATION_KEY_ID')
+    B2_APPLICATION_KEY = os.environ.get('B2_APPLICATION_KEY')
+    B2_BUCKET_NAME = os.environ.get('B2_BUCKET_NAME')
+    B2_BUCKET_REGION = os.environ.get('B2_BUCKET_REGION', 'us-west-002')
+    
+    # Media URL from B2
+    MEDIA_URL = f"https://f002.backblazeb2.com/file/{B2_BUCKET_NAME}/"
+    
+    # Optional: Custom domain if you have one
+    B2_CUSTOM_DOMAIN = os.environ.get('B2_CUSTOM_DOMAIN')
+    if B2_CUSTOM_DOMAIN:
+        MEDIA_URL = f"https://{B2_CUSTOM_DOMAIN}/"
+else:
+    # Local storage fallback
+    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = BASE_DIR / "media"
+    
+    # Add media files to static files for WhiteNoise (local only)
+    STATICFILES_DIRS.append((str(BASE_DIR / "media"), "media"))
+    WHITENOISE_DIRECTORIES = [
+        (str(BASE_DIR / "media"), "/media/"),
+    ]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
