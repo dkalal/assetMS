@@ -185,8 +185,8 @@ DEFAULT_FILE_STORAGE = 'assetms.storage_backends.MultiStorageBackend'
 if USE_IMAGEKIT:
     IMAGEKIT_PRIVATE_KEY = os.environ.get('IMAGEKIT_PRIVATE_KEY')
     IMAGEKIT_PUBLIC_KEY = os.environ.get('IMAGEKIT_PUBLIC_KEY')
-    IMAGEKIT_URL_ENDPOINT = os.environ.get('IMAGEKIT_URL_ENDPOINT')
-    MEDIA_URL = IMAGEKIT_URL_ENDPOINT
+    IMAGEKIT_URL_ENDPOINT = os.environ.get('IMAGEKIT_URL_ENDPOINT', '')
+    MEDIA_URL = IMAGEKIT_URL_ENDPOINT.rstrip('/') + '/' if IMAGEKIT_URL_ENDPOINT else '/media/'
 
 # Backblaze B2 Configuration (Fallback)
 elif USE_B2:
@@ -198,7 +198,7 @@ elif USE_B2:
     AWS_S3_ENDPOINT_URL = f"https://s3.{AWS_S3_REGION_NAME}.backblazeb2.com"
     AWS_DEFAULT_ACL = 'public-read'
     AWS_QUERYSTRING_AUTH = False
-    MEDIA_URL = f"https://f002.backblazeb2.com/file/{os.environ.get('B2_BUCKET_NAME')}/"
+    MEDIA_URL = f"https://f002.backblazeb2.com/file/{os.environ.get('B2_BUCKET_NAME', '')}/"
 
 else:
     # Local storage fallback
