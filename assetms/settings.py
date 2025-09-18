@@ -62,7 +62,6 @@ INSTALLED_APPS = [
     # Third-party apps
     'rest_framework',
     'import_export',
-    'csp',
     # Project apps
     'users',
     'assets',
@@ -74,7 +73,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'csp.middleware.CSPMiddleware',
+    'assetms.middleware.CustomCSPMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # add whitenoise near top
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -227,6 +226,9 @@ SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", 31536000)) if no
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
+# Disable Django's default CSP to use our custom one
+SECURE_CONTENT_SECURITY_POLICY = None
+
 # Session Security
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
@@ -305,26 +307,5 @@ EMAIL_USE_TLS = _env('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_USE_SSL = _env('EMAIL_USE_SSL', 'False').lower() == 'true'
 DEFAULT_FROM_EMAIL = _env('DEFAULT_FROM_EMAIL', 'AssetMS <no-reply@assetms.local>')
 
-# Content Security Policy Configuration
-CSP_DEFAULT_SRC = ("'self'",)
-CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com")
-CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com")
-CSP_FONT_SRC = ("'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com")
-CSP_CONNECT_SRC = ("'self'",)
-CSP_IMG_SRC = ("'self'", "data:")
-
-# Add Backblaze B2 domains if enabled
-USE_B2 = os.environ.get('USE_B2', 'False').lower() == 'true'
-if USE_B2:
-    CSP_IMG_SRC += ("https://f002.backblazeb2.com", "https://*.backblazeb2.com")
-    CSP_CONNECT_SRC += ("https://f002.backblazeb2.com", "https://*.backblazeb2.com")
-    
-    # If using custom domain
-    B2_CUSTOM_DOMAIN = os.environ.get('B2_CUSTOM_DOMAIN')
-    if B2_CUSTOM_DOMAIN:
-        CSP_IMG_SRC += (f"https://{B2_CUSTOM_DOMAIN}",)
-        CSP_CONNECT_SRC += (f"https://{B2_CUSTOM_DOMAIN}",)
-
-# Disable CSP in development
-if DEBUG:
-    CSP_REPORT_ONLY = True
+# Custom CSP middleware handles Content Security Policy
+# See assetms/middleware.py for CSP configuration
