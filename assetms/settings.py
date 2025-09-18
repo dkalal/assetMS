@@ -174,44 +174,38 @@ WHITENOISE_USE_FINDERS = True
 WHITENOISE_AUTOREFRESH = True
 WHITENOISE_STATIC_PREFIX = '/static/'
 
-# Media files (uploads) - Backblaze B2 Configuration
+# Media files (uploads) - Multi-storage with ImageKit primary, B2 fallback
+USE_IMAGEKIT = os.environ.get('USE_IMAGEKIT', 'False').lower() == 'true'
 USE_B2 = os.environ.get('USE_B2', 'False').lower() == 'true'
 
-if USE_B2:
-    # Backblaze B2 Storage using S3-compatible API
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-    
-    # B2 Settings (S3-compatible)
+# Multi-storage backend
+DEFAULT_FILE_STORAGE = 'assetms.storage_backends.MultiStorageBackend'
+
+# ImageKit Configuration (Primary)
+if USE_IMAGEKIT:
+    IMAGEKIT_PRIVATE_KEY = os.environ.get('IMAGEKIT_PRIVATE_KEY')
+    IMAGEKIT_PUBLIC_KEY = os.environ.get('IMAGEKIT_PUBLIC_KEY')
+    IMAGEKIT_URL_ENDPOINT = os.environ.get('IMAGEKIT_URL_ENDPOINT')
+    MEDIA_URL = IMAGEKIT_URL_ENDPOINT
+
+# Backblaze B2 Configuration (Fallback)
+elif USE_B2:
+    # B2 Settings for fallback
     AWS_ACCESS_KEY_ID = os.environ.get('B2_APPLICATION_KEY_ID')
     AWS_SECRET_ACCESS_KEY = os.environ.get('B2_APPLICATION_KEY')
     AWS_STORAGE_BUCKET_NAME = os.environ.get('B2_BUCKET_NAME')
     AWS_S3_REGION_NAME = os.environ.get('B2_BUCKET_REGION', 'us-east-005')
     AWS_S3_ENDPOINT_URL = f"https://s3.{AWS_S3_REGION_NAME}.backblazeb2.com"
-    
-    # Public access settings
     AWS_DEFAULT_ACL = 'public-read'
-    AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
     AWS_QUERYSTRING_AUTH = False
-    AWS_S3_FILE_OVERWRITE = False
-    
-    # Media URL from B2
     MEDIA_URL = f"https://f002.backblazeb2.com/file/{os.environ.get('B2_BUCKET_NAME')}/"
-    
-    # Optional: Custom domain
-    B2_CUSTOM_DOMAIN = os.environ.get('B2_CUSTOM_DOMAIN')
-    if B2_CUSTOM_DOMAIN:
-        MEDIA_URL = f"https://{B2_CUSTOM_DOMAIN}/"
+
 else:
     # Local storage fallback
-    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
     MEDIA_URL = "/media/"
     MEDIA_ROOT = BASE_DIR / "media"
-    
-    # Add media files to static files for WhiteNoise (local only)
     STATICFILES_DIRS.append((str(BASE_DIR / "media"), "media"))
-    WHITENOISE_DIRECTORIES = [
-        (str(BASE_DIR / "media"), "/media/"),
-    ]
+    WHITENOISE_DIRECTORIES = [(str(BASE_DIR / "media"), "/media/")]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

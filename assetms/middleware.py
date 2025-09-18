@@ -20,6 +20,16 @@ class CustomCSPMiddleware:
         img_src = "'self' data:"
         connect_src = "'self'"
         
+        # ImageKit domains
+        use_imagekit = os.environ.get('USE_IMAGEKIT', 'False').lower() == 'true'
+        if use_imagekit:
+            imagekit_endpoint = os.environ.get('IMAGEKIT_URL_ENDPOINT', '')
+            if imagekit_endpoint:
+                domain = imagekit_endpoint.replace('https://', '').replace('http://', '')
+                img_src += f" https://{domain} https://*.imagekit.io"
+                connect_src += f" https://{domain} https://*.imagekit.io"
+        
+        # Backblaze B2 domains
         if self.use_b2:
             img_src += " https://f002.backblazeb2.com https://*.backblazeb2.com"
             connect_src += " https://f002.backblazeb2.com https://*.backblazeb2.com"
