@@ -42,7 +42,9 @@ CSRF_TRUSTED_ORIGINS = [
     'https://assetms-production.up.railway.app',  # explicit trusted origin for Railway deployment
 ]
 
-CSRF_COOKIE_SECURE = True  # Set to True in production with HTTPS
+
+
+CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_USE_SESSIONS = False
@@ -60,6 +62,7 @@ INSTALLED_APPS = [
     # Third-party apps
     'rest_framework',
     'import_export',
+    'csp',
     # Project apps
     'users',
     'assets',
@@ -71,6 +74,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'csp.middleware.CSPMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # add whitenoise near top
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -182,7 +186,7 @@ if USE_B2:
     B2_APPLICATION_KEY_ID = os.environ.get('B2_APPLICATION_KEY_ID')
     B2_APPLICATION_KEY = os.environ.get('B2_APPLICATION_KEY')
     B2_BUCKET_NAME = os.environ.get('B2_BUCKET_NAME')
-    B2_BUCKET_REGION = os.environ.get('B2_BUCKET_REGION', 'us-west-002')
+    B2_BUCKET_REGION = os.environ.get('B2_BUCKET_REGION', 'us-east-002')
     
     # Media URL from B2
     MEDIA_URL = f"https://f002.backblazeb2.com/file/{B2_BUCKET_NAME}/"
@@ -300,3 +304,27 @@ EMAIL_HOST_PASSWORD = _env('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = _env('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_USE_SSL = _env('EMAIL_USE_SSL', 'False').lower() == 'true'
 DEFAULT_FROM_EMAIL = _env('DEFAULT_FROM_EMAIL', 'AssetMS <no-reply@assetms.local>')
+
+# Content Security Policy Configuration
+CSP_DEFAULT_SRC = ("'self'",)
+CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com")
+CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com")
+CSP_FONT_SRC = ("'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com")
+CSP_CONNECT_SRC = ("'self'",)
+CSP_IMG_SRC = ("'self'", "data:")
+
+# Add Backblaze B2 domains if enabled
+USE_B2 = os.environ.get('USE_B2', 'False').lower() == 'true'
+if USE_B2:
+    CSP_IMG_SRC += ("https://f002.backblazeb2.com", "https://*.backblazeb2.com")
+    CSP_CONNECT_SRC += ("https://f002.backblazeb2.com", "https://*.backblazeb2.com")
+    
+    # If using custom domain
+    B2_CUSTOM_DOMAIN = os.environ.get('B2_CUSTOM_DOMAIN')
+    if B2_CUSTOM_DOMAIN:
+        CSP_IMG_SRC += (f"https://{B2_CUSTOM_DOMAIN}",)
+        CSP_CONNECT_SRC += (f"https://{B2_CUSTOM_DOMAIN}",)
+
+# Disable CSP in development
+if DEBUG:
+    CSP_REPORT_ONLY = True
