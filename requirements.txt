@@ -94,5 +94,7 @@ boto3==1.35.0
 b2sdk==2.5.1
 # ImageKit Python SDK
 imagekitio==3.2.0
+# Cloudinary Python SDK
+cloudinary==1.41.0
 # Content Security Policy
 django-csp==3.8

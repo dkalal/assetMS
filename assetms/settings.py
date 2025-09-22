@@ -174,15 +174,33 @@ WHITENOISE_USE_FINDERS = True
 WHITENOISE_AUTOREFRESH = True
 WHITENOISE_STATIC_PREFIX = '/static/'
 
-# Media files (uploads) - Multi-storage with ImageKit primary, B2 fallback
+# Media files (uploads) - Multi-storage with Cloudinary primary
+USE_CLOUDINARY = os.environ.get('USE_CLOUDINARY', 'False').lower() == 'true'
 USE_IMAGEKIT = os.environ.get('USE_IMAGEKIT', 'False').lower() == 'true'
 USE_B2 = os.environ.get('USE_B2', 'False').lower() == 'true'
 
-# Multi-storage backend
+# Storage configuration for Django 4.2+
+STORAGES = {
+    "default": {
+        "BACKEND": "assetms.storage_backends.MultiStorageBackend",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+# Backward compatibility
 DEFAULT_FILE_STORAGE = 'assetms.storage_backends.MultiStorageBackend'
 
-# ImageKit Configuration (Primary)
-if USE_IMAGEKIT:
+# Cloudinary Configuration (Primary)
+if USE_CLOUDINARY:
+    CLOUDINARY_CLOUD_NAME = os.environ.get('CLOUDINARY_CLOUD_NAME')
+    CLOUDINARY_API_KEY = os.environ.get('CLOUDINARY_API_KEY')
+    CLOUDINARY_API_SECRET = os.environ.get('CLOUDINARY_API_SECRET')
+    MEDIA_URL = f"https://res.cloudinary.com/{CLOUDINARY_CLOUD_NAME}/image/upload/"
+
+# ImageKit Configuration (Fallback)
+elif USE_IMAGEKIT:
     IMAGEKIT_PRIVATE_KEY = os.environ.get('IMAGEKIT_PRIVATE_KEY')
     IMAGEKIT_PUBLIC_KEY = os.environ.get('IMAGEKIT_PUBLIC_KEY')
     IMAGEKIT_URL_ENDPOINT = os.environ.get('IMAGEKIT_URL_ENDPOINT', '')
@@ -229,6 +247,10 @@ SECURE_HSTS_PRELOAD = True
 
 # Disable Django's default CSP to use our custom one
 SECURE_CONTENT_SECURITY_POLICY = None
+CSP_DEFAULT_SRC = None
+CSP_IMG_SRC = None
+CSP_SCRIPT_SRC = None
+CSP_STYLE_SRC = None
 
 # Session Security
 SESSION_COOKIE_SECURE = not DEBUG

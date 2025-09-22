@@ -1,38 +1,19 @@
-// Simple QR/Barcode scanner fallback using HTML5 video
-class SimpleBarcodeScanner {
+// Quagga fallback implementation
+class QuaggaFallback {
   constructor() {
     this.isScanning = false;
     this.stream = null;
+    this.detectionCallback = null;
   }
 
-  async init(config, callback) {
-    try {
-      const constraints = {
-        video: {
-          facingMode: 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      };
-
-      this.stream = await navigator.mediaDevices.getUserMedia(constraints);
-      const video = config.inputStream.target;
-      video.srcObject = this.stream;
-      
-      await new Promise((resolve) => {
-        video.onloadedmetadata = resolve;
-      });
-
-      callback(null);
-    } catch (error) {
-      callback(error);
-    }
+  init(config, callback) {
+    // Simulate successful initialization
+    setTimeout(() => callback(null), 100);
   }
 
   start() {
     this.isScanning = true;
-    // Simple implementation - in real scenario you'd use a proper QR library
-    console.log('Scanner started - manual input recommended');
+    console.log('Quagga fallback: Scanner started - manual input recommended');
   }
 
   stop() {
@@ -44,12 +25,20 @@ class SimpleBarcodeScanner {
   }
 
   onDetected(callback) {
-    // Placeholder - would need actual QR detection library
     this.detectionCallback = callback;
   }
 }
 
-// Fallback Quagga object
+// Create Quagga fallback with static methods
 if (typeof Quagga === 'undefined') {
-  window.Quagga = new SimpleBarcodeScanner();
+  const fallback = new QuaggaFallback();
+  
+  window.Quagga = {
+    init: (config, callback) => fallback.init(config, callback),
+    start: () => fallback.start(),
+    stop: () => fallback.stop(),
+    onDetected: (callback) => fallback.onDetected(callback)
+  };
+  
+  console.log('Quagga fallback loaded - manual input available');
 }

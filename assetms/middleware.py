@@ -18,14 +18,16 @@ class CustomCSPMiddleware:
         img_src = "'self' data:"
         connect_src = "'self'"
         
-        # ImageKit domains (check at runtime)
-        use_imagekit = os.environ.get('USE_IMAGEKIT', 'False').lower() == 'true'
-        if use_imagekit:
-            imagekit_endpoint = os.environ.get('IMAGEKIT_URL_ENDPOINT', '')
-            if imagekit_endpoint:
-                domain = imagekit_endpoint.replace('https://', '').replace('http://', '').rstrip('/')
-                img_src += f" https://{domain} https://*.imagekit.io"
-                connect_src += f" https://{domain} https://*.imagekit.io"
+        # Cloudinary domains (always include - production ready)
+        img_src += " https://res.cloudinary.com https://*.cloudinary.com"
+        connect_src += " https://res.cloudinary.com https://*.cloudinary.com"
+        
+        # ImageKit domains (always include if configured)
+        imagekit_endpoint = os.environ.get('IMAGEKIT_URL_ENDPOINT', '')
+        if imagekit_endpoint:
+            domain = imagekit_endpoint.replace('https://', '').replace('http://', '').rstrip('/')
+            img_src += f" https://{domain} https://*.imagekit.io"
+            connect_src += f" https://{domain} https://*.imagekit.io"
         
         # Backblaze B2 domains (check at runtime)
         use_b2 = os.environ.get('USE_B2', 'False').lower() == 'true'
@@ -38,8 +40,13 @@ class CustomCSPMiddleware:
                 img_src += f" https://{b2_custom_domain}"
                 connect_src += f" https://{b2_custom_domain}"
         
-        # Add CDN domains
+        # Add CDN domains and source maps
         connect_src += " https://cdn.jsdelivr.net https://cdnjs.cloudflare.com"
+        
+        # Debug: Log CSP policy
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"CSP img-src: {img_src}")
         
         csp_policy = (
             f"default-src 'self'; "
@@ -52,5 +59,16 @@ class CustomCSPMiddleware:
             f"base-uri 'self';"
         )
         
+        logger.info(f"Final CSP: {csp_policy}")
+        
+        # Force CSP header refresh
         response['Content-Security-Policy'] = csp_policy
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
+        
+        # Remove any conflicting CSP headers
+        if 'Content-Security-Policy-Report-Only' in response:
+            del response['Content-Security-Policy-Report-Only']
+            
         return response
