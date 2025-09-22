@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSP Test</title>
+</head>
+<body>
+    <h1>CSP Test Page</h1>
+    <p>Check browser console for CSP headers</p>
+    <img src="https://ik.imagekit.io/dk360/profile_images/Professional_Headshot_simple_compose.png" alt="Test Image" style="max-width: 200px;">
+    <script>
+        console.log('CSP Headers:', document.querySelector('meta[http-equiv="Content-Security-Policy"]'));
+        console.log('Response headers available in Network tab');
+    </script>
+</body>
+</html>

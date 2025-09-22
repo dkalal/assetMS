@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quagga Test</title>
+</head>
+<body>
+    <h1>Testing Quagga Fallback</h1>
+    <div id="result"></div>
+    
+    <script>
+        // Simulate Quagga loading failure
+        (function() {
+            const script = document.createElement('script');
+            script.src = 'static/js/quagga-fallback.js';
+            script.onload = function() {
+                console.log('Fallback loaded');
+                
+                // Test Quagga interface
+                if (typeof Quagga !== 'undefined') {
+                    document.getElementById('result').innerHTML = 'SUCCESS: Quagga fallback working';
+                    
+                    // Test methods
+                    Quagga.init({}, function(err) {
+                        if (!err) {
+                            console.log('Quagga.init() working');
+                            Quagga.start();
+                            Quagga.onDetected(function(result) {
+                                console.log('Detection callback set');
+                            });
+                            Quagga.stop();
+                        }
+                    });
+                } else {
+                    document.getElementById('result').innerHTML = 'ERROR: Quagga not defined';
+                }
+            };
+            document.head.appendChild(script);
+        })();
+    </script>
+</body>
+</html>
