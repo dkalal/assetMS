@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Robust QR Scanner Test</title>
+    <style>
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .scanner-container { border: 1px solid #ccc; margin: 20px 0; }
+        #qr-reader { width: 100%; height: 400px; }
+        .controls { margin: 20px 0; }
+        .result { margin: 20px 0; padding: 15px; border-radius: 5px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Robust QR Scanner Test</h1>
+        
+        <div class="scanner-container">
+            <div id="qr-reader"></div>
+        </div>
+        
+        <div class="controls">
+            <button id="start-btn">Start QR Scanner</button>
+            <button id="stop-btn" disabled>Stop Scanner</button>
+        </div>
+        
+        <div id="result" class="result" style="display: none;">
+            <h3>Scan Result:</h3>
+            <p id="result-text"></p>
+        </div>
+        
+        <div id="error" class="result error" style="display: none;">
+            <h3>Error:</h3>
+            <p id="error-text"></p>
+        </div>
+        
+        <div class="result">
+            <h3>Manual Input:</h3>
+            <input type="text" id="manual-input" placeholder="Enter QR code manually">
+            <button onclick="processManualInput()">Process</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+    <script>
+        let qrScanner = null;
+        
+        function showResult(text) {
+            const resultEl = document.getElementById('result');
+            const resultText = document.getElementById('result-text');
+            const errorEl = document.getElementById('error');
+            
+            if (resultText) resultText.textContent = text;
+            if (resultEl) resultEl.style.display = 'block';
+            if (errorEl) errorEl.style.display = 'none';
+        }
+        
+        function showError(text) {
+            const errorEl = document.getElementById('error');
+            const errorText = document.getElementById('error-text');
+            const resultEl = document.getElementById('result');
+            
+            if (errorText) errorText.textContent = text;
+            if (errorEl) errorEl.style.display = 'block';
+            if (resultEl) resultEl.style.display = 'none';
+        }
+        
+        function updateButtons(scanning) {
+            const startBtn = document.getElementById('start-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            
+            if (startBtn) startBtn.disabled = scanning;
+            if (stopBtn) stopBtn.disabled = !scanning;
+        }
+        
+        function startScanner() {
+            if (!window.Html5Qrcode) {
+                showError('Html5Qrcode library not loaded');
+                return;
+            }
+            
+            const readerElement = document.getElementById('qr-reader');
+            if (!readerElement) {
+                showError('Scanner container not found');
+                return;
+            }
+            
+            qrScanner = new Html5Qrcode('qr-reader');
+            
+            Html5Qrcode.getCameras().then(cameras => {
+                if (cameras && cameras.length > 0) {
+                    const cameraId = cameras[0].id;
+                    
+                    qrScanner.start(
+                        cameraId,
+                        {
+                            fps: 10,
+                            qrbox: { width: 250, height: 250 }
+                        },
+                        (decodedText) => {
+                            showResult(decodedText);
+                            stopScanner();
+                        },
+                        (errorMessage) => {
+                            // Ignore continuous scanning errors
+                        }
+                    ).then(() => {
+                        updateButtons(true);
+                        console.log('QR Scanner started successfully');
+                    }).catch(err => {
+                        showError(`Failed to start scanner: ${err}`);
+                        updateButtons(false);
+                    });
+                } else {
+                    showError('No cameras found');
+                }
+            }).catch(err => {
+                showError(`Camera access error: ${err}`);
+            });
+        }
+        
+        function stopScanner() {
+            if (qrScanner) {
+                qrScanner.stop().then(() => {
+                    qrScanner.clear();
+                    updateButtons(false);
+                    console.log('QR Scanner stopped');
+                }).catch(err => {
+                    console.error('Stop error:', err);
+                    updateButtons(false);
+                });
+            }
+        }
+        
+        function processManualInput() {
+            const input = document.getElementById('manual-input');
+            if (input && input.value.trim()) {
+                showResult(input.value.trim());
+            }
+        }
+        
+        // Event listeners with null checks
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        
+        if (startBtn) startBtn.addEventListener('click', startScanner);
+        if (stopBtn) stopBtn.addEventListener('click', stopScanner);
+        
+        // Test DOM elements on load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, checking elements...');
+            console.log('qr-reader exists:', !!document.getElementById('qr-reader'));
+            console.log('start-btn exists:', !!document.getElementById('start-btn'));
+            console.log('stop-btn exists:', !!document.getElementById('stop-btn'));
+            console.log('Html5Qrcode available:', !!window.Html5Qrcode);
+        });
+    </script>
+</body>
+</html>
