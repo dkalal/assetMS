@@ -45,30 +45,50 @@
   let scanner = null;
   function startScanner() {
     if (!window.Html5Qrcode) {
-      showError('QR library failed to load.');
+      showError('QR scanner library not available. Please use manual input.');
       return;
     }
+    
     // Secure context check
     if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
       showError('Camera requires HTTPS or localhost.');
       return;
     }
+    
     const elemId = 'qr-reader';
     scanner = new Html5Qrcode(elemId);
+    
     Html5Qrcode.getCameras().then(cameras => {
       const cameraId = (cameras && cameras[0] && cameras[0].id) || null;
-      if (!cameraId) { showError('No camera found.'); return; }
+      if (!cameraId) { 
+        showError('No camera found. Please use manual input.'); 
+        return; 
+      }
+      
       scanner.start(
         cameraId,
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        { 
+          fps: 10, 
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0
+        },
         decodedText => {
           stopScanner();
           fetchAssetByCode(decodedText);
+        },
+        errorMessage => {
+          // Ignore continuous scanning errors
         }
       ).then(() => {
-        startBtn.disabled = true; stopBtn.disabled = false;
-      }).catch(err => showError('Camera error: ' + err));
-    }).catch(() => showError('Unable to access camera list.'));
+        startBtn.disabled = true; 
+        stopBtn.disabled = false;
+        console.log('QR Scanner started successfully');
+      }).catch(err => {
+        showError('Camera initialization failed: ' + err);
+      });
+    }).catch(err => {
+      showError('Unable to access camera: ' + err);
+    });
   }
 
   function stopScanner() {

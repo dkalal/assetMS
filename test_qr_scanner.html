@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QR Scanner Test</title>
+    <style>
+        #qr-reader { width: 500px; height: 400px; border: 1px solid #ccc; }
+        .controls { margin: 20px 0; }
+        .result { margin: 20px 0; padding: 10px; background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h1>QR Code Scanner Test</h1>
+    
+    <div id="qr-reader"></div>
+    
+    <div class="controls">
+        <button id="start-btn">Start Scanner</button>
+        <button id="stop-btn" disabled>Stop Scanner</button>
+    </div>
+    
+    <div id="result" class="result" style="display: none;">
+        <h3>Scan Result:</h3>
+        <p id="result-text"></p>
+    </div>
+    
+    <div id="error" class="result" style="display: none; background: #ffebee;">
+        <h3>Error:</h3>
+        <p id="error-text"></p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+    <script>
+        let qrScanner = null;
+        
+        function showResult(text) {
+            document.getElementById('result-text').textContent = text;
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+        }
+        
+        function showError(text) {
+            document.getElementById('error-text').textContent = text;
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+        }
+        
+        function startScanner() {
+            if (!window.Html5Qrcode) {
+                showError('Html5Qrcode library not loaded');
+                return;
+            }
+            
+            qrScanner = new Html5Qrcode('qr-reader');
+            
+            Html5Qrcode.getCameras().then(cameras => {
+                if (cameras && cameras.length > 0) {
+                    const cameraId = cameras[0].id;
+                    
+                    qrScanner.start(
+                        cameraId,
+                        {
+                            fps: 10,
+                            qrbox: { width: 250, height: 250 }
+                        },
+                        (decodedText) => {
+                            showResult(decodedText);
+                            stopScanner();
+                        },
+                        (errorMessage) => {
+                            // Ignore continuous scanning errors
+                        }
+                    ).then(() => {
+                        document.getElementById('start-btn').disabled = true;
+                        document.getElementById('stop-btn').disabled = false;
+                        console.log('QR Scanner started successfully');
+                    }).catch(err => {
+                        showError(`Failed to start scanner: ${err}`);
+                    });
+                } else {
+                    showError('No cameras found');
+                }
+            }).catch(err => {
+                showError(`Camera access error: ${err}`);
+            });
+        }
+        
+        function stopScanner() {
+            if (qrScanner) {
+                qrScanner.stop().then(() => {
+                    qrScanner.clear();
+                    document.getElementById('start-btn').disabled = false;
+                    document.getElementById('stop-btn').disabled = true;
+                    console.log('QR Scanner stopped');
+                }).catch(err => {
+                    console.error('Stop error:', err);
+                });
+            }
+        }
+        
+        document.getElementById('start-btn').addEventListener('click', startScanner);
+        document.getElementById('stop-btn').addEventListener('click', stopScanner);
+    </script>
+</body>
+</html>

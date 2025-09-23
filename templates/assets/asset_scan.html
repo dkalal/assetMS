@@ -23,7 +23,31 @@
 </div>
 {% endblock %}
 {% block extra_scripts %}
-<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
-{% load static %}
-<script src="{% static 'js/asset_scan.js' %}"></script>
+<script>
+// Load Html5Qrcode with fallback
+(function() {
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js';
+  script.onload = function() {
+    // Load main script after library is loaded
+    const mainScript = document.createElement('script');
+    mainScript.src = '{% static "js/asset_scan.js" %}';
+    document.head.appendChild(mainScript);
+  };
+  script.onerror = function() {
+    // Load fallback if CDN fails
+    const fallbackScript = document.createElement('script');
+    fallbackScript.src = '{% static "js/qr-fallback.js" %}';
+    fallbackScript.onload = function() {
+      console.log('QR Scanner fallback loaded - manual input available');
+      // Load main script after fallback
+      const mainScript = document.createElement('script');
+      mainScript.src = '{% static "js/asset_scan.js" %}';
+      document.head.appendChild(mainScript);
+    };
+    document.head.appendChild(fallbackScript);
+  };
+  document.head.appendChild(script);
+})();
+</script>
 {% endblock %}

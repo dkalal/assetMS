@@ -42,23 +42,15 @@
         </div>
       </div>
       <div class="card-body">
-        <!-- Camera Preview -->
+        <!-- QR Scanner Container -->
         <div class="scanner-container mb-4">
-          <div id="scanner-preview-container" class="position-relative">
-            <video id="scanner-preview" class="w-100 rounded" style="max-height: 400px; background: #f8f9fa;"></video>
-            <div id="scanner-overlay" class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(0,0,0,0.1); border-radius: 8px;">
+          <div id="scanner-preview-container" class="position-relative" style="width: 100%; max-width: 500px; height: 400px; background: #f8f9fa; border-radius: 8px; overflow: hidden;">
+            <div id="scanner-overlay" class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(0,0,0,0.1); border-radius: 8px; z-index: 10;">
               <div class="text-center text-white">
-                <i class="bi bi-camera-video display-1 mb-3"></i>
+                <i class="bi bi-qr-code display-1 mb-3"></i>
                 <h5>Click "Start Scanner" to begin</h5>
                 <p class="mb-0">Position QR code within the camera view</p>
               </div>
-            </div>
-            <!-- Scanning Frame -->
-            <div id="scan-frame" class="position-absolute" style="display: none; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 200px; border: 3px solid #28a745; border-radius: 8px;">
-              <div class="position-absolute" style="top: -3px; left: -3px; width: 30px; height: 30px; border-top: 3px solid #28a745; border-left: 3px solid #28a745;"></div>
-              <div class="position-absolute" style="top: -3px; right: -3px; width: 30px; height: 30px; border-top: 3px solid #28a745; border-right: 3px solid #28a745;"></div>
-              <div class="position-absolute" style="bottom: -3px; left: -3px; width: 30px; height: 30px; border-bottom: 3px solid #28a745; border-left: 3px solid #28a745;"></div>
-              <div class="position-absolute" style="bottom: -3px; right: -3px; width: 30px; height: 30px; border-bottom: 3px solid #28a745; border-right: 3px solid #28a745;"></div>
             </div>
           </div>
         </div>
@@ -211,16 +203,16 @@
 {% block extra_scripts %}
 {% load static %}
 <script>
-// Load Quagga with fallback
+// Load Html5Qrcode with fallback
 (function() {
   const script = document.createElement('script');
-  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js';
+  script.src = 'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js';
   script.onerror = function() {
     // Load fallback if CDN fails
     const fallbackScript = document.createElement('script');
-    fallbackScript.src = '{% static "js/quagga-fallback.js" %}';
+    fallbackScript.src = '{% static "js/qr-fallback.js" %}';
     fallbackScript.onload = function() {
-      console.log('Quagga fallback loaded - manual input available');
+      console.log('Html5Qrcode fallback loaded - manual input available');
     };
     document.head.appendChild(fallbackScript);
   };
@@ -232,6 +224,7 @@ class EnterpriseAssetScanner {
   constructor() {
     this.isScanning = false;
     this.stream = null;
+    this.qrScanner = null;
     this.recentScans = JSON.parse(localStorage.getItem('recentScans') || '[]');
     this.init();
   }
@@ -263,76 +256,62 @@ class EnterpriseAssetScanner {
     if (this.isScanning) return;
 
     try {
-      this.updateStatus('Initializing camera...', 'info');
-      
-      const constraints = {
-        video: {
-          facingMode: 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      };
-
-      this.stream = await navigator.mediaDevices.getUserMedia(constraints);
-      const video = document.getElementById('scanner-preview');
-      video.srcObject = this.stream;
-      
-      await new Promise((resolve) => {
-        video.onloadedmetadata = resolve;
-      });
-
-      this.initQuagga();
+      this.updateStatus('Initializing QR scanner...', 'info');
+      this.initQRScanner();
       this.isScanning = true;
       this.updateUI(true);
       this.updateStatus('Scanning... Position QR code in frame', 'success');
 
     } catch (error) {
-      this.showError(`Camera error: ${error.message}. Please check permissions and try again.`);
+      this.showError(`Scanner error: ${error.message}. Please check permissions and try again.`);
     }
   }
 
-  initQuagga() {
-    const video = document.getElementById('scanner-preview');
-    
-    if (typeof Quagga === 'undefined') {
-      this.showError('Scanner library not available. Please use manual input.');
+  initQRScanner() {
+    if (!window.Html5Qrcode) {
+      this.showError('QR scanner library not available. Please use manual input.');
       return;
     }
     
-    Quagga.init({
-      inputStream: {
-        name: 'Live',
-        type: 'LiveStream',
-        target: video,
-        constraints: {
-          facingMode: 'environment'
-        }
-      },
-      decoder: {
-        readers: ['qr_reader', 'code_128_reader', 'ean_reader']
-      },
-      locate: true
-    }, (err) => {
-      if (err) {
-        this.showError(`Scanner initialization failed: ${err}`);
+    const scannerId = 'scanner-preview-container';
+    this.qrScanner = new Html5Qrcode(scannerId);
+    
+    Html5Qrcode.getCameras().then(cameras => {
+      const cameraId = cameras && cameras[0] ? cameras[0].id : null;
+      if (!cameraId) {
+        this.showError('No camera found. Please use manual input.');
         return;
       }
-      Quagga.start();
-      document.getElementById('scan-frame').style.display = 'block';
-    });
-
-    Quagga.onDetected((result) => {
-      if (result && result.codeResult && result.codeResult.code) {
-        this.handleScanResult(result.codeResult.code);
-      }
+      
+      this.qrScanner.start(
+        cameraId,
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 }
+        },
+        (decodedText) => {
+          this.handleScanResult(decodedText);
+        },
+        (errorMessage) => {
+          // Ignore continuous scanning errors
+        }
+      ).then(() => {
+        document.getElementById('scan-frame').style.display = 'block';
+      }).catch(err => {
+        this.showError(`Scanner initialization failed: ${err}`);
+      });
+    }).catch(() => {
+      this.showError('Unable to access camera list.');
     });
   }
 
   stopScanning() {
     if (!this.isScanning) return;
 
-    if (typeof Quagga !== 'undefined') {
-      Quagga.stop();
+    if (this.qrScanner) {
+      this.qrScanner.stop().then(() => {
+        this.qrScanner.clear();
+      }).catch(err => console.error('Stop error:', err));
     }
     
     if (this.stream) {
@@ -343,13 +322,15 @@ class EnterpriseAssetScanner {
     this.isScanning = false;
     this.updateUI(false);
     this.updateStatus('Scanner stopped', 'secondary');
-    document.getElementById('scan-frame').style.display = 'none';
   }
 
   updateUI(scanning) {
     document.getElementById('start-scan').style.display = scanning ? 'none' : 'block';
     document.getElementById('stop-scan').style.display = scanning ? 'block' : 'none';
-    document.getElementById('scanner-overlay').style.display = scanning ? 'none' : 'flex';
+    const overlay = document.getElementById('scanner-overlay');
+    if (overlay) {
+      overlay.style.display = scanning ? 'none' : 'flex';
+    }
   }
 
   updateStatus(message, type = 'info') {
