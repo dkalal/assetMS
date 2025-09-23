@@ -236,19 +236,30 @@ class EnterpriseAssetScanner {
   }
 
   bindEvents() {
-    document.getElementById('start-scan').addEventListener('click', () => this.startScanning());
-    document.getElementById('stop-scan').addEventListener('click', () => this.stopScanning());
-    document.getElementById('manual-form').addEventListener('submit', (e) => this.handleManualSearch(e));
-    document.getElementById('helpBtn').addEventListener('click', () => {
-      const modal = new bootstrap.Modal(document.getElementById('helpModal'));
-      modal.show();
-    });
+    const startBtn = document.getElementById('start-scan');
+    const stopBtn = document.getElementById('stop-scan');
+    const manualForm = document.getElementById('manual-form');
+    const helpBtn = document.getElementById('helpBtn');
+    
+    if (startBtn) startBtn.addEventListener('click', () => this.startScanning());
+    if (stopBtn) stopBtn.addEventListener('click', () => this.stopScanning());
+    if (manualForm) manualForm.addEventListener('submit', (e) => this.handleManualSearch(e));
+    if (helpBtn) {
+      helpBtn.addEventListener('click', () => {
+        const helpModal = document.getElementById('helpModal');
+        if (helpModal && window.bootstrap) {
+          const modal = new bootstrap.Modal(helpModal);
+          modal.show();
+        }
+      });
+    }
   }
 
   checkCameraSupport() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       this.showError('Camera not supported in this browser. Please use manual input.');
-      document.getElementById('start-scan').disabled = true;
+      const startBtn = document.getElementById('start-scan');
+      if (startBtn) startBtn.disabled = true;
     }
   }
 
@@ -296,7 +307,7 @@ class EnterpriseAssetScanner {
           // Ignore continuous scanning errors
         }
       ).then(() => {
-        document.getElementById('scan-frame').style.display = 'block';
+        console.log('QR Scanner started successfully');
       }).catch(err => {
         this.showError(`Scanner initialization failed: ${err}`);
       });
@@ -325,16 +336,19 @@ class EnterpriseAssetScanner {
   }
 
   updateUI(scanning) {
-    document.getElementById('start-scan').style.display = scanning ? 'none' : 'block';
-    document.getElementById('stop-scan').style.display = scanning ? 'block' : 'none';
+    const startBtn = document.getElementById('start-scan');
+    const stopBtn = document.getElementById('stop-scan');
     const overlay = document.getElementById('scanner-overlay');
-    if (overlay) {
-      overlay.style.display = scanning ? 'none' : 'flex';
-    }
+    
+    if (startBtn) startBtn.style.display = scanning ? 'none' : 'block';
+    if (stopBtn) stopBtn.style.display = scanning ? 'block' : 'none';
+    if (overlay) overlay.style.display = scanning ? 'none' : 'flex';
   }
 
   updateStatus(message, type = 'info') {
     const statusEl = document.getElementById('scan-status');
+    if (!statusEl) return;
+    
     const icons = {
       info: 'bi-info-circle',
       success: 'bi-check-circle',
@@ -344,7 +358,7 @@ class EnterpriseAssetScanner {
     
     statusEl.innerHTML = `
       <i class="bi ${icons[type]} display-4 text-${type} mb-3"></i>
-      <h6 class="text-${type}">${message}</h6>
+      <h6 class="text-${type}">${this.escapeHtml(message)}</h6>
     `;
   }
 
@@ -357,7 +371,10 @@ class EnterpriseAssetScanner {
 
   async handleManualSearch(e) {
     e.preventDefault();
-    const code = document.getElementById('manual-code').value.trim();
+    const codeInput = document.getElementById('manual-code');
+    if (!codeInput) return;
+    
+    const code = codeInput.value.trim();
     if (code) {
       this.updateStatus('Searching...', 'info');
       await this.fetchAssetByCode(code);
@@ -383,6 +400,9 @@ class EnterpriseAssetScanner {
   showAssetDetails(asset) {
     const resultEl = document.getElementById('scan-result');
     const detailsEl = document.getElementById('asset-details');
+    const errorEl = document.getElementById('scan-error');
+    
+    if (!resultEl || !detailsEl) return;
     
     detailsEl.innerHTML = `
       <div class="mb-3">
@@ -410,24 +430,34 @@ class EnterpriseAssetScanner {
     `;
     
     resultEl.style.display = 'block';
-    document.getElementById('scan-error').style.display = 'none';
+    if (errorEl) errorEl.style.display = 'none';
     this.updateStatus('Asset found successfully!', 'success');
   }
 
   showError(message) {
     const errorEl = document.getElementById('scan-error');
     const messageEl = document.getElementById('error-message');
+    const resultEl = document.getElementById('scan-result');
     
-    messageEl.innerHTML = `<p class="mb-0">${message}</p>`;
+    if (!errorEl || !messageEl) {
+      console.error('Scanner error:', message);
+      return;
+    }
+    
+    messageEl.innerHTML = `<p class="mb-0">${this.escapeHtml(message)}</p>`;
     errorEl.style.display = 'block';
-    document.getElementById('scan-result').style.display = 'none';
+    if (resultEl) resultEl.style.display = 'none';
     this.updateStatus('Scan failed', 'error');
   }
 
   resetScanner() {
-    document.getElementById('scan-result').style.display = 'none';
-    document.getElementById('scan-error').style.display = 'none';
-    document.getElementById('manual-code').value = '';
+    const resultEl = document.getElementById('scan-result');
+    const errorEl = document.getElementById('scan-error');
+    const codeInput = document.getElementById('manual-code');
+    
+    if (resultEl) resultEl.style.display = 'none';
+    if (errorEl) errorEl.style.display = 'none';
+    if (codeInput) codeInput.value = '';
     this.updateStatus('Ready to scan', 'secondary');
   }
 
@@ -446,6 +476,7 @@ class EnterpriseAssetScanner {
 
   updateRecentScans() {
     const container = document.getElementById('recent-scans');
+    if (!container) return;
     
     if (this.recentScans.length === 0) {
       container.innerHTML = '<p class="text-muted text-sm mb-0">No recent scans</p>';
@@ -465,6 +496,12 @@ class EnterpriseAssetScanner {
     `).join('');
     
     container.innerHTML = html;
+  }
+  
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 }
 

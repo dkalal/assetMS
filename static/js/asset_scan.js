@@ -9,24 +9,28 @@
   const manualCode = document.getElementById('manual-code');
 
   function showAssetDetails(data) {
-    scanResult.classList.remove('d-none');
-    scanError.classList.add('d-none');
-    assetDetails.innerHTML = `<table class='table table-bordered'>
-      <tr><th>Name</th><td>${(data.dynamic_data && (data.dynamic_data.name || data.dynamic_data.serial_number)) || ''}</td></tr>
-      <tr><th>Model</th><td>${(data.dynamic_data && data.dynamic_data.model) || ''}</td></tr>
-      <tr><th>Category</th><td>${data.category_name || ''}</td></tr>
-      <tr><th>Status</th><td>${data.status || ''}</td></tr>
-      <tr><th>Location</th><td>${(data.dynamic_data && data.dynamic_data.location) || ''}</td></tr>
-      <tr><th>Assigned To</th><td>${data.assigned_to || ''}</td></tr>
-      <tr><th>Created</th><td>${data.created_at || ''}</td></tr>
-    </table>
-    <a href='/assets/${data.id}/' class='btn btn-outline-primary btn-sm'>View Full Details</a>`;
+    if (scanResult) scanResult.classList.remove('d-none');
+    if (scanError) scanError.classList.add('d-none');
+    if (assetDetails) {
+      assetDetails.innerHTML = `<table class='table table-bordered'>
+        <tr><th>Name</th><td>${escapeHtml((data.dynamic_data && (data.dynamic_data.name || data.dynamic_data.serial_number)) || '')}</td></tr>
+        <tr><th>Model</th><td>${escapeHtml((data.dynamic_data && data.dynamic_data.model) || '')}</td></tr>
+        <tr><th>Category</th><td>${escapeHtml(data.category_name || '')}</td></tr>
+        <tr><th>Status</th><td>${escapeHtml(data.status || '')}</td></tr>
+        <tr><th>Location</th><td>${escapeHtml((data.dynamic_data && data.dynamic_data.location) || '')}</td></tr>
+        <tr><th>Assigned To</th><td>${escapeHtml(data.assigned_to || '')}</td></tr>
+        <tr><th>Created</th><td>${escapeHtml(data.created_at || '')}</td></tr>
+      </table>
+      <a href='/assets/${data.id}/' class='btn btn-outline-primary btn-sm'>View Full Details</a>`;
+    }
   }
 
   function showError(msg) {
-    scanError.textContent = msg;
-    scanError.classList.remove('d-none');
-    scanResult.classList.add('d-none');
+    if (scanError) {
+      scanError.textContent = msg;
+      scanError.classList.remove('d-none');
+    }
+    if (scanResult) scanResult.classList.add('d-none');
   }
 
   function fetchAssetByCode(code) {
@@ -80,8 +84,8 @@
           // Ignore continuous scanning errors
         }
       ).then(() => {
-        startBtn.disabled = true; 
-        stopBtn.disabled = false;
+        if (startBtn) startBtn.disabled = true;
+        if (stopBtn) stopBtn.disabled = false;
         console.log('QR Scanner started successfully');
       }).catch(err => {
         showError('Camera initialization failed: ' + err);
@@ -96,7 +100,8 @@
       scanner.stop().then(() => {
         scanner.clear();
       }).finally(() => {
-        startBtn.disabled = false; stopBtn.disabled = true;
+        if (startBtn) startBtn.disabled = false;
+        if (stopBtn) stopBtn.disabled = true;
       });
     }
   }
@@ -106,10 +111,16 @@
 
   manualForm && manualForm.addEventListener('submit', function(e) {
     e.preventDefault();
-    if (manualCode.value.trim()) {
+    if (manualCode && manualCode.value.trim()) {
       fetchAssetByCode(manualCode.value.trim());
     }
   });
+  
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
 })();
 
 
