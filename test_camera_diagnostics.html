@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Camera Diagnostics Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .diagnostic-item { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; }
+        pre { background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Camera Diagnostics Test</h1>
+        
+        <button onclick="runDiagnostics()">Run Camera Diagnostics</button>
+        <button onclick="requestPermission()">Request Camera Permission</button>
+        <button onclick="testQRScanner()">Test QR Scanner</button>
+        
+        <div id="results"></div>
+        
+        <div id="qr-test" style="display: none;">
+            <h3>QR Scanner Test</h3>
+            <div id="qr-reader" style="width: 500px; height: 400px; border: 1px solid #ccc;"></div>
+            <button onclick="startQRTest()">Start QR Scanner</button>
+            <button onclick="stopQRTest()">Stop QR Scanner</button>
+            <div id="qr-result"></div>
+        </div>
+    </div>
+
+    <script src="static/js/camera-diagnostics.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+    <script>
+        let qrScanner = null;
+        
+        async function runDiagnostics() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Running diagnostics...</p>';
+            
+            try {
+                const diagnostics = await CameraDiagnostics.checkCameraAccess();
+                
+                let html = '<h3>Camera Diagnostics Results</h3>';
+                
+                // Basic support
+                html += `<div class="diagnostic-item ${diagnostics.hasMediaDevices ? 'success' : 'error'}">
+                    Media Devices API: ${diagnostics.hasMediaDevices ? '✓ Supported' : '✗ Not supported'}
+                </div>`;
+                
+                html += `<div class="diagnostic-item ${diagnostics.hasGetUserMedia ? 'success' : 'error'}">
+                    getUserMedia API: ${diagnostics.hasGetUserMedia ? '✓ Available' : '✗ Not available'}
+                </div>`;
+                
+                // Security context
+                html += `<div class="diagnostic-item ${diagnostics.isSecureContext ? 'success' : 'warning'}">
+                    Secure Context: ${diagnostics.isSecureContext ? '✓ HTTPS/Localhost' : '⚠ HTTP (may block camera)'}
+                </div>`;
+                
+                html += `<div class="diagnostic-item info">
+                    Protocol: ${diagnostics.protocol} | Hostname: ${diagnostics.hostname}
+                </div>`;
+                
+                // Permissions
+                if (diagnostics.permissions) {
+                    const permClass = diagnostics.permissions === 'granted' ? 'success' : 
+                                     diagnostics.permissions === 'denied' ? 'error' : 'warning';
+                    html += `<div class="diagnostic-item ${permClass}">
+                        Camera Permission: ${diagnostics.permissions}
+                    </div>`;
+                }
+                
+                // Cameras
+                html += `<div class="diagnostic-item ${diagnostics.cameras.length > 0 ? 'success' : 'error'}">
+                    Cameras Found: ${diagnostics.cameras.length}
+                </div>`;
+                
+                if (diagnostics.cameras.length > 0) {
+                    html += '<div class="diagnostic-item info"><strong>Available Cameras:</strong><ul>';
+                    diagnostics.cameras.forEach((camera, index) => {
+                        html += `<li>${index + 1}. ${camera.label || 'Unknown Camera'} (${camera.deviceId.substring(0, 20)}...)</li>`;
+                    });
+                    html += '</ul></div>';
+                }
+                
+                // Camera access test
+                if (diagnostics.cameraAccessible !== undefined) {
+                    html += `<div class="diagnostic-item ${diagnostics.cameraAccessible ? 'success' : 'error'}">
+                        Camera Access Test: ${diagnostics.cameraAccessible ? '✓ Accessible' : '✗ Failed'}
+                    </div>`;
+                    
+                    if (diagnostics.cameraError) {
+                        html += `<div class="diagnostic-item error">
+                            Camera Error: ${diagnostics.cameraError}
+                        </div>`;
+                    }
+                }
+                
+                // Error message
+                if (!diagnostics.cameraAccessible) {
+                    const errorMsg = CameraDiagnostics.getErrorMessage(diagnostics);
+                    html += `<div class="diagnostic-item error">
+                        <strong>Recommended Action:</strong> ${errorMsg}
+                    </div>`;
+                }
+                
+                // Raw data
+                html += '<h4>Raw Diagnostics Data:</h4>';
+                html += `<pre>${JSON.stringify(diagnostics, null, 2)}</pre>`;
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="diagnostic-item error">
+                    Diagnostics failed: ${error.message}
+                </div>`;
+            }
+        }
+        
+        async function requestPermission() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Requesting camera permission...</p>';
+            
+            try {
+                const result = await CameraDiagnostics.requestCameraPermission();
+                
+                if (result.success) {
+                    resultsDiv.innerHTML = '<div class="diagnostic-item success">✓ Camera permission granted!</div>';
+                } else {
+                    resultsDiv.innerHTML = `<div class="diagnostic-item error">
+                        ✗ Permission failed: ${result.error} - ${result.message}
+                    </div>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="diagnostic-item error">
+                    Permission request failed: ${error.message}
+                </div>`;
+            }
+        }
+        
+        function testQRScanner() {
+            const qrTestDiv = document.getElementById('qr-test');
+            qrTestDiv.style.display = 'block';
+        }
+        
+        async function startQRTest() {
+            const resultDiv = document.getElementById('qr-result');
+            resultDiv.innerHTML = '<p>Starting QR scanner...</p>';
+            
+            try {
+                if (!window.Html5Qrcode) {
+                    throw new Error('Html5Qrcode library not loaded');
+                }
+                
+                qrScanner = new Html5Qrcode('qr-reader');
+                const cameras = await Html5Qrcode.getCameras();
+                
+                if (cameras.length === 0) {
+                    throw new Error('No cameras found');
+                }
+                
+                await qrScanner.start(
+                    cameras[0].id,
+                    { fps: 10, qrbox: { width: 250, height: 250 } },
+                    (decodedText) => {
+                        resultDiv.innerHTML = `<div class="diagnostic-item success">
+                            QR Code Detected: ${decodedText}
+                        </div>`;
+                        stopQRTest();
+                    },
+                    (errorMessage) => {
+                        // Ignore continuous scanning errors
+                    }
+                );
+                
+                resultDiv.innerHTML = '<div class="diagnostic-item success">QR Scanner started successfully!</div>';
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="diagnostic-item error">
+                    QR Scanner failed: ${error.message}
+                </div>`;
+            }
+        }
+        
+        function stopQRTest() {
+            if (qrScanner) {
+                qrScanner.stop().then(() => {
+                    qrScanner.clear();
+                    document.getElementById('qr-result').innerHTML += 
+                        '<div class="diagnostic-item info">QR Scanner stopped</div>';
+                });
+            }
+        }
+        
+        // Auto-run diagnostics on page load
+        window.addEventListener('load', runDiagnostics);
+    </script>
+</body>
+</html>

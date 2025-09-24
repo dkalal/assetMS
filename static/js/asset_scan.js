@@ -47,34 +47,72 @@
   }
 
   let scanner = null;
-  function startScanner() {
+  async function startScanner() {
     if (!window.Html5Qrcode) {
       showError('QR scanner library not available. Please use manual input.');
       return;
     }
     
-    // Secure context check
-    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-      showError('Camera requires HTTPS or localhost.');
+    if (!window.CameraDiagnostics) {
+      showError('Camera diagnostics not available. Please refresh the page.');
       return;
+    }
+
+    // Run comprehensive camera diagnostics
+    const diagnostics = await window.CameraDiagnostics.checkCameraAccess();
+    
+    if (!diagnostics.cameraAccessible) {
+      const errorMsg = window.CameraDiagnostics.getErrorMessage(diagnostics);
+      
+      // Try to request permission if it's a permission issue
+      if (diagnostics.permissions === 'prompt' || diagnostics.cameraError?.includes('NotAllowedError')) {
+        showError('Requesting camera permission...');
+        const permissionResult = await window.CameraDiagnostics.requestCameraPermission();
+        
+        if (!permissionResult.success) {
+          showError(`Camera permission required: ${permissionResult.message}`);
+          return;
+        }
+        
+        // Retry diagnostics after permission granted
+        const retryDiagnostics = await window.CameraDiagnostics.checkCameraAccess();
+        if (!retryDiagnostics.cameraAccessible) {
+          showError(window.CameraDiagnostics.getErrorMessage(retryDiagnostics));
+          return;
+        }
+      } else {
+        showError(errorMsg);
+        return;
+      }
     }
     
     const elemId = 'qr-reader';
     scanner = new Html5Qrcode(elemId);
     
-    Html5Qrcode.getCameras().then(cameras => {
-      const cameraId = (cameras && cameras[0] && cameras[0].id) || null;
-      if (!cameraId) { 
-        showError('No camera found. Please use manual input.'); 
-        return; 
+    try {
+      const cameras = await Html5Qrcode.getCameras();
+      
+      if (!cameras || cameras.length === 0) {
+        showError('No cameras available. Please connect a camera and try again.');
+        return;
       }
       
-      scanner.start(
+      // Prefer back camera for QR scanning
+      const backCamera = cameras.find(camera => 
+        camera.label.toLowerCase().includes('back') || 
+        camera.label.toLowerCase().includes('rear') ||
+        camera.label.toLowerCase().includes('environment')
+      );
+      
+      const cameraId = backCamera ? backCamera.id : cameras[0].id;
+      
+      await scanner.start(
         cameraId,
         { 
           fps: 10, 
           qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0
+          aspectRatio: 1.0,
+          disableFlip: false
         },
         decodedText => {
           stopScanner();
@@ -83,16 +121,15 @@
         errorMessage => {
           // Ignore continuous scanning errors
         }
-      ).then(() => {
-        if (startBtn) startBtn.disabled = true;
-        if (stopBtn) stopBtn.disabled = false;
-        console.log('QR Scanner started successfully');
-      }).catch(err => {
-        showError('Camera initialization failed: ' + err);
-      });
-    }).catch(err => {
-      showError('Unable to access camera: ' + err);
-    });
+      );
+      
+      if (startBtn) startBtn.disabled = true;
+      if (stopBtn) stopBtn.disabled = false;
+      console.log('QR Scanner started successfully');
+      
+    } catch (err) {
+      showError(`Scanner initialization failed: ${err.message || err}`);
+    }
   }
 
   function stopScanner() {

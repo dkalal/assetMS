@@ -203,20 +203,25 @@
 {% block extra_scripts %}
 {% load static %}
 <script>
-// Load Html5Qrcode with fallback
+// Load camera diagnostics first, then Html5Qrcode
 (function() {
-  const script = document.createElement('script');
-  script.src = 'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js';
-  script.onerror = function() {
-    // Load fallback if CDN fails
-    const fallbackScript = document.createElement('script');
-    fallbackScript.src = '{% static "js/qr-fallback.js" %}';
-    fallbackScript.onload = function() {
-      console.log('Html5Qrcode fallback loaded - manual input available');
+  const diagnosticsScript = document.createElement('script');
+  diagnosticsScript.src = '{% static "js/camera-diagnostics.js" %}';
+  diagnosticsScript.onload = function() {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js';
+    script.onerror = function() {
+      // Load fallback if CDN fails
+      const fallbackScript = document.createElement('script');
+      fallbackScript.src = '{% static "js/qr-fallback.js" %}';
+      fallbackScript.onload = function() {
+        console.log('Html5Qrcode fallback loaded - manual input available');
+      };
+      document.head.appendChild(fallbackScript);
     };
-    document.head.appendChild(fallbackScript);
+    document.head.appendChild(script);
   };
-  document.head.appendChild(script);
+  document.head.appendChild(diagnosticsScript);
 })();
 </script>
 <script>
@@ -267,18 +272,53 @@ class EnterpriseAssetScanner {
     if (this.isScanning) return;
 
     try {
+      this.updateStatus('Checking camera access...', 'info');
+      
+      if (!window.CameraDiagnostics) {
+        this.showError('Camera diagnostics not available. Please refresh the page.');
+        return;
+      }
+
+      // Run comprehensive camera diagnostics
+      const diagnostics = await window.CameraDiagnostics.checkCameraAccess();
+      
+      if (!diagnostics.cameraAccessible) {
+        const errorMsg = window.CameraDiagnostics.getErrorMessage(diagnostics);
+        
+        // Try to request permission if it's a permission issue
+        if (diagnostics.permissions === 'prompt' || diagnostics.cameraError?.includes('NotAllowedError')) {
+          this.updateStatus('Requesting camera permission...', 'info');
+          const permissionResult = await window.CameraDiagnostics.requestCameraPermission();
+          
+          if (!permissionResult.success) {
+            this.showError(`Camera permission required: ${permissionResult.message}`);
+            return;
+          }
+          
+          // Retry diagnostics after permission granted
+          const retryDiagnostics = await window.CameraDiagnostics.checkCameraAccess();
+          if (!retryDiagnostics.cameraAccessible) {
+            this.showError(window.CameraDiagnostics.getErrorMessage(retryDiagnostics));
+            return;
+          }
+        } else {
+          this.showError(errorMsg);
+          return;
+        }
+      }
+      
       this.updateStatus('Initializing QR scanner...', 'info');
-      this.initQRScanner();
+      await this.initQRScanner();
       this.isScanning = true;
       this.updateUI(true);
       this.updateStatus('Scanning... Position QR code in frame', 'success');
 
     } catch (error) {
-      this.showError(`Scanner error: ${error.message}. Please check permissions and try again.`);
+      this.showError(`Scanner error: ${error.message || error}. Please check permissions and try again.`);
     }
   }
 
-  initQRScanner() {
+  async initQRScanner() {
     if (!window.Html5Qrcode) {
       this.showError('QR scanner library not available. Please use manual input.');
       return;
@@ -287,18 +327,29 @@ class EnterpriseAssetScanner {
     const scannerId = 'scanner-preview-container';
     this.qrScanner = new Html5Qrcode(scannerId);
     
-    Html5Qrcode.getCameras().then(cameras => {
-      const cameraId = cameras && cameras[0] ? cameras[0].id : null;
-      if (!cameraId) {
-        this.showError('No camera found. Please use manual input.');
+    try {
+      const cameras = await Html5Qrcode.getCameras();
+      
+      if (!cameras || cameras.length === 0) {
+        this.showError('No cameras available. Please connect a camera and try again.');
         return;
       }
       
-      this.qrScanner.start(
+      // Prefer back camera for QR scanning
+      const backCamera = cameras.find(camera => 
+        camera.label.toLowerCase().includes('back') || 
+        camera.label.toLowerCase().includes('rear') ||
+        camera.label.toLowerCase().includes('environment')
+      );
+      
+      const cameraId = backCamera ? backCamera.id : cameras[0].id;
+      
+      await this.qrScanner.start(
         cameraId,
         {
           fps: 10,
-          qrbox: { width: 250, height: 250 }
+          qrbox: { width: 250, height: 250 },
+          disableFlip: false
         },
         (decodedText) => {
           this.handleScanResult(decodedText);
@@ -306,14 +357,13 @@ class EnterpriseAssetScanner {
         (errorMessage) => {
           // Ignore continuous scanning errors
         }
-      ).then(() => {
-        console.log('QR Scanner started successfully');
-      }).catch(err => {
-        this.showError(`Scanner initialization failed: ${err}`);
-      });
-    }).catch(() => {
-      this.showError('Unable to access camera list.');
-    });
+      );
+      
+      console.log('QR Scanner started successfully');
+      
+    } catch (err) {
+      this.showError(`Scanner initialization failed: ${err.message || err}`);
+    }
   }
 
   stopScanning() {
