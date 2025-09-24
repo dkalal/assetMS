@@ -208,9 +208,13 @@
   const diagnosticsScript = document.createElement('script');
   diagnosticsScript.src = '{% static "js/camera-diagnostics.js" %}';
   diagnosticsScript.onload = function() {
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js';
-    script.onerror = function() {
+    // Load enhanced scanner
+    const enhancedScript = document.createElement('script');
+    enhancedScript.src = '{% static "js/qr-scanner-enhanced.js" %}';
+    enhancedScript.onload = function() {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js';
+      script.onerror = function() {
       // Load fallback if CDN fails
       const fallbackScript = document.createElement('script');
       fallbackScript.src = '{% static "js/qr-fallback.js" %}';
@@ -218,8 +222,10 @@
         console.log('Html5Qrcode fallback loaded - manual input available');
       };
       document.head.appendChild(fallbackScript);
+      };
+      document.head.appendChild(script);
     };
-    document.head.appendChild(script);
+    document.head.appendChild(enhancedScript);
   };
   document.head.appendChild(diagnosticsScript);
 })();
@@ -344,20 +350,44 @@ class EnterpriseAssetScanner {
       
       const cameraId = backCamera ? backCamera.id : cameras[0].id;
       
-      await this.qrScanner.start(
-        cameraId,
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          disableFlip: false
-        },
-        (decodedText) => {
-          this.handleScanResult(decodedText);
-        },
-        (errorMessage) => {
-          // Ignore continuous scanning errors
-        }
-      );
+      // Use enhanced scanner if available
+      if (window.EnhancedQRScanner) {
+        const enhancedScanner = new window.EnhancedQRScanner(scannerId);
+        this.qrScanner = enhancedScanner;
+        
+        await enhancedScanner.start(
+          (decodedText) => {
+            this.handleScanResult(decodedText);
+          },
+          (error) => {
+            this.showError(`Enhanced scanner error: ${error.message}`);
+          }
+        );
+      } else {
+        // Fallback to basic scanner with enhanced settings
+        await this.qrScanner.start(
+          cameraId,
+          {
+            fps: 15,
+            qrbox: function(viewfinderWidth, viewfinderHeight) {
+              const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+              const qrboxSize = Math.floor(minEdge * 0.7);
+              return { width: qrboxSize, height: qrboxSize };
+            },
+            disableFlip: false,
+            videoConstraints: {
+              facingMode: { ideal: "environment" },
+              focusMode: { ideal: "continuous" }
+            }
+          },
+          (decodedText) => {
+            this.handleScanResult(decodedText);
+          },
+          (errorMessage) => {
+            // Ignore continuous scanning errors
+          }
+        );
+      }
       
       console.log('QR Scanner started successfully');
       

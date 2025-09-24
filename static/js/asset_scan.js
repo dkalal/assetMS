@@ -47,6 +47,8 @@
   }
 
   let scanner = null;
+  let scannerUI = null;
+  
   async function startScanner() {
     if (!window.Html5Qrcode) {
       showError('QR scanner library not available. Please use manual input.');
@@ -56,6 +58,12 @@
     if (!window.CameraDiagnostics) {
       showError('Camera diagnostics not available. Please refresh the page.');
       return;
+    }
+    
+    // Initialize UI enhancements
+    if (window.QRScannerUI) {
+      scannerUI = new window.QRScannerUI('qr-reader');
+      scannerUI.activate();
     }
 
     // Run comprehensive camera diagnostics
@@ -106,22 +114,53 @@
       
       const cameraId = backCamera ? backCamera.id : cameras[0].id;
       
-      await scanner.start(
-        cameraId,
-        { 
-          fps: 10, 
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
-          disableFlip: false
-        },
-        decodedText => {
-          stopScanner();
-          fetchAssetByCode(decodedText);
-        },
-        errorMessage => {
-          // Ignore continuous scanning errors
-        }
-      );
+      // Use enhanced scanner if available, fallback to basic
+      if (window.EnhancedQRScanner) {
+        const enhancedScanner = new window.EnhancedQRScanner(elemId);
+        scanner = enhancedScanner; // Store reference for stopping
+        
+        await enhancedScanner.start(
+          (decodedText) => {
+            if (scannerUI) scannerUI.showDetectionSuccess();
+            setTimeout(() => {
+              stopScanner();
+              fetchAssetByCode(decodedText);
+            }, 500);
+          },
+          (error) => {
+            showError(`Enhanced scanner error: ${error.message}`);
+          }
+        );
+      } else {
+        // Fallback to basic scanner with enhanced settings
+        await scanner.start(
+          cameraId,
+          { 
+            fps: 15,
+            qrbox: function(viewfinderWidth, viewfinderHeight) {
+              const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+              const qrboxSize = Math.floor(minEdge * 0.7);
+              return { width: qrboxSize, height: qrboxSize };
+            },
+            aspectRatio: 1.0,
+            disableFlip: false,
+            videoConstraints: {
+              facingMode: { ideal: "environment" },
+              focusMode: { ideal: "continuous" }
+            }
+          },
+          decodedText => {
+            if (scannerUI) scannerUI.showDetectionSuccess();
+            setTimeout(() => {
+              stopScanner();
+              fetchAssetByCode(decodedText);
+            }, 500);
+          },
+          errorMessage => {
+            // Ignore continuous scanning errors
+          }
+        );
+      }
       
       if (startBtn) startBtn.disabled = true;
       if (stopBtn) stopBtn.disabled = false;
@@ -134,12 +173,21 @@
 
   function stopScanner() {
     if (scanner) {
-      scanner.stop().then(() => {
-        scanner.clear();
-      }).finally(() => {
+      if (scanner.stop && typeof scanner.stop === 'function') {
+        scanner.stop().then(() => {
+          if (scanner.clear && typeof scanner.clear === 'function') {
+            scanner.clear();
+          }
+        }).finally(() => {
+          if (startBtn) startBtn.disabled = false;
+          if (stopBtn) stopBtn.disabled = true;
+          if (scannerUI) scannerUI.deactivate();
+        });
+      } else {
+        // Handle enhanced scanner
         if (startBtn) startBtn.disabled = false;
         if (stopBtn) stopBtn.disabled = true;
-      });
+      }
     }
   }
 
