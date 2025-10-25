@@ -616,4 +616,100 @@ function showConfirmationModal(title, message, onConfirm, confirmText = 'Confirm
     bsModal.show();
 }
 
+/**
+ * Multi-Tenancy Policy Management
+ */
+function loadTenancyPolicy() {
+    fetch('/settings/api/tenancy-policy/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.policy) {
+                // Update toggle switches with current policy values
+                const branchAccessToggle = document.getElementById('branchLevelAccess');
+                const crossBranchToggle = document.getElementById('crossBranchTransfers');
+                const approvalToggle = document.getElementById('requireTransferApproval');
+                
+                if (branchAccessToggle) branchAccessToggle.checked = data.policy.branch_level_access;
+                if (crossBranchToggle) crossBranchToggle.checked = data.policy.allow_cross_branch_transfers;
+                if (approvalToggle) approvalToggle.checked = data.policy.require_transfer_approval;
+                
+                console.log('✅ Tenancy policy loaded successfully');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading tenancy policy:', error);
+            showErrorMessage('Failed to load multi-tenancy settings');
+        });
+}
+
+function saveTenancyPolicy(field, value) {
+    const payload = {};
+    payload[field] = value;
+    
+    fetch('/settings/api/tenancy-policy/update/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccessMessage(data.message || 'Policy updated successfully');
+            console.log('✅ Policy updated:', data.policy);
+        } else {
+            showErrorMessage(data.error || 'Failed to update policy');
+            // Revert toggle on error
+            loadTenancyPolicy();
+        }
+    })
+    .catch(error => {
+        console.error('Error updating tenancy policy:', error);
+        showErrorMessage('Network error while updating policy');
+        // Revert toggle on error
+        loadTenancyPolicy();
+    });
+}
+
+// Initialize tenancy policy toggles
+document.addEventListener('DOMContentLoaded', function() {
+    // Load policy when Company & Branches tab is shown
+    const companyTab = document.getElementById('company-tab');
+    if (companyTab) {
+        companyTab.addEventListener('shown.bs.tab', function() {
+            loadTenancyPolicy();
+        });
+        
+        // If tab is already active on page load
+        if (companyTab.classList.contains('active')) {
+            loadTenancyPolicy();
+        }
+    }
+    
+    // Attach change listeners to policy toggles
+    const branchAccessToggle = document.getElementById('branchLevelAccess');
+    const crossBranchToggle = document.getElementById('crossBranchTransfers');
+    const approvalToggle = document.getElementById('requireTransferApproval');
+    
+    if (branchAccessToggle) {
+        branchAccessToggle.addEventListener('change', function() {
+            saveTenancyPolicy('branch_level_access', this.checked);
+        });
+    }
+    
+    if (crossBranchToggle) {
+        crossBranchToggle.addEventListener('change', function() {
+            saveTenancyPolicy('allow_cross_branch_transfers', this.checked);
+        });
+    }
+    
+    if (approvalToggle) {
+        approvalToggle.addEventListener('change', function() {
+            saveTenancyPolicy('require_transfer_approval', this.checked);
+        });
+    }
+});
+
 

@@ -29,8 +29,8 @@ def _load_matrix() -> Dict[str, Set[str]]:
     if RolePermissionMatrix is None:
         # Fallback defaults if model unavailable
         default = {
-            'Admin': {'view_assets', 'create_assets', 'edit_assets', 'delete_assets', 'manage_users', 'view_reports', 'export_data', 'system_admin'},
-            'Manager': {'view_assets', 'create_assets', 'edit_assets', 'view_reports', 'export_data'},
+            'Admin': {'view_assets', 'create_assets', 'edit_assets', 'delete_assets', 'approve_asset_creation', 'manage_users', 'view_reports', 'export_data', 'system_admin'},
+            'Manager': {'view_assets', 'request_asset_creation', 'edit_assets', 'view_reports', 'export_data'},
             'User': {'view_assets'},
         }
         return default

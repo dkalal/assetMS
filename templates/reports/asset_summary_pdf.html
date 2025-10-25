@@ -1,0 +1,361 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Asset Summary Report</title>
+  <style>
+    :root {
+      --primary: #1a3e8c;
+      --secondary: #1f2937;
+      --muted: #667085;
+      --border: #d0d5dd;
+      --surface: #f8fafc;
+      --table-header: #eef2ff;
+      --chip-bg: #e0e7ff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Inter", "Segoe UI", sans-serif;
+      font-size: 11px;
+      color: #0f172a;
+      margin: 0;
+      padding: 24px 32px 32px;
+      background-color: #ffffff;
+      line-height: 1.45;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1.5px solid rgba(26, 62, 140, 0.35);
+    }
+
+    .brand {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .brand__logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: radial-gradient(circle at top left, #1d4ed8 0%, #1a3e8c 55%, #172554 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 0.06em;
+    }
+
+    .brand__meta strong {
+      font-size: 1.05rem;
+      letter-spacing: 0.04em;
+      color: var(--secondary);
+    }
+
+    .brand__meta span {
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .header-meta {
+      text-align: right;
+    }
+
+    .header-meta span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .header-meta strong {
+      display: block;
+      font-size: 0.9rem;
+      color: var(--secondary);
+      margin-top: 4px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(130px, 1fr));
+      gap: 10px 18px;
+      padding: 18px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      margin-bottom: 18px;
+    }
+
+    .summary-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-height: 46px;
+    }
+
+    .summary-label {
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+    }
+
+    .summary-value {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--secondary);
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 16px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(26, 62, 140, 0.22);
+      background: var(--chip-bg);
+      color: var(--secondary);
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-bottom: 18px;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    thead th {
+      background: var(--table-header);
+      color: #1e293b;
+      font-size: 0.78rem;
+      padding: 9px 11px;
+      border-bottom: 1px solid #d9e2f0;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    tbody td {
+      padding: 8px 11px;
+      font-size: 0.75rem;
+      border-bottom: 1px solid #edf1f7;
+      color: #0f172a;
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) {
+      background: #f8fafc;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .section-title {
+      font-size: 0.95rem;
+      color: var(--secondary);
+      margin: 14px 0 10px;
+      font-weight: 700;
+    }
+
+    .empty-state {
+      border: 1px dashed var(--border);
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      color: var(--muted);
+      margin-top: 20px;
+      background: var(--surface);
+    }
+
+    footer {
+      margin-top: 28px;
+      padding-top: 10px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 0.68rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .dynamic-table {
+      width: 100%;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .dynamic-table thead th {
+      white-space: nowrap;
+    }
+
+    .dynamic-table td {
+      word-break: break-word;
+    }
+
+    .asset-name-cell {
+      font-weight: 600;
+      color: var(--secondary);
+      min-width: 140px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="brand__logo">AP</div>
+      <div class="brand__meta">
+        <strong>AssetPro Enterprise</strong>
+        <span>Asset Summary Report</span>
+      </div>
+    </div>
+    <div class="header-meta">
+      <span>Generated For</span>
+      <strong>{{ metadata.company }}</strong>
+      <span>Branch Scope</span>
+      <strong>{{ metadata.branch|default:"All Branches" }}</strong>
+    </div>
+  </header>
+  <section class="summary-grid">
+    <div class="summary-item">
+      <span class="summary-label">Generated By</span>
+      <span class="summary-value">{{ metadata.generated_by }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Generated At</span>
+      <span class="summary-value">{{ metadata.generated_at }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Status Filter</span>
+      <span class="summary-value">{{ metadata.filters.status|default:"All statuses" }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Date Range</span>
+      <span class="summary-value">
+        {% if metadata.filters.date_from or metadata.filters.date_to %}
+          {{ metadata.filters.date_from|default:"--" }} – {{ metadata.filters.date_to|default:"--" }}
+        {% else %}
+          Not specified
+        {% endif %}
+      </span>
+    </div>
+  </section>
+
+  {% if metadata.filters.branch_id %}
+  <div class="chip-row">
+    <span class="chip">Branch filter: {{ metadata.filters.branch_id }}</span>
+  </div>
+  {% endif %}
+
+  {% if assets %}
+  <table>
+    <thead>
+      <tr>
+        <th>Asset Name</th>
+        <th>Category</th>
+        <th>Status</th>
+        <th>Branch</th>
+        <th>Assigned To</th>
+        <th>Created</th>
+        <th>Updated</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for asset in assets %}
+      <tr>
+        <td class="asset-name-cell">{{ asset.name }}</td>
+        <td>{{ asset.category.name }}</td>
+        <td>{{ asset.get_status_display }}</td>
+        <td>{{ asset.branch.name|default:"Head Office" }}</td>
+        <td>
+          {% if asset.assigned_to %}
+            {{ asset.assigned_to.get_full_name|default:asset.assigned_to.username }}
+          {% else %}
+            --
+          {% endif %}
+        </td>
+        <td>{{ asset.created_at|date:"Y-m-d H:i" }}</td>
+        <td>{{ asset.updated_at|date:"Y-m-d H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h3 class="section-title">Dynamic Attributes</h3>
+  <table class="dynamic-table">
+    <thead>
+      <tr>
+        <th>Asset Name</th>
+        {% with column_keys=assets.0.dynamic_data.items %}
+          {% if column_keys %}
+            {% for key, value in column_keys %}
+              <th>{{ key|upper }}</th>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for asset in assets %}
+      <tr>
+        <td class="asset-name-cell">{{ asset.name }}</td>
+        {% with row_items=asset.dynamic_data.items %}
+          {% if row_items %}
+            {% for key, value in row_items %}
+              <td>{{ value|default:"--" }}</td>
+            {% endfor %}
+          {% else %}
+            {% with column_keys=assets.0.dynamic_data.items %}
+              {% if column_keys %}
+                {% for key, value in column_keys %}
+                  <td>--</td>
+                {% endfor %}
+              {% else %}
+                <td>--</td>
+              {% endif %}
+            {% endwith %}
+          {% endif %}
+        {% endwith %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <strong>No assets match the selected filters.</strong>
+    <p>Adjust the status, branch, or date range filters and regenerate the report.</p>
+  </div>
+  {% endif %}
+
+  <footer>
+    <span>AssetPro Enterprise · Confidential</span>
+    <span>{{ metadata.base_url }}</span>
+  </footer>
+</body>
+</html>

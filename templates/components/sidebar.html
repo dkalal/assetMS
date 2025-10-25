@@ -3,10 +3,26 @@
   {% url 'asset_list' as asset_list_url %}
   {% url 'reports_dashboard' as reports_url %}
   {% url 'audit_dashboard' as audit_url %}
+  {% url 'maintenance:list' as maintenance_url %}
+  {% url 'approval_dashboard' as approvals_url %}
   <a href="{{ dashboard_url }}" class="nav-link rail-item {% if request.path == dashboard_url %}active{% endif %}" title="Dashboard" {% if request.path == dashboard_url %}aria-current="page"{% endif %}><i class="bi bi-speedometer2"></i><span>Dashboard</span></a>
-  <a href="{{ asset_list_url }}" class="nav-link rail-item {% if request.path|slice:":8" == "/assets/" %}active{% endif %}" title="Manage Asset" {% if request.path|slice:":8" == "/assets/" %}aria-current="page"{% endif %}><i class="bi bi-box-seam"></i><span>Manage Asset</span></a>
+  <a href="{{ asset_list_url }}" class="nav-link rail-item {% if request.path|slice:":8" == "/assets/" %}active{% endif %}" title="Assets" {% if request.path|slice:":8" == "/assets/" %}aria-current="page"{% endif %}><i class="bi bi-box-seam"></i><span>Assets</span></a>
   {% if request.user.is_authenticated and request.user.role != 'user' %}
-  <a href="{{ reports_url }}" class="nav-link rail-item {% if request.path|slice:":9" == "/reports/" %}active{% endif %}" title="Report" {% if request.path|slice:":9" == "/reports/" %}aria-current="page"{% endif %}><i class="bi bi-graph-up"></i><span>Report</span></a>
+  <a href="{{ maintenance_url }}" class="nav-link rail-item {% if request.path|slice:":13" == "/maintenance/" %}active{% endif %}" title="Maintenance" {% if request.path|slice:":13" == "/maintenance/" %}aria-current="page"{% endif %}>
+    <i class="bi bi-tools"></i>
+    <span>Maintenance</span>
+    {% if pending_maintenance_count > 0 %}
+    <span class="badge bg-warning text-dark ms-auto" aria-label="{{ pending_maintenance_count }} pending maintenance tasks">{{ pending_maintenance_count }}</span>
+    {% endif %}
+  </a>
+  <a href="{{ approvals_url }}" class="nav-link rail-item {% if '/approvals/' in request.path %}active{% endif %}" title="Approvals" {% if '/approvals/' in request.path %}aria-current="page"{% endif %}>
+    <i class="bi bi-check-circle"></i>
+    <span>Approvals</span>
+    {% if pending_approvals_count > 0 %}
+    <span class="badge bg-danger ms-auto" aria-label="{{ pending_approvals_count }} pending approvals">{{ pending_approvals_count }}</span>
+    {% endif %}
+  </a>
+  <a href="{{ reports_url }}" class="nav-link rail-item {% if request.path|slice:":9" == "/reports/" %}active{% endif %}" title="Reports" {% if request.path|slice:":9" == "/reports/" %}aria-current="page"{% endif %}><i class="bi bi-graph-up"></i><span>Reports</span></a>
   <a href="{{ audit_url }}" class="nav-link rail-item {% if request.path|slice:":7" == "/audit/" %}active{% endif %}" title="Audit" {% if request.path|slice:":7" == "/audit/" %}aria-current="page"{% endif %}><i class="bi bi-clipboard-data"></i><span>Audit</span></a>
   {% endif %}
   <div class="flex-grow-1"></div>

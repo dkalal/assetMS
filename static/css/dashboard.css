@@ -182,4 +182,59 @@ body {
 /* Sidebar backdrop */
 .sidebar-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.28); backdrop-filter: blur(2px); z-index: 99; opacity: 0; pointer-events: none; transition: opacity 0.2s ease-in-out; }
 body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
+
+/* WORLD-CLASS: Asset Status Widgets */
+.hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+}
+.hover-lift:active {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Widget emoji animations */
+.hover-lift:hover .display-6 {
+  animation: wiggle 0.5s ease-in-out;
+}
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg) scale(1.1); }
+  75% { transform: rotate(5deg) scale(1.1); }
+}
+
+/* Widget number pulse on data update */
+@keyframes pulseIn {
+  0% { transform: scale(0.95); opacity: 0.7; }
+  50% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.widget-updated {
+  animation: pulseIn 0.4s ease-out;
+}
+
+/* Chart container styling */
+#dashboard-charts .glass {
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+}
+#dashboard-charts canvas {
+  flex: 1;
+  max-height: 160px;
+}
+
+/* Responsive widget grid adjustments */
+@media (max-width: 768px) {
+  #dashboard-charts .col-md-6 {
+    margin-bottom: 12px;
+  }
+  .hover-lift .card-body {
+    padding: 1rem;
+  }
+}
+
 /* Add more as needed for cards, table, etc. */ 

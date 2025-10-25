@@ -1,0 +1,348 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Tenant Setup Wizard · AssetPro{% endblock %}
+
+{% block extra_styles %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'css/tenant_setup.css' %}">
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-12 col-xl-10">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h1 class="h3 mb-1">Tenant Setup Wizard</h1>
+          <p class="text-muted mb-0">Guide your organization through company, branch, and summary steps without leaving the application.</p>
+        </div>
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back to Dashboard</a>
+      </div>
+
+      <div class="wizard-progress mb-4">
+        <ul class="nav nav-pills flex-column flex-sm-row gap-2 gap-sm-3">
+          {% for step in steps_context %}
+            <li class="nav-item flex-grow-1">
+              <span class="nav-link d-flex align-items-center justify-content-center {% if step.is_active %}active{% elif step.is_completed %}completed{% endif %}">
+                <span class="badge rounded-pill me-2">{{ forloop.counter }}</span>
+                {{ step.label }}
+              </span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      {% if current_step == 'company' %}
+        <form method="post" enctype="multipart/form-data" class="card shadow-sm border-0">
+          <div class="card-header bg-transparent d-flex align-items-center justify-content-between">
+            <div>
+              <h2 class="h5 mb-0">Company Profile</h2>
+              <small class="text-muted">Update essential organization information.</small>
+            </div>
+          </div>
+          <div class="card-body">
+            {% csrf_token %}
+            <input type="hidden" name="step" value="company">
+            {% if company_form.errors %}
+              <div class="alert alert-danger">Please correct the highlighted errors.</div>
+            {% endif %}
+            <div class="row g-3">
+              {% for field in company_form %}
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="text-danger ms-1">*</span>{% endif %}</label>
+                  {{ field }}
+                  {% if field.help_text %}
+                    <small class="text-muted d-block">{{ field.help_text }}</small>
+                  {% endif %}
+                  {% for error in field.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                  {% endfor %}
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="card-footer bg-transparent d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary">Save &amp; Continue</button>
+          </div>
+        </form>
+      {% elif current_step == 'branch' %}
+        <div class="row g-4">
+          <div class="col-lg-7">
+            <form method="post" class="card shadow-sm border-0">
+              <div class="card-header bg-transparent">
+                <h2 class="h5 mb-0">Create a Branch</h2>
+              </div>
+              <div class="card-body">
+                {% csrf_token %}
+                <input type="hidden" name="step" value="branch">
+                {% if branch_form.instance.pk %}
+                  <input type="hidden" name="branch_id" value="{{ branch_form.instance.pk }}">
+                {% endif %}
+                {% if branch_form.errors %}
+                  <div class="alert alert-danger">Please correct the highlighted errors.</div>
+                {% endif %}
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold" for="{{ branch_form.name.id_for_label }}">{{ branch_form.name.label }}</label>
+                    {{ branch_form.name }}
+                    {% for error in branch_form.name.errors %}
+                      <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold" for="{{ branch_form.code.id_for_label }}">{{ branch_form.code.label }}</label>
+                    {{ branch_form.code }}
+                    {% for error in branch_form.code.errors %}
+                      <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label fw-semibold" for="{{ branch_form.address.id_for_label }}">{{ branch_form.address.label }}</label>
+                    {{ branch_form.address }}
+                    {% for error in branch_form.address.errors %}
+                      <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-check form-switch">
+                      {{ branch_form.is_head_office }}
+                      <label class="form-check-label" for="{{ branch_form.is_head_office.id_for_label }}">{{ branch_form.is_head_office.label }}</label>
+                    </div>
+                    {% for error in branch_form.is_head_office.errors %}
+                      <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                  </div>
+                  <div class="col-md-6">
+                    {% if branch_form.is_active.is_hidden %}
+                      {{ branch_form.is_active }}
+                    {% else %}
+                      <div class="form-check form-switch">
+                        {{ branch_form.is_active }}
+                        <label class="form-check-label" for="{{ branch_form.is_active.id_for_label }}">{{ branch_form.is_active.label }}</label>
+                      </div>
+                      {% if branch_form.is_active.help_text %}
+                        <small class="text-muted">{{ branch_form.is_active.help_text }}</small>
+                      {% endif %}
+                    {% endif %}
+                    {% for error in branch_form.is_active.errors %}
+                      <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-check form-switch">
+                      {{ branch_form.set_as_primary }}
+                      <label class="form-check-label" for="{{ branch_form.set_as_primary.id_for_label }}">{{ branch_form.set_as_primary.label }}</label>
+                    </div>
+                    <small class="text-muted">
+                      {% if branch_form.set_as_primary.field.widget.attrs.disabled %}
+                        Only active branches can be assigned as primary.
+                      {% else %}
+                        Primary branch ensures accurate navbar defaults.
+                      {% endif %}
+                    </small>
+                    {% for error in branch_form.set_as_primary.errors %}
+                      <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer bg-transparent d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary">Save Branch &amp; Continue</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="col-lg-5">
+            <div class="card shadow-sm border-0 h-100">
+              <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                <h2 class="h6 mb-0">Existing Branches</h2>
+                <span class="badge bg-primary-subtle text-primary fw-semibold">{{ existing_branches|length }}</span>
+              </div>
+              <div class="card-body">
+                {% if active_branches %}
+                  <h3 class="h6 text-uppercase text-success">Active</h3>
+                  <div class="list-group list-group-flush mb-3">
+                    {% for branch in active_branches %}
+                      <div class="list-group-item px-0 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-center">
+                          <div class="d-flex align-items-center gap-2">
+                            <span class="fw-semibold">{{ branch.name }}</span>
+                            <span class="badge bg-success-subtle text-success">Active</span>
+                            {% if branch.is_head_office %}
+                              <span class="badge bg-info-subtle text-info">Head Office</span>
+                            {% endif %}
+                          </div>
+                          <div class="d-flex align-items-center gap-2">
+                            <a class="btn btn-sm btn-outline-primary" href="{% url 'tenant_setup_wizard' %}?step=branch&amp;branch_id={{ branch.pk }}">
+                              <i class="bi bi-pencil-square me-1"></i>Edit
+                            </a>
+                            {% if can_manage_branch_status %}
+                              <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#deactivateBranchModal" data-branch-id="{{ branch.pk }}" data-branch-name="{{ branch.name }}" data-endpoint="{% url 'tenant_branch_toggle' branch.pk %}">
+                                <i class="bi bi-pause-circle me-1"></i>Deactivate
+                              </button>
+                            {% else %}
+                              <span class="badge bg-secondary-subtle text-secondary" data-bs-toggle="tooltip" title="Insufficient permissions to deactivate">Restricted</span>
+                            {% endif %}
+                          </div>
+                        </div>
+                        <small class="text-muted">Code: {{ branch.code }}</small>
+                        {% if branch.address %}<small class="text-muted">{{ branch.address }}</small>{% endif %}
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+
+                {% if inactive_branches %}
+                  <h3 class="h6 text-uppercase text-muted">Inactive</h3>
+                  <div class="list-group list-group-flush">
+                    {% for branch in inactive_branches %}
+                      <div class="list-group-item px-0 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-center">
+                          <div class="d-flex align-items-center gap-2">
+                            <span class="fw-semibold">{{ branch.name }}</span>
+                            <span class="badge bg-secondary-subtle text-secondary">Inactive</span>
+                            {% if branch.is_head_office %}
+                              <span class="badge bg-info-subtle text-info">Head Office</span>
+                            {% endif %}
+                          </div>
+                          <div class="d-flex align-items-center gap-2">
+                            <a class="btn btn-sm btn-outline-primary" href="{% url 'tenant_setup_wizard' %}?step=branch&amp;branch_id={{ branch.pk }}">
+                              <i class="bi bi-pencil-square me-1"></i>Edit
+                            </a>
+                            {% if can_manage_branch_status %}
+                              <form method="post" action="{% url 'tenant_branch_toggle' branch.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="target_state" value="activate">
+                                <input type="hidden" name="next" value="{% url 'tenant_setup_wizard' %}?step=branch">
+                                <button type="submit" class="btn btn-sm btn-outline-success" data-bs-toggle="tooltip" title="Reactivate branch">
+                                  <i class="bi bi-play-circle me-1"></i>Activate
+                                </button>
+                              </form>
+                            {% else %}
+                              <span class="badge bg-secondary-subtle text-secondary" data-bs-toggle="tooltip" title="Insufficient permissions to activate">Restricted</span>
+                            {% endif %}
+                          </div>
+                        </div>
+                        <small class="text-muted">Code: {{ branch.code }}</small>
+                        {% if branch.address %}<small class="text-muted">{{ branch.address }}</small>{% endif %}
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+
+                {% if not existing_branches %}
+                  <p class="text-muted mb-0">No branches yet. Add one using the form.</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {% if can_manage_branch_status and existing_branches %}
+        <div class="modal fade" id="deactivateBranchModal" tabindex="-1" aria-labelledby="deactivateBranchModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="deactivateBranchModalLabel">Deactivate Branch</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p class="mb-0">Are you sure you want to deactivate <strong id="deactivateBranchName"></strong>? Inactive branches will be hidden from dashboards and selectors but remain in history.</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="#" id="deactivateBranchForm">
+                  {% csrf_token %}
+                  <input type="hidden" name="target_state" value="deactivate">
+                  <input type="hidden" name="next" value="{% url 'tenant_setup_wizard' %}?step=branch">
+                  <button type="submit" class="btn btn-warning">Confirm Deactivate</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            const deactivateBranchModal = document.getElementById('deactivateBranchModal');
+            const deactivateBranchForm = document.getElementById('deactivateBranchForm');
+            const deactivateBranchName = document.getElementById('deactivateBranchName');
+
+            if (!deactivateBranchModal || !deactivateBranchForm || !deactivateBranchName) {
+              return;
+            }
+
+            if (deactivateBranchModal.parentNode !== document.body) {
+              document.body.appendChild(deactivateBranchModal);
+            }
+
+            deactivateBranchModal.addEventListener('show.bs.modal', function (event) {
+              const trigger = event.relatedTarget;
+              if (!trigger) {
+                return;
+              }
+              const branchName = trigger.getAttribute('data-branch-name') || '';
+              const endpoint = trigger.getAttribute('data-endpoint');
+              if (endpoint) {
+                deactivateBranchForm.action = endpoint;
+              }
+              deactivateBranchName.textContent = branchName;
+            });
+          });
+        </script>
+        {% endif %}
+      {% elif current_step == 'summary' %}
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-transparent d-flex align-items-center justify-content-between">
+            <div>
+              <h2 class="h5 mb-0">Configuration Summary</h2>
+{{ ... }}
+            </div>
+            <a href="{% url 'tenant_setup_wizard' %}?step=branch" class="btn btn-outline-primary btn-sm"><i class="bi bi-plus-circle me-1"></i>Add another branch</a>
+          </div>
+          <div class="card-body">
+            <div class="row g-4">
+              <div class="col-md-6">
+                <div class="p-3 bg-light rounded border h-100">
+                  <h3 class="h6 text-uppercase text-muted">Company</h3>
+                  <p class="mb-1 fw-semibold">{{ company.name }}</p>
+                  {% if company.contact_person %}<p class="mb-1">Contact: {{ company.contact_person }}</p>{% endif %}
+                  {% if company.phone %}<p class="mb-1">Phone: {{ company.phone }}</p>{% endif %}
+                  {% if company.email %}<p class="mb-0">Email: {{ company.email }}</p>{% endif %}
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="p-3 bg-light rounded border h-100">
+                  <h3 class="h6 text-uppercase text-muted">Branches</h3>
+                  {% if existing_branches %}
+                    <ul class="list-unstyled mb-0">
+                      {% for branch in existing_branches %}
+                        <li class="mb-2">
+                          <span class="fw-semibold">{{ branch.name }}</span>
+                          <span class="text-muted ms-2">({{ branch.code }})</span>
+                          {% if branch.is_head_office %}
+                            <span class="badge bg-info-subtle text-info ms-2">Head Office</span>
+                          {% endif %}
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  {% else %}
+                    <p class="text-muted mb-0">No branches yet.</p>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer bg-transparent d-flex justify-content-between align-items-center">
+            <div>
+              <p class="text-muted mb-0">Next steps: invite teammates, configure categories, and start registering assets.</p>
+            </div>
+            <a href="{% url 'users:profile' %}" class="btn btn-primary">Go to Profile Admin Tools</a>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

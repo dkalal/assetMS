@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
+from django.utils.functional import cached_property
 import uuid
 
 class User(AbstractUser):
@@ -8,10 +9,11 @@ class User(AbstractUser):
     MANAGER = 'manager'
     USER = 'user'
     ROLE_CHOICES = [
-        (ADMIN, 'Admin'),
+        (ADMIN, 'Administrator'),
         (MANAGER, 'Manager'),
         (USER, 'User'),
     ]
+    company = models.ForeignKey('tenancy.Company', on_delete=models.SET_NULL, null=True, blank=True, related_name='users')
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=USER)
     profile_image = models.ImageField(upload_to='profile_images/', blank=True, null=True, help_text='User avatar/profile image')
     phone_number = models.CharField(max_length=32, blank=True, null=True, help_text='Contact phone number')
@@ -27,7 +29,9 @@ class User(AbstractUser):
     session_timeout_minutes = models.IntegerField(default=60)
 
     def __str__(self):
-        return f"{self.username} ({self.role})"
+        company = getattr(self, 'company', None)
+        company_label = f" @ {company.name}" if company else ''
+        return f"{self.username} ({self.role}){company_label}"
 
     def get_role_display(self):
         return dict(self.ROLE_CHOICES).get(str(self.role), self.role)
@@ -44,6 +48,17 @@ class User(AbstractUser):
         self.is_invited = True
         self.save()
         return self.invitation_token
+
+    @cached_property
+    def primary_branch_membership(self):
+        if not self.company_id:
+            return None
+        return self.user_branches.select_related('branch').filter(company_id=self.company_id, is_primary=True).first()
+
+    @property
+    def primary_branch(self):
+        membership = self.primary_branch_membership
+        return membership.branch if membership else None
 
     class Meta:
         permissions = [

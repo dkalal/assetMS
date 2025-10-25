@@ -1,7 +1,12 @@
 {% extends 'base_dashboard.html' %}
 {% load static %}
 {% block title %}Profile{% endblock %}
-{% block content %}
+{% block extra_styles %}
+{{ block.super }}
+<link href="{% static 'css/admin-tools-enhanced.css' %}?v=2.0" rel="stylesheet">
+<link href="{% static 'css/wizard-styles-v2.css' %}?v=2.0" rel="stylesheet">
+{% endblock %}
+{% block dashboard_content %}
 <div class="row justify-content-center">
   <div class="col-xl-8 col-lg-10 col-md-12">
     <div class="glass p-4 mb-4 shadow-sm">
@@ -165,143 +170,27 @@
       </div>
     </div>
     {% if user_obj.role == 'admin' %}
-    <div class="glass p-4 mb-4 shadow-sm">
-      <h4 class="mb-3"><i class="bi bi-tools me-2"></i>Admin Tools</h4>
-      <div class="row g-4">
-        <div class="col-md-6 col-lg-4">
-          <div class="card h-100 shadow-sm border-0">
-            <div class="card-body d-flex flex-column align-items-start">
-              <div class="mb-2"><i class="bi bi-folder-plus fs-2 text-primary"></i></div>
-              <h5 class="card-title fw-bold">Create Category</h5>
-              <p class="card-text text-muted">Add new asset categories to organize your assets.</p>
-              <button class="btn btn-outline-primary mt-auto w-100" id="openCreateCategoryModal">Create Category</button>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-6 col-lg-4">
-          <div class="card h-100 shadow-sm border-0">
-            <div class="card-body d-flex flex-column align-items-start">
-              <div class="mb-2"><i class="bi bi-person-plus fs-2 text-success"></i></div>
-              <h5 class="card-title fw-bold">Create User</h5>
-              <p class="card-text text-muted">Add a new user and assign a role (Admin, Manager, User).</p>
-              <button class="btn btn-outline-success mt-auto w-100" id="openCreateUserModal">
-                <i class="bi bi-person-plus"></i> Create User
-              </button>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-6 col-lg-4">
-          <div class="card h-100 shadow-sm border-0">
-            <div class="card-body d-flex flex-column align-items-start">
-              <div class="mb-2"><i class="bi bi-list-check fs-2 text-success"></i></div>
-              <h5 class="card-title fw-bold">Dynamic Field Management</h5>
-              <p class="card-text text-muted">Add, edit, or remove dynamic fields for categories.</p>
-              <button class="btn btn-outline-success mt-auto w-100" id="openDynamicFieldModal">Manage Fields</button>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-6 col-lg-4">
-          <div class="card h-100 shadow-sm border-0">
-            <div class="card-body d-flex flex-column align-items-start">
-              <div class="mb-2"><i class="bi bi-shield-lock fs-2 text-warning"></i></div>
-              <h5 class="card-title fw-bold">Permissions</h5>
-              <p class="card-text text-muted">View and manage user roles and permissions.</p>
-              <button class="btn btn-outline-warning mt-auto w-100" id="openPermissionsModal">
-                <i class="bi bi-shield-lock me-1"></i>Manage Permissions
-              </button>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-6 col-lg-4">
-          <div class="card h-100 shadow-sm border-0">
-            <div class="card-body d-flex flex-column align-items-start">
-              <div class="mb-2"><i class="bi bi-gear-fill fs-2 text-secondary"></i></div>
-              <h5 class="card-title fw-bold">System Settings</h5>
-              <p class="card-text text-muted">Configure system-wide settings and preferences.</p>
-              <a href="/settings/users/" class="btn btn-outline-secondary mt-auto w-100">
-                <i class="bi bi-people me-1"></i>User Management
-              </a>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-6 col-lg-4">
-          <div class="card h-100 shadow-sm border-0">
-            <div class="card-body d-flex flex-column align-items-start">
-              <div class="mb-2"><i class="bi bi-cloud-arrow-down fs-2 text-info"></i></div>
-              <h5 class="card-title fw-bold">Backup</h5>
-              <p class="card-text text-muted">Download a backup of your database and assets.</p>
-              <button class="btn btn-outline-info mt-auto w-100" id="openBackupModal">Backup Now</button>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-6 col-lg-4">
-          <div class="card h-100 shadow-sm border-0">
-            <div class="card-body d-flex flex-column align-items-start">
-              <div class="mb-2"><i class="bi bi-cloud-arrow-up fs-2 text-danger"></i></div>
-              <h5 class="card-title fw-bold">Restore</h5>
-              <p class="card-text text-muted">Restore your system from a backup file.</p>
-              <button class="btn btn-outline-danger mt-auto w-100" id="openRestoreModal">Restore</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Enhanced Admin Tools Section -->
+    {% include 'components/enhanced_admin_tools.html' %}
 {% endif %}
 
-<!-- Create User Modal (custom, enterprise-grade) -->
-<div id="createUserModalCustom" class="custom-modal-overlay" tabindex="-1">
-  <div class="custom-modal glass-modal" role="dialog" aria-modal="true" aria-labelledby="createUserModalCustomLabel" style="max-width:600px;width:100%;">
-    <div class="custom-modal-header d-flex align-items-center justify-content-between">
-      <h4 class="modal-title fw-bold mb-0" id="createUserModalCustomLabel">
-        <i class="bi bi-person-plus me-2 text-success"></i> Create New User
-      </h4>
-      <button type="button" class="custom-modal-close" id="closeCreateUserModal" aria-label="Close">
-        <span aria-hidden="true">&times;</span>
-      </button>
-    </div>
-    <form id="create-user-form" autocomplete="off">
-      <div class="custom-modal-body">
-        <div id="create-user-feedback" class="mb-3"></div>
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Username <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" name="username" maxlength="150" required placeholder="e.g. jdoe">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
-            <input type="email" class="form-control" name="email" maxlength="254" required placeholder="e.g. jdoe@example.com">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">First Name</label>
-            <input type="text" class="form-control" name="first_name" maxlength="150" placeholder="John">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Last Name</label>
-            <input type="text" class="form-control" name="last_name" maxlength="150" placeholder="Doe">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Role</label>
-            <select name="role" class="form-select">
-              <option value="User">User</option>
-              <option value="Manager">Manager</option>
-              <option value="Admin">Admin</option>
-            </select>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Password <span class="text-muted small">(optional)</span></label>
-            <input type="text" class="form-control" name="password" placeholder="Leave blank to auto-generate">
-          </div>
-        </div>
-      </div>
-      <div class="custom-modal-footer d-flex justify-content-end gap-2 p-3 bg-transparent border-0">
-        <button type="button" class="btn btn-outline-secondary px-4" id="cancelCreateUserModal">Cancel</button>
-        <button type="submit" class="btn btn-success px-4 fw-bold">Create User</button>
-      </div>
-    </form>
-  </div>
-  </div>
-
-<!-- Create Category Modal (custom, enterprise-grade) -->
+<!-- ============================================================================
+     DEPRECATED: Legacy Create Category Modal
+     
+     This modal has been replaced by the new Category Wizard system.
+     The wizard provides:
+     - Template-based category creation
+     - Custom category creation with guided steps
+     - Dynamic field configuration
+     - Better UX with step-by-step guidance
+     
+     Use: Click "Create Category (Wizard)" button instead
+     Location: Enhanced Admin Tools section
+     
+     This code is kept commented for reference only.
+     DO NOT UNCOMMENT - Use the new wizard system.
+     ============================================================================ -->
+<!--
 <div id="createCategoryModalCustom" class="custom-modal-overlay" tabindex="-1">
   <div class="custom-modal glass-modal" role="dialog" aria-modal="true" aria-labelledby="createCategoryModalCustomLabel">
     <div class="custom-modal-header d-flex align-items-center justify-content-between">
@@ -331,6 +220,7 @@
     </form>
   </div>
 </div>
+-->
 <!-- Permissions Modal (custom, enterprise-grade) -->
 <div id="permissionsModalCustom" class="custom-modal-overlay" tabindex="-1">
   <div class="custom-modal glass-modal" role="dialog" aria-modal="true" aria-labelledby="permissionsModalCustomLabel" style="max-width:800px;width:100%;">
@@ -494,7 +384,26 @@
   </div>
 </div>
 
-<!-- Dynamic Field Management Modal (custom, enterprise-grade, matches Create Category structure) -->
+<!-- ============================================================================
+     DEPRECATED: Legacy Dynamic Field Management Modal
+     
+     This modal has been replaced by the Category Wizard system.
+     Dynamic fields are now configured during category creation in the wizard.
+     
+     The wizard provides:
+     - Integrated field management during category creation
+     - Template-based fields with pre-configured options
+     - Better field validation and type support
+     - Simplified UX with guided steps
+     
+     To manage fields:
+     1. Use the Category Wizard for new categories
+     2. Edit existing categories through the admin tools
+     
+     This code is kept commented for reference only.
+     DO NOT UNCOMMENT - Use the new wizard system.
+     ============================================================================ -->
+<!--
 <div id="dynamicFieldModalCustom" class="custom-modal-overlay" tabindex="-1">
   <div class="custom-modal glass-modal" role="dialog" aria-modal="true" aria-labelledby="dynamicFieldModalCustomLabel" style="max-width:700px;width:100%;">
     <div class="custom-modal-header d-flex align-items-center justify-content-between">
@@ -512,7 +421,6 @@
           <label for="df-category-select" class="form-label fw-semibold">Select Category</label>
           <select id="df-category-select" class="form-select" required>
             <option value="">-- Select Category --</option>
-            <!-- Options will be populated by JS -->
           </select>
         </div>
         <div id="df-fields-section" class="mb-3 d-none">
@@ -532,7 +440,6 @@
                 </tr>
               </thead>
               <tbody id="df-fields-table-body">
-                <!-- Populated by JS -->
               </tbody>
             </table>
           </div>
@@ -573,6 +480,7 @@
     </form>
   </div>
 </div>
+-->
 
 <!-- Restore Backup Modal (custom) -->
 <div id="restoreBackupModalCustom" class="custom-modal-overlay" tabindex="-1">
@@ -696,8 +604,20 @@
 }
 </style>
 {% endblock %}
+
+{% block modals %}
+<!-- Enhanced Admin Modals -->
+{% if user_obj.role == 'admin' %}
+{% include 'components/enhanced_admin_modals.html' %}
+<!-- WORLD-CLASS CREATE USER MODAL - Multi-Tenancy Enabled -->
+{% include 'settings/partials/create_user_modal.html' %}
+{% endif %}
+{% endblock %}
+
 {% block extra_scripts %}
 {% load static %}
 <script src="{% static 'js/permissions-fixed.js' %}"></script>
 <script src="{% static 'js/profile.js' %}"></script>
+<script src="{% static 'js/admin-tools-enhanced.js' %}"></script>
+<script src="{% static 'js/category-wizard.js' %}"></script>
 {% endblock %} 

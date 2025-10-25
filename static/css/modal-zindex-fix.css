@@ -1,0 +1,478 @@
+/**
+ * ============================================================================
+ * WORLD-CLASS MODAL Z-INDEX FIX
+ * ============================================================================
+ * 
+ * Purpose: Ensures all modals appear ABOVE their backdrops across the entire system
+ * Scope: Global - applies to all pages, all modals, all scenarios
+ * Priority: CRITICAL - Must load LAST to override all other CSS
+ * 
+ * Inspired by: ServiceNow, SAP Fiori, IBM Maximo, Salesforce Lightning
+ * 
+ * Z-Index Hierarchy (Enterprise Standard):
+ * - 1-99: Page content, cards, tables
+ * - 100-999: Sidebars, navigation, dropdowns
+ * - 1000-1999: Sticky headers, floating elements
+ * - 2000-2999: Toasts, notifications
+ * - 3000-9999: Reserved
+ * - 10000-10999: Modal system (THIS FILE)
+ * - 11000+: Emergency overrides, dev tools
+ * 
+ * ============================================================================
+ */
+
+/* ============================================================================
+   MODAL BACKDROP
+   Must be below modal content but above all page elements
+   ============================================================================ */
+
+.modal-backdrop {
+  z-index: 10500 !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(2px) !important;
+  -webkit-backdrop-filter: blur(2px) !important;
+}
+
+/* Fade animation for backdrop */
+.modal-backdrop.fade {
+  opacity: 0;
+  transition: opacity 0.15s linear;
+}
+
+.modal-backdrop.show {
+  opacity: 1;
+}
+
+/* ============================================================================
+   MODAL CONTAINER
+   Must be above backdrop
+   ============================================================================ */
+
+.modal {
+  z-index: 10600 !important;
+  outline: 0;
+}
+
+/* Ensure modal is positioned correctly */
+.modal.fade .modal-dialog {
+  transition: transform 0.3s ease-out;
+  transform: translate(0, -50px);
+}
+
+.modal.show .modal-dialog {
+  transform: none;
+}
+
+/* ============================================================================
+   MODAL DIALOG
+   Inherits z-index from parent modal
+   ============================================================================ */
+
+.modal-dialog {
+  position: relative;
+  z-index: inherit;
+  margin: 1.75rem auto;
+  pointer-events: none;
+}
+
+/* Centered modals */
+.modal-dialog-centered {
+  display: flex;
+  align-items: center;
+  min-height: calc(100% - 3.5rem);
+}
+
+/* Scrollable modals */
+.modal-dialog-scrollable {
+  height: calc(100% - 3.5rem);
+}
+
+.modal-dialog-scrollable .modal-content {
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.modal-dialog-scrollable .modal-body {
+  overflow-y: auto;
+}
+
+/* ============================================================================
+   MODAL CONTENT
+   Must be interactive and visible
+   ============================================================================ */
+
+.modal-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  pointer-events: auto;
+  background-color: #fff !important;
+  background-clip: padding-box;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 0.5rem;
+  outline: 0;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* ============================================================================
+   NESTED MODALS
+   Support for modals opened on top of other modals
+   ============================================================================ */
+
+/* Second level modal */
+.modal.show + .modal-backdrop + .modal {
+  z-index: 10700 !important;
+}
+
+.modal.show + .modal-backdrop + .modal + .modal-backdrop {
+  z-index: 10650 !important;
+}
+
+/* Third level modal (rare but supported) */
+.modal.show + .modal-backdrop + .modal + .modal-backdrop + .modal {
+  z-index: 10800 !important;
+}
+
+/* ============================================================================
+   SPECIFIC MODAL IDS
+   Common modals across the system
+   ============================================================================ */
+
+/* Settings page modals */
+#addBranchModal,
+#editBranchModal,
+#deleteBranchModal,
+#addUserModal,
+#editUserModal,
+#deleteUserModal {
+  z-index: 10600 !important;
+}
+
+/* User management modals */
+#createUserModal,
+#passwordDisplayModal,
+#inviteUserModal {
+  z-index: 10600 !important;
+}
+
+/* Asset management modals */
+#assetModal,
+#transferModal,
+#maintenanceModal,
+#disposalModal {
+  z-index: 10600 !important;
+}
+
+/* Category management modals */
+#categoryModal,
+#deleteCategoryModal {
+  z-index: 10600 !important;
+}
+
+/* Export/Import modals */
+#exportModal,
+#importModal {
+  z-index: 10600 !important;
+}
+
+/* Confirmation modals (highest priority for critical actions) */
+#confirmModal,
+#confirmationModal,
+#deleteConfirmModal {
+  z-index: 10700 !important;
+}
+
+/* ============================================================================
+   MODAL COMPONENTS
+   Dropdowns, tooltips, popovers, date pickers inside modals
+   ============================================================================ */
+
+/* Dropdowns in modals */
+.modal .dropdown-menu,
+.modal .dropdown-menu.show {
+  z-index: 10900 !important;
+  position: absolute;
+}
+
+/* Select2 dropdowns in modals */
+.modal .select2-container,
+.modal .select2-dropdown {
+  z-index: 11000 !important;
+}
+
+/* Date pickers in modals */
+.modal .datepicker,
+.modal .ui-datepicker,
+.modal .flatpickr-calendar {
+  z-index: 11000 !important;
+}
+
+/* Time pickers in modals */
+.modal .timepicker,
+.modal .ui-timepicker {
+  z-index: 11000 !important;
+}
+
+/* Tooltips in modals */
+.modal .tooltip {
+  z-index: 10950 !important;
+}
+
+/* Popovers in modals */
+.modal .popover {
+  z-index: 10950 !important;
+}
+
+/* Color pickers in modals */
+.modal .colorpicker,
+.modal .spectrum-container {
+  z-index: 11000 !important;
+}
+
+/* ============================================================================
+   MODAL BODY SCROLL FIX
+   Prevent body scroll when modal is open
+   ============================================================================ */
+
+body.modal-open {
+  overflow: hidden;
+  padding-right: 0 !important; /* Prevent layout shift */
+}
+
+/* Fix for multiple modals */
+body.modal-open .modal {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* ============================================================================
+   RESPONSIVE MODAL FIXES
+   Ensure modals work correctly on all screen sizes
+   ============================================================================ */
+
+/* Mobile devices */
+@media (max-width: 576px) {
+  .modal-dialog {
+    margin: 0.5rem;
+    max-width: calc(100% - 1rem);
+  }
+  
+  .modal-fullscreen-sm-down {
+    width: 100vw;
+    max-width: none;
+    height: 100%;
+    margin: 0;
+  }
+  
+  .modal-fullscreen-sm-down .modal-content {
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+  }
+}
+
+/* Tablets */
+@media (min-width: 576px) {
+  .modal-dialog {
+    max-width: 500px;
+  }
+  
+  .modal-dialog-centered {
+    min-height: calc(100% - 3.5rem);
+  }
+}
+
+/* Large modals */
+@media (min-width: 992px) {
+  .modal-lg,
+  .modal-xl {
+    max-width: 800px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .modal-xl {
+    max-width: 1140px;
+  }
+}
+
+/* ============================================================================
+   MODAL ANIMATIONS
+   Smooth enter/exit animations
+   ============================================================================ */
+
+.modal.fade .modal-dialog {
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+  transform: translate(0, -50px);
+  opacity: 0;
+}
+
+.modal.show .modal-dialog {
+  transform: translate(0, 0);
+  opacity: 1;
+}
+
+/* Slide up animation for mobile */
+@media (max-width: 576px) {
+  .modal.fade .modal-dialog {
+    transform: translate(0, 100%);
+  }
+  
+  .modal.show .modal-dialog {
+    transform: translate(0, 0);
+  }
+}
+
+/* ============================================================================
+   ACCESSIBILITY FIXES
+   Ensure modals are keyboard and screen reader accessible
+   ============================================================================ */
+
+/* Focus trap */
+.modal:focus {
+  outline: none;
+}
+
+/* Focus visible for keyboard navigation */
+.modal-content:focus-visible {
+  outline: 2px solid #0d6efd;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .modal-content {
+    border: 2px solid currentColor;
+  }
+  
+  .modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.8) !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .modal.fade .modal-dialog {
+    transition: none;
+  }
+  
+  .modal-backdrop.fade {
+    transition: none;
+  }
+}
+
+/* ============================================================================
+   DARK MODE SUPPORT
+   Ensure modals look good in dark theme
+   ============================================================================ */
+
+[data-theme="dark"] .modal-content {
+  background-color: #1e293b !important;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .modal-header {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .modal-footer {
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+/* ============================================================================
+   GLASSMORPHISM MODAL VARIANT
+   Modern glass effect for modals (optional)
+   ============================================================================ */
+
+.modal-glass .modal-content {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="dark"] .modal-glass .modal-content {
+  background: rgba(30, 41, 59, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ============================================================================
+   PERFORMANCE OPTIMIZATIONS
+   GPU acceleration and will-change hints
+   ============================================================================ */
+
+.modal-dialog {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.modal-backdrop {
+  will-change: opacity;
+  transform: translateZ(0);
+}
+
+/* ============================================================================
+   BROWSER-SPECIFIC FIXES
+   ============================================================================ */
+
+/* Safari backdrop filter fix */
+@supports (-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px)) {
+  .modal-backdrop {
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+}
+
+/* IE11 fallback (no backdrop filter) */
+@media all and (-ms-high-contrast: none), (-ms-high-contrast: active) {
+  .modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.6) !important;
+  }
+}
+
+/* Firefox smooth scrolling */
+@-moz-document url-prefix() {
+  .modal-dialog-scrollable .modal-body {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
+  }
+}
+
+/* ============================================================================
+   DEBUGGING HELPERS (Remove in production)
+   Uncomment to debug z-index issues
+   ============================================================================ */
+
+/*
+.modal-backdrop {
+  background-color: rgba(255, 0, 0, 0.3) !important;
+}
+
+.modal {
+  outline: 3px solid blue;
+}
+
+.modal-dialog {
+  outline: 3px solid green;
+}
+
+.modal-content {
+  outline: 3px solid orange;
+}
+*/
+
+/* ============================================================================
+   END OF MODAL Z-INDEX FIX
+   Version: 2.0.0
+   Last Updated: October 20, 2025
+   Status: Production Ready
+   ============================================================================ */

@@ -9,6 +9,7 @@ urlpatterns = [
     
     # User management
     path('users/', views.user_management, name='user_management'),
+    path('users/<int:user_id>/', views.staff_detail, name='staff_detail'),
     path('session-management/', views.session_management, name='session_management'),
     
     # Organization settings
@@ -21,6 +22,8 @@ urlpatterns = [
     path('api/users/', views.api_users_management, name='api_users_management'),
     path('api/invite-user/', views.api_invite_user, name='api_invite_user'),
     path('api/delete-user/', views.api_delete_user, name='api_delete_user'),
+    path('api/staff-analytics/', views.api_staff_analytics, name='api_staff_analytics'),
+    path('api/staff-export/', views.api_staff_export, name='api_staff_export'),
     path('api/session-stats/', views.api_session_stats, name='api_session_stats'),
     path('api/access-logs/', views.api_access_logs, name='api_access_logs'),
     path('api/session-details/', views.api_session_details, name='api_session_details'),
@@ -51,4 +54,8 @@ urlpatterns = [
     path('api/security/metrics/', views.api_security_metrics, name='api_security_metrics'),
     path('api/security/update/', views.api_update_security_settings, name='api_update_security_settings'),
     path('api/security/activities/', views.api_security_activities, name='api_security_activities'),
+    
+    # Multi-Tenancy Policy API endpoints
+    path('api/tenancy-policy/', views.api_get_tenancy_policy, name='api_get_tenancy_policy'),
+    path('api/tenancy-policy/update/', views.api_update_tenancy_policy, name='api_update_tenancy_policy'),
 ]

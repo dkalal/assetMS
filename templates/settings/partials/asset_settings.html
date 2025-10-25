@@ -1,0 +1,259 @@
+<!-- Asset Settings -->
+<div class="row g-4">
+  <!-- Asset Configuration -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-box-seam me-2"></i>Asset Configuration</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="assetIdPrefix" class="form-label fw-semibold">Asset ID Prefix</label>
+            <input type="text" class="form-control" id="assetIdPrefix" value="AST" maxlength="5">
+            <small class="text-muted">Prefix for auto-generated asset IDs (e.g., AST-001)</small>
+          </div>
+          <div class="col-md-6">
+            <label for="assetIdLength" class="form-label fw-semibold">ID Number Length</label>
+            <input type="number" class="form-control" id="assetIdLength" value="6" min="3" max="10">
+            <small class="text-muted">Number of digits in asset ID (e.g., 6 = 000001)</small>
+          </div>
+          <div class="col-md-6">
+            <label for="defaultDepreciationMethod" class="form-label fw-semibold">Default Depreciation Method</label>
+            <select class="form-select" id="defaultDepreciationMethod">
+              <option value="straight_line" selected>Straight Line</option>
+              <option value="declining_balance">Declining Balance</option>
+              <option value="sum_of_years">Sum of Years Digits</option>
+              <option value="units_of_production">Units of Production</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label for="defaultUsefulLife" class="form-label fw-semibold">Default Useful Life (Years)</label>
+            <input type="number" class="form-control" id="defaultUsefulLife" value="5" min="1" max="50">
+          </div>
+          <div class="col-md-6">
+            <label for="currencySymbol" class="form-label fw-semibold">Currency Symbol</label>
+            <input type="text" class="form-control" id="currencySymbol" value="$" maxlength="3">
+          </div>
+          <div class="col-md-6">
+            <label for="currencyCode" class="form-label fw-semibold">Currency Code</label>
+            <input type="text" class="form-control" id="currencyCode" value="USD" maxlength="3">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Asset Status Management -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="bi bi-toggle-on me-2"></i>Asset Status Management</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">Available Asset Statuses</label>
+            <div class="list-group">
+              <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <span class="badge bg-success me-2">●</span>
+                  <strong>Active</strong>
+                  <small class="text-muted ms-2">Asset is in use</small>
+                </div>
+                <span class="badge bg-secondary">System</span>
+              </div>
+              <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <span class="badge bg-warning me-2">●</span>
+                  <strong>In Maintenance</strong>
+                  <small class="text-muted ms-2">Under repair or servicing</small>
+                </div>
+                <span class="badge bg-secondary">System</span>
+              </div>
+              <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <span class="badge bg-info me-2">●</span>
+                  <strong>Available</strong>
+                  <small class="text-muted ms-2">Ready for assignment</small>
+                </div>
+                <span class="badge bg-secondary">System</span>
+              </div>
+              <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <span class="badge bg-danger me-2">●</span>
+                  <strong>Retired</strong>
+                  <small class="text-muted ms-2">No longer in service</small>
+                </div>
+                <span class="badge bg-secondary">System</span>
+              </div>
+              <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <span class="badge bg-dark me-2">●</span>
+                  <strong>Lost</strong>
+                  <small class="text-muted ms-2">Asset cannot be located</small>
+                </div>
+                <span class="badge bg-secondary">System</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Maintenance & Warranty Settings -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0"><i class="bi bi-tools me-2"></i>Maintenance & Warranty</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="enableMaintenanceSchedule" checked>
+              <label class="form-check-label fw-semibold" for="enableMaintenanceSchedule">
+                Enable Maintenance Scheduling
+              </label>
+              <small class="d-block text-muted">Allow scheduling of preventive maintenance</small>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label for="maintenanceReminderDays" class="form-label fw-semibold">Maintenance Reminder (Days Before)</label>
+            <input type="number" class="form-control" id="maintenanceReminderDays" value="7" min="1" max="90">
+          </div>
+          <div class="col-md-6">
+            <label for="warrantyReminderDays" class="form-label fw-semibold">Warranty Expiry Reminder (Days Before)</label>
+            <input type="number" class="form-control" id="warrantyReminderDays" value="30" min="1" max="365">
+          </div>
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="trackMaintenanceCosts" checked>
+              <label class="form-check-label fw-semibold" for="trackMaintenanceCosts">
+                Track Maintenance Costs
+              </label>
+              <small class="d-block text-muted">Record costs for each maintenance activity</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Asset Transfer Settings -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="bi bi-arrow-left-right me-2"></i>Asset Transfer Settings</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="requireTransferReason" checked>
+              <label class="form-check-label fw-semibold" for="requireTransferReason">
+                Require Transfer Reason
+              </label>
+              <small class="d-block text-muted">Users must provide a reason for asset transfers</small>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="twoLevelApproval" checked>
+              <label class="form-check-label fw-semibold" for="twoLevelApproval">
+                Two-Level Approval Process
+              </label>
+              <small class="d-block text-muted">Receiver approval + Admin approval required</small>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="notifyOnTransfer" checked>
+              <label class="form-check-label fw-semibold" for="notifyOnTransfer">
+                Notify All Parties on Transfer
+              </label>
+              <small class="d-block text-muted">Send notifications to sender, receiver, and admins</small>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label for="transferApprovalTimeout" class="form-label fw-semibold">Approval Timeout (Days)</label>
+            <input type="number" class="form-control" id="transferApprovalTimeout" value="7" min="1" max="30">
+            <small class="text-muted">Auto-cancel pending transfers after this period</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Asset Disposal Settings -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-danger text-white">
+        <h5 class="mb-0"><i class="bi bi-trash me-2"></i>Asset Disposal Settings</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="requireDisposalApproval" checked>
+              <label class="form-check-label fw-semibold" for="requireDisposalApproval">
+                Require Admin Approval for Disposal
+              </label>
+              <small class="d-block text-muted">Asset retirement/disposal must be approved</small>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="softDeleteAssets" checked>
+              <label class="form-check-label fw-semibold" for="softDeleteAssets">
+                Soft Delete Assets
+              </label>
+              <small class="d-block text-muted">Mark as deleted instead of permanent deletion</small>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label for="disposalRetentionDays" class="form-label fw-semibold">Disposal Record Retention (Days)</label>
+            <input type="number" class="form-control" id="disposalRetentionDays" value="365" min="30" max="3650">
+            <small class="text-muted">Keep disposal records for audit purposes</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR Code & Barcode Settings -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-dark text-white">
+        <h5 class="mb-0"><i class="bi bi-qr-code me-2"></i>QR Code & Barcode Settings</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="autoGenerateQR" checked>
+              <label class="form-check-label fw-semibold" for="autoGenerateQR">
+                Auto-Generate QR Codes
+              </label>
+              <small class="d-block text-muted">Automatically create QR codes for new assets</small>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label for="qrCodeSize" class="form-label fw-semibold">QR Code Size (pixels)</label>
+            <input type="number" class="form-control" id="qrCodeSize" value="200" min="100" max="500" step="50">
+          </div>
+          <div class="col-md-6">
+            <label for="barcodeFormat" class="form-label fw-semibold">Barcode Format</label>
+            <select class="form-select" id="barcodeFormat">
+              <option value="code128" selected>Code 128</option>
+              <option value="code39">Code 39</option>
+              <option value="ean13">EAN-13</option>
+              <option value="upc">UPC</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

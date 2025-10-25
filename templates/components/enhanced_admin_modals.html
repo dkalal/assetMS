@@ -1,0 +1,442 @@
+{% load static %}
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #00A6EB 0%, #176B87 100%) !important;
+}
+</style>
+
+<!-- Enhanced Category Management Modal -->
+<div class="modal fade" id="enhancedCategoryManagementModal" tabindex="-1" aria-labelledby="enhancedCategoryManagementModalLabel" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header text-white" style="background: linear-gradient(135deg, #00A6EB 0%, #176B87 100%);">
+                <h5 class="modal-title fw-bold" id="enhancedCategoryManagementModalLabel">
+                    <i class="bi bi-folder-fill me-2"></i>Category Management
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Company Context Badge -->
+                <div class="mb-3">
+                    <span class="badge bg-light text-dark px-3 py-2 company-context-badge d-none">
+                        <i class="bi bi-building me-1"></i>Loading...
+                    </span>
+                </div>
+                
+                <!-- Statistics Cards -->
+                <div id="category-stats"></div>
+                
+                <!-- Actions Bar -->
+                <div class="d-flex justify-content-end align-items-center mb-3">
+                    <button class="btn btn-primary" onclick="if(window.wizard) { adminTools.closeCategoryManagementModal(); wizard.openWizard(); } else console.error('Wizard not loaded');">
+                        <i class="bi bi-magic me-2"></i>Create Category (Wizard)
+                    </button>
+                </div>
+                
+                <!-- Categories List -->
+                <div id="enhanced-categories-list">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Create Category Modal -->
+<div id="enhancedCategoryModal" class="custom-modal-overlay" tabindex="-1">
+    <div class="custom-modal glass-modal" role="dialog" aria-modal="true" style="max-width:600px;width:100%;">
+        <div class="custom-modal-header">
+            <h4 class="modal-title fw-bold mb-0">
+                <i class="bi bi-folder-plus me-2"></i>Create New Category
+            </h4>
+            <button type="button" class="custom-modal-close" onclick="adminTools.closeEnhancedCategoryModal()">
+                <span>&times;</span>
+            </button>
+        </div>
+        <form id="enhanced-category-form">
+            <div class="custom-modal-body">
+                <div id="enhanced-category-feedback" class="mb-3"></div>
+                
+                <div class="mb-4">
+                    <label for="enhanced-category-name" class="form-label fw-semibold">
+                        Category Name <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" class="form-control form-control-lg" id="enhanced-category-name" 
+                           name="name" maxlength="100" required autofocus 
+                           placeholder="e.g., Laptops, Vehicles, Furniture">
+                    <div class="form-text">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Choose a descriptive name for organizing your assets
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="enhanced-category-description" class="form-label fw-semibold">
+                        Description <span class="text-muted small">(optional)</span>
+                    </label>
+                    <textarea class="form-control" id="enhanced-category-description" name="description" 
+                              rows="3" maxlength="255" 
+                              placeholder="Describe this category and what types of assets it contains..."></textarea>
+                </div>
+            </div>
+            <div class="custom-modal-footer d-flex justify-content-end gap-2 p-3">
+                <button type="button" class="btn btn-outline-secondary px-4" onclick="adminTools.closeEnhancedCategoryModal()">
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-primary px-4 fw-bold">
+                    <i class="bi bi-check-lg me-2"></i>Create Category
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Enhanced Dynamic Fields Modal -->
+<div id="enhancedFieldsModal" class="custom-modal-overlay" tabindex="-1">
+    <div class="custom-modal glass-modal" role="dialog" aria-modal="true" style="max-width:900px;width:100%;">
+        <div class="custom-modal-header">
+            <h4 class="modal-title fw-bold mb-0">
+                <i class="bi bi-list-check me-2"></i>
+                Dynamic Fields: <span id="enhanced-fields-category-name"></span>
+            </h4>
+            <button type="button" class="custom-modal-close" onclick="adminTools.closeEnhancedFieldsModal()">
+                <span>&times;</span>
+            </button>
+        </div>
+        <div class="custom-modal-body">
+            <!-- Category Info Banner -->
+            <div id="field-category-info"></div>
+            
+            <!-- Action Bar -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0 fw-bold">Fields List</h6>
+                <button class="btn btn-sm btn-primary" onclick="adminTools.openAddFieldForm()">
+                    <i class="bi bi-plus-lg me-2"></i>Add Field
+                </button>
+            </div>
+            
+            <!-- Fields List -->
+            <div id="enhanced-fields-list">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Add/Edit Field Form -->
+            <div id="enhanced-field-form-section" class="d-none mt-4">
+                <div class="card border-primary">
+                    <div class="card-header bg-primary bg-opacity-10">
+                        <h6 class="mb-0 fw-bold text-primary" id="enhanced-field-title">Add New Field</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="enhanced-field-feedback" class="mb-3"></div>
+                        <form id="enhanced-field-form">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">
+                                        Field Key <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" id="enhanced-field-key" 
+                                           name="key" maxlength="50" required 
+                                           placeholder="e.g., serial_number">
+                                    <div class="form-text">Unique identifier (lowercase, underscores)</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">
+                                        Field Label <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" id="enhanced-field-label" 
+                                           name="label" maxlength="100" required 
+                                           placeholder="e.g., Serial Number">
+                                    <div class="form-text">Display name for users</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Field Type</label>
+                                    <select class="form-select" id="enhanced-field-type" name="type" required>
+                                        <option value="text">Text</option>
+                                        <option value="number">Number</option>
+                                        <option value="date">Date</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 d-flex align-items-end">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" 
+                                               id="enhanced-field-required" name="required">
+                                        <label class="form-check-label fw-semibold" for="enhanced-field-required">
+                                            Required Field
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end gap-2 mt-3">
+                                <button type="button" class="btn btn-outline-secondary" onclick="adminTools.closeFieldForm()">
+                                    Cancel
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-lg me-2"></i>Save Field
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="custom-modal-footer d-flex justify-content-end p-3">
+            <button type="button" class="btn btn-secondary" onclick="adminTools.closeEnhancedFieldsModal()">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Analytics Modal -->
+<div id="enhancedAnalyticsModal" class="custom-modal-overlay" tabindex="-1">
+    <div class="custom-modal glass-modal" role="dialog" aria-modal="true" style="max-width:1200px;width:100%;">
+        <div class="custom-modal-header">
+            <h4 class="modal-title fw-bold mb-0">
+                <i class="bi bi-graph-up me-2"></i>Category Analytics
+            </h4>
+            <button type="button" class="custom-modal-close" onclick="adminTools.closeAnalyticsModal()">
+                <span>&times;</span>
+            </button>
+        </div>
+        <div class="custom-modal-body" style="max-height: 70vh; overflow-y: auto;">
+            <div id="analytics-content">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="custom-modal-footer d-flex justify-content-end p-3">
+            <button type="button" class="btn btn-secondary" onclick="adminTools.closeAnalyticsModal()">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Category Creation Wizard -->
+<div id="categoryWizardModal" class="custom-modal-overlay" tabindex="-1">
+    <div class="custom-modal glass-modal wizard-modal" role="dialog" aria-modal="true" style="max-width:900px;width:100%;">
+        <div class="custom-modal-header">
+            <h4 class="modal-title fw-bold mb-0">
+                <i class="bi bi-magic me-2"></i>Create Category
+            </h4>
+            <button type="button" class="custom-modal-close" onclick="adminTools.closeWizard()">
+                <span>&times;</span>
+            </button>
+        </div>
+        
+        <!-- Progress Indicator -->
+        <div class="wizard-progress">
+            <div class="wizard-steps">
+                <div class="wizard-step active" data-step="1">
+                    <div class="wizard-step-number">1</div>
+                    <div class="wizard-step-label">Choose Path</div>
+                </div>
+                <div class="wizard-step-connector"></div>
+                <div class="wizard-step" data-step="2">
+                    <div class="wizard-step-number">2</div>
+                    <div class="wizard-step-label">Category Info</div>
+                </div>
+                <div class="wizard-step-connector"></div>
+                <div class="wizard-step" data-step="3">
+                    <div class="wizard-step-number">3</div>
+                    <div class="wizard-step-label">Add Fields</div>
+                </div>
+                <div class="wizard-step-connector"></div>
+                <div class="wizard-step" data-step="4">
+                    <div class="wizard-step-number">4</div>
+                    <div class="wizard-step-label">Review</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="custom-modal-body wizard-body">
+            <div id="wizard-feedback" class="mb-3"></div>
+            
+            <!-- Step 1: Choose Path -->
+            <div class="wizard-content" data-step="1">
+                <div class="text-center mb-4">
+                    <h5 class="fw-bold">How would you like to create your category?</h5>
+                    <p class="text-muted">Choose the method that works best for you</p>
+                </div>
+                
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="wizard-path-card" onclick="adminTools.selectWizardPath('template')">
+                            <div class="wizard-path-icon">
+                                <i class="bi bi-lightning-charge-fill"></i>
+                            </div>
+                            <h6 class="fw-bold mb-2">Use Template</h6>
+                            <p class="text-muted small mb-3">Quick start with pre-configured fields based on industry best practices</p>
+                            <div class="badge bg-success">Recommended</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="wizard-path-card" onclick="adminTools.selectWizardPath('custom')">
+                            <div class="wizard-path-icon">
+                                <i class="bi bi-pencil-square"></i>
+                            </div>
+                            <h6 class="fw-bold mb-2">Custom Setup</h6>
+                            <p class="text-muted small mb-3">Build from scratch with complete control over every field</p>
+                            <div class="badge bg-primary">Advanced</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Step 2a: Template Selection -->
+            <div class="wizard-content" data-step="2a" style="display:none;">
+                <div class="text-center mb-4">
+                    <h5 class="fw-bold">Choose a Template</h5>
+                    <p class="text-muted">Select a pre-configured template to get started quickly</p>
+                </div>
+                
+                <div id="template-grid" class="row g-3">
+                    <!-- Templates will be loaded here -->
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading templates...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Step 2b: Category Info -->
+            <div class="wizard-content" data-step="2b" style="display:none;">
+                <div class="text-center mb-4">
+                    <h5 class="fw-bold">Category Information</h5>
+                    <p class="text-muted">Provide basic details about your category</p>
+                </div>
+                
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div class="mb-4">
+                            <label for="wizard-category-name" class="form-label fw-semibold">
+                                Category Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control form-control-lg" id="wizard-category-name" 
+                                   maxlength="100" required placeholder="e.g., Laptops, Vehicles, Furniture">
+                            <div class="form-text">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Choose a clear, descriptive name for this category
+                            </div>
+                        </div>
+                        
+                        <div id="template-preview" class="alert alert-info" style="display:none;">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-info-circle fs-4 me-3"></i>
+                                <div>
+                                    <strong>Template Selected:</strong> <span id="selected-template-name"></span>
+                                    <br>
+                                    <small id="selected-template-desc"></small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Step 3: Add/Customize Fields -->
+            <div class="wizard-content" data-step="3" style="display:none;">
+                <div class="text-center mb-4">
+                    <h5 class="fw-bold">Configure Dynamic Fields</h5>
+                    <p class="text-muted">Add custom fields to capture specific asset information</p>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <div id="wizard-fields-list" class="mb-3">
+                            <!-- Fields will be listed here -->
+                        </div>
+                        
+                        <button type="button" class="btn btn-outline-primary" onclick="adminTools.addWizardField()">
+                            <i class="bi bi-plus-lg me-2"></i>Add Field
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <h6 class="fw-bold mb-3">
+                                    <i class="bi bi-lightbulb me-2"></i>Field Tips
+                                </h6>
+                                <ul class="small mb-0 ps-3">
+                                    <li class="mb-2">Use clear, descriptive labels</li>
+                                    <li class="mb-2">Mark essential fields as required</li>
+                                    <li class="mb-2">Choose appropriate field types</li>
+                                    <li class="mb-2">You can edit fields later</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Step 4: Review & Confirm -->
+            <div class="wizard-content" data-step="4" style="display:none;">
+                <div class="text-center mb-4">
+                    <h5 class="fw-bold">Review & Confirm</h5>
+                    <p class="text-muted">Check your configuration before creating the category</p>
+                </div>
+                
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-body">
+                                <h6 class="fw-bold mb-3">
+                                    <i class="bi bi-folder-fill me-2"></i>Category Details
+                                </h6>
+                                <div class="row">
+                                    <div class="col-sm-4 text-muted">Name:</div>
+                                    <div class="col-sm-8 fw-semibold" id="review-category-name"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body">
+                                <h6 class="fw-bold mb-3">
+                                    <i class="bi bi-list-check me-2"></i>Dynamic Fields
+                                    <span class="badge bg-primary ms-2" id="review-field-count">0</span>
+                                </h6>
+                                <div id="review-fields-list">
+                                    <!-- Fields will be listed here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="custom-modal-footer wizard-footer d-flex justify-content-between p-3">
+            <button type="button" class="btn btn-secondary" id="wizard-back-btn" onclick="adminTools.wizardPrevStep()" style="display:none;">
+                <i class="bi bi-arrow-left me-2"></i>Back
+            </button>
+            <div class="ms-auto d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary" onclick="adminTools.closeWizard()">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="wizard-next-btn" onclick="adminTools.wizardNextStep()">
+                    Next Step<i class="bi bi-arrow-right ms-2"></i>
+                </button>
+                <button type="button" class="btn btn-success" id="wizard-finish-btn" onclick="adminTools.wizardFinish()" style="display:none;">
+                    <i class="bi bi-check-lg me-2"></i>Create Category
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

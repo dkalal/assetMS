@@ -399,7 +399,22 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // --- Admin: Create Category Custom Modal Logic ---
+  // ============================================================================
+  // DEPRECATED: Legacy Create Category Modal Logic
+  // 
+  // This code has been replaced by the Category Wizard system.
+  // See: category-wizard.js and admin-tools-enhanced.js
+  // 
+  // The new system provides:
+  // - Template-based category creation
+  // - Guided wizard interface
+  // - Integrated field management
+  // - Better validation and UX
+  // 
+  // This code is kept commented for reference only.
+  // DO NOT UNCOMMENT - Use the new wizard system.
+  // ============================================================================
+  /*
   const openCreateCategoryBtn = document.getElementById('openCreateCategoryModal');
   const createCategoryModalCustom = document.getElementById('createCategoryModalCustom');
   const closeCreateCategoryModalBtn = document.getElementById('closeCreateCategoryModal');
@@ -448,7 +463,6 @@ document.addEventListener('DOMContentLoaded', function() {
         createCategoryFeedback.innerHTML = '<div class="alert alert-danger">Category name is required.</div>';
         return;
       }
-      // AJAX call to backend
       createCategoryFeedback.innerHTML = '<div class="alert alert-info">Creating category...</div>';
       const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
       fetch('/api/create-category/', {
@@ -476,6 +490,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     });
   }
+  */
   
   // --- Admin: Create User Custom Modal Logic ---
   const openCreateUserBtn = document.getElementById('openCreateUserModal');
@@ -735,7 +750,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // --- Admin: Dynamic Field Management Custom Modal Logic ---
+  // ============================================================================
+  // DEPRECATED: Legacy Dynamic Field Management Logic
+  // 
+  // This code has been replaced by the Category Wizard system.
+  // Dynamic fields are now managed during category creation in the wizard.
+  // 
+  // The new system provides:
+  // - Integrated field management in wizard
+  // - Template-based fields
+  // - Better validation and UX
+  // - Simplified workflow
+  // 
+  // This code is kept commented for reference only.
+  // DO NOT UNCOMMENT - Use the new wizard system.
+  // ============================================================================
+  /*
   const openDynamicFieldBtn = document.getElementById('openDynamicFieldModal');
   const dynamicFieldModalCustom = document.getElementById('dynamicFieldModalCustom');
   const closeDynamicFieldModalBtn = document.getElementById('closeDynamicFieldModal');
@@ -1035,6 +1065,8 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }
+  */
+  // End of deprecated dynamic field management code
   
   // --- Admin: Restore Backup Custom Modal Logic ---
   const openRestoreBtn = document.getElementById('openRestoreModal');

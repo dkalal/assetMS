@@ -2,6 +2,7 @@ import time
 import logging
 from django.http import JsonResponse
 from django.utils.deprecation import MiddlewareMixin
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +32,21 @@ class APIErrorHandlingMiddleware(MiddlewareMixin):
         if request.path.startswith('/api/'):
             logger.error(f"API Error in {request.path}: {str(exception)}", exc_info=True)
             
-            return JsonResponse({
-                'success': False,
-                'error': 'An internal error occurred. Please try again later.',
-                'error_code': 'INTERNAL_ERROR'
-            }, status=500)
+            # In DEBUG mode, return detailed error for development
+            # In production, return generic error for security
+            if settings.DEBUG:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Creation failed',
+                    'details': str(exception),
+                    'error_type': exception.__class__.__name__,
+                    'error_code': 'INTERNAL_ERROR'
+                }, status=500)
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'An internal error occurred. Please try again later.',
+                    'error_code': 'INTERNAL_ERROR'
+                }, status=500)
         
         return None

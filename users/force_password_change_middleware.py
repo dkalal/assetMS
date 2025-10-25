@@ -4,8 +4,11 @@ from django.shortcuts import redirect
 # Users URLs are included at root ('') in assetms/urls.py, so allowed paths should be root-based
 ALLOWED_PATH_PREFIXES = (
     '/password/change-required/',
+    '/users/password/change-required/',
     '/logout/',
+    '/users/logout/',
     '/login/',
+    '/users/login/',
     '/admin/login/',
     '/static/',
     '/media/',

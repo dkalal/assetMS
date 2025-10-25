@@ -40,33 +40,33 @@ class EnterpriseConcurrentSessionMiddleware(MiddlewareMixin):
         user_agent = request.META.get('HTTP_USER_AGENT', '')[:500]
         
         try:
-            with transaction.atomic():
-                # Find or create session with comprehensive matching
-                user_session = self.get_or_create_session(
-                    user=request.user,
-                    session_key=session_key,
-                    browser_fingerprint=browser_fingerprint,
-                    device_fingerprint=device_fingerprint,
-                    tab_id=tab_id,
-                    session_context=session_context,
-                    ip_address=ip_address,
-                    user_agent=user_agent
-                )
-                
-                # Update session activity
-                user_session.last_activity = timezone.now()
-                user_session.is_active = True
-                user_session.save(update_fields=['last_activity', 'is_active'])
-                
-                # Update user's last activity
-                User.objects.filter(id=request.user.id).update(last_activity=timezone.now())
-                
-                # Store session info in request
-                request.user_session = user_session
-                
-                # Cleanup expired sessions periodically
-                if self.should_cleanup():
-                    self.cleanup_expired_sessions()
+            # Find or create session with comprehensive matching
+            user_session = self.get_or_create_session(
+                user=request.user,
+                session_key=session_key,
+                browser_fingerprint=browser_fingerprint,
+                device_fingerprint=device_fingerprint,
+                tab_id=tab_id,
+                session_context=session_context,
+                ip_address=ip_address,
+                user_agent=user_agent
+            )
+            
+            # Update session activity (single query, no lock)
+            UserSession.objects.filter(pk=user_session.pk).update(
+                last_activity=timezone.now(),
+                is_active=True
+            )
+            
+            # Update user's last activity (single query, no lock)
+            User.objects.filter(id=request.user.id).update(last_activity=timezone.now())
+            
+            # Store session info in request
+            request.user_session = user_session
+            
+            # Cleanup expired sessions periodically (reduced frequency)
+            if self.should_cleanup():
+                self.cleanup_expired_sessions()
                     
         except Exception as e:
             logger.error(f"Session middleware error: {e}")
@@ -76,17 +76,22 @@ class EnterpriseConcurrentSessionMiddleware(MiddlewareMixin):
     def get_or_create_session(self, **kwargs):
         """Get or create session with proper concurrency handling"""
         try:
-            # Try to find existing session
-            session = UserSession.objects.get(
+            # Use update_or_create for atomic operation (reduces lock contention)
+            session, created = UserSession.objects.update_or_create(
                 user=kwargs['user'],
                 session_key=kwargs['session_key'],
                 browser_fingerprint=kwargs['browser_fingerprint'],
-                session_context=kwargs['session_context']
+                session_context=kwargs['session_context'],
+                defaults={
+                    'device_fingerprint': kwargs['device_fingerprint'],
+                    'tab_id': kwargs['tab_id'],
+                    'ip_address': kwargs['ip_address'],
+                    'user_agent': kwargs['user_agent'],
+                    'last_activity': timezone.now(),
+                    'is_active': True,
+                }
             )
             return session
-        except UserSession.DoesNotExist:
-            # Create new session
-            return UserSession.objects.create(**kwargs)
         except UserSession.MultipleObjectsReturned:
             # Handle edge case of duplicate sessions
             sessions = UserSession.objects.filter(
@@ -100,6 +105,13 @@ class EnterpriseConcurrentSessionMiddleware(MiddlewareMixin):
             active_session = sessions.first()
             sessions.exclude(id=active_session.id).update(is_active=False, logout_reason='duplicate')
             return active_session
+        except Exception as e:
+            logger.error(f"Session creation error: {e}")
+            # Return a minimal session object to prevent request failure
+            return UserSession.objects.filter(
+                user=kwargs['user'],
+                session_key=kwargs['session_key']
+            ).first() or UserSession.objects.create(**kwargs)
     
     def generate_browser_fingerprint(self, request):
         """Generate enhanced browser fingerprint for better uniqueness"""
@@ -158,9 +170,9 @@ class EnterpriseConcurrentSessionMiddleware(MiddlewareMixin):
         return ip
     
     def should_cleanup(self):
-        """Determine if cleanup should run (1% chance)"""
+        """Determine if cleanup should run (0.1% chance to reduce load)"""
         import random
-        return random.randint(1, 100) == 1
+        return random.randint(1, 1000) == 1
     
     def cleanup_expired_sessions(self):
         """Clean up expired sessions"""

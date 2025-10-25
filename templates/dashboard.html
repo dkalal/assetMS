@@ -8,79 +8,95 @@
   <script src="{% static 'js/dashboard.js' %}"></script>
 {% endblock %}
 {% block content %}
-  {% include "components/sidebar.html" %}
-  {% include "components/topbar.html" %}
+  {% include "components/sidebar_enhanced.html" %}
   <div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
   <main class="dashboard-content">
     <h2 class="mb-4">Assets Dashboard</h2>
-    <!-- KPI Cards (presentational only) -->
-    <section aria-label="Key Performance Indicators" class="mb-4">
+    
+    <!-- VISUAL INSIGHTS - Charts at Top (World-Class Layout) -->
+    <section id="dashboard-charts" class="mb-4">
+      <h4 class="mb-3"><i class="bi bi-bar-chart-line me-2"></i>Analytics Overview</h4>
       <div class="row g-3">
-        <div class="col-12 col-sm-6 col-lg-3">
-          <div class="card shadow-sm glass h-100">
-            <div class="card-body d-flex align-items-center justify-content-between">
+        <div class="col-md-6 col-lg-3">
+          <div class="glass p-3 h-100">
+            <h6 class="mb-2">Assets by Category</h6>
+            <canvas id="chart-category" height="140"></canvas>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <div class="glass p-3 h-100">
+            <h6 class="mb-2">Asset Acquisition</h6>
+            <canvas id="chart-acquisition" height="140"></canvas>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <div class="glass p-3 h-100">
+            <h6 class="mb-2">By Department</h6>
+            <canvas id="chart-department" height="140"></canvas>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <div class="glass p-3 h-100">
+            <h6 class="mb-2">By Location</h6>
+            <canvas id="chart-location" height="140"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- KPI METRIC WIDGETS (Compact & Professional) -->
+    <section aria-label="Key Performance Indicators" class="mb-4">
+      <h4 class="mb-3"><i class="bi bi-speedometer2 me-2"></i>Key Metrics</h4>
+      <div class="row g-3">
+        <div class="col-6 col-sm-6 col-lg-3">
+          <div class="card shadow-sm glass h-100" style="min-height: 100px;">
+            <div class="card-body p-3 d-flex align-items-center justify-content-between">
               <div>
-                <div class="text-muted small">Total Assets</div>
-                <div class="display-6 fw-bold" aria-live="polite" aria-atomic="true"><span id="kpi-total">—</span></div>
-                <div class="small text-success"><i class="bi bi-arrow-up-right"></i> +0.0%</div>
-                <div class="placeholder-glow mt-1" aria-hidden="true">
-                  <span class="placeholder col-6"></span>
-                </div>
+                <div class="text-muted small mb-1">Total Assets</div>
+                <div class="h3 fw-bold mb-0" aria-live="polite"><span id="kpi-total">—</span></div>
               </div>
-              <div class="kpi-icon text-primary" aria-hidden="true">
-                <i class="bi bi-box-seam" style="font-size: 1.75rem;"></i>
+              <div class="text-primary opacity-75" aria-hidden="true">
+                <i class="bi bi-box-seam" style="font-size: 2rem;"></i>
               </div>
             </div>
           </div>
         </div>
-        <div class="col-12 col-sm-6 col-lg-3">
-          <div class="card shadow-sm glass h-100">
-            <div class="card-body d-flex align-items-center justify-content-between">
+        <div class="col-6 col-sm-6 col-lg-3">
+          <div class="card shadow-sm glass h-100" style="min-height: 100px;">
+            <div class="card-body p-3 d-flex align-items-center justify-content-between">
               <div>
-                <div class="text-muted small">Active Assets</div>
-                <div class="display-6 fw-bold" aria-live="polite" aria-atomic="true"><span id="kpi-active">—</span></div>
-                <div class="small text-muted">vs Retired <span id="kpi-retired-pct" class="badge bg-secondary-subtle text-secondary">—%</span></div>
-                <div class="placeholder-glow mt-1" aria-hidden="true">
-                  <span class="placeholder col-7"></span>
-                </div>
+                <div class="text-muted small mb-1">Active Assets</div>
+                <div class="h3 fw-bold mb-0 text-success" aria-live="polite"><span id="kpi-active">—</span></div>
               </div>
-              <div class="kpi-icon text-success" aria-hidden="true">
-                <i class="bi bi-activity" style="font-size: 1.75rem;"></i>
+              <div class="text-success opacity-75" aria-hidden="true">
+                <i class="bi bi-activity" style="font-size: 2rem;"></i>
               </div>
             </div>
           </div>
         </div>
-        <div class="col-12 col-sm-6 col-lg-3">
-          <div class="card shadow-sm glass h-100">
-            <div class="card-body d-flex align-items-center justify-content-between">
+        <div class="col-6 col-sm-6 col-lg-3">
+          <div class="card shadow-sm glass h-100" style="min-height: 100px;">
+            <div class="card-body p-3 d-flex align-items-center justify-content-between">
               <div>
-                <div class="text-muted small">Needs Repair</div>
-                <div class="display-6 fw-bold" aria-live="polite" aria-atomic="true"><span id="kpi-repair">—</span></div>
-                <div class="small text-warning"><i class="bi bi-tools"></i> maintenance</div>
-                <div class="placeholder-glow mt-1" aria-hidden="true">
-                  <span class="placeholder col-5"></span>
-                </div>
+                <div class="text-muted small mb-1">Needs Repair</div>
+                <div class="h3 fw-bold mb-0 text-warning" aria-live="polite"><span id="kpi-repair">—</span></div>
               </div>
-              <div class="kpi-icon text-warning" aria-hidden="true">
-                <i class="bi bi-wrench" style="font-size: 1.75rem;"></i>
+              <div class="text-warning opacity-75" aria-hidden="true">
+                <i class="bi bi-wrench" style="font-size: 2rem;"></i>
               </div>
             </div>
           </div>
         </div>
         {% if user.is_authenticated and user.role != 'user' %}
-        <div class="col-12 col-sm-6 col-lg-3">
-          <div class="card shadow-sm glass h-100">
-            <div class="card-body d-flex align-items-center justify-content-between">
+        <div class="col-6 col-sm-6 col-lg-3">
+          <div class="card shadow-sm glass h-100" style="min-height: 100px;">
+            <div class="card-body p-3 d-flex align-items-center justify-content-between">
               <div>
-                <div class="text-muted small">Approvals</div>
-                <div class="display-6 fw-bold" aria-live="polite" aria-atomic="true"><span id="kpi-approvals">—</span></div>
-                <div class="small text-danger"><i class="bi bi-exclamation-triangle"></i> pending</div>
-                <div class="placeholder-glow mt-1" aria-hidden="true">
-                  <span class="placeholder col-6"></span>
-                </div>
+                <div class="text-muted small mb-1">Approvals</div>
+                <div class="h3 fw-bold mb-0 text-danger" aria-live="polite"><span id="kpi-approvals">—</span></div>
               </div>
-              <div class="kpi-icon text-danger" aria-hidden="true">
-                <i class="bi bi-bell" style="font-size: 1.75rem;"></i>
+              <div class="text-danger opacity-75" aria-hidden="true">
+                <i class="bi bi-bell" style="font-size: 2rem;"></i>
               </div>
             </div>
           </div>
@@ -88,10 +104,100 @@
         {% endif %}
       </div>
     </section>
-    <!-- Cards, table, and real-time widgets will go here -->
-    <div id="dashboard-widgets">
-      <!-- Real-time data cards and table will be loaded here via AJAX/JS -->
-    </div>
+
+    <!-- COMPREHENSIVE ASSET STATUS WIDGETS (Compact Grid) -->
+    <section aria-label="Asset Status Overview" class="mb-4">
+      <h4 class="mb-3"><i class="bi bi-grid-3x3-gap me-2"></i>Asset Status</h4>
+      <div class="row g-2">
+        <div class="col-4 col-sm-3 col-md-2">
+          <a href="/assets/?status=retired" class="text-decoration-none">
+            <div class="card shadow-sm glass h-100 hover-lift" style="cursor: pointer; min-height: 90px;">
+              <div class="card-body text-center p-2">
+                <div style="font-size: 1.8rem;" class="mb-1">🗑️</div>
+                <div class="fw-bold h6 mb-1" aria-live="polite"><span id="widget-retired">—</span></div>
+                <div class="text-muted" style="font-size: 0.7rem;">Retired</div>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="col-4 col-sm-3 col-md-2">
+          <a href="/assets/?status=lost" class="text-decoration-none">
+            <div class="card shadow-sm glass h-100 hover-lift" style="cursor: pointer; min-height: 90px;">
+              <div class="card-body text-center p-2">
+                <div style="font-size: 1.8rem;" class="mb-1">❌</div>
+                <div class="fw-bold h6 mb-1" aria-live="polite"><span id="widget-lost">—</span></div>
+                <div class="text-muted" style="font-size: 0.7rem;">Lost</div>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="col-4 col-sm-3 col-md-2">
+          <a href="/assets/?assigned_to=exists" class="text-decoration-none">
+            <div class="card shadow-sm glass h-100 hover-lift" style="cursor: pointer; min-height: 90px;">
+              <div class="card-body text-center p-2">
+                <div style="font-size: 1.8rem;" class="mb-1">👤</div>
+                <div class="fw-bold h6 mb-1" aria-live="polite"><span id="widget-assigned">—</span></div>
+                <div class="text-muted" style="font-size: 0.7rem;">Assigned</div>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="col-4 col-sm-3 col-md-2">
+          <a href="/assets/?assigned_to=none" class="text-decoration-none">
+            <div class="card shadow-sm glass h-100 hover-lift" style="cursor: pointer; min-height: 90px;">
+              <div class="card-body text-center p-2">
+                <div style="font-size: 1.8rem;" class="mb-1">👥</div>
+                <div class="fw-bold h6 mb-1" aria-live="polite"><span id="widget-unassigned">—</span></div>
+                <div class="text-muted" style="font-size: 0.7rem;">Unassigned</div>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="col-4 col-sm-3 col-md-2">
+          <a href="/assets/?warranty_expiring=soon" class="text-decoration-none">
+            <div class="card shadow-sm glass h-100 hover-lift" style="cursor: pointer; min-height: 90px;">
+              <div class="card-body text-center p-2">
+                <div style="font-size: 1.8rem;" class="mb-1">⏳</div>
+                <div class="fw-bold h6 mb-1" aria-live="polite"><span id="widget-warranty-expiring">—</span></div>
+                <div class="text-muted" style="font-size: 0.7rem;">Warranty</div>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="col-4 col-sm-3 col-md-2">
+          <a href="/assets/transfers/" class="text-decoration-none">
+            <div class="card shadow-sm glass h-100 hover-lift" style="cursor: pointer; min-height: 90px;">
+              <div class="card-body text-center p-2">
+                <div style="font-size: 1.8rem;" class="mb-1">🔄</div>
+                <div class="fw-bold h6 mb-1" aria-live="polite"><span id="widget-transferred">—</span></div>
+                <div class="text-muted" style="font-size: 0.7rem;">Transferred</div>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        {% if user.is_authenticated and user.role != 'user' %}
+        <div class="col-4 col-sm-3 col-md-2">
+          <a href="/settings/users/?filter=no_assets" class="text-decoration-none">
+            <div class="card shadow-sm glass h-100 hover-lift" style="cursor: pointer; min-height: 90px;">
+              <div class="card-body text-center p-2">
+                <div style="font-size: 1.8rem;" class="mb-1">👨‍💼</div>
+                <div class="fw-bold h6 mb-1" aria-live="polite"><span id="widget-users-no-assets">—</span></div>
+                <div class="text-muted" style="font-size: 0.7rem;">Unassigned Users</div>
+              </div>
+            </div>
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- Widgets are now displayed above - no duplication -->
     <section id="dashboard-activity-feeds" class="mb-5">
       <div class="row g-4">
         <div class="col-md-6">
@@ -198,41 +304,6 @@
           <span id="activity-log-page-info" class="mx-2"></span>
           <button id="activity-log-next" class="btn btn-outline-primary btn-sm" disabled>Next</button>
         </nav>
-      </div>
-    </section>
-    <section id="dashboard-charts" style="margin-top:32px;">
-      <h3 class="mb-3">Visual Insights</h3>
-      <div class="row g-4">
-        <div class="col-md-6">
-          <div class="glass p-3 mb-4">
-            <h5>Assets by Category</h5>
-            <canvas id="chart-category" height="220"></canvas>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="glass p-3 mb-4">
-            <h5>Asset Acquisition Over Time</h5>
-            <canvas id="chart-acquisition" height="220"></canvas>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="glass p-3 mb-4">
-            <h5>Assets by Department</h5>
-            <canvas id="chart-department" height="220"></canvas>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="glass p-3 mb-4">
-            <h5>Assets by Location</h5>
-            <canvas id="chart-location" height="220"></canvas>
-          </div>
-        </div>
-        {% comment %} <div class="col-md-12">
-          <div class="glass p-3 mb-4">
-            <h5>Depreciation / Value Trend</h5>
-            <canvas id="chart-depreciation" height="220"></canvas>
-          </div>
-        </div> {% endcomment %}
       </div>
     </section>
   </main>

@@ -335,6 +335,9 @@
 
             <form method="post" id="loginForm" action="{% url 'users:login' %}">
                 {% csrf_token %}
+                {% if redirect_field_value %}
+                    <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+                {% endif %}
                 
                 <div class="form-floating">
                     <input type="text" class="form-control" id="id_username" name="username" 

@@ -1,0 +1,629 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ staff.get_full_name }} - Staff Detail{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<style>
+:root {
+    --accent-primary: #176B87;
+    --accent-secondary: #64CCC5;
+    --accent-success: #10b981;
+    --accent-warning: #f59e0b;
+    --accent-danger: #ef4444;
+}
+
+.staff-hero {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    border-radius: 20px;
+    padding: 2.5rem;
+    color: white;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 40px rgba(23, 107, 135, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.staff-hero::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+.staff-avatar-large {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+}
+
+.metric-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.metric-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+}
+
+.metric-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.metric-icon.primary {
+    background: linear-gradient(135deg, #176B87 0%, #64CCC5 100%);
+    color: white;
+}
+
+.metric-icon.success {
+    background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+    color: white;
+}
+
+.metric-icon.warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+    color: white;
+}
+
+.metric-icon.danger {
+    background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+    color: white;
+}
+
+.metric-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+}
+
+.metric-label {
+    color: #6b7280;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.nav-tabs-modern {
+    border-bottom: 2px solid #e5e7eb;
+    margin-bottom: 2rem;
+}
+
+.nav-tabs-modern .nav-link {
+    border: none;
+    padding: 1rem 1.5rem;
+    color: #6b7280;
+    font-weight: 600;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nav-tabs-modern .nav-link:hover {
+    color: var(--accent-primary);
+    background: rgba(23, 107, 135, 0.05);
+    border-radius: 8px 8px 0 0;
+}
+
+.nav-tabs-modern .nav-link.active {
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
+}
+
+.info-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+    margin-bottom: 1.5rem;
+}
+
+.info-card-header {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.info-value {
+    color: #111827;
+    font-weight: 600;
+    text-align: right;
+}
+
+.asset-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+    margin-bottom: 1rem;
+    cursor: pointer;
+}
+
+.asset-card:hover {
+    border-color: var(--accent-primary);
+    box-shadow: 0 4px 12px rgba(23, 107, 135, 0.1);
+    transform: translateX(4px);
+}
+
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.5rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 2rem;
+}
+
+.timeline-dot {
+    position: absolute;
+    left: -1.5rem;
+    top: 0.5rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    box-shadow: 0 0 0 4px rgba(23, 107, 135, 0.2);
+}
+
+.timeline-content {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border: 1px solid #e5e7eb;
+}
+
+.status-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.action-btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumbs.html' with root_label='Dashboard' root_url='/dashboard/' parent_label='Staff Management' parent_url='/settings/users/' current_label=staff.get_full_name %}
+
+<!-- Hero Section -->
+<div class="staff-hero">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <div class="staff-avatar-large">
+                {{ staff.first_name.0|upper }}{{ staff.last_name.0|upper }}
+            </div>
+            <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">
+                {{ staff.get_full_name }}
+            </h1>
+            <p style="font-size: 1.1rem; opacity: 0.9; margin-bottom: 0;">
+                <i class="bi bi-{% if staff.role == 'admin' %}shield{% elif staff.role == 'manager' %}briefcase{% else %}person{% endif %} me-2"></i>{{ staff.get_role_display }}
+                {% if staff.company %}
+                <i class="bi bi-building ms-3 me-2"></i>{{ staff.company.name }}
+                {% endif %}
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <span class="status-badge" style="background: rgba(255, 255, 255, 0.25); color: white; font-size: 1rem; padding: 0.6rem 1.2rem;">
+                <i class="bi bi-{{ staff.is_active|yesno:'check-circle,x-circle' }}"></i>
+                {{ staff.is_active|yesno:'Active,Inactive' }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Action Bar -->
+<div class="mb-4 no-print" style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+    {% if user.role == 'admin' %}
+    <button class="action-btn btn btn-primary">
+        <i class="bi bi-pencil-square"></i>Edit Profile
+    </button>
+    <button class="action-btn btn btn-warning">
+        <i class="bi bi-box-arrow-right"></i>Transfer Assets
+    </button>
+    {% endif %}
+    <button class="action-btn btn btn-info" onclick="window.print()">
+        <i class="bi bi-printer"></i>Print
+    </button>
+    <a href="{% url 'settings:user_management' %}" class="action-btn btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>Back to List
+    </a>
+</div>
+
+<!-- Metrics Row -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="metric-card">
+            <div class="metric-icon primary">
+                <i class="bi bi-box-seam"></i>
+            </div>
+            <div class="metric-value">{{ total_assets }}</div>
+            <div class="metric-label">Total Assets</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="metric-card">
+            <div class="metric-icon success">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <div class="metric-value">{{ active_assets }}</div>
+            <div class="metric-label">Active Assets</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="metric-card">
+            <div class="metric-icon warning">
+                <i class="bi bi-currency-dollar"></i>
+            </div>
+            <div class="metric-value">${{ total_value|floatformat:0 }}</div>
+            <div class="metric-label">Total Value</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="metric-card">
+            <div class="metric-icon primary">
+                <i class="bi bi-activity"></i>
+            </div>
+            <div class="metric-value">{{ recent_activity_count }}</div>
+            <div class="metric-label">Recent Activities</div>
+            <small class="text-muted">Last 30 days</small>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs-modern no-print" id="staffTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button">
+            <i class="bi bi-grid"></i>Overview
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="assets-tab" data-bs-toggle="tab" data-bs-target="#assets" type="button">
+            <i class="bi bi-box-seam"></i>Assets ({{ total_assets }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity" type="button">
+            <i class="bi bi-clock-history"></i>Activity
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="transfers-tab" data-bs-toggle="tab" data-bs-target="#transfers" type="button">
+            <i class="bi bi-arrow-left-right"></i>Transfers
+        </button>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content" id="staffTabsContent">
+    <!-- Overview Tab -->
+    <div class="tab-pane fade show active" id="overview" role="tabpanel">
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <!-- Personal Information -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="bi bi-person"></i>Personal Information
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Full Name</span>
+                        <span class="info-value">{{ staff.get_full_name }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email</span>
+                        <span class="info-value">{{ staff.email }}</span>
+                    </div>
+                    {% if staff.phone_number %}
+                    <div class="info-row">
+                        <span class="info-label">Phone</span>
+                        <span class="info-value">{{ staff.phone_number }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="info-row">
+                        <span class="info-label">Role</span>
+                        <span class="info-value">{{ staff.get_role_display }}</span>
+                    </div>
+                    {% if staff.company %}
+                    <div class="info-row">
+                        <span class="info-label">Company</span>
+                        <span class="info-value">{{ staff.company.name }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="info-row">
+                        <span class="info-label">Date Joined</span>
+                        <span class="info-value">{{ staff.date_joined|date:'F d, Y' }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Account Age</span>
+                        <span class="info-value">{{ account_age_days }} days</span>
+                    </div>
+                </div>
+
+                <!-- Asset Summary -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="bi bi-box-seam"></i>Asset Summary
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Total Assets</span>
+                        <span class="info-value">{{ total_assets }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Active</span>
+                        <span class="info-value text-success">{{ active_assets }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">In Maintenance</span>
+                        <span class="info-value text-warning">{{ maintenance_assets }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Total Value</span>
+                        <span class="info-value">${{ total_value }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Quick Stats -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="bi bi-graph-up"></i>Quick Stats
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Status</span>
+                        <span class="info-value">
+                            <span class="status-badge" style="background: {{ staff.is_active|yesno:'rgba(16, 185, 129, 0.1),rgba(107, 114, 128, 0.1)' }}; color: {{ staff.is_active|yesno:'#10b981,#6b7280' }};">
+                                {{ staff.is_active|yesno:'Active,Inactive' }}
+                            </span>
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Last Activity</span>
+                        <span class="info-value small">
+                            {% if last_activity %}
+                                {{ last_activity.timestamp|date:'M d, H:i' }}
+                            {% else %}
+                                No activity
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Activities (30d)</span>
+                        <span class="info-value">{{ recent_activity_count }}</span>
+                    </div>
+                </div>
+
+                <!-- Recent Assets -->
+                {% if assigned_assets %}
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="bi bi-clock"></i>Recent Assets
+                    </div>
+                    {% for asset in assigned_assets|slice:":3" %}
+                    <div class="asset-card" onclick="window.location.href='/assets/{{ asset.uuid }}/'">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-box-seam me-2" style="font-size: 1.5rem; color: var(--accent-primary);"></i>
+                            <div class="flex-grow-1">
+                                <div style="font-weight: 600; color: #111827;">{{ asset.category.name }}</div>
+                                <small class="text-muted">{{ asset.created_at|date:'M d, Y' }}</small>
+                            </div>
+                            <span class="badge bg-{{ asset.status|default:'secondary' }}">{{ asset.get_status_display }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Assets Tab -->
+    <div class="tab-pane fade" id="assets" role="tabpanel">
+        <div class="info-card">
+            <div class="info-card-header">
+                <i class="bi bi-box-seam"></i>Assigned Assets
+            </div>
+            {% for asset in assigned_assets %}
+            <div class="asset-card" onclick="window.location.href='/assets/{{ asset.uuid }}/'">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-box-seam me-3" style="font-size: 2rem; color: var(--accent-primary);"></i>
+                            <div>
+                                <div style="font-weight: 700; color: #111827; font-size: 1.05rem;">{{ asset.category.name }}</div>
+                                <small class="text-muted">
+                                    <i class="bi bi-calendar me-1"></i>{{ asset.created_at|date:'M d, Y' }}
+                                    {% if asset.branch %}<i class="bi bi-building ms-2 me-1"></i>{{ asset.branch.name }}{% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        {% if asset.purchase_value %}
+                        <div style="font-weight: 700; color: var(--accent-primary);">${{ asset.purchase_value }}</div>
+                        <small class="text-muted">Value</small>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <span class="status-badge" style="background: {% if asset.status == 'active' %}rgba(16, 185, 129, 0.1){% elif asset.status == 'in_maintenance' %}rgba(245, 158, 11, 0.1){% else %}rgba(107, 114, 128, 0.1){% endif %}; color: {% if asset.status == 'active' %}#10b981{% elif asset.status == 'in_maintenance' %}#f59e0b{% else %}#6b7280{% endif %};">
+                            {{ asset.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-5">
+                <i class="bi bi-box-seam" style="font-size: 4rem; color: #e5e7eb;"></i>
+                <p class="text-muted mt-3">No assets assigned</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Activity Tab -->
+    <div class="tab-pane fade" id="activity" role="tabpanel">
+        <div class="info-card">
+            <div class="info-card-header">
+                <i class="bi bi-clock-history"></i>Activity Timeline
+            </div>
+            <div class="timeline">
+                {% for activity in activities %}
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="d-flex justify-content-between mb-2">
+                            <strong style="color: var(--accent-primary);">{{ activity.get_action_display }}</strong>
+                            <small class="text-muted">{{ activity.timestamp|date:'M d, Y H:i' }}</small>
+                        </div>
+                        <p class="mb-1 small text-muted">{{ activity.details|default:'' }}</p>
+                        {% if activity.asset %}
+                        <small class="text-muted">
+                            <i class="bi bi-box-seam me-1"></i>{{ activity.asset.category.name }}
+                        </small>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-5">
+                    <i class="bi bi-clock-history" style="font-size: 4rem; color: #e5e7eb;"></i>
+                    <p class="text-muted mt-3">No activities recorded</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Transfers Tab -->
+    <div class="tab-pane fade" id="transfers" role="tabpanel">
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="bi bi-arrow-down-circle"></i>Assets Received
+                    </div>
+                    {% for transfer in transfers_received %}
+                    <div style="padding: 1rem; border-bottom: 1px solid #f3f4f6;">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <strong>{{ transfer.asset.category.name }}</strong>
+                                <small class="d-block text-muted">From: {{ transfer.from_user.get_full_name }}</small>
+                            </div>
+                            <span class="badge bg-{{ transfer.state|default:'secondary' }}">{{ transfer.get_state_display }}</span>
+                        </div>
+                        <small class="text-muted">
+                            <i class="bi bi-calendar me-1"></i>{{ transfer.created_at|date:'M d, Y' }}
+                        </small>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center py-4">No assets received</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="bi bi-arrow-up-circle"></i>Assets Sent
+                    </div>
+                    {% for transfer in transfers_sent %}
+                    <div style="padding: 1rem; border-bottom: 1px solid #f3f4f6;">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <strong>{{ transfer.asset.category.name }}</strong>
+                                <small class="d-block text-muted">To: {{ transfer.to_user.get_full_name }}</small>
+                            </div>
+                            <span class="badge bg-{{ transfer.state|default:'secondary' }}">{{ transfer.get_state_display }}</span>
+                        </div>
+                        <small class="text-muted">
+                            <i class="bi bi-calendar me-1"></i>{{ transfer.created_at|date:'M d, Y' }}
+                        </small>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center py-4">No assets sent</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

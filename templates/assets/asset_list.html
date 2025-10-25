@@ -5,6 +5,84 @@
 {% block content %}
 {% include 'components/breadcrumbs.html' with root_label='Dashboard' root_url='/dashboard/' current_label='Assets' %}
 
+<!-- Statistics Dashboard -->
+{% if statistics %}
+<div class="row g-3 mb-4">
+  <div class="col-md-2">
+    <a href="?" class="text-decoration-none">
+      <div class="glass p-3 rounded-3 h-100" style="transition: all 0.3s ease; cursor: pointer; border: 1px solid rgba(0,0,0,0.05);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';" onmouseout="this.style.transform=''; this.style.boxShadow='';">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted small">Total Assets</span>
+          <i class="bi bi-boxes text-primary fs-5"></i>
+        </div>
+        <div class="h3 mb-1 fw-bold">{{ statistics.total|default:0 }}</div>
+        <div class="small text-primary">View all →</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-2">
+    <a href="?status=active" class="text-decoration-none">
+      <div class="glass p-3 rounded-3 h-100" style="transition: all 0.3s ease; cursor: pointer; border: 1px solid rgba(0,0,0,0.05);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';" onmouseout="this.style.transform=''; this.style.boxShadow='';">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted small">Active</span>
+          <i class="bi bi-check-circle text-success fs-5"></i>
+        </div>
+        <div class="h3 mb-1 fw-bold text-success">{{ statistics.active|default:0 }}</div>
+        <div class="small text-success">Filter →</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-2">
+    <a href="?status=maintenance" class="text-decoration-none">
+      <div class="glass p-3 rounded-3 h-100" style="transition: all 0.3s ease; cursor: pointer; border: 1px solid rgba(0,0,0,0.05);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';" onmouseout="this.style.transform=''; this.style.boxShadow='';">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted small">Maintenance</span>
+          <i class="bi bi-tools text-warning fs-5"></i>
+        </div>
+        <div class="h3 mb-1 fw-bold text-warning">{{ statistics.in_maintenance|default:0 }}</div>
+        <div class="small text-warning">Filter →</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-2">
+    <a href="?status=retired" class="text-decoration-none">
+      <div class="glass p-3 rounded-3 h-100" style="transition: all 0.3s ease; cursor: pointer; border: 1px solid rgba(0,0,0,0.05);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';" onmouseout="this.style.transform=''; this.style.boxShadow='';">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted small">Retired</span>
+          <i class="bi bi-archive text-secondary fs-5"></i>
+        </div>
+        <div class="h3 mb-1 fw-bold text-secondary">{{ statistics.retired|default:0 }}</div>
+        <div class="small text-secondary">Filter →</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-2">
+    <a href="?assigned=yes" class="text-decoration-none">
+      <div class="glass p-3 rounded-3 h-100" style="transition: all 0.3s ease; cursor: pointer; border: 1px solid rgba(0,0,0,0.05);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';" onmouseout="this.style.transform=''; this.style.boxShadow='';">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted small">Assigned</span>
+          <i class="bi bi-person-check text-info fs-5"></i>
+        </div>
+        <div class="h3 mb-1 fw-bold text-info">{{ statistics.assigned|default:0 }}</div>
+        <div class="small text-info">Filter →</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-2">
+    <a href="?assigned=no" class="text-decoration-none">
+      <div class="glass p-3 rounded-3 h-100" style="transition: all 0.3s ease; cursor: pointer; border: 1px solid rgba(0,0,0,0.05);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';" onmouseout="this.style.transform=''; this.style.boxShadow='';">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted small">Unassigned</span>
+          <i class="bi bi-person-x text-danger fs-5"></i>
+        </div>
+        <div class="h3 mb-1 fw-bold text-danger">{{ statistics.unassigned|default:0 }}</div>
+        <div class="small text-danger">Filter →</div>
+      </div>
+    </a>
+  </div>
+</div>
+{% endif %}
+
 <ul class="nav nav-tabs section-tabs" role="tablist" aria-label="Assets filters">
   <li class="nav-item" role="presentation">
     <a class="nav-link {% if not request.GET.status and not request.GET.assigned %}active{% endif %}" href="{% url 'asset_list' %}">All</a>
@@ -20,50 +98,104 @@
   </li>
 </ul>
 <h2 class="mb-4">All Assets</h2>
-<form method="get" class="row g-2 mb-3 align-items-end">
+<!-- World-Class Filter Bar -->
+<form method="get" class="row g-3 mb-4 align-items-end">
     <div class="col-md-3">
-        <label class="form-label">Category</label>
+        <label class="form-label fw-semibold">
+            <i class="bi bi-folder2 me-1 text-primary"></i>Category
+        </label>
         <select name="category" class="form-select" id="category-select">
-            <option value="">All</option>
+            <option value="">All Categories</option>
             {% for cat in categories %}
-            <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:'s' %}selected{% endif %}>{{ cat.name }}</option>
+            <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:'s' %}selected{% endif %}>
+                {{ cat.name }} ({{ cat.asset_count }} asset{{ cat.asset_count|pluralize }})
+            </option>
             {% endfor %}
         </select>
     </div>
+    
     <div class="col-md-2">
-        <label class="form-label">Status</label>
+        <label class="form-label fw-semibold">
+            <i class="bi bi-circle-fill me-1 text-success"></i>Status
+        </label>
         <select name="status" class="form-select">
-            <option value="">All</option>
+            <option value="">All Statuses</option>
             {% for val, label in statuses %}
             <option value="{{ val }}" {% if request.GET.status == val %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
     </div>
+    
+    {% if branches %}
     <div class="col-md-2">
-        <label class="form-label">Location</label>
-        <input type="text" name="location" class="form-control" value="{{ request.GET.location }}">
+        <label class="form-label fw-semibold">
+            <i class="bi bi-geo-alt me-1 text-info"></i>Branch
+        </label>
+        <select name="branch" class="form-select">
+            <option value="">All Branches</option>
+            {% for branch in branches %}
+            <option value="{{ branch.id }}" {% if request.GET.branch == branch.id|stringformat:'s' %}selected{% endif %}>
+                {{ branch.name }}
+            </option>
+            {% endfor %}
+        </select>
     </div>
+    {% endif %}
+    
     <div class="col-md-3">
-        <label class="form-label">Search</label>
-        <input type="text" name="search" class="form-control" placeholder="Name, Model, Description" value="{{ request.GET.search }}">
+        <label class="form-label fw-semibold">
+            <i class="bi bi-search me-1 text-secondary"></i>Search
+        </label>
+        <input type="text" 
+               name="search" 
+               class="form-control" 
+               placeholder="Search by name, model, or description..." 
+               value="{{ request.GET.search|default:'' }}">
     </div>
-    <div class="col-md-2 d-flex flex-column">
-        <button type="submit" class="btn btn-primary w-100 mb-1">Filter</button>
-        <a href="?" class="btn btn-outline-secondary w-100">Clear Filters</a>
+    
+    <div class="col-md-2 d-flex flex-column gap-2">
+        <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-funnel"></i> Apply Filters
+        </button>
+        {% if request.GET.category or request.GET.status or request.GET.branch or request.GET.search %}
+        <a href="?" class="btn btn-outline-secondary w-100">
+            <i class="bi bi-x-circle"></i> Clear All
+        </a>
+        {% endif %}
     </div>
     {% if dynamic_fields %}
+        <!-- Dynamic Category Fields -->
         <div class="w-100"></div>
+        <div class="col-12">
+            <div class="alert alert-light border d-flex align-items-center py-2 mb-0">
+                <i class="bi bi-sliders2 me-2 text-primary"></i>
+                <strong class="small">Category-Specific Filters</strong>
+            </div>
+        </div>
         {% for field in dynamic_fields %}
+        {% with dyn_key='dyn_'|add:field.key %}
         <div class="col-md-3">
-            <label class="form-label">{{ field.label }}</label>
+            <label class="form-label small fw-semibold">{{ field.label }}</label>
             {% if field.type == 'text' %}
-                <input type="text" name="dyn_{{ field.key }}" class="form-control" value="{{ request.GET|get_item:'dyn_'|add:field.key }}">
+                <input type="text" 
+                       name="dyn_{{ field.key }}" 
+                       class="form-control form-control-sm" 
+                       placeholder="Enter {{ field.label|lower }}..." 
+                       value="{{ request.GET|get_item:dyn_key|default:'' }}">
             {% elif field.type == 'number' %}
-                <input type="number" name="dyn_{{ field.key }}" class="form-control" value="{{ request.GET|get_item:'dyn_'|add:field.key }}">
+                <input type="number" 
+                       name="dyn_{{ field.key }}" 
+                       class="form-control form-control-sm" 
+                       placeholder="Enter {{ field.label|lower }}..." 
+                       value="{{ request.GET|get_item:dyn_key|default:'' }}">
             {% elif field.type == 'date' %}
-                <input type="text" name="dyn_{{ field.key }}" class="form-control" placeholder="mm/dd/yyyy" value="{{ request.GET|get_item:'dyn_'|add:field.key }}">
+                <input type="date" 
+                       name="dyn_{{ field.key }}" 
+                       class="form-control form-control-sm" 
+                       value="{{ request.GET|get_item:dyn_key|default:'' }}">
             {% endif %}
         </div>
+        {% endwith %}
         {% endfor %}
     {% endif %}
 </form>
@@ -165,7 +297,10 @@
           {% endfor %}
           <td>
             <div class="d-flex gap-1">
-              <a href="{% url 'asset_detail' asset.pk %}?internal=1" class="btn btn-sm btn-outline-primary" title="View asset details">
+              <a href="{% url 'asset_detail' asset.pk %}?internal=1" 
+                 class="btn btn-sm btn-outline-primary view-asset-btn" 
+                 title="View asset details"
+                 onclick="event.preventDefault(); window.location.href=this.href;">
                 <i class="bi bi-eye"></i>
               </a>
               {% if perms.assets.delete_asset %}
@@ -199,6 +334,82 @@
     </table>
   </div>
 </div>
+
+<!-- World-Class Pagination Controls -->
+{% if is_paginated %}
+<nav aria-label="Asset pagination" class="mt-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div class="text-muted small">
+      Showing <strong>{{ page_obj.start_index }}</strong>-<strong>{{ page_obj.end_index }}</strong> of <strong>{{ paginator.count }}</strong> assets
+    </div>
+    
+    <ul class="pagination mb-0">
+      {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page=1" aria-label="First" title="First page">
+            <i class="bi bi-chevron-double-left"></i>
+          </a>
+        </li>
+        <li class="page-item">
+          <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}" aria-label="Previous" title="Previous page">
+            <i class="bi bi-chevron-left"></i>
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link"><i class="bi bi-chevron-double-left"></i></span>
+        </li>
+        <li class="page-item disabled">
+          <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+        </li>
+      {% endif %}
+      
+      {% for num in paginator.page_range %}
+        {% if page_obj.number == num %}
+          <li class="page-item active" aria-current="page">
+            <span class="page-link">{{ num }}</span>
+          </li>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+          <li class="page-item">
+            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a>
+          </li>
+        {% endif %}
+      {% endfor %}
+      
+      {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}" aria-label="Next" title="Next page">
+            <i class="bi bi-chevron-right"></i>
+          </a>
+        </li>
+        <li class="page-item">
+          <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ paginator.num_pages }}" aria-label="Last" title="Last page">
+            <i class="bi bi-chevron-double-right"></i>
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+        </li>
+        <li class="page-item disabled">
+          <span class="page-link"><i class="bi bi-chevron-double-right"></i></span>
+        </li>
+      {% endif %}
+    </ul>
+    
+    <div class="d-flex align-items-center gap-2">
+      <label for="page-size-select" class="text-muted small mb-0">Per page:</label>
+      <select id="page-size-select" class="form-select form-select-sm" style="width: auto;" onchange="changePageSize(this.value)">
+        <option value="20" {% if request.GET.page_size == '20' or not request.GET.page_size %}selected{% endif %}>20</option>
+        <option value="50" {% if request.GET.page_size == '50' %}selected{% endif %}>50</option>
+        <option value="100" {% if request.GET.page_size == '100' %}selected{% endif %}>100</option>
+        <option value="200" {% if request.GET.page_size == '200' %}selected{% endif %}>200</option>
+      </select>
+    </div>
+  </div>
+</nav>
+{% endif %}
+
 <!-- Mobile Scan FAB -->
 <a href="{% url 'asset_scan' %}" class="btn btn-primary rounded-circle position-fixed d-sm-none"
    style="width:56px;height:56px;right:1rem;bottom:1rem;box-shadow:0 10px 20px rgba(0,0,0,.15);"
@@ -245,9 +456,11 @@
     </div>
   </div>
 </div>
-{% endblock %}
+
 <!-- Include Delete Modal -->
 {% include 'components/delete_modal.html' %}
+
+{% endblock %}
 
 {% block extra_scripts %}
 {% load static %}
@@ -445,5 +658,13 @@
         new AssetDeletion();
     });
 })();
+
+// Page size selector function
+function changePageSize(size) {
+    const url = new URL(window.location);
+    url.searchParams.set('page_size', size);
+    url.searchParams.delete('page'); // Reset to page 1
+    window.location = url;
+}
 </script>
 {% endblock %}

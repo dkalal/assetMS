@@ -51,3 +51,18 @@ html,
 .dropdown-menu {
   background: rgba(255, 255, 255, 0.95) !important;
 }
+
+/* Ensure navbar dropdowns sit above glass content and sidebars */
+.enterprise-navbar .dropdown-menu,
+.enterprise-navbar .dropdown-menu.show {
+  z-index: 11050 !important;
+  position: absolute;
+}
+
+/* ============================================================================
+   MODAL Z-INDEX FIX - DEPRECATED
+   Modal z-index is now handled by modal-zindex-fix.css (loaded last in base.html)
+   This section kept for reference only
+   ============================================================================ */
+
+/* All modal z-index rules moved to static/css/modal-zindex-fix.css */

@@ -1,0 +1,24 @@
+<div id="deleteModalCustom" class="custom-modal-overlay" tabindex="-1" aria-hidden="true">
+  <div class="glass-modal" role="dialog" aria-modal="true" aria-labelledby="deleteModalLabel">
+    <div class="custom-modal-header d-flex align-items-center justify-content-between">
+      <h4 class="modal-title fw-bold mb-0" id="deleteModalLabel">
+        <i class="bi bi-trash3 me-2 text-danger"></i>Confirm Deletion
+      </h4>
+      <button type="button" class="custom-modal-close" id="closeDeleteModal" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+    <div class="custom-modal-body">
+      <div id="delete-message" class="mb-3">
+        Are you sure you want to delete these assets? This action cannot be undone.
+      </div>
+      <form id="delete-form">
+        <input type="hidden" name="ids" id="delete-asset-ids" value="">
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <button type="button" class="btn btn-outline-secondary" id="cancelDelete">Cancel</button>
+          <button type="submit" class="btn btn-danger">Delete</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

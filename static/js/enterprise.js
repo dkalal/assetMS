@@ -29,7 +29,8 @@ function telemetryEvent(evt) {
   } catch (_) { /* no-op */ }
 }
 
-class EnterpriseFramework {
+if (typeof window.EnterpriseFramework === 'undefined') {
+window.EnterpriseFramework = class EnterpriseFramework {
   constructor() {
     this.init();
   }
@@ -534,12 +535,17 @@ class EnterpriseFramework {
       console.log('Telemetry Event:', event);
     }
   }
+};
+} // End guard clause
+
+// Initialize framework
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => new window.EnterpriseFramework());
+} else {
+  new window.EnterpriseFramework();
 }
 
-// Initialize framework when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-  window.enterpriseFramework = new EnterpriseFramework();
-  // Attempt to hydrate notifications (presentational; no backend change required)
+// Attempt to hydrate notifications (presentational; no backend change required)
   (function hydrateNotifications() {
     const badge = document.getElementById('notifBadge');
     const trigger = document.getElementById('notifDropdown');
@@ -623,9 +629,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial fetch and schedule
     run();
   })();
-});
 
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = EnterpriseFramework;
+  module.exports = window.EnterpriseFramework;
 }

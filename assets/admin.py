@@ -106,7 +106,20 @@ class AssetAdmin(ImportExportModelAdmin):
     actions = ['export_as_pdf']
     fieldsets = (
         (None, {
-            'fields': ('category', 'status', 'assigned_to', 'description', 'purchase_value', 'purchase_date', 'depreciation_method', 'useful_life_years', 'qr_code', 'images', 'documents', 'dynamic_data')
+            'fields': (
+                'category',
+                'status',
+                'assigned_to',
+                'description',
+                'purchase_value',
+                'purchase_date',
+                'depreciation_method',
+                'useful_life_years',
+                'qr_code',
+                'images',
+                'documents',
+                'dynamic_data',
+            )
         }),
     )
     def export_as_pdf(self, request, queryset):
@@ -123,12 +136,13 @@ class AssetAdmin(ImportExportModelAdmin):
         if change and old_obj and old_obj.assigned_to != obj.assigned_to and obj.assigned_to:
             log_audit(request.user, ASSIGN_ACTION, obj, f'Asset assigned to {obj.assigned_to.username} via admin', related_user=obj.assigned_to)
         # Maintenance logging
-        if change and old_obj and old_obj.status != obj.status and obj.status == 'maintenance':
+        if change and old_obj and old_obj.status != obj.status and obj.status == Asset.STATUS_IN_MAINTENANCE:
             log_audit(request.user, MAINTENANCE_ACTION, obj, 'Asset marked as under maintenance via admin')
 
     def has_change_permission(self, request, obj=None):
         # Only admin and manager can change
         return request.user.is_authenticated and getattr(request.user, 'role', None) in ('admin', 'manager')
+
 
 @admin.register(AssetCategoryField)
 class AssetCategoryFieldAdmin(admin.ModelAdmin):

@@ -278,14 +278,23 @@ function fetchAndRenderAllActivityFeeds() {
 
 function loadDashboardData() {
   const t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+  
+  // WORLD-CLASS: Show loading state
+  showLoadingState();
+  
   Promise.all([
-    fetch('/dashboard_summary_api/').then(r => {
-      const t1 = (window.performance && performance.now) ? performance.now() : Date.now();
-      window.telemetryEvent({ name: 'dashboard_summary_fetch', ok: r.ok, status: r.status, duration_ms: t1 - t0, url: '/dashboard_summary_api/' });
-      return r.json();
-    })
-    // Removed fetch('/dashboard_activity_api/') and renderActivityTable
+    fetch('/dashboard_summary_api/')
+      .then(r => {
+        const t1 = (window.performance && performance.now) ? performance.now() : Date.now();
+        window.telemetryEvent({ name: 'dashboard_summary_fetch', ok: r.ok, status: r.status, duration_ms: t1 - t0, url: '/dashboard_summary_api/' });
+        if (!r.ok) {
+          throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+        }
+        return r.json();
+      })
   ]).then(([summary]) => {
+    // WORLD-CLASS: Hide loading state
+    hideLoadingState();
     // Hydrate static KPI cards if present
     try {
       const kpis = (summary && summary.kpis) ? summary.kpis : {};
@@ -308,20 +317,76 @@ function loadDashboardData() {
         const pct = Math.round((kpis.retired_assets / kpis.total_assets) * 100);
         retiredBadge.textContent = pct + '%';
       }
+
+      // WORLD-CLASS: Update comprehensive asset status widgets
+      const widgetUpdates = [
+        { id: 'widget-retired', key: 'retired_assets' },
+        { id: 'widget-lost', key: 'lost_assets' },
+        { id: 'widget-assigned', key: 'assigned_assets' },
+        { id: 'widget-unassigned', key: 'unassigned_assets' },
+        { id: 'widget-warranty-expiring', key: 'warranty_expiring_soon' },
+        { id: 'widget-transferred', key: 'transferred_assets' },
+        { id: 'widget-users-no-assets', key: 'users_with_no_assets' }
+      ];
+
+      widgetUpdates.forEach(widget => {
+        const el = document.getElementById(widget.id);
+        if (el) {
+          const value = (typeof kpis[widget.key] !== 'undefined') ? kpis[widget.key] : 0;
+          el.textContent = value;
+          // Add animation class for visual feedback
+          el.classList.add('widget-updated');
+          setTimeout(() => el.classList.remove('widget-updated'), 400);
+        }
+      });
     } catch (_) { /* no-op */ }
 
-      const widgets = [
-        renderDashboardCards(summary)
-        // Removed legacy activity table rendering
-      ].join('');
-      document.getElementById('dashboard-widgets').innerHTML = widgets;
+      // Widget cards are now in HTML template - no need to generate here
+      // Widgets are populated by the code above (lines 313-332)
     }).catch((err) => {
       const t1 = (window.performance && performance.now) ? performance.now() : Date.now();
       window.telemetryEvent({ name: 'dashboard_summary_fetch_error', ok: false, duration_ms: t1 - t0, url: '/dashboard_summary_api/', ctx: { error: String(err && err.message || err) } });
+      
+      // WORLD-CLASS: Show error state with retry option
+      hideLoadingState();
+      showErrorState('Failed to load dashboard data. Please try again.', () => loadDashboardData());
+      console.error('Dashboard data load error:', err);
     });
   }
 
-// Chart.js integration for dashboard charts
+// WORLD-CLASS: Loading state management
+function showLoadingState() {
+  const kpiElements = ['kpi-total', 'kpi-active', 'kpi-repair', 'kpi-approvals'];
+  kpiElements.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+    }
+  });
+}
+
+function hideLoadingState() {
+  // Loading indicators will be replaced by actual data
+}
+
+function showErrorState(message, retryCallback) {
+  const kpiElements = ['kpi-total', 'kpi-active', 'kpi-repair', 'kpi-approvals'];
+  kpiElements.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = '—';
+    }
+  });
+  
+  // Show error toast if available
+  if (window.showToast) {
+    window.showToast(message, 'danger');
+  } else {
+    console.error(message);
+  }
+}
+
+// WORLD-CLASS: Chart.js integration with error handling and loading states
 function renderDashboardCharts() {
   const chartConfigs = [
     { id: 'chart-category', type: 'doughnut', chart: 'category', label: 'Assets by Category' },
@@ -333,21 +398,45 @@ function renderDashboardCharts() {
   chartConfigs.forEach(cfg => {
     const url = `/dashboard_chart_data_api/?chart=${cfg.chart}`;
     const t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+    const ctx = document.getElementById(cfg.id);
+    
+    // WORLD-CLASS: Show loading spinner
+    if (ctx && ctx.parentNode) {
+      const loadingDiv = document.createElement('div');
+      loadingDiv.className = 'text-center py-3';
+      loadingDiv.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+      loadingDiv.id = `${cfg.id}-loading`;
+      ctx.parentNode.insertBefore(loadingDiv, ctx);
+      ctx.style.display = 'none';
+    }
+    
     fetch(url)
       .then(r => {
         const t1 = (window.performance && performance.now) ? performance.now() : Date.now();
         window.telemetryEvent({ name: 'dashboard_chart_fetch', ok: r.ok, status: r.status, duration_ms: t1 - t0, url, ctx: { chart: cfg.chart } });
+        if (!r.ok) {
+          throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+        }
         return r.json();
       })
       .then(data => {
         const ctx = document.getElementById(cfg.id);
         if (!ctx) return;
+        
+        // WORLD-CLASS: Remove loading spinner and show canvas
+        const loadingDiv = document.getElementById(`${cfg.id}-loading`);
+        if (loadingDiv) loadingDiv.remove();
+        ctx.style.display = 'block';
+        
         // Destroy previous chart instance if exists
         if (ctx._chartInstance) {
           ctx._chartInstance.destroy();
         }
         if (!data || !data.labels || !data.data || data.data.every(v => v === 0)) {
-          ctx.parentNode.querySelector('h5').innerHTML += ' <span style="color:#888;font-size:0.95rem;">(No data)</span>';
+          const heading = ctx.parentNode.querySelector('h6, h5');
+          if (heading && !heading.textContent.includes('No data')) {
+            heading.innerHTML += ' <span style="color:#888;font-size:0.85rem;">(No data)</span>';
+          }
           return;
         }
         ctx._chartInstance = new Chart(ctx, {
@@ -383,8 +472,20 @@ function renderDashboardCharts() {
       .catch((err) => {
         const t1 = (window.performance && performance.now) ? performance.now() : Date.now();
         window.telemetryEvent({ name: 'dashboard_chart_fetch_error', ok: false, duration_ms: t1 - t0, url, ctx: { chart: cfg.chart, error: String(err && err.message || err) } });
+        
+        // WORLD-CLASS: Remove loading spinner and show error
+        const loadingDiv = document.getElementById(`${cfg.id}-loading`);
+        if (loadingDiv) loadingDiv.remove();
+        
         const ctx = document.getElementById(cfg.id);
-        if (ctx) ctx.parentNode.querySelector('h5').innerHTML += ' <span style="color:#888;font-size:0.95rem;">(Error loading data)</span>';
+        if (ctx) {
+          ctx.style.display = 'block';
+          const heading = ctx.parentNode.querySelector('h6, h5');
+          if (heading && !heading.textContent.includes('Error')) {
+            heading.innerHTML += ' <span style="color:#dc3545;font-size:0.85rem;">(Error loading data)</span>';
+          }
+        }
+        console.error(`Chart ${cfg.chart} error:`, err);
       });
   });
 }

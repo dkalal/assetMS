@@ -1,0 +1,280 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Create Approval Request · AssetPro{% endblock %}
+
+{% block extra_scripts %}
+{{ block.super }}
+<script>
+  (function () {
+    'use strict';
+
+    const deadlineInput = document.getElementById('{{ form.deadline.id_for_label }}');
+    const quickButtons = document.querySelectorAll('.deadline-quick-set');
+    const clearButton = document.querySelector('.deadline-clear');
+    const summary = document.getElementById('deadline-summary');
+
+    if (!deadlineInput || !summary) {
+      return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const minDate = today.toISOString().slice(0, 10);
+    if (!deadlineInput.getAttribute('min')) {
+      deadlineInput.setAttribute('min', minDate);
+    }
+
+    const DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+
+    function formatISODate(date) {
+      const copy = new Date(date.getTime());
+      copy.setHours(0, 0, 0, 0);
+      return copy.toISOString().slice(0, 10);
+    }
+
+    function describeDeadline(value) {
+      if (!value) {
+        summary.textContent = 'No deadline selected. Reviewers will apply the standard SLA.';
+        return;
+      }
+
+      const target = new Date(value);
+      if (Number.isNaN(target.getTime())) {
+        summary.textContent = 'Invalid date selected. Please choose a valid deadline.';
+        return;
+      }
+
+      target.setHours(0, 0, 0, 0);
+      const diffMs = target.getTime() - today.getTime();
+      const diffDays = Math.round(diffMs / 86400000);
+
+      let message;
+      if (diffDays < 0) {
+        message = `⚠️ Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? '' : 's'} (${DATE_FORMATTER.format(target)})`;
+      } else if (diffDays === 0) {
+        message = `Due today (${DATE_FORMATTER.format(target)})`;
+      } else if (diffDays === 1) {
+        message = `Due in 1 day (${DATE_FORMATTER.format(target)})`;
+      } else {
+        message = `Due in ${diffDays} days (${DATE_FORMATTER.format(target)})`;
+      }
+
+      summary.textContent = message;
+    }
+
+    function setDeadlineFromOffset(days) {
+      const target = new Date();
+      target.setHours(0, 0, 0, 0);
+      target.setDate(target.getDate() + Number(days));
+      deadlineInput.value = formatISODate(target);
+      deadlineInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    deadlineInput.addEventListener('change', (event) => {
+      describeDeadline(event.target.value);
+    });
+
+    quickButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const { deadlineDays } = button.dataset;
+        if (deadlineDays) {
+          setDeadlineFromOffset(deadlineDays);
+        }
+      });
+    });
+
+    if (clearButton) {
+      clearButton.addEventListener('click', () => {
+        deadlineInput.value = '';
+        deadlineInput.dispatchEvent(new Event('change', { bubbles: true }));
+        deadlineInput.focus({ preventScroll: true });
+      });
+    }
+
+    describeDeadline(deadlineInput.value);
+  })();
+</script>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+      
+      <!-- Header -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h1 class="h3 mb-1 fw-bold">
+            <i class="bi bi-file-earmark-plus me-2 text-primary"></i>Create Approval Request
+          </h1>
+          <p class="text-muted mb-0">Submit a request for manager or admin approval</p>
+        </div>
+        <a href="{% url 'approval_dashboard' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left me-1"></i>Back
+        </a>
+      </div>
+
+      <!-- Form Card -->
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <form method="post">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+              <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong>Please correct the following errors:</strong>
+                <ul class="mb-0 mt-2">
+                  {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                      <li>{{ field|title }}: {{ error }}</li>
+                    {% endfor %}
+                  {% endfor %}
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endif %}
+
+            <div class="row g-3">
+              <!-- Request Type -->
+              <div class="col-md-6">
+                <label for="{{ form.request_type.id_for_label }}" class="form-label fw-semibold">
+                  Request Type <span class="text-danger">*</span>
+                </label>
+                {{ form.request_type }}
+                <small class="form-text text-muted">Select the type of approval you need</small>
+              </div>
+
+              <!-- Priority -->
+              <div class="col-md-6">
+                <label for="{{ form.priority.id_for_label }}" class="form-label fw-semibold">
+                  Priority <span class="text-danger">*</span>
+                </label>
+                {{ form.priority }}
+                <small class="form-text text-muted">How urgent is this request?</small>
+              </div>
+
+              <!-- Branch -->
+              <div class="col-md-6">
+                <label for="{{ form.branch.id_for_label }}" class="form-label fw-semibold">
+                  Branch <span class="text-danger">*</span>
+                </label>
+                {{ form.branch }}
+                <small class="form-text text-muted">Which branch is this request for?</small>
+              </div>
+
+              <!-- Deadline -->
+              <div class="col-md-6">
+                <label for="{{ form.deadline.id_for_label }}" class="form-label fw-semibold">
+                  Deadline <span class="text-muted small">(Optional)</span>
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text" id="deadline-addon" aria-hidden="true">
+                    <i class="bi bi-calendar-event"></i>
+                  </span>
+                  {{ form.deadline.as_widget(attrs={'class': 'form-control', 'aria-describedby': 'deadline-help deadline-summary', 'aria-labelledby': form.deadline.id_for_label}) }}
+                </div>
+                <div class="d-flex flex-wrap gap-2 mt-2" aria-label="Quick deadline shortcuts">
+                  <button type="button" class="btn btn-sm btn-outline-primary deadline-quick-set" data-deadline-days="3">
+                    +3 days
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-primary deadline-quick-set" data-deadline-days="7">
+                    +1 week
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-primary deadline-quick-set" data-deadline-days="14">
+                    +2 weeks
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-primary deadline-quick-set" data-deadline-days="30">
+                    +30 days
+                  </button>
+                  <button type="button" class="btn btn-sm btn-link text-decoration-none deadline-clear" aria-label="Clear deadline">
+                    Clear
+                  </button>
+                </div>
+                <small id="deadline-help" class="form-text text-muted">
+                  Set an internal target for reviewers. Leave blank for standard SLA.
+                </small>
+                <div id="deadline-summary" class="small text-muted mt-1" role="status" aria-live="polite"></div>
+              </div>
+
+              <!-- Title -->
+              <div class="col-12">
+                <label for="{{ form.title.id_for_label }}" class="form-label fw-semibold">
+                  Title <span class="text-danger">*</span>
+                </label>
+                {{ form.title }}
+                <small class="form-text text-muted">Brief summary of your request</small>
+              </div>
+
+              <!-- Description -->
+              <div class="col-12">
+                <label for="{{ form.description.id_for_label }}" class="form-label fw-semibold">
+                  Description <span class="text-danger">*</span>
+                </label>
+                {{ form.description }}
+                <small class="form-text text-muted">Provide detailed information about your request</small>
+              </div>
+
+              <!-- Metadata (Optional) -->
+              <div class="col-12">
+                <div class="alert alert-info" role="alert">
+                  <i class="bi bi-info-circle me-2"></i>
+                  <strong>Note:</strong> Your request will be automatically assigned to the branch manager for review. 
+                  If no manager is assigned, it will go to an administrator.
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="col-12">
+                <hr class="my-4">
+                <div class="d-flex justify-content-between">
+                  <a href="{% url 'approval_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                  </a>
+                  <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-send me-1"></i>Submit Request
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Help Section -->
+      <div class="card border-0 bg-light mt-4">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3">
+            <i class="bi bi-question-circle me-2"></i>Request Types Explained
+          </h6>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <strong>Asset Transfer:</strong>
+              <p class="text-muted small mb-0">Request to move an asset between branches</p>
+            </div>
+            <div class="col-md-6">
+              <strong>Asset Maintenance:</strong>
+              <p class="text-muted small mb-0">Request approval for scheduled maintenance</p>
+            </div>
+            <div class="col-md-6">
+              <strong>Asset Disposal:</strong>
+              <p class="text-muted small mb-0">Request to dispose of or retire an asset</p>
+            </div>
+            <div class="col-md-6">
+              <strong>Budget Approval:</strong>
+              <p class="text-muted small mb-0">Request approval for budget allocation</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -3,7 +3,8 @@
  */
 
 // Global ID registry to prevent conflicts
-class EnterpriseIdRegistry {
+if (typeof window.EnterpriseIdRegistry === 'undefined') {
+window.EnterpriseIdRegistry = class EnterpriseIdRegistry {
   constructor() {
     this.usedIds = new Set();
   }
@@ -35,12 +36,16 @@ class EnterpriseIdRegistry {
   isIdUsed(id) {
     return this.usedIds.has(id) || document.getElementById(id) !== null;
   }
-}
+};
+} // End guard clause
 
 // Global instance
-const enterpriseIdRegistry = new EnterpriseIdRegistry();
+if (typeof window.enterpriseIdRegistry === 'undefined') {
+  window.enterpriseIdRegistry = new window.EnterpriseIdRegistry();
+}
 
-class EnterpriseTable {
+if (typeof window.EnterpriseTable === 'undefined') {
+window.EnterpriseTable = class EnterpriseTable {
   constructor(tableElement, options = {}) {
     this.table = tableElement;
     this.tableId = this.generateUniqueId(tableElement);
@@ -489,7 +494,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (table.closest('.enterprise-table-container')) return;
     
     // Initialize with default options
-    new EnterpriseTable(table, {
+    new window.EnterpriseTable(table, {
       sortable: true,
       selectable: table.querySelector('input[type="checkbox"]') !== null,
       searchable: true,
@@ -497,8 +502,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 });
+} // End EnterpriseTable guard clause
 
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = EnterpriseTable;
+  module.exports = window.EnterpriseTable;
 }

@@ -14,4 +14,7 @@ urlpatterns = [
     
     # Profile
     path('profile/', views.profile, name='profile'),
+    
+    # API Endpoints
+    path('api/list/', views.api_user_list, name='api_user_list'),
 ]

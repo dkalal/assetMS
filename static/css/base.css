@@ -186,3 +186,29 @@ h3 { font-size: 1.5rem; font-weight: 600; }
   border-top: 1px solid var(--neutral-200);
   background: var(--neutral-50);
 }
+
+/* Bootstrap Modal Z-Index Fix - DEPRECATED
+   NOTE: Modal z-index is now handled by modal-zindex-fix.css
+   These rules are kept for backward compatibility but will be overridden
+*/
+.modal-backdrop {
+  z-index: 10500 !important;
+}
+
+.modal {
+  z-index: 10600 !important;
+}
+
+.modal-dialog {
+  z-index: inherit;
+}
+
+/* Ensure modals are interactive and above glass containers */
+body.modal-open {
+  overflow: hidden;
+}
+
+body.modal-open .modal {
+  overflow-x: hidden;
+  overflow-y: auto;
+}

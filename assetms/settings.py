@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
 import dj_database_url
 from dotenv import load_dotenv
@@ -35,6 +36,8 @@ DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
 # include your Railway app domain in the default ALLOWED_HOSTS fallback
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+
+TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
 
 # CSRF Settings for Enterprise Security
 CSRF_TRUSTED_ORIGINS = [
@@ -63,6 +66,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'import_export',
     # Project apps
+    'tenancy',
     'users',
     'assets',
     'categories',
@@ -86,6 +90,7 @@ MIDDLEWARE = [
     'users.concurrent_session_middleware.SessionTimeoutMiddleware',
     'users.admin_isolation_middleware.AdminSessionIsolationMiddleware',
     'users.session_middleware.LoginLogoutMiddleware',
+    'tenancy.middleware.TenancyMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'users.middleware.PerformanceMonitoringMiddleware',
@@ -105,6 +110,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'users.context_processors.user_view_data',
+                'tenancy.context_processors.tenancy_context',
             ],
         },
     },
@@ -115,7 +121,6 @@ WSGI_APPLICATION = 'assetms.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
 def _env(name: str, default: str | None = None):
     return os.getenv(name, default)
 
@@ -166,8 +171,11 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [str(BASE_DIR / "static")]
 
-# WhiteNoise: compressed static files
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# WhiteNoise: compressed static files (manifest only in non-debug/non-test)
+if DEBUG or TESTING:
+    STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
+else:
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Configure WhiteNoise to serve media files in production
 WHITENOISE_USE_FINDERS = True
@@ -185,7 +193,7 @@ STORAGES = {
         "BACKEND": "assetms.storage_backends.MultiStorageBackend",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": STATICFILES_STORAGE,
     },
 }
 

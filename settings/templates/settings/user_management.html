@@ -377,6 +377,104 @@
   </div>
   
 </div>
+
+<!-- User Status Change Confirmation Modal (WORLD-CLASS) -->
+<div id="statusChangeModal" class="custom-modal-overlay">
+  <div class="custom-modal glass-modal" style="max-width: 600px;">
+    <div class="custom-modal-header">
+      <h5 class="modal-title fw-bold mb-0">
+        <i class="bi bi-exclamation-circle me-2" id="statusModalIcon"></i>
+        <span id="statusModalTitle">Confirm User Status Change</span>
+      </h5>
+      <button type="button" class="custom-modal-close" id="closeStatusModal">
+        <span>&times;</span>
+      </button>
+    </div>
+    
+    <div class="custom-modal-body">
+      <!-- Alert Message -->
+      <div class="alert alert-warning d-flex align-items-start mb-4" id="statusAlertBox">
+        <i class="bi bi-info-circle-fill me-2 mt-1" style="font-size: 1.2rem;"></i>
+        <div>
+          <strong id="statusAlertTitle">Important Action</strong>
+          <p class="mb-0 small" id="statusAlertMessage">
+            You are about to change this user's account status. Please provide a reason for this action.
+          </p>
+        </div>
+      </div>
+      
+      <!-- User Info -->
+      <div class="card border-0 bg-light mb-4">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <small class="text-muted d-block mb-1">User</small>
+              <strong id="statusUserName">-</strong>
+            </div>
+            <div class="col-md-6">
+              <small class="text-muted d-block mb-1">Email</small>
+              <strong id="statusUserEmail">-</strong>
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col-md-6">
+              <small class="text-muted d-block mb-1">Current Status</small>
+              <span id="statusCurrentBadge"></span>
+            </div>
+            <div class="col-md-6">
+              <small class="text-muted d-block mb-1">New Status</small>
+              <span id="statusNewBadge"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Reason Input (MANDATORY) -->
+      <div class="mb-3">
+        <label class="form-label fw-semibold">
+          Reason for Status Change <span class="text-danger">*</span>
+        </label>
+        <textarea 
+          class="form-control" 
+          id="statusChangeReason" 
+          rows="4" 
+          placeholder="Please provide a detailed reason for this status change (minimum 10 characters)..."
+          required
+          minlength="10"
+          maxlength="500"></textarea>
+        <div class="d-flex justify-content-between mt-1">
+          <small class="text-muted">
+            <i class="bi bi-info-circle me-1"></i>
+            This will be recorded in the audit log
+          </small>
+          <small class="text-muted" id="reasonCharCount">0/500</small>
+        </div>
+        <div class="invalid-feedback" id="reasonError">
+          Please provide a reason (minimum 10 characters)
+        </div>
+      </div>
+      
+      <!-- Feedback Area -->
+      <div id="statusChangeFeedback"></div>
+    </div>
+    
+    <div class="custom-modal-footer d-flex justify-content-end gap-2 p-3">
+      <button type="button" class="btn btn-outline-secondary" id="cancelStatusChange">
+        <i class="bi bi-x-lg me-1"></i>Cancel
+      </button>
+      <button type="button" class="btn btn-primary" id="confirmStatusChange">
+        <span class="btn-text">
+          <i class="bi bi-check-lg me-1"></i>
+          <span id="confirmButtonText">Confirm Change</span>
+        </span>
+        <span class="btn-spinner d-none">
+          <span class="spinner-border spinner-border-sm" role="status"></span>
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_scripts %}
@@ -971,25 +1069,147 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
-    window.toggleUserStatus = async function(userId, currentStatus) {
-        const action = currentStatus ? 'deactivate' : 'activate';
+    // WORLD-CLASS: User Status Change with Mandatory Comment
+    let statusChangeData = null;
+    
+    window.toggleUserStatus = function(userId, currentStatus) {
         const user = usersData.users.find(u => u.id === userId);
-        
-        if (!confirm(`Are you sure you want to ${action} ${user ? user.first_name + ' ' + user.last_name : 'this user'}?`)) {
+        if (!user) {
+            showToast('User not found', 'error');
             return;
         }
         
-        // Find and disable the button
-        const button = document.querySelector(`button[onclick="toggleUserStatus(${userId}, ${currentStatus})"]`);
-        if (button) {
-            button.disabled = true;
-            button.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        const newStatus = !currentStatus;
+        const action = newStatus ? 'activate' : 'deactivate';
+        
+        // Store data for later use
+        statusChangeData = {
+            userId: userId,
+            currentStatus: currentStatus,
+            newStatus: newStatus,
+            user: user
+        };
+        
+        // Open modal with user details
+        openStatusChangeModal(user, currentStatus, newStatus, action);
+    };
+    
+    function openStatusChangeModal(user, currentStatus, newStatus, action) {
+        const modal = document.getElementById('statusChangeModal');
+        const actionCapitalized = action.charAt(0).toUpperCase() + action.slice(1);
+        
+        // Update modal title and icon
+        const modalIcon = document.getElementById('statusModalIcon');
+        const modalTitle = document.getElementById('statusModalTitle');
+        modalIcon.className = `bi me-2 ${newStatus ? 'bi-check-circle text-success' : 'bi-x-circle text-danger'}`;
+        modalTitle.textContent = `${actionCapitalized} User Account`;
+        
+        // Update alert box
+        const alertBox = document.getElementById('statusAlertBox');
+        const alertTitle = document.getElementById('statusAlertTitle');
+        const alertMessage = document.getElementById('statusAlertMessage');
+        
+        alertBox.className = `alert d-flex align-items-start mb-4 ${newStatus ? 'alert-success' : 'alert-warning'}`;
+        alertTitle.textContent = newStatus ? 'Account Activation' : 'Account Deactivation';
+        alertMessage.textContent = newStatus ? 
+            `You are about to activate ${user.first_name}'s account. They will regain access to the system.` :
+            `You are about to deactivate ${user.first_name}'s account. They will lose access to the system immediately.`;
+        
+        // Update user info
+        document.getElementById('statusUserName').textContent = `${user.first_name} ${user.last_name}`;
+        document.getElementById('statusUserEmail').textContent = user.email || '-';
+        
+        // Update status badges
+        const currentBadge = document.getElementById('statusCurrentBadge');
+        const newBadge = document.getElementById('statusNewBadge');
+        
+        currentBadge.innerHTML = currentStatus ? 
+            '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Active</span>' :
+            '<span class="badge bg-secondary"><i class="bi bi-x-circle me-1"></i>Inactive</span>';
+        
+        newBadge.innerHTML = newStatus ? 
+            '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Active</span>' :
+            '<span class="badge bg-secondary"><i class="bi bi-x-circle me-1"></i>Inactive</span>';
+        
+        // Clear previous reason and feedback
+        document.getElementById('statusChangeReason').value = '';
+        document.getElementById('statusChangeReason').classList.remove('is-invalid');
+        document.getElementById('reasonCharCount').textContent = '0/500';
+        document.getElementById('statusChangeFeedback').innerHTML = '';
+        
+        // Update confirm button text
+        document.getElementById('confirmButtonText').textContent = `${actionCapitalized} Account`;
+        
+        // Show modal
+        modal.classList.add('active');
+    }
+    
+    // Character counter for reason textarea
+    document.getElementById('statusChangeReason').addEventListener('input', function() {
+        const charCount = this.value.length;
+        const charCountEl = document.getElementById('reasonCharCount');
+        charCountEl.textContent = `${charCount}/500`;
+        
+        // Color coding
+        if (charCount < 10) {
+            charCountEl.className = 'text-danger';
+        } else if (charCount > 450) {
+            charCountEl.className = 'text-warning';
+        } else {
+            charCountEl.className = 'text-muted';
         }
+        
+        // Remove invalid state when user starts typing
+        if (charCount > 0) {
+            this.classList.remove('is-invalid');
+        }
+    });
+    
+    // Close modal handlers
+    document.getElementById('closeStatusModal').addEventListener('click', closeStatusChangeModal);
+    document.getElementById('cancelStatusChange').addEventListener('click', closeStatusChangeModal);
+    
+    function closeStatusChangeModal() {
+        const modal = document.getElementById('statusChangeModal');
+        modal.classList.remove('active');
+        statusChangeData = null;
+    }
+    
+    // Confirm status change
+    document.getElementById('confirmStatusChange').addEventListener('click', async function() {
+        if (!statusChangeData) return;
+        
+        const reasonTextarea = document.getElementById('statusChangeReason');
+        const reason = reasonTextarea.value.trim();
+        const feedbackEl = document.getElementById('statusChangeFeedback');
+        
+        // Validate reason
+        if (!reason || reason.length < 10) {
+            reasonTextarea.classList.add('is-invalid');
+            feedbackEl.innerHTML = `
+                <div class="alert alert-danger d-flex align-items-center">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <div>Please provide a reason (minimum 10 characters)</div>
+                </div>
+            `;
+            return;
+        }
+        
+        // Show loading state
+        const confirmBtn = this;
+        const btnText = confirmBtn.querySelector('.btn-text');
+        const btnSpinner = confirmBtn.querySelector('.btn-spinner');
+        
+        confirmBtn.disabled = true;
+        btnText.classList.add('d-none');
+        btnSpinner.classList.remove('d-none');
+        feedbackEl.innerHTML = '';
         
         try {
             const formData = new FormData();
-            formData.append('user_id', userId);
-            formData.append('status', (!currentStatus).toString());
+            formData.append('user_id', statusChangeData.userId);
+            formData.append('status', statusChangeData.newStatus.toString());
+            formData.append('reason', reason);
             formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
             
             const response = await fetch('/settings/api/toggle-user-status/', {
@@ -1000,21 +1220,31 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
             
             if (data.success) {
-                showToast(data.message, 'success');
+                showToast(data.message + ' (Reason recorded in audit log)', 'success');
+                closeStatusChangeModal();
                 loadUsers();
                 loadSessionStats();
             } else {
-                showToast(data.error, 'error');
+                feedbackEl.innerHTML = `
+                    <div class="alert alert-danger d-flex align-items-center">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <div><strong>Error:</strong> ${data.error}</div>
+                    </div>
+                `;
             }
         } catch (error) {
-            showToast('Network error occurred. Please try again.', 'error');
+            feedbackEl.innerHTML = `
+                <div class="alert alert-danger d-flex align-items-center">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <div><strong>Network Error:</strong> Please try again.</div>
+                </div>
+            `;
         } finally {
-            if (button) {
-                button.disabled = false;
-                // Button will be re-rendered with new status
-            }
+            confirmBtn.disabled = false;
+            btnText.classList.remove('d-none');
+            btnSpinner.classList.add('d-none');
         }
-    };
+    });
     
     // Session details functionality
     

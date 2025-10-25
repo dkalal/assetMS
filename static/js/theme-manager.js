@@ -2,7 +2,12 @@
  * Enterprise Theme Manager
  * Handles system-wide theme switching with persistence
  */
-class EnterpriseThemeManager {
+
+// Debug mode - set to false in production to reduce console logs
+const THEME_DEBUG = false;
+
+if (typeof window.EnterpriseThemeManager === 'undefined') {
+window.EnterpriseThemeManager = class EnterpriseThemeManager {
     constructor() {
         this.currentTheme = 'light';
         this.storageKey = 'enterprise-theme-preference';
@@ -135,7 +140,7 @@ class EnterpriseThemeManager {
             detail: { theme, previousTheme: this.currentTheme }
         }));
 
-        console.log(`🎨 Theme switched to: ${theme}`);
+        if (THEME_DEBUG) console.log(`🎨 Theme switched to: ${theme}`);
     }
 
     updateMetaThemeColor(theme) {
@@ -200,7 +205,8 @@ class EnterpriseThemeManager {
             }
         }, 60000); // Check every minute
     }
-}
+};
+} // End guard clause
 
 // Initialize theme immediately (before DOM ready)
 (function() {
@@ -221,18 +227,18 @@ class EnterpriseThemeManager {
     };
     applyToBody();
     
-    console.log(`🎨 Theme pre-initialized: ${savedTheme}`);
+    if (THEME_DEBUG) console.log(`🎨 Theme pre-initialized: ${savedTheme}`);
 })();
 
 // Initialize theme manager when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    if (!window.enterpriseThemeManager) {
-        window.enterpriseThemeManager = new EnterpriseThemeManager();
-        console.log('🎨 Enterprise Theme Manager initialized');
+    if (!window.enterpriseThemeManager && window.EnterpriseThemeManager) {
+        window.enterpriseThemeManager = new window.EnterpriseThemeManager();
+        if (THEME_DEBUG) console.log('🎨 Enterprise Theme Manager initialized');
     }
 });
 
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = EnterpriseThemeManager;
+    module.exports = window.EnterpriseThemeManager;
 }

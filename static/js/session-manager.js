@@ -2,7 +2,8 @@
  * Enterprise Session Manager
  * Handles concurrent session management on the frontend
  */
-class EnterpriseSessionManager {
+if (typeof window.EnterpriseSessionManager === 'undefined') {
+window.EnterpriseSessionManager = class EnterpriseSessionManager {
     constructor() {
         this.sessionId = this.generateSessionId();
         this.heartbeatInterval = 30000; // 30 seconds
@@ -136,14 +137,15 @@ document.addEventListener('DOMContentLoaded', function() {
                            document.body.classList.contains('authenticated');
     
     if (isAuthenticated && typeof window.sessionManager === 'undefined') {
-        window.sessionManager = new EnterpriseSessionManager();
+        window.sessionManager = new window.EnterpriseSessionManager();
         console.log('✅ Session manager initialized for authenticated user');
     } else if (!isAuthenticated) {
         console.log('ℹ️ Session manager skipped - user not authenticated');
     }
 });
+} // End guard clause
 
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = EnterpriseSessionManager;
+    module.exports = window.EnterpriseSessionManager;
 }

@@ -1,0 +1,453 @@
+{% extends "base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Category Management · Asset Management{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/category-wizard.css' %}">
+{% endblock %}
+
+{% block content %}
+  {% include "components/sidebar_enhanced.html" %}
+  <div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
+
+  <main class="dashboard-content">
+    <div class="container-fluid py-4">
+    <!-- Breadcrumb Navigation -->
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a></li>
+        <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-grid-3x3-gap"></i> Categories</li>
+      </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h1 class="h2 mb-2"><i class="bi bi-grid-3x3-gap me-2"></i>Asset Categories</h1>
+        <p class="text-muted mb-0">Manage and organize your asset categories with dynamic fields</p>
+      </div>
+      <button class="btn btn-primary btn-lg" onclick="categoryWizard.openWizard()">
+        <i class="bi bi-magic me-2"></i>Create Category
+      </button>
+    </div>
+
+    <!-- Category List Container -->
+    <div class="glass p-4">
+      <div id="categoryListContainer">
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading categories...</span>
+          </div>
+          <p class="text-muted mt-3">Loading categories...</p>
+        </div>
+      </div>
+    </div>
+    </div>
+  </main>
+{% endblock %}
+
+{% block dashboard_modals %}
+  <!-- Category Creation Wizard Modal -->
+  <div id="categoryWizardModal" class="custom-modal-overlay" tabindex="-1">
+    <div class="custom-modal glass-modal wizard-modal" role="dialog" aria-modal="true" style="max-width:900px;width:100%;">
+      <div class="custom-modal-header">
+        <h4 class="modal-title fw-bold mb-0">
+          <i class="bi bi-magic me-2"></i>Create Category Wizard
+        </h4>
+        <button type="button" class="custom-modal-close" onclick="categoryWizard.closeWizard()">
+          <span>&times;</span>
+        </button>
+      </div>
+      
+      <!-- Wizard Progress Indicator -->
+      <div class="wizard-progress">
+        <div class="wizard-steps">
+          <div class="wizard-step active" data-step="1">
+            <div class="wizard-step-number">1</div>
+            <div class="wizard-step-label">Basic Info</div>
+          </div>
+          <div class="wizard-step-connector"></div>
+          <div class="wizard-step" data-step="2">
+            <div class="wizard-step-number">2</div>
+            <div class="wizard-step-label">Dynamic Fields</div>
+          </div>
+          <div class="wizard-step-connector"></div>
+          <div class="wizard-step" data-step="3">
+            <div class="wizard-step-number">3</div>
+            <div class="wizard-step-label">Review</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="custom-modal-body wizard-body">
+        <div id="wizard-feedback" class="mb-3"></div>
+        
+        <!-- Step 1: Basic Information -->
+        <div class="wizard-content active" data-step="1">
+          <div class="text-center mb-4">
+            <h5 class="fw-bold">Category Information</h5>
+            <p class="text-muted">Provide basic details about your category</p>
+          </div>
+          
+          <div class="row justify-content-center">
+            <div class="col-md-8">
+              <div class="mb-4">
+                <label for="wizard-category-name" class="form-label fw-semibold">
+                  Category Name <span class="text-danger">*</span>
+                </label>
+                <input type="text" class="form-control form-control-lg" id="wizard-category-name" 
+                       maxlength="100" required placeholder="e.g., Laptops, Vehicles, Furniture"
+                       oninput="categoryWizard.validateName(this)">
+                <div class="d-flex justify-content-between align-items-center mt-1">
+                  <div class="form-text">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Choose a clear, descriptive name
+                  </div>
+                  <small class="text-muted" id="wizard-name-counter">0/100</small>
+                </div>
+                <div id="wizard-name-validation" class="invalid-feedback d-block"></div>
+              </div>
+              
+              <div class="mb-3">
+                <label for="wizard-category-description" class="form-label fw-semibold">
+                  Description <span class="text-muted small">(optional)</span>
+                </label>
+                <textarea class="form-control" id="wizard-category-description" 
+                          rows="3" maxlength="255" 
+                          placeholder="Describe this category and what types of assets it contains..."
+                          oninput="categoryWizard.updateCharCounter(this, 'wizard-desc-counter')"></textarea>
+                <div class="d-flex justify-content-end mt-1">
+                  <small class="text-muted" id="wizard-desc-counter">0/255</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Step 2: Dynamic Fields -->
+        <div class="wizard-content" data-step="2" style="display:none;">
+          <div class="text-center mb-4">
+            <h5 class="fw-bold">Configure Dynamic Fields</h5>
+            <p class="text-muted">Add custom fields to capture specific asset information</p>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-8">
+              <div id="wizard-fields-list" class="mb-3">
+                <div class="alert alert-info">
+                  <i class="bi bi-info-circle me-2"></i>
+                  No fields added yet. Click "Add Field" to create custom fields for this category.
+                </div>
+              </div>
+              
+              <button type="button" class="btn btn-outline-primary" onclick="categoryWizard.showFieldForm()">
+                <i class="bi bi-plus-lg me-2"></i>Add Field
+              </button>
+              
+              <!-- Field Form (Hidden by default) -->
+              <div id="wizard-field-form" class="card border-primary mt-3" style="display:none;">
+                <div class="card-header bg-primary bg-opacity-10">
+                  <h6 class="mb-0 fw-bold text-primary">
+                    <span id="field-form-title">Add New Field</span>
+                  </h6>
+                </div>
+                <div class="card-body">
+                  <div id="field-form-feedback" class="mb-3"></div>
+                  <div class="row g-3">
+                    <div class="col-12">
+                      <label class="form-label fw-semibold">
+                        Field Label <span class="text-danger">*</span>
+                      </label>
+                      <input type="text" class="form-control" id="field-label" 
+                             maxlength="100" required placeholder="e.g., Serial Number"
+                             oninput="categoryWizard.handleFieldLabelInput(this)">
+                      <div class="d-flex justify-content-between align-items-center mt-1">
+                        <div class="form-text mb-0">
+                          <i class="bi bi-key me-1 text-primary"></i>
+                          System key:
+                          <span class="badge bg-light text-dark border" id="field-key-preview">auto_generated_key</span>
+                        </div>
+                        <small class="text-muted">Auto-generated from the label</small>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label fw-semibold">Field Type</label>
+                      <select class="form-select" id="field-type" required>
+                        <option value="text">Text</option>
+                        <option value="number">Number</option>
+                        <option value="date">Date</option>
+                        <option value="textarea">Text Area</option>
+                      </select>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end">
+                      <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="field-required">
+                        <label class="form-check-label fw-semibold" for="field-required">
+                          Required Field
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="d-flex justify-content-end gap-2 mt-3">
+                    <button type="button" class="btn btn-outline-secondary" onclick="categoryWizard.hideFieldForm()">
+                      Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="categoryWizard.saveField()">
+                      <i class="bi bi-check-lg me-2"></i>Save Field
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card border-0 bg-light">
+                <div class="card-body">
+                  <h6 class="fw-bold mb-3">
+                    <i class="bi bi-lightbulb me-2"></i>Field Tips
+                  </h6>
+                  <ul class="small mb-0 ps-3">
+                    <li class="mb-2">Use clear, descriptive labels</li>
+                    <li class="mb-2">Mark essential fields as required</li>
+                    <li class="mb-2">Choose appropriate field types</li>
+                    <li class="mb-2">You can edit fields later</li>
+                    <li class="mb-2">Skip this step if no custom fields needed</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Step 3: Review & Confirm -->
+        <div class="wizard-content" data-step="3" style="display:none;">
+          <div class="text-center mb-4">
+            <h5 class="fw-bold">Review & Confirm</h5>
+            <p class="text-muted">Check your configuration before creating the category</p>
+          </div>
+          
+          <div class="row justify-content-center">
+            <div class="col-md-8">
+              <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                  <h6 class="fw-bold mb-3">
+                    <i class="bi bi-folder-fill me-2"></i>Category Details
+                  </h6>
+                  <div class="row mb-2">
+                    <div class="col-sm-4 text-muted">Name:</div>
+                    <div class="col-sm-8 fw-semibold" id="review-category-name"></div>
+                  </div>
+                  <div class="row">
+                    <div class="col-sm-4 text-muted">Description:</div>
+                    <div class="col-sm-8" id="review-category-description">None</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                  <h6 class="fw-bold mb-3">
+                    <i class="bi bi-list-check me-2"></i>Dynamic Fields
+                    <span class="badge bg-primary ms-2" id="review-field-count">0</span>
+                  </h6>
+                  <div id="review-fields-list">
+                    <p class="text-muted small mb-0">No custom fields configured</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="custom-modal-footer wizard-footer d-flex justify-content-between p-3">
+        <button type="button" class="btn btn-secondary" id="wizard-back-btn" onclick="categoryWizard.prevStep()" style="display:none;">
+          <i class="bi bi-arrow-left me-2"></i>Back
+        </button>
+        <div class="ms-auto d-flex gap-2">
+          <button type="button" class="btn btn-outline-secondary" onclick="categoryWizard.closeWizard()">
+            Cancel
+          </button>
+          <button type="button" class="btn btn-primary" id="wizard-next-btn" onclick="categoryWizard.nextStep()">
+            Next Step<i class="bi bi-arrow-right ms-2"></i>
+          </button>
+          <button type="button" class="btn btn-success" id="wizard-finish-btn" onclick="categoryWizard.finish()" style="display:none;">
+            <i class="bi bi-check-lg me-2"></i>Create Category
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enhanced Edit Category Modal -->
+  <div id="editCategoryModal" class="custom-modal-overlay" tabindex="-1">
+    <div class="custom-modal glass-modal" role="dialog" aria-modal="true" style="max-width:900px;width:100%;">
+      <div class="custom-modal-header">
+        <h4 class="modal-title fw-bold mb-0">
+          <i class="bi bi-pencil-square me-2"></i>Edit Category
+        </h4>
+        <button type="button" class="custom-modal-close" onclick="categoryEditor.closeModal()">
+          <span>&times;</span>
+        </button>
+      </div>
+      
+      <!-- Tab Navigation -->
+      <div class="edit-tabs">
+        <button class="edit-tab active" data-tab="info" onclick="categoryEditor.switchTab('info')">
+          <i class="bi bi-info-circle me-2"></i>Basic Info
+        </button>
+        <button class="edit-tab" data-tab="fields" onclick="categoryEditor.switchTab('fields')">
+          <i class="bi bi-list-check me-2"></i>Dynamic Fields
+        </button>
+      </div>
+      
+      <div class="custom-modal-body">
+        <div id="edit-category-feedback" class="mb-3"></div>
+        
+        <!-- Category Info Banner -->
+        <div id="edit-category-info" class="alert alert-light border mb-4">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-folder-fill fs-3 text-primary me-3"></i>
+            <div>
+              <h6 class="mb-0 fw-bold" id="edit-category-display-name"></h6>
+              <small class="text-muted" id="edit-category-asset-count"></small>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Tab Content: Basic Info -->
+        <div class="edit-tab-content active" data-tab="info">
+          <form id="editCategoryForm">
+            <input type="hidden" id="editCategoryId">
+            
+            <div class="mb-4">
+              <label for="editCategoryName" class="form-label fw-semibold">
+                Category Name <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-control form-control-lg" id="editCategoryName" 
+                     name="name" maxlength="100" required
+                     oninput="categoryEditor.validateName(this)">
+              <div class="d-flex justify-content-between align-items-center mt-1">
+                <div class="form-text">
+                  <i class="bi bi-info-circle me-1"></i>
+                  Changes will affect all associated assets
+                </div>
+                <small class="text-muted" id="edit-name-counter">0/100</small>
+              </div>
+              <div id="edit-name-validation" class="invalid-feedback d-block"></div>
+            </div>
+            
+            <div class="mb-3">
+              <label for="editCategoryDescription" class="form-label fw-semibold">
+                Description <span class="text-muted small">(optional)</span>
+              </label>
+              <textarea class="form-control" id="editCategoryDescription" name="description" 
+                        rows="3" maxlength="255"
+                        oninput="categoryEditor.updateCharCounter(this, 'edit-desc-counter')"></textarea>
+              <div class="d-flex justify-content-end mt-1">
+                <small class="text-muted" id="edit-desc-counter">0/255</small>
+              </div>
+            </div>
+            
+            <div class="alert alert-warning small">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              <strong>Note:</strong> Changes will be applied immediately to this category and all associated assets.
+            </div>
+          </form>
+        </div>
+        
+        <!-- Tab Content: Dynamic Fields -->
+        <div class="edit-tab-content" data-tab="fields" style="display:none;">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0 fw-bold">Dynamic Fields</h6>
+            <button class="btn btn-sm btn-primary" onclick="categoryEditor.showFieldForm()">
+              <i class="bi bi-plus-lg me-2"></i>Add Field
+            </button>
+          </div>
+          
+          <div id="edit-fields-list">
+            <div class="text-center py-5">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading fields...</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Field Form (Hidden by default) -->
+          <div id="edit-field-form" class="card border-primary mt-3" style="display:none;">
+            <div class="card-header bg-primary bg-opacity-10">
+              <h6 class="mb-0 fw-bold text-primary">
+                <span id="edit-field-form-title">Add New Field</span>
+              </h6>
+            </div>
+            <div class="card-body">
+              <div id="edit-field-form-feedback" class="mb-3"></div>
+              <input type="hidden" id="edit-field-id">
+              <input type="hidden" id="edit-field-key">
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="form-label fw-semibold">
+                    Field Label <span class="text-danger">*</span>
+                  </label>
+                  <input type="text" class="form-control" id="edit-field-label" 
+                         maxlength="100" required placeholder="e.g., Serial Number"
+                         oninput="categoryEditor.handleFieldLabelInput(this)">
+                  <div class="d-flex justify-content-between align-items-center mt-1">
+                    <div class="form-text mb-0">
+                      <i class="bi bi-key me-1 text-primary"></i>
+                      System key:
+                      <span class="badge bg-light text-dark border" id="edit-field-key-preview">auto_generated_key</span>
+                    </div>
+                    <small class="text-muted" id="edit-field-key-hint">Auto-generated from the label</small>
+                  </div>
+                  <div id="edit-field-key-validation" class="invalid-feedback d-block"></div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Field Type</label>
+                  <select class="form-select" id="edit-field-type" required>
+                    <option value="text">Text</option>
+                    <option value="number">Number</option>
+                    <option value="date">Date</option>
+                    <option value="textarea">Text Area</option>
+                  </select>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="edit-field-required">
+                    <label class="form-check-label fw-semibold" for="edit-field-required">
+                      Required Field
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div class="d-flex justify-content-end gap-2 mt-3">
+                <button type="button" class="btn btn-outline-secondary" onclick="categoryEditor.hideFieldForm()">
+                  Cancel
+                </button>
+                <button type="button" class="btn btn-primary" onclick="categoryEditor.saveField()">
+                  <i class="bi bi-check-lg me-2"></i>Save Field
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="custom-modal-footer d-flex justify-content-end gap-2 p-3">
+        <button type="button" class="btn btn-outline-secondary px-4" onclick="categoryEditor.closeModal()">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary px-4 fw-bold" onclick="categoryEditor.saveCategory()">
+          <i class="bi bi-check-lg me-2"></i>Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+  <script src="{% static 'js/category-wizard-simple.js' %}"></script>
+  <script src="{% static 'js/category-editor.js' %}"></script>
+  <script src="{% static 'js/category-list.js' %}"></script>
+{% endblock %}

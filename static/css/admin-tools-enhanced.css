@@ -1,0 +1,517 @@
+/**
+ * World-Class Admin Tools Styling
+ * Professional, modern, and responsive design for enterprise asset management
+ */
+
+/* ==================== Admin Tool Cards ==================== */
+
+.admin-tool-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.98) 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.admin-tool-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #00A6EB 0%, #176B87 100%);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.admin-tool-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15) !important;
+    border-color: rgba(0, 166, 235, 0.2);
+}
+
+.admin-tool-card:hover::before {
+    transform: scaleX(1);
+}
+
+.tool-icon-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+}
+
+.admin-tool-card:hover .tool-icon-wrapper {
+    transform: scale(1.1) rotate(5deg);
+}
+
+/* ==================== Statistics Cards ==================== */
+
+.stat-icon {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+}
+
+.card:hover .stat-icon {
+    transform: scale(1.1);
+}
+
+/* ==================== Enhanced Tables ==================== */
+
+.table-hover tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 166, 235, 0.05);
+    transform: scale(1.01);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.category-icon {
+    transition: transform 0.3s ease;
+}
+
+.table-hover tbody tr:hover .category-icon {
+    transform: scale(1.2);
+}
+
+/* ==================== Progress Bars ==================== */
+
+.progress {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    transition: width 0.6s ease;
+    border-radius: 10px;
+}
+
+/* ==================== Badges ==================== */
+
+.badge {
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    transition: all 0.2s ease;
+}
+
+.badge:hover {
+    transform: scale(1.05);
+}
+
+/* ==================== Buttons ==================== */
+
+.btn {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn-group .btn {
+    transition: all 0.2s ease;
+}
+
+.btn-group .btn:hover {
+    z-index: 2;
+    transform: scale(1.1);
+}
+
+/* ==================== Modals ==================== */
+
+.modal-content {
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px 16px 0 0;
+    padding: 1.5rem 2rem;
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 1.5rem 2rem;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #00A6EB 0%, #176B87 100%);
+}
+
+/* Custom Modal Overlay (for non-Bootstrap modals) */
+.custom-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(23, 107, 135, 0.3);
+    z-index: 2060; /* Higher than Bootstrap modal (1055) and backdrop (1050) */
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(10px) saturate(180%);
+    animation: fadeIn 0.3s ease;
+    transition: opacity 0.3s ease, backdrop-filter 0.3s ease;
+}
+
+.custom-modal-overlay.active {
+    display: flex;
+    opacity: 1;
+}
+
+.glass-modal {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    max-width: 700px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(23, 107, 135, 0.25), 0 4px 12px rgba(0, 166, 235, 0.15);
+    padding: 0;
+    overflow: hidden;
+    border: 2px solid rgba(23, 107, 135, 0.1);
+    backdrop-filter: blur(16px) saturate(180%);
+    animation: slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    transform-origin: center;
+    position: relative;
+    z-index: 2061; /* Above overlay */
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.custom-modal-header {
+    background: linear-gradient(135deg, #00A6EB 0%, #176B87 100%);
+    color: #fff;
+    padding: 1.5rem 2rem;
+    border-bottom: none;
+    box-shadow: 0 4px 12px rgba(23, 107, 135, 0.15);
+}
+
+.custom-modal-header .modal-title {
+    font-size: 1.5rem;
+    letter-spacing: 0.02em;
+    font-weight: 700;
+}
+
+.custom-modal-close {
+    background: none;
+    border: none;
+    font-size: 2.5rem;
+    color: #fff;
+    cursor: pointer;
+    line-height: 1;
+    opacity: 0.9;
+    transition: all 0.2s ease;
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+}
+
+.custom-modal-close:hover,
+.custom-modal-close:focus {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(90deg);
+}
+
+.custom-modal-body {
+    padding: 2rem;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.custom-modal-footer {
+    background: rgba(0, 0, 0, 0.02);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 1.5rem 2rem;
+}
+
+/* ==================== Animations ==================== */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* ==================== Loading States ==================== */
+
+.spinner-border {
+    animation: spinner-border 0.75s linear infinite;
+}
+
+@keyframes spinner-border {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ==================== Form Enhancements ==================== */
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #00A6EB;
+    box-shadow: 0 0 0 0.25rem rgba(0, 166, 235, 0.15);
+}
+
+.form-control,
+.form-select {
+    transition: all 0.2s ease;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #176B87;
+    margin-bottom: 0.5rem;
+}
+
+.form-text {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+/* ==================== Alert Enhancements ==================== */
+
+.alert {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    animation: slideInRight 0.3s ease;
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    color: #155724;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    color: #721c24;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    color: #856404;
+}
+
+.alert-info {
+    background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+    color: #0c5460;
+}
+
+/* ==================== Company Context Badge ==================== */
+
+.company-context-badge {
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 0.5s ease;
+}
+
+/* ==================== Responsive Design ==================== */
+
+@media (max-width: 768px) {
+    .glass-modal {
+        max-width: 95vw;
+        border-radius: 12px;
+        margin: 1rem;
+    }
+    
+    .custom-modal-header,
+    .custom-modal-body,
+    .custom-modal-footer {
+        padding: 1rem;
+    }
+    
+    .admin-tool-card:hover {
+        transform: translateY(-4px);
+    }
+    
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+    }
+}
+
+@media (max-width: 576px) {
+    .custom-modal-header .modal-title {
+        font-size: 1.25rem;
+    }
+    
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .btn-group .btn {
+        width: 100%;
+    }
+}
+
+/* ==================== Scrollbar Styling ==================== */
+
+.custom-modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.custom-modal-body::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+}
+
+.custom-modal-body::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #00A6EB 0%, #176B87 100%);
+    border-radius: 10px;
+}
+
+.custom-modal-body::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #176B87 0%, #00A6EB 100%);
+}
+
+/* ==================== Accessibility ==================== */
+
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+    outline: 2px solid #00A6EB;
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .admin-tool-card {
+        border: 2px solid #000;
+    }
+    
+    .badge {
+        border: 1px solid currentColor;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ==================== Print Styles ==================== */
+
+@media print {
+    .admin-tool-card,
+    .glass-modal {
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+    
+    .btn,
+    .custom-modal-close {
+        display: none;
+    }
+}
+
+/* ==================== Dark Mode Support (Future) ==================== */
+
+@media (prefers-color-scheme: dark) {
+    .admin-tool-card {
+        background: linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(40, 40, 40, 0.98) 100%);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .glass-modal {
+        background: rgba(30, 30, 30, 0.95);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .form-label {
+        color: #00A6EB;
+    }
+}
+
+/* ==================== Animations ==================== */
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}

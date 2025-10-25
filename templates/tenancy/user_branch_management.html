@@ -1,0 +1,254 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}User Branch Management · AssetPro{% endblock %}
+
+{% block extra_styles %}
+  {{ block.super }}
+  <style>
+    .user-card {
+      transition: all 0.3s ease;
+      border-left: 4px solid transparent;
+    }
+    .user-card:hover {
+      border-left-color: var(--bs-primary);
+      transform: translateX(2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .primary-badge {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 1rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .branch-chip {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      margin: 0.25rem;
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 1rem;
+      font-size: 0.875rem;
+    }
+    .stats-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .form-section {
+      background: #f8f9fa;
+      border-radius: 1rem;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+  </style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-12 col-xl-11">
+      <!-- Header -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h1 class="h3 mb-1 fw-bold">
+            <i class="bi bi-diagram-3 me-2 text-primary"></i>User Branch Management
+          </h1>
+          <p class="text-muted mb-0">Assign primary branches to users in your company</p>
+        </div>
+        <a href="{% url 'users:profile' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left me-1"></i>Back to Profile
+        </a>
+      </div>
+
+      <!-- Stats Card -->
+      <div class="stats-card shadow-sm">
+        <div class="row align-items-center">
+          <div class="col-md-4 text-center border-end border-white border-opacity-25">
+            <div class="display-4 fw-bold">{{ total_users }}</div>
+            <div class="text-white-50">Total Users</div>
+          </div>
+          <div class="col-md-4 text-center border-end border-white border-opacity-25">
+            <div class="display-4 fw-bold">{{ active_branches|length }}</div>
+            <div class="text-white-50">Active Branches</div>
+          </div>
+          <div class="col-md-4 text-center">
+            <div class="display-4 fw-bold">{{ company.name|truncatewords:2 }}</div>
+            <div class="text-white-50">Company</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Assignment Form -->
+      <div class="form-section shadow-sm">
+        <h4 class="mb-3 fw-bold">
+          <i class="bi bi-pencil-square me-2 text-primary"></i>Assign Primary Branch
+        </h4>
+        <form method="post" class="row g-3">
+          {% csrf_token %}
+          
+          {% if form.errors %}
+            <div class="col-12">
+              <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong>Please correct the following errors:</strong>
+                <ul class="mb-0 mt-2">
+                  {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                      <li>{{ field|title }}: {{ error }}</li>
+                    {% endfor %}
+                  {% endfor %}
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            </div>
+          {% endif %}
+
+          <div class="col-md-5">
+            <label for="{{ form.user.id_for_label }}" class="form-label fw-semibold">
+              {{ form.user.label }}
+              <span class="text-danger">*</span>
+            </label>
+            {{ form.user }}
+            {% if form.user.help_text %}
+              <small class="form-text text-muted">{{ form.user.help_text }}</small>
+            {% endif %}
+          </div>
+
+          <div class="col-md-5">
+            <label for="{{ form.primary_branch.id_for_label }}" class="form-label fw-semibold">
+              {{ form.primary_branch.label }}
+              <span class="text-danger">*</span>
+            </label>
+            {{ form.primary_branch }}
+            {% if form.primary_branch.help_text %}
+              <small class="form-text text-muted">{{ form.primary_branch.help_text }}</small>
+            {% endif %}
+          </div>
+
+          <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100 fw-bold">
+              <i class="bi bi-check-circle me-1"></i>Assign
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Users List -->
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-3">
+          <h4 class="mb-0 fw-bold">
+            <i class="bi bi-people me-2 text-primary"></i>Users & Their Primary Branches
+          </h4>
+          <span class="badge bg-primary-subtle text-primary fs-6">{{ total_users }} users</span>
+        </div>
+        <div class="card-body p-0">
+          {% if users_data %}
+            <div class="list-group list-group-flush">
+              {% for user_data in users_data %}
+                <div class="list-group-item user-card">
+                  <div class="row align-items-center">
+                    <!-- User Info -->
+                    <div class="col-md-4">
+                      <div class="d-flex align-items-center">
+                        <div class="me-3">
+                          {% if user_data.user.profile_image %}
+                            <img src="{{ user_data.user.profile_image.url }}" 
+                                 alt="{{ user_data.user.username }}"
+                                 class="rounded-circle"
+                                 style="width: 48px; height: 48px; object-fit: cover;">
+                          {% else %}
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                                 style="width: 48px; height: 48px; font-size: 1.25rem; font-weight: bold;">
+                              {{ user_data.user.username|slice:":1"|upper }}
+                            </div>
+                          {% endif %}
+                        </div>
+                        <div>
+                          <div class="fw-bold">
+                            {{ user_data.user.get_full_name|default:user_data.user.username }}
+                          </div>
+                          <small class="text-muted">@{{ user_data.user.username }}</small>
+                          <div class="mt-1">
+                            <span class="badge bg-{% if user_data.user.role == 'admin' %}danger{% elif user_data.user.role == 'manager' %}warning{% else %}secondary{% endif %}-subtle text-{% if user_data.user.role == 'admin' %}danger{% elif user_data.user.role == 'manager' %}warning{% else %}secondary{% endif %}">
+                              {{ user_data.user.get_role_display }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Primary Branch -->
+                    <div class="col-md-4">
+                      <div class="text-muted small mb-1">Primary Branch</div>
+                      {% if user_data.primary_branch %}
+                        <div class="d-flex align-items-center">
+                          <span class="primary-badge me-2">
+                            <i class="bi bi-star-fill me-1"></i>PRIMARY
+                          </span>
+                          <div>
+                            <div class="fw-semibold">{{ user_data.primary_branch.name }}</div>
+                            <small class="text-muted">Code: {{ user_data.primary_branch.code }}</small>
+                          </div>
+                        </div>
+                      {% else %}
+                        <span class="badge bg-warning-subtle text-warning">
+                          <i class="bi bi-exclamation-triangle me-1"></i>No Primary Branch
+                        </span>
+                      {% endif %}
+                    </div>
+
+                    <!-- All Branches -->
+                    <div class="col-md-4">
+                      <div class="text-muted small mb-1">
+                        All Branches ({{ user_data.membership_count }})
+                      </div>
+                      <div class="d-flex flex-wrap">
+                        {% for membership in user_data.all_branches %}
+                          <span class="branch-chip {% if membership.is_primary %}border-primary text-primary fw-semibold{% endif %}">
+                            {{ membership.branch.name }}
+                            {% if membership.is_primary %}
+                              <i class="bi bi-star-fill ms-1"></i>
+                            {% endif %}
+                          </span>
+                        {% empty %}
+                          <span class="text-muted fst-italic">No branch memberships</span>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-center py-5">
+              <i class="bi bi-people display-1 text-muted"></i>
+              <p class="text-muted mt-3">No users found in your company.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Help Section -->
+      <div class="alert alert-info mt-4" role="alert">
+        <h5 class="alert-heading">
+          <i class="bi bi-info-circle me-2"></i>How It Works
+        </h5>
+        <ul class="mb-0">
+          <li><strong>Primary Branch:</strong> The default branch used for the user's dashboard and reports.</li>
+          <li><strong>Assignment:</strong> Select a user and branch above, then click "Assign" to update.</li>
+          <li><strong>Notifications:</strong> Users receive an alert when their primary branch is changed.</li>
+          <li><strong>Audit Trail:</strong> All changes are logged for compliance and security.</li>
+          <li><strong>Active Only:</strong> Only active branches can be set as primary.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,621 @@
+{% extends "base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Maintenance Center{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <!-- Django Messages Display -->
+  {% if messages %}
+  <div class="row mb-3">
+    <div class="col-12">
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        <i class="bi bi-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' or message.tags == 'danger' %}exclamation-triangle{% elif message.tags == 'warning' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% include 'components/breadcrumbs.html' with root_label='Dashboard' root_url='/dashboard/' current_label='Maintenance' %}
+
+  <section class="glass p-4 mb-4" aria-labelledby="maintenance-hero-title">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+      <div>
+        <h1 class="h3 mb-1" id="maintenance-hero-title">Maintenance Operations Command Center</h1>
+        <p class="text-muted mb-0">Monitor, schedule, and close maintenance activities across your authorized branches.</p>
+      </div>
+      <div class="d-flex align-items-center gap-2 text-muted small">
+        <i class="bi bi-clock-history"></i>
+        <span aria-live="polite">Data refreshed {{ today|date:"M d, Y" }}</span>
+      </div>
+    </div>
+  </section>
+
+  {% if stats %}
+  <section class="row g-3 mb-4" aria-label="Maintenance statistics overview">
+    <div class="col-sm-6 col-xl-3">
+      <div class="glass h-100 p-3 rounded-4 shadow-sm border-0">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-muted small">Eligible Assets</span>
+          <i class="bi bi-tools text-primary fs-5" aria-hidden="true"></i>
+        </div>
+        <p class="fs-3 fw-bold mb-0">{{ stats.eligible_assets|default:0 }}</p>
+        <p class="text-muted small mb-0">Assets with maintenance enabled</p>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="glass h-100 p-3 rounded-4 shadow-sm border-0">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-muted small">Upcoming (7d)</span>
+          <i class="bi bi-calendar-event text-info fs-5" aria-hidden="true"></i>
+        </div>
+        <p class="fs-3 fw-bold mb-0">{{ stats.upcoming|default:0 }}</p>
+        <p class="text-muted small mb-0">Scheduled within the next 7 days</p>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="glass h-100 p-3 rounded-4 shadow-sm border-0">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-muted small">Overdue</span>
+          <i class="bi bi-exclamation-octagon text-danger fs-5" aria-hidden="true"></i>
+        </div>
+        <p class="fs-3 fw-bold mb-0 text-danger">{{ stats.overdue|default:0 }}</p>
+        <p class="text-muted small mb-0">Require immediate attention</p>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="glass h-100 p-3 rounded-4 shadow-sm border-0">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-muted small">Completed (30d)</span>
+          <i class="bi bi-clipboard-check text-success fs-5" aria-hidden="true"></i>
+        </div>
+        <p class="fs-3 fw-bold mb-0 text-success">{{ stats.recent|default:0 }}</p>
+        <p class="text-muted small mb-0">Closed in the last 30 days</p>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="glass p-4 mb-4" aria-labelledby="eligible-assets-title">
+    <div class="d-flex justify-content-between flex-wrap gap-2 align-items-center mb-3">
+      <div>
+        <h2 class="h5 mb-0" id="eligible-assets-title">Assets eligible for scheduling</h2>
+        <p class="text-muted small mb-0">Select an asset to create a maintenance plan.</p>
+      </div>
+    </div>
+    {% if assets %}
+    <div class="table-responsive" role="region" aria-live="polite">
+      <table class="table align-middle table-hover mb-0" aria-describedby="eligible-assets-title">
+        <thead class="table-light">
+          <tr>
+            <th scope="col">Asset</th>
+            <th scope="col">Branch</th>
+            <th scope="col">Status</th>
+            <th scope="col" class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for asset in assets %}
+          <tr>
+            <td>
+              <strong>{{ asset.description|default:asset.category.name }}</strong>
+              <div class="text-muted small">{{ asset.category.name }}</div>
+            </td>
+            <td>{{ asset.branch.name|default:"Head Office" }}</td>
+            <td>
+              <span class="badge bg-primary-subtle text-primary">{{ asset.get_status_display }}</span>
+            </td>
+            <td class="text-end">
+              <a href="{% url 'maintenance:schedule' asset_uuid=asset.uuid %}" class="btn btn-sm btn-primary" aria-label="Schedule maintenance for {{ asset }}">
+                <i class="bi bi-calendar-plus me-1" aria-hidden="true"></i>Schedule
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+      <div class="mb-4">
+        <i class="bi bi-tools fs-1 text-primary mb-3 d-block" aria-hidden="true"></i>
+        <h3 class="h5 mb-2">No Assets with Maintenance Enabled</h3>
+        <p class="text-muted mb-3">Enable maintenance tracking for your assets to start scheduling preventive maintenance.</p>
+      </div>
+      <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+        <a href="{% url 'assets:list' %}" class="btn btn-primary">
+          <i class="bi bi-box-seam me-1"></i>View All Assets
+        </a>
+        {% if user.role == 'admin' %}
+        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#seedDataModal">
+          <i class="bi bi-database-add me-1"></i>Generate Sample Data
+        </button>
+        {% endif %}
+      </div>
+      <div class="mt-4 text-start" style="max-width: 600px; margin-left: auto; margin-right: auto;">
+        <p class="small text-muted mb-2"><strong>Quick Start Guide:</strong></p>
+        <ol class="small text-muted text-start">
+          <li>Go to <a href="{% url 'assets:list' %}" class="text-decoration-none">Assets page</a></li>
+          <li>Click on any asset to view details</li>
+          <li>Enable "Maintenance Tracking" in asset settings</li>
+          <li>Return here to schedule maintenance activities</li>
+        </ol>
+      </div>
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="row g-4" aria-label="Active maintenance queue">
+    <div class="col-12 col-lg-6">
+      <div class="glass h-100 p-0">
+        <header class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center" aria-live="polite">
+          <div>
+            <h2 class="h5 mb-0">Upcoming maintenance</h2>
+            <p class="text-muted small mb-0">Scheduled activities for the next 30 days.</p>
+          </div>
+          <span class="badge bg-info-subtle text-info">{{ upcoming_records|length }} due</span>
+        </header>
+        <div class="list-group list-group-flush" role="list">
+          {% if upcoming_records %}
+            {% for record in upcoming_records %}
+            <article class="list-group-item" role="listitem" aria-labelledby="upcoming-record-{{ record.pk }}">
+              <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
+                <div class="flex-grow-1">
+                  <h3 class="h6 mb-1" id="upcoming-record-{{ record.pk }}">{{ record.asset.description|default:record.asset.category.name }}</h3>
+                  <div class="d-flex flex-wrap gap-3 text-muted small">
+                    <span><i class="bi bi-building me-1" aria-hidden="true"></i>{{ record.asset.branch.name|default:"Head Office" }}</span>
+                    <span><i class="bi bi-calendar-event me-1" aria-hidden="true"></i>Scheduled {{ record.scheduled_for|date:"M d, Y" }}</span>
+                  </div>
+                  {% if record.description %}
+                  <p class="mt-2 mb-0 small text-body-secondary">{{ record.description }}</p>
+                  {% endif %}
+                </div>
+                <div class="d-flex flex-md-column gap-2 align-self-stretch">
+                  <button type="button" class="btn btn-outline-primary btn-sm maintenance-action-trigger" data-bs-toggle="modal" data-bs-target="#maintenanceStartModal" data-action-url="{% url 'maintenance:start' pk=record.pk %}" data-asset="{{ record.asset.description|default:record.asset.category.name }}" data-branch="{{ record.asset.branch.name|default:'Head Office' }}" data-scheduled-for="{{ record.scheduled_for|date:'M d, Y' }}">
+                    <i class="bi bi-play-circle me-1" aria-hidden="true"></i>Start
+                  </button>
+                  <button type="button" class="btn btn-success btn-sm maintenance-action-trigger" data-bs-toggle="modal" data-bs-target="#maintenanceCompleteModal" data-action-url="{% url 'maintenance:complete' pk=record.pk %}" data-asset="{{ record.asset.description|default:record.asset.category.name }}" data-branch="{{ record.asset.branch.name|default:'Head Office' }}" data-scheduled-for="{{ record.scheduled_for|date:'M d, Y' }}">
+                    <i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Complete
+                  </button>
+                  <button type="button" class="btn btn-outline-danger btn-sm maintenance-action-trigger" data-bs-toggle="modal" data-bs-target="#maintenanceCancelModal" data-action-url="{% url 'maintenance:cancel' pk=record.pk %}" data-asset="{{ record.asset.description|default:record.asset.category.name }}" data-branch="{{ record.asset.branch.name|default:'Head Office' }}" data-scheduled-for="{{ record.scheduled_for|date:'M d, Y' }}">
+                    <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cancel
+                  </button>
+                </div>
+              </div>
+            </article>
+            {% endfor %}
+          {% else %}
+          <div class="text-center text-muted py-5">
+            <i class="bi bi-calendar3 fs-2 mb-3" aria-hidden="true"></i>
+            <p class="mb-1">No upcoming maintenance scheduled.</p>
+            {% if assets %}
+            <p class="small mb-0">Click "Schedule" on an eligible asset above to create a maintenance plan.</p>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+      <div class="glass h-100 p-0">
+        <header class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center" aria-live="polite">
+          <div>
+            <h2 class="h5 mb-0">Overdue maintenance</h2>
+            <p class="text-muted small mb-0">Escalate and resolve overdue activities.</p>
+          </div>
+          <span class="badge bg-danger-subtle text-danger">{{ overdue_records|length }} overdue</span>
+        </header>
+        <div class="list-group list-group-flush" role="list">
+          {% if overdue_records %}
+            {% for record in overdue_records %}
+            <article class="list-group-item border-start border-4 border-danger" role="listitem" aria-labelledby="overdue-record-{{ record.pk }}">
+              <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
+                <div class="flex-grow-1">
+                  <h3 class="h6 mb-1 text-danger" id="overdue-record-{{ record.pk }}">{{ record.asset.description|default:record.asset.category.name }}</h3>
+                  <div class="d-flex flex-wrap gap-3 text-muted small">
+                    <span><i class="bi bi-building me-1" aria-hidden="true"></i>{{ record.asset.branch.name|default:"Head Office" }}</span>
+                    <span class="text-danger"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>Scheduled {{ record.scheduled_for|date:"M d, Y" }}</span>
+                  </div>
+                  {% if record.description %}
+                  <p class="mt-2 mb-0 small text-body-secondary">{{ record.description }}</p>
+                  {% endif %}
+                </div>
+                <div class="d-flex flex-md-column gap-2 align-self-stretch">
+                  <button type="button" class="btn btn-outline-primary btn-sm maintenance-action-trigger" data-bs-toggle="modal" data-bs-target="#maintenanceStartModal" data-action-url="{% url 'maintenance:start' pk=record.pk %}" data-asset="{{ record.asset.description|default:record.asset.category.name }}" data-branch="{{ record.asset.branch.name|default:'Head Office' }}" data-scheduled-for="{{ record.scheduled_for|date:'M d, Y' }}">
+                    <i class="bi bi-play-circle me-1" aria-hidden="true"></i>Start
+                  </button>
+                  <button type="button" class="btn btn-success btn-sm maintenance-action-trigger" data-bs-toggle="modal" data-bs-target="#maintenanceCompleteModal" data-action-url="{% url 'maintenance:complete' pk=record.pk %}" data-asset="{{ record.asset.description|default:record.asset.category.name }}" data-branch="{{ record.asset.branch.name|default:'Head Office' }}" data-scheduled-for="{{ record.scheduled_for|date:'M d, Y' }}">
+                    <i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Complete
+                  </button>
+                  <button type="button" class="btn btn-outline-danger btn-sm maintenance-action-trigger" data-bs-toggle="modal" data-bs-target="#maintenanceCancelModal" data-action-url="{% url 'maintenance:cancel' pk=record.pk %}" data-asset="{{ record.asset.description|default:record.asset.category.name }}" data-branch="{{ record.asset.branch.name|default:'Head Office' }}" data-scheduled-for="{{ record.scheduled_for|date:'M d, Y' }}">
+                    <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cancel
+                  </button>
+                </div>
+              </div>
+            </article>
+            {% endfor %}
+          {% else %}
+          <div class="text-center text-muted py-5">
+            <i class="bi bi-check-circle fs-2 mb-3" aria-hidden="true"></i>
+            <p class="mb-1">All maintenance is up to date.</p>
+            <p class="small mb-0">Great job! No overdue maintenance activities.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="glass p-4 mt-4" aria-labelledby="recent-maintenance-title">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h2 class="h5 mb-0" id="recent-maintenance-title">Recently completed</h2>
+        <p class="text-muted small mb-0">Maintenance completed within the last 30 days.</p>
+      </div>
+    </div>
+    {% if recent_records %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" aria-describedby="recent-maintenance-title">
+        <thead class="table-light">
+          <tr>
+            <th scope="col">Asset</th>
+            <th scope="col">Completed</th>
+            <th scope="col">Performed By</th>
+            <th scope="col">Outcome</th>
+            <th scope="col">Cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for record in recent_records %}
+          <tr>
+            <td>
+              <strong>{{ record.asset.description|default:record.asset.category.name }}</strong><br>
+              <small class="text-muted">{{ record.asset.branch.name|default:"Head Office" }}</small>
+            </td>
+            <td>{{ record.completed_at|date:"Y-m-d H:i" }}</td>
+            <td>
+              {% if record.performed_by %}
+                {{ record.performed_by.get_full_name|default:record.performed_by.username }}
+              {% elif record.updated_by %}
+                {{ record.updated_by.get_full_name|default:record.updated_by.username }}
+                <small class="text-muted">(via update)</small>
+              {% elif record.created_by %}
+                {{ record.created_by.get_full_name|default:record.created_by.username }}
+                <small class="text-muted">(creator)</small>
+              {% else %}
+                <span class="text-danger">Unknown</span>
+              {% endif %}
+            </td>
+            <td>{{ record.outcome_notes|default:"No notes provided" }}</td>
+            <td>{% if record.cost %}{{ record.cost }}{% else %}-{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="bi bi-clipboard-check fs-2 mb-3" aria-hidden="true"></i>
+      <p class="mb-1">No maintenance completed recently.</p>
+      <p class="small mb-0">Completed maintenance records from the last 30 days will appear here.</p>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+
+{% block dashboard_modals %}
+<!-- Start Maintenance Modal -->
+<div class="modal fade" id="maintenanceStartModal" tabindex="-1" aria-labelledby="maintenanceStartModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title h5" id="maintenanceStartModalLabel">Mark maintenance as started</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+        <div class="modal-body">
+          <p class="text-muted small">
+            Confirm the start of maintenance for <strong id="start-modal-asset"></strong>.
+          </p>
+          <dl class="row mb-0 small">
+            <dt class="col-5 text-muted">Scheduled date</dt>
+            <dd class="col-7" id="start-modal-scheduled">—</dd>
+            <dt class="col-5 text-muted">Branch</dt>
+            <dd class="col-7" id="start-modal-branch">—</dd>
+          </dl>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-play-circle me-1" aria-hidden="true"></i>Confirm start
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Complete Maintenance Modal -->
+<div class="modal fade" id="maintenanceCompleteModal" tabindex="-1" aria-labelledby="maintenanceCompleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title h5" id="maintenanceCompleteModalLabel">Complete maintenance task</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" novalidate class="needs-validation" id="maintenance-complete-form">
+        {% csrf_token %}
+        <div class="modal-body">
+          <p class="text-muted small">
+            Provide completion notes for <strong id="complete-modal-asset"></strong>.
+          </p>
+          <dl class="row mb-3 small">
+            <dt class="col-5 text-muted">Scheduled date</dt>
+            <dd class="col-7" id="complete-modal-scheduled">—</dd>
+            <dt class="col-5 text-muted">Branch</dt>
+            <dd class="col-7" id="complete-modal-branch">—</dd>
+          </dl>
+          <div class="mb-3">
+            <label for="complete-outcome-notes" class="form-label">Outcome notes <span class="text-danger">*</span></label>
+            <textarea class="form-control" id="complete-outcome-notes" name="outcome_notes" rows="3" minlength="10" required placeholder="Summarize the work performed, findings, and follow-up actions."></textarea>
+            <div class="form-text">Minimum 10 characters. Stored in the audit trail.</div>
+            <div class="invalid-feedback">Please provide at least 10 characters.</div>
+          </div>
+          <div class="mb-0">
+            <label for="complete-cost" class="form-label">Maintenance cost (optional)</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-currency-dollar" aria-hidden="true"></i></span>
+              <input type="number" class="form-control" id="complete-cost" name="cost" min="0" step="0.01" placeholder="0.00">
+            </div>
+            <div class="form-text">Leave blank if costs are not available.</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Complete maintenance
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Cancel Maintenance Modal -->
+<div class="modal fade" id="maintenanceCancelModal" tabindex="-1" aria-labelledby="maintenanceCancelModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title h5 text-danger" id="maintenanceCancelModalLabel">Cancel maintenance task</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" novalidate class="needs-validation" id="maintenance-cancel-form">
+        {% csrf_token %}
+        <div class="modal-body">
+          <p class="text-muted small">
+            Cancelling maintenance for <strong id="cancel-modal-asset"></strong>. Provide a detailed reason for audit logging.
+          </p>
+          <dl class="row mb-3 small">
+            <dt class="col-5 text-muted">Scheduled date</dt>
+            <dd class="col-7" id="cancel-modal-scheduled">—</dd>
+            <dt class="col-5 text-muted">Branch</dt>
+            <dd class="col-7" id="cancel-modal-branch">—</dd>
+          </dl>
+          <div class="mb-0">
+            <label for="cancel-reason" class="form-label">Cancellation reason <span class="text-danger">*</span></label>
+            <textarea class="form-control" id="cancel-reason" name="reason" rows="3" minlength="10" required placeholder="Explain why this maintenance task is being cancelled."></textarea>
+            <div class="form-text">Minimum 10 characters. Shared with audit trail reviewers.</div>
+            <div class="invalid-feedback">Please provide a detailed cancellation reason.</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Keep scheduled</button>
+          <button type="submit" class="btn btn-outline-danger">
+            <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Confirm cancellation
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Seed Data Modal (Admin Only) -->
+{% if user.role == 'admin' %}
+<div class="modal fade" id="seedDataModal" tabindex="-1" aria-labelledby="seedDataModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title h5" id="seedDataModalLabel">Generate Sample Maintenance Data</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info d-flex align-items-start" role="alert">
+          <i class="bi bi-info-circle me-2 mt-1" aria-hidden="true"></i>
+          <div>
+            <strong>For Testing & Demonstration</strong>
+            <p class="mb-0 small">This will create sample maintenance records to help you explore the maintenance management features.</p>
+          </div>
+        </div>
+        <p class="mb-3">This action will:</p>
+        <ul class="small mb-3">
+          <li>Enable maintenance tracking for 10 random assets</li>
+          <li>Create 15 maintenance records with varied statuses</li>
+          <li>Include overdue, upcoming, completed, and in-progress records</li>
+          <li>Use realistic descriptions and outcome notes</li>
+        </ul>
+        <div class="alert alert-warning d-flex align-items-start mb-0" role="alert">
+          <i class="bi bi-exclamation-triangle me-2 mt-1" aria-hidden="true"></i>
+          <div class="small">
+            <strong>Note:</strong> This is safe to run multiple times. Each run will add more sample data.
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="seedDataBtn">
+          <i class="bi bi-database-add me-1" aria-hidden="true"></i>Generate Sample Data
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{{ block.super }}
+<script>
+  (function () {
+    'use strict';
+
+    const modalConfig = [
+      {
+        id: 'maintenanceStartModal',
+        fields: {
+          asset: '#start-modal-asset',
+          scheduled: '#start-modal-scheduled',
+          branch: '#start-modal-branch',
+        },
+      },
+      {
+        id: 'maintenanceCompleteModal',
+        fields: {
+          asset: '#complete-modal-asset',
+          scheduled: '#complete-modal-scheduled',
+          branch: '#complete-modal-branch',
+          textarea: '#complete-outcome-notes',
+          cost: '#complete-cost',
+        },
+      },
+      {
+        id: 'maintenanceCancelModal',
+        fields: {
+          asset: '#cancel-modal-asset',
+          scheduled: '#cancel-modal-scheduled',
+          branch: '#cancel-modal-branch',
+          textarea: '#cancel-reason',
+        },
+      },
+    ];
+
+    modalConfig.forEach(({ id, fields }) => {
+      const modalEl = document.getElementById(id);
+      if (!modalEl) {
+        return;
+      }
+      modalEl.addEventListener('show.bs.modal', (event) => {
+        const trigger = event.relatedTarget;
+        const form = modalEl.querySelector('form');
+        if (trigger && form) {
+          const actionUrl = trigger.getAttribute('data-action-url');
+          if (actionUrl) {
+            form.setAttribute('action', actionUrl);
+          }
+          const asset = trigger.getAttribute('data-asset') || 'N/A';
+          const branch = trigger.getAttribute('data-branch') || 'N/A';
+          const scheduled = trigger.getAttribute('data-scheduled-for') || 'N/A';
+
+          if (fields.asset) {
+            modalEl.querySelector(fields.asset).textContent = asset;
+          }
+          if (fields.branch) {
+            modalEl.querySelector(fields.branch).textContent = branch;
+          }
+          if (fields.scheduled) {
+            modalEl.querySelector(fields.scheduled).textContent = scheduled;
+          }
+          if (fields.textarea) {
+            const textarea = modalEl.querySelector(fields.textarea);
+            if (textarea) {
+              textarea.value = '';
+              textarea.focus({ preventScroll: true });
+            }
+          }
+          if (fields.cost) {
+            const costInput = modalEl.querySelector(fields.cost);
+            if (costInput) {
+              costInput.value = '';
+            }
+          }
+        }
+      });
+    });
+
+    const forms = document.querySelectorAll('.needs-validation');
+    forms.forEach((form) => {
+      form.addEventListener('submit', (event) => {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+
+    // Seed data functionality (admin only)
+    const seedDataBtn = document.getElementById('seedDataBtn');
+    if (seedDataBtn) {
+      seedDataBtn.addEventListener('click', async function() {
+        const btn = this;
+        const originalHTML = btn.innerHTML;
+        
+        // Disable button and show loading state
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Generating...';
+        
+        try {
+          const response = await fetch('{% url "maintenance:seed_data" %}', {
+            method: 'POST',
+            headers: {
+              'X-CSRFToken': '{{ csrf_token }}',
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            // Show success message
+            if (window.showToast) {
+              window.showToast(data.message || 'Sample data generated successfully!', 'success');
+            } else {
+              alert(data.message || 'Sample data generated successfully!');
+            }
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('seedDataModal'));
+            if (modal) {
+              modal.hide();
+            }
+            
+            // Reload page after short delay
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          } else {
+            throw new Error(data.error || 'Failed to generate sample data');
+          }
+        } catch (error) {
+          console.error('Error generating sample data:', error);
+          if (window.showToast) {
+            window.showToast(error.message || 'Failed to generate sample data', 'danger');
+          } else {
+            alert('Error: ' + (error.message || 'Failed to generate sample data'));
+          }
+          
+          // Re-enable button
+          btn.disabled = false;
+          btn.innerHTML = originalHTML;
+        }
+      });
+    }
+  })();
+</script>
+{% endblock %}

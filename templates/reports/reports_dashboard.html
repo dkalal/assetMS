@@ -18,6 +18,37 @@
   <div class="mb-3 d-flex justify-content-end">
     <button class="btn btn-primary" id="openGenerateReportModal" type="button">Generate Report</button>
   </div>
+  <div class="row g-3 align-items-end mb-4">
+    <div class="col-md-4">
+      <label for="filterBranch" class="form-label">Branch</label>
+      <select id="filterBranch" class="form-select" name="branch">
+        <option value="">All branches</option>
+        {% for membership in available_branches %}
+          <option value="{{ membership.branch.id }}" {% if active_branch and membership.branch.id == active_branch.id %}selected{% endif %}>{{ membership.branch.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label for="filterStatus" class="form-label">Status</label>
+      <select id="filterStatus" class="form-select" name="status">
+        <option value="">All statuses</option>
+        {% for value,label in asset_status_choices %}
+          <option value="{{ value }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label for="filterDateFrom" class="form-label">From</label>
+      <input type="date" id="filterDateFrom" class="form-control" name="date_from">
+    </div>
+    <div class="col-md-3">
+      <label for="filterDateTo" class="form-label">To</label>
+      <input type="date" id="filterDateTo" class="form-control" name="date_to">
+    </div>
+    <div class="col-12 text-end">
+      <button class="btn btn-outline-secondary" id="applyFiltersBtn" type="button">Apply filters</button>
+    </div>
+  </div>
   {% if reports %}
     <div class="enterprise-table-container">
       <div class="enterprise-table-wrapper" style="max-height: 520px;">
@@ -114,8 +145,13 @@
           <select class="form-select" id="reportFormat" name="format" required>
             <option value="excel">Excel (.xlsx)</option>
             <option value="csv">CSV (.csv)</option>
+            <option value="pdf">PDF (.pdf)</option>
           </select>
         </div>
+        <input type="hidden" name="branch_id" id="modalBranchId">
+        <input type="hidden" name="status" id="modalStatus">
+        <input type="hidden" name="date_from" id="modalDateFrom">
+        <input type="hidden" name="date_to" id="modalDateTo">
         <div class="d-flex justify-content-end mt-3">
           <button type="button" class="btn btn-secondary me-2" id="cancelGenerateReportModal">Cancel</button>
           <button type="submit" class="btn btn-primary">Generate</button>

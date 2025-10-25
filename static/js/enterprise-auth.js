@@ -2,7 +2,8 @@
  * Enterprise Authentication & Authorization Handler
  * Handles API errors and user role-based access control
  */
-class EnterpriseAuth {
+if (typeof window.EnterpriseAuth === 'undefined') {
+window.EnterpriseAuth = class EnterpriseAuth {
     constructor() {
         this.currentUser = null;
         this.init();
@@ -156,6 +157,7 @@ window.showToast = function(message, type = 'success', duration = 3000) {
         }
     }, duration);
 };
+} // End guard clause
 
 function createToastContainer() {
     const container = document.createElement('div');

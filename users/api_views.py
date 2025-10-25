@@ -32,8 +32,13 @@ def api_users_list(request):
         search = request.GET.get('search', '').strip()
         per_page = int(request.GET.get('per_page', 10))
         
-        # Build queryset
-        queryset = User.objects.all().order_by('username')
+        # Resolve company context
+        company = getattr(request, 'company', None) or getattr(request.user, 'company', None)
+        if not company:
+            return JsonResponse({'success': False, 'error': 'Company context required.'}, status=403)
+
+        # Build queryset scoped to company
+        queryset = User.objects.select_related('company').filter(company=company).order_by('username')
         
         # Apply search filter
         if search:
@@ -183,6 +188,10 @@ def api_user_update_role(request):
     if not (request.user.is_staff or request.user.is_superuser):
         return JsonResponse({'success': False, 'error': 'Staff privileges required'}, status=403)
     
+    company = getattr(request, 'company', None) or getattr(request.user, 'company', None)
+    if not company:
+        return JsonResponse({'success': False, 'error': 'Company context required.'}, status=403)
+
     try:
         # Log request details for debugging
         logger.info(f'Role update request: {request.method} {request.get_full_path()}')
@@ -230,9 +239,9 @@ def api_user_update_role(request):
         
         new_role = normalized_role
         
-        # Get target user
+        # Get target user scoped to company
         try:
-            target_user = User.objects.get(id=int(user_id))
+            target_user = User.objects.get(id=int(user_id), company=company)
         except (ValueError, User.DoesNotExist):
             return JsonResponse({'success': False, 'error': 'User not found'}, status=404)
         
@@ -318,16 +327,35 @@ def api_user_update_role(request):
 @require_http_methods(["POST"])
 def api_user_create(request):
     """
-    Enterprise Users API - Create a new user and assign role
+    Enterprise Users API - Create a new user with multi-tenancy and branch assignment
     Admin-only. Accepts form-encoded or JSON.
-    Fields: username, email, first_name, last_name, role (Admin/Manager/User), password (optional)
+    Fields: username, email, first_name, last_name, phone_number, role, primary_branch, 
+            password (optional), send_invitation, force_password_change
     """
+    from .forms import EnterpriseUserCreationForm
+    from tenancy.models import Branch, UserBranch
+    from audit.utils import log_audit
+    
+    # Optional: Import Alert if alerts app exists
+    try:
+        from alerts.models import Alert
+        ALERTS_AVAILABLE = True
+    except ImportError:
+        Alert = None
+        ALERTS_AVAILABLE = False
+        logger.warning('Alerts app not available - user creation will proceed without alerts')
+    
+    # Resolve company context
+    company = getattr(request, 'company', None) or getattr(request.user, 'company', None)
+
     # Authn
     if not request.user.is_authenticated:
         return JsonResponse({'success': False, 'error': 'Authentication required'}, status=401)
     # Authz: only superuser can create users with Admin role; staff can create up to Manager
     if not (request.user.is_staff or request.user.is_superuser):
         return JsonResponse({'success': False, 'error': 'Staff privileges required'}, status=403)
+    if not company:
+        return JsonResponse({'success': False, 'error': 'Company context required.'}, status=403)
 
     try:
         # Parse payload
@@ -336,80 +364,110 @@ def api_user_create(request):
         else:
             data = request.POST.dict()
 
-        username = (data.get('username') or '').strip()
-        email = (data.get('email') or '').strip()
-        first_name = (data.get('first_name') or '').strip()
-        last_name = (data.get('last_name') or '').strip()
-        role_input = (data.get('role') or '').strip()
-        password = data.get('password')  # may be None/empty
-
-        if not username or not email:
-            return JsonResponse({'success': False, 'error': 'username and email are required'}, status=400)
-
-        # Normalize role
-        role_normalization = {
-            'Admin': 'Admin', 'admin': 'Admin', 'ADMIN': 'Admin',
-            'Manager': 'Manager', 'manager': 'Manager', 'MANAGER': 'Manager',
-            'User': 'User', 'user': 'User', 'USER': 'User'
-        }
-        normalized_role = role_normalization.get(role_input) or 'User'
-
-        # Enforce privileges
-        if normalized_role == 'Admin' and not request.user.is_superuser:
-            return JsonResponse({'success': False, 'error': 'Only admins can create admins'}, status=403)
-
-        role_mapping = {
-            'Admin': {'is_staff': True, 'is_superuser': True, 'role': User.ADMIN},
-            'Manager': {'is_staff': True, 'is_superuser': False, 'role': User.MANAGER},
-            'User': {'is_staff': False, 'is_superuser': False, 'role': User.USER}
-        }
-        perms = role_mapping[normalized_role]
-
-        if not password:
-            password = get_random_string(12)
-            generated_password = True
+        # Use EnterpriseUserCreationForm for validation and creation
+        form = EnterpriseUserCreationForm(
+            data=data,
+            company=company,
+            created_by=request.user
+        )
+        
+        if form.is_valid():
+            with transaction.atomic():
+                # Save user with branch assignment
+                user = form.save()
+                
+                # Get the generated password if any
+                generated_password = getattr(form, 'generated_password', None)
+                
+                # Get primary branch
+                primary_branch = form.cleaned_data.get('primary_branch')
+                
+                # Log audit event
+                log_audit(
+                    request.user,
+                    'user_created',
+                    details=(
+                        f"Admin {request.user.username} created user '{user.username}' "
+                        f"with role '{user.get_role_display()}' in branch '{primary_branch.name if primary_branch else 'N/A'}'."
+                    ),
+                    company=company,
+                    branch=primary_branch,
+                    related_user=user,
+                    metadata={
+                        'created_by': request.user.pk,
+                        'created_by_username': request.user.username,
+                        'new_user_id': user.pk,
+                        'new_user_username': user.username,
+                        'new_user_email': user.email,
+                        'new_user_role': user.role,
+                        'primary_branch_id': primary_branch.pk if primary_branch else None,
+                        'primary_branch_name': primary_branch.name if primary_branch else None,
+                        'invitation_sent': form.cleaned_data.get('send_invitation', False),
+                    }
+                )
+                
+                # Create welcome alert for new user (if alerts app is available)
+                if primary_branch and ALERTS_AVAILABLE:
+                    try:
+                        Alert.objects.create(
+                            company=company,
+                            branch=primary_branch,
+                            recipient=user,
+                            level=Alert.LEVEL_INFO,
+                            message=(
+                                f"Welcome to {company.name}! Your account has been created. "
+                                f"Your primary branch is '{primary_branch.name}'."
+                            ),
+                            context={
+                                'user_id': user.pk,
+                                'username': user.username,
+                                'role': user.role,
+                                'branch_id': primary_branch.pk,
+                                'branch_name': primary_branch.name,
+                                'created_by': request.user.pk,
+                                'created_by_name': request.user.get_full_name() or request.user.username,
+                            }
+                        )
+                    except Exception as alert_error:
+                        # Log but don't fail user creation if alert fails
+                        logger.warning(f'Failed to create welcome alert: {alert_error}')
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'User created successfully with branch assignment',
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'full_name': user.get_full_name(),
+                    'phone_number': user.phone_number,
+                    'role': user.role,
+                    'role_display': user.get_role_display(),
+                    'is_staff': user.is_staff,
+                    'is_superuser': user.is_superuser,
+                    'company_id': user.company_id,
+                    'company_name': company.name,
+                    'primary_branch_id': primary_branch.pk if primary_branch else None,
+                    'primary_branch_name': primary_branch.name if primary_branch else None,
+                },
+                'temporary_password': generated_password,
+                'invitation_token': user.invitation_token if user.is_invited else None,
+                'force_password_change': user.force_password_change,
+            })
         else:
-            generated_password = False
-
-        # Create user atomically
-        with transaction.atomic():
-            if User.objects.filter(username=username).exists():
-                return JsonResponse({'success': False, 'error': 'Username already exists'}, status=400)
-            if User.objects.filter(email=email).exists():
-                return JsonResponse({'success': False, 'error': 'Email already exists'}, status=400)
-
-            user = User(
-                username=username,
-                email=email,
-                first_name=first_name,
-                last_name=last_name,
-                is_staff=perms['is_staff'],
-                is_superuser=perms['is_superuser'],
-                role=perms['role'],
-                is_active=True,
-            )
-            user.set_password(password)
-            # invitation flags for enterprise onboarding
-            user.force_password_change = True if generated_password else False
-            user.generate_invitation_token()
-            user.save()
-
-        return JsonResponse({
-            'success': True,
-            'message': 'User created successfully',
-            'user': {
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'role': normalized_role,
-                'is_staff': user.is_staff,
-                'is_superuser': user.is_superuser,
-            },
-            'temporary_password': password if generated_password else None,
-            'invitation_token': user.invitation_token,
-        })
+            # Form validation failed - return errors
+            errors = {}
+            for field, error_list in form.errors.items():
+                errors[field] = [str(error) for error in error_list]
+            
+            return JsonResponse({
+                'success': False,
+                'error': 'Validation failed',
+                'errors': errors
+            }, status=400)
+            
     except json.JSONDecodeError as e:
         return JsonResponse({'success': False, 'error': 'Invalid JSON', 'details': str(e)}, status=400)
     except Exception as e:
@@ -486,7 +544,11 @@ def api_user_details(request, user_id):
     """
     try:
         user_id = int(user_id)
-        user = User.objects.get(id=user_id)
+        company = getattr(request, 'company', None) or getattr(request.user, 'company', None)
+        if not company:
+            return JsonResponse({'success': False, 'error': 'Company context required.'}, status=403)
+
+        user = User.objects.get(id=user_id, company=company)
         
         # Determine user role
         if user.is_superuser:
@@ -521,6 +583,204 @@ def api_user_details(request, user_id):
             'error': 'User not found'
         }, status=404)
     except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+@api_admin_required
+@require_http_methods(["POST", "PUT"])
+@csrf_protect
+def api_user_update(request, user_id):
+    """
+    Enterprise API - Update user details (Admin only)
+    """
+    try:
+        # Parse request data
+        data = json.loads(request.body)
+        
+        # Get company context
+        company = getattr(request, 'company', None) or getattr(request.user, 'company', None)
+        if not company:
+            return JsonResponse({'success': False, 'error': 'Company context required.'}, status=403)
+        
+        # Get user (ensure same company)
+        user = User.objects.get(id=user_id, company=company)
+        
+        # Prevent self-demotion
+        if user.id == request.user.id and 'role' in data:
+            return JsonResponse({
+                'success': False,
+                'error': 'Cannot change your own role'
+            }, status=400)
+        
+        # Update basic fields
+        if 'first_name' in data:
+            user.first_name = data['first_name'].strip()
+        if 'last_name' in data:
+            user.last_name = data['last_name'].strip()
+        if 'email' in data:
+            email = data['email'].strip().lower()
+            # Check email uniqueness
+            if User.objects.filter(email=email, company=company).exclude(id=user.id).exists():
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Email already exists'
+                }, status=400)
+            user.email = email
+        
+        if 'username' in data:
+            username = data['username'].strip()
+            # Check username uniqueness
+            if User.objects.filter(username=username).exclude(id=user.id).exists():
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Username already exists'
+                }, status=400)
+            user.username = username
+        
+        # Update role
+        if 'role' in data:
+            role = data['role'].lower()
+            if role == 'admin':
+                user.is_superuser = True
+                user.is_staff = True
+                if hasattr(user, 'role'):
+                    user.role = 'admin'
+            elif role == 'manager':
+                user.is_superuser = False
+                user.is_staff = True
+                if hasattr(user, 'role'):
+                    user.role = 'manager'
+            else:  # user
+                user.is_superuser = False
+                user.is_staff = False
+                if hasattr(user, 'role'):
+                    user.role = 'user'
+        
+        # Update branch
+        if 'branch_id' in data and hasattr(user, 'branch'):
+            from tenancy.models import Branch
+            if data['branch_id']:
+                branch = Branch.objects.get(id=data['branch_id'], company=company)
+                user.branch = branch
+            else:
+                user.branch = None
+        
+        # Update active status
+        if 'is_active' in data:
+            # Prevent self-deactivation
+            if user.id == request.user.id and not data['is_active']:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Cannot deactivate your own account'
+                }, status=400)
+            user.is_active = data['is_active']
+        
+        user.save()
+        
+        # Log the action
+        from audit.models import AuditEvent
+        AuditEvent.objects.create(
+            user=request.user,
+            company=company,
+            action='USER_UPDATED',
+            model_name='User',
+            object_id=str(user.id),
+            description=f'Updated user: {user.username}',
+            ip_address=request.META.get('REMOTE_ADDR'),
+            user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'User updated successfully',
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'full_name': user.get_full_name() or user.username,
+                'role': getattr(user, 'role', 'user'),
+                'is_active': user.is_active
+            }
+        })
+        
+    except User.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'User not found'
+        }, status=404)
+    except Exception as e:
+        logger.error(f"Error updating user: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+@api_admin_required
+@require_http_methods(["DELETE", "POST"])
+@csrf_protect
+def api_user_delete(request, user_id):
+    """
+    Enterprise API - Delete/deactivate user (Admin only)
+    """
+    try:
+        # Get company context
+        company = getattr(request, 'company', None) or getattr(request.user, 'company', None)
+        if not company:
+            return JsonResponse({'success': False, 'error': 'Company context required.'}, status=403)
+        
+        # Get user (ensure same company)
+        user = User.objects.get(id=user_id, company=company)
+        
+        # Prevent self-deletion
+        if user.id == request.user.id:
+            return JsonResponse({
+                'success': False,
+                'error': 'Cannot delete your own account'
+            }, status=400)
+        
+        # Check if permanent delete or deactivate
+        permanent = request.GET.get('permanent', 'false').lower() == 'true'
+        
+        if permanent:
+            # Permanent deletion (use with caution)
+            username = user.username
+            user.delete()
+            action = 'USER_DELETED'
+            message = f'User {username} permanently deleted'
+        else:
+            # Soft delete (deactivate)
+            user.is_active = False
+            user.save()
+            action = 'USER_DEACTIVATED'
+            message = f'User {user.username} deactivated'
+        
+        # Log the action
+        from audit.models import AuditEvent
+        AuditEvent.objects.create(
+            user=request.user,
+            company=company,
+            action=action,
+            model_name='User',
+            object_id=str(user_id),
+            description=message,
+            ip_address=request.META.get('REMOTE_ADDR'),
+            user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': message
+        })
+        
+    except User.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'User not found'
+        }, status=404)
+    except Exception as e:
+        logger.error(f"Error deleting user: {str(e)}")
         return JsonResponse({
             'success': False,
             'error': str(e)

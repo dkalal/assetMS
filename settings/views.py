@@ -6,6 +6,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.db.models import Count, Q
 
 from .models import SystemSetting
 from users.models import UserSession, AccessLog
@@ -30,9 +31,16 @@ User = get_user_model()
 @login_required
 def settings_dashboard(request):
     """Enterprise role-based settings dashboard"""
+    # Get the active tab from query parameter (default to 'profile')
+    active_tab = request.GET.get('tab', 'profile')
+
+    # Handle POST requests for profile updates
+    if request.method == 'POST' and active_tab == 'profile':
+        return _handle_profile_update(request)
+
     # Get available settings for user role
     available_settings = SettingsPermissions.get_available_settings(request.user)
-    
+
     # Filter system settings based on role
     settings_by_category = {}
     if 'system_settings' in available_settings:
@@ -41,13 +49,20 @@ def settings_dashboard(request):
             if setting.category not in settings_by_category:
                 settings_by_category[setting.category] = []
             settings_by_category[setting.category].append(setting)
-    
+
     # Get organization profile for display (managers and admins only)
     organization = None
     if 'organization_settings' in available_settings:
         from .models import OrganizationProfile
         organization = OrganizationProfile.get_current()
-    
+
+    # Get managers for branch assignment dropdown
+    managers = User.objects.filter(
+        company=request.user.company,
+        role__in=['admin', 'manager'],
+        is_active=True
+    ).order_by('first_name', 'last_name')
+
     # Get additional stats for enterprise dashboard
     total_users = 0
     total_assets = 0
@@ -57,20 +72,400 @@ def settings_dashboard(request):
         total_assets = Asset.objects.count()
     except:
         pass
-    
-    return render(request, 'settings/dashboard_enterprise.html', {
+
+    return render(request, 'settings/settings.html', {
         'settings_by_category': settings_by_category,
         'organization': organization,
         'available_settings': available_settings,
         'user_role': request.user.role,
         'total_users': total_users,
         'total_assets': total_assets,
+        'active_tab': active_tab,
+        'managers': managers,
     })
+
+def _handle_profile_update(request):
+    """Handle profile form submission"""
+    try:
+        user = request.user
+
+        # Update basic info
+        user.first_name = request.POST.get('first_name', '').strip()
+        user.last_name = request.POST.get('last_name', '').strip()
+        user.email = request.POST.get('email', '').strip()
+        user.phone_number = request.POST.get('phone_number', '').strip()
+
+        # Handle profile image upload
+        if 'profile_image' in request.FILES:
+            profile_image = request.FILES['profile_image']
+
+            # Validate file size (2MB max)
+            if profile_image.size > 2 * 1024 * 1024:
+                return JsonResponse({'success': False, 'error': 'Profile image must be less than 2MB'})
+
+            # Validate file type
+            allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif']
+            if profile_image.content_type not in allowed_types:
+                return JsonResponse({'success': False, 'error': 'Profile image must be a JPEG, PNG, or GIF'})
+
+            user.profile_image = profile_image
+
+        user.save()
+
+        # Log the update for audit trail
+        from audit.utils import log_audit
+        log_audit(
+            request.user,
+            'edit',
+            None,
+            f'Updated profile: {user.get_full_name()}'
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Profile updated successfully',
+            'user': {
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'email': user.email,
+                'phone_number': user.phone_number,
+                'profile_image': user.profile_image.url if user.profile_image else None
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Error updating profile: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': 'An unexpected error occurred. Please try again.'
+        })
 
 @api_admin_or_manager_required
 def user_management(request):
-    """Enterprise user management dashboard"""
-    return render(request, 'settings/user_management.html')
+    """Enterprise user management dashboard with comprehensive staff overview"""
+    from django.contrib.auth import get_user_model
+    from assets.models import Asset
+    from audit.models import AuditLog
+    from django.db.models import Count, Q
+    from django.utils import timezone
+    from datetime import timedelta
+    
+    User = get_user_model()
+    company = request.company
+    user = request.user
+    
+    # Get users based on role
+    if user.role == 'admin':
+        # Admins see all users in their company
+        users = User.objects.filter(company=company).select_related('company')
+    elif user.role == 'manager':
+        # Managers see users in their company (branch filtering can be added if User model has branch field)
+        users = User.objects.filter(company=company).select_related('company')
+    else:
+        users = User.objects.none()
+    
+    # Annotate with asset counts and activity
+    users = users.annotate(
+        total_assets=Count('asset', filter=Q(asset__status='active')),
+        total_activities=Count('auditlog', distinct=True)
+    ).order_by('-is_active', 'first_name')
+    
+    # Calculate metrics
+    total_staff = users.count()
+    active_staff = users.filter(is_active=True).count()
+    inactive_staff = total_staff - active_staff
+    total_assets_assigned = Asset.objects.filter(
+        company=company,
+        assigned_to__isnull=False,
+        status='active'
+    ).count()
+    
+    # Recent activities (last 30 days)
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    recent_activities = AuditLog.objects.filter(
+        company=company,
+        timestamp__gte=thirty_days_ago
+    ).count()
+    
+    context = {
+        'users': users,
+        'total_staff': total_staff,
+        'active_staff': active_staff,
+        'inactive_staff': inactive_staff,
+        'total_assets_assigned': total_assets_assigned,
+        'recent_activities': recent_activities,
+    }
+    
+    return render(request, 'settings/user_management.html', context)
+
+@api_admin_or_manager_required
+def staff_detail(request, user_id):
+    """World-class staff detail page showing all assets, activities, and metrics"""
+    from django.contrib.auth import get_user_model
+    from assets.models import Asset, AssetTransfer
+    from audit.models import AuditLog
+    from django.utils import timezone
+    from datetime import timedelta
+    from django.shortcuts import get_object_or_404
+    
+    User = get_user_model()
+    company = request.company
+    current_user = request.user
+    
+    # Get the staff member
+    staff = get_object_or_404(User, id=user_id, company=company)
+    
+    # Permission check: managers can view all staff in company (branch filtering not implemented in User model yet)
+    # Future: Add branch field to User model for finer-grained access control
+    
+    # Get all assets assigned to this staff member
+    assigned_assets = Asset.objects.filter(
+        company=company,
+        assigned_to=staff
+    ).select_related('category', 'branch').order_by('-created_at')
+    
+    # Asset statistics
+    active_assets = assigned_assets.filter(status='active').count()
+    maintenance_assets = assigned_assets.filter(status='in_maintenance').count()
+    total_assets = assigned_assets.count()
+    
+    # Calculate total asset value
+    total_value = 0
+    for asset in assigned_assets:
+        if asset.purchase_value:
+            total_value += float(asset.purchase_value)
+    
+    # Activity history (last 50 activities)
+    activities = AuditLog.objects.filter(
+        company=company,
+        user=staff
+    ).select_related('asset').order_by('-timestamp')[:50]
+    
+    # Transfer history (assets received/sent)
+    transfers_received = AssetTransfer.objects.filter(
+        company=company,
+        to_user=staff
+    ).select_related('asset', 'from_user', 'initiator').order_by('-created_at')[:10]
+    
+    transfers_sent = AssetTransfer.objects.filter(
+        company=company,
+        from_user=staff
+    ).select_related('asset', 'to_user', 'initiator').order_by('-created_at')[:10]
+    
+    # Recent activities count (last 30 days)
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    recent_activity_count = AuditLog.objects.filter(
+        company=company,
+        user=staff,
+        timestamp__gte=thirty_days_ago
+    ).count()
+    
+    # Account age
+    account_age_days = (timezone.now() - staff.date_joined).days
+    
+    # Last activity
+    last_activity = AuditLog.objects.filter(
+        company=company,
+        user=staff
+    ).order_by('-timestamp').first()
+    
+    context = {
+        'staff': staff,
+        'assigned_assets': assigned_assets,
+        'active_assets': active_assets,
+        'maintenance_assets': maintenance_assets,
+        'total_assets': total_assets,
+        'total_value': round(total_value, 2),
+        'activities': activities,
+        'transfers_received': transfers_received,
+        'transfers_sent': transfers_sent,
+        'recent_activity_count': recent_activity_count,
+        'account_age_days': account_age_days,
+        'last_activity': last_activity,
+    }
+    
+    return render(request, 'settings/staff_detail.html', context)
+
+@api_admin_or_manager_required
+def api_staff_analytics(request):
+    """Advanced staff analytics API - Pro Level"""
+    from django.contrib.auth import get_user_model
+    from assets.models import Asset
+    from audit.models import AuditLog
+    from django.db.models import Count, Q, Avg, Sum, F
+    from django.db.models.functions import TruncDate
+    from django.utils import timezone
+    from datetime import timedelta
+    import json
+    
+    User = get_user_model()
+    company = request.company
+    
+    # Time range filter
+    days = int(request.GET.get('days', 30))
+    start_date = timezone.now() - timedelta(days=days)
+    
+    # Staff activity distribution
+    activity_by_user = AuditLog.objects.filter(
+        company=company,
+        timestamp__gte=start_date
+    ).values('user__username', 'user__role').annotate(
+        count=Count('id')
+    ).order_by('-count')[:10]
+    
+    # Asset distribution by staff
+    assets_by_user = Asset.objects.filter(
+        company=company,
+        assigned_to__isnull=False
+    ).values('assigned_to__username').annotate(
+        count=Count('id'),
+        total_value=Sum('purchase_value')
+    ).order_by('-count')[:10]
+    
+    # Daily activity trend
+    daily_activity = AuditLog.objects.filter(
+        company=company,
+        timestamp__gte=start_date
+    ).annotate(
+        date=TruncDate('timestamp')
+    ).values('date').annotate(
+        count=Count('id')
+    ).order_by('date')
+    
+    # Role distribution
+    role_stats = User.objects.filter(
+        company=company
+    ).values('role').annotate(
+        count=Count('id'),
+        active_count=Count('id', filter=Q(is_active=True))
+    )
+    
+    # Top performers (most active)
+    top_performers = AuditLog.objects.filter(
+        company=company,
+        timestamp__gte=start_date
+    ).values(
+        'user__id',
+        'user__username',
+        'user__first_name',
+        'user__last_name',
+        'user__role'
+    ).annotate(
+        activity_count=Count('id')
+    ).order_by('-activity_count')[:5]
+    
+    # Asset allocation efficiency
+    total_assets = Asset.objects.filter(company=company).count()
+    assigned_assets = Asset.objects.filter(company=company, assigned_to__isnull=False).count()
+    allocation_rate = (assigned_assets / total_assets * 100) if total_assets > 0 else 0
+    
+    # Staff with no recent activity
+    inactive_staff = User.objects.filter(
+        company=company,
+        is_active=True
+    ).exclude(
+        auditlog__timestamp__gte=start_date
+    ).count()
+    
+    return JsonResponse({
+        'success': True,
+        'analytics': {
+            'activity_by_user': list(activity_by_user),
+            'assets_by_user': list(assets_by_user),
+            'daily_activity': list(daily_activity),
+            'role_stats': list(role_stats),
+            'top_performers': list(top_performers),
+            'allocation_rate': round(allocation_rate, 2),
+            'inactive_staff_count': inactive_staff,
+            'total_staff': User.objects.filter(company=company).count(),
+            'active_staff': User.objects.filter(company=company, is_active=True).count(),
+        },
+        'period': f'{days} days'
+    })
+
+@api_admin_required
+def api_staff_export(request):
+    """Export staff data to Excel or PDF - Pro Level"""
+    from django.contrib.auth import get_user_model
+    from assets.models import Asset
+    from django.http import HttpResponse
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill
+    from datetime import datetime
+    
+    User = get_user_model()
+    company = request.company
+    export_format = request.GET.get('format', 'excel')
+    
+    # Get all staff with annotations
+    staff = User.objects.filter(company=company).annotate(
+        asset_count=Count('asset', filter=Q(asset__status='active')),
+        activity_count=Count('auditlog')
+    ).select_related('company')
+    
+    if export_format == 'excel':
+        # Create Excel workbook
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Staff Report"
+        
+        # Header styling
+        header_fill = PatternFill(start_color="176B87", end_color="176B87", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF", size=12)
+        
+        # Add company header
+        ws.merge_cells('A1:H1')
+        ws['A1'] = f"{company.name} - Staff Report"
+        ws['A1'].font = Font(bold=True, size=16)
+        ws['A1'].alignment = Alignment(horizontal='center')
+        
+        # Add date
+        ws.merge_cells('A2:H2')
+        ws['A2'] = f"Generated on: {datetime.now().strftime('%B %d, %Y at %H:%M')}"
+        ws['A2'].alignment = Alignment(horizontal='center')
+        
+        # Column headers
+        headers = ['ID', 'Username', 'Full Name', 'Email', 'Role', 'Active', 'Assets', 'Activities']
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=4, column=col_num)
+            cell.value = header
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center')
+        
+        # Data rows
+        for row_num, staff_member in enumerate(staff, 5):
+            ws.cell(row=row_num, column=1, value=staff_member.id)
+            ws.cell(row=row_num, column=2, value=staff_member.username)
+            ws.cell(row=row_num, column=3, value=staff_member.get_full_name())
+            ws.cell(row=row_num, column=4, value=staff_member.email)
+            ws.cell(row=row_num, column=5, value=staff_member.get_role_display())
+            ws.cell(row=row_num, column=6, value='Yes' if staff_member.is_active else 'No')
+            ws.cell(row=row_num, column=7, value=staff_member.asset_count)
+            ws.cell(row=row_num, column=8, value=staff_member.activity_count)
+        
+        # Adjust column widths
+        for col in ws.columns:
+            max_length = 0
+            column = col[0].column_letter
+            for cell in col:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(cell.value)
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column].width = adjusted_width
+        
+        # Save to response
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="staff_report_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx"'
+        wb.save(response)
+        return response
+    
+    return JsonResponse({'error': 'Invalid format'}, status=400)
 
 @api_admin_or_manager_required
 def session_management(request):
@@ -709,13 +1104,38 @@ def update_setting(request):
 @api_admin_required
 @require_POST
 def api_toggle_user_status(request):
-    """Toggle user active status with enterprise audit trail"""
+    """
+    Toggle user active status with enterprise audit trail
+    ENHANCED: Requires mandatory comment/reason for activation/deactivation
+    """
     try:
         user_id = request.POST.get('user_id')
         new_status = request.POST.get('status') == 'true'
+        reason = request.POST.get('reason', '').strip()
         
+        # Validation
         if not user_id:
             return JsonResponse({'success': False, 'error': 'User ID is required'})
+        
+        # WORLD-CLASS: Mandatory reason/comment validation
+        if not reason:
+            return JsonResponse({
+                'success': False,
+                'error': 'Reason is required. Please provide a comment explaining why you are ' +
+                        ('activating' if new_status else 'deactivating') + ' this user.'
+            })
+        
+        if len(reason) < 10:
+            return JsonResponse({
+                'success': False,
+                'error': 'Reason must be at least 10 characters. Please provide a meaningful explanation.'
+            })
+        
+        if len(reason) > 500:
+            return JsonResponse({
+                'success': False,
+                'error': 'Reason must not exceed 500 characters.'
+            })
         
         user = User.objects.get(id=user_id)
         
@@ -733,36 +1153,40 @@ def api_toggle_user_status(request):
         user.is_active = new_status
         user.save()
         
-        # Create access log entry
+        # Enhanced access log entry with reason
+        action_text = 'activated' if new_status else 'deactivated'
         AccessLog.objects.create(
             user=user,
             action='account_activated' if new_status else 'account_deactivated',
             ip_address=request.META.get('REMOTE_ADDR', '127.0.0.1'),
             user_agent=request.META.get('HTTP_USER_AGENT', ''),
-            details=f'Account {"activated" if new_status else "deactivated"} by {request.user.get_full_name()}'
+            details=f'Account {action_text} by {request.user.get_full_name()}. Reason: {reason}'
         )
         
-        # Audit log
+        # Enhanced audit log with reason
         log_audit(
             request.user, 
             'edit', 
             None, 
-            f'{"Activated" if new_status else "Deactivated"} user {user.get_full_name()} ({user.email})'
+            f'{action_text.capitalize()} user {user.get_full_name()} ({user.email}). Reason: {reason}'
         )
         
         return JsonResponse({
             'success': True,
-            'message': f'User {"activated" if new_status else "deactivated"} successfully',
+            'message': f'User {action_text} successfully',
             'user': {
                 'id': user.id,
                 'is_active': user.is_active,
                 'full_name': user.get_full_name()
-            }
+            },
+            'reason': reason
         })
         
     except User.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'User not found'})
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return JsonResponse({'success': False, 'error': str(e)})
 
 @api_admin_required
@@ -1194,3 +1618,113 @@ def create_setting(request):
         
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+
+# ============================================================================
+# MULTI-TENANCY POLICY API ENDPOINTS
+# ============================================================================
+
+@api_admin_or_manager_required
+def api_get_tenancy_policy(request):
+    """
+    Get multi-tenancy policy for the current company.
+    
+    Returns policy settings including branch access, cross-branch transfers,
+    and transfer approval requirements.
+    """
+    try:
+        from tenancy.policy_service import policy_service
+        
+        company = request.company
+        policy = policy_service.get_policy(company)
+        
+        if not policy:
+            return JsonResponse({
+                'success': False,
+                'error': 'Policy not found for your company'
+            }, status=404)
+        
+        return JsonResponse({
+            'success': True,
+            'policy': policy.to_dict(),
+            'summary': policy_service.get_policy_summary(company)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching tenancy policy: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': 'Failed to fetch policy settings'
+        }, status=500)
+
+
+@api_admin_required
+@require_POST
+def api_update_tenancy_policy(request):
+    """
+    Update multi-tenancy policy settings (Admin only).
+    
+    Accepts JSON payload with policy fields:
+    - branch_level_access: bool
+    - allow_cross_branch_transfers: bool
+    - require_transfer_approval: bool
+    
+    Returns updated policy and logs audit event.
+    """
+    try:
+        from tenancy.policy_service import policy_service
+        from django.core.exceptions import PermissionDenied, ValidationError
+        
+        company = request.company
+        user = request.user
+        
+        # Parse JSON body
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid JSON payload'
+            }, status=400)
+        
+        # Extract policy fields
+        updates = {}
+        if 'branch_level_access' in data:
+            updates['branch_level_access'] = bool(data['branch_level_access'])
+        if 'allow_cross_branch_transfers' in data:
+            updates['allow_cross_branch_transfers'] = bool(data['allow_cross_branch_transfers'])
+        if 'require_transfer_approval' in data:
+            updates['require_transfer_approval'] = bool(data['require_transfer_approval'])
+        
+        if not updates:
+            return JsonResponse({
+                'success': False,
+                'error': 'No valid policy fields provided'
+            }, status=400)
+        
+        # Update policy through service layer (handles validation and audit)
+        policy = policy_service.update_policy(company, user, **updates)
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Multi-tenancy policy updated successfully',
+            'policy': policy.to_dict(),
+            'summary': policy_service.get_policy_summary(company)
+        })
+        
+    except PermissionDenied as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=403)
+    except ValidationError as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)
+    except Exception as e:
+        logger.error(f"Error updating tenancy policy: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': 'Failed to update policy settings'
+        }, status=500)
