@@ -276,6 +276,41 @@ class Asset(models.Model):
                 raise ValidationError('Maintenance interval must be a positive integer when maintenance tracking is enabled.')
             if self.last_maintenance_date and self.next_maintenance_date and self.last_maintenance_date > self.next_maintenance_date:
                 raise ValidationError('Last maintenance date cannot be after the next maintenance date.')
+    
+    def save(self, *args, **kwargs):
+        """
+        WORLD-CLASS FIX: Normalize status to lowercase before saving.
+        
+        This prevents the critical bug where status values are saved as capitalized
+        (e.g., "Active", "In Maintenance") instead of lowercase (e.g., "active", "in_maintenance").
+        
+        The issue occurs when:
+        1. Forms submit display values instead of database values
+        2. Direct model saves without validation
+        3. Data imports or migrations
+        
+        This defensive programming ensures data integrity at the model level,
+        following ServiceNow ITAM, IBM Maximo, and SAP EAM best practices.
+        """
+        # Status mapping: Display value → Database value
+        status_mapping = {
+            'Active': self.STATUS_ACTIVE,
+            'In Maintenance': self.STATUS_IN_MAINTENANCE,
+            'Retired': self.STATUS_RETIRED,
+            'Lost': self.STATUS_LOST,
+            'Deleted': self.STATUS_DELETED,
+            'Transferred': self.STATUS_TRANSFERRED,
+        }
+        
+        # Normalize status if it's a display value
+        if self.status in status_mapping:
+            self.status = status_mapping[self.status]
+        
+        # Also handle lowercase normalization (defensive)
+        if self.status:
+            self.status = self.status.lower().replace(' ', '_')
+        
+        super().save(*args, **kwargs)
 
     @property
     def is_active(self) -> bool:

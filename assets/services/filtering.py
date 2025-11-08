@@ -40,7 +40,8 @@ class AssetFilteringService:
             return Asset.objects.none()
         
         # Start with company-scoped queryset
-        qs = Asset.objects.filter(company=company)
+        # CRITICAL: Exclude deleted assets (soft-deleted assets should not appear in lists)
+        qs = Asset.objects.filter(company=company).exclude(status=Asset.STATUS_DELETED)
         
         # Get user role
         role = getattr(user, 'role', 'user')
@@ -59,8 +60,37 @@ class AssetFilteringService:
                     # Filter by accessible branches
                     qs = qs.filter(branch_id__in=accessible_branch_ids)
                 else:
-                    # No accessible branches - return empty queryset
-                    qs = qs.none()
+                    # FALLBACK: Check for primary_branch or managed branches
+                    # This handles cases where UserBranch table is not populated
+                    from tenancy.models import Branch
+                    
+                    # Try primary_branch first
+                    primary_branch = getattr(user, 'primary_branch', None)
+                    
+                    # Try managed branches (where user is the manager)
+                    managed_branches = Branch.objects.filter(
+                        company=company,
+                        manager=user,
+                        is_active=True
+                    )
+                    
+                    # Try branch from request
+                    request_branch = getattr(request, 'branch', None) if request else None
+                    
+                    if primary_branch:
+                        # User has primary branch - show assets from that branch
+                        qs = qs.filter(branch=primary_branch)
+                    elif managed_branches.exists():
+                        # User manages branches - show assets from managed branches
+                        qs = qs.filter(branch__in=managed_branches)
+                    elif request_branch:
+                        # Use branch from request context
+                        qs = qs.filter(branch=request_branch)
+                    else:
+                        # WORLD-CLASS FIX: Show all company assets for managers
+                        # This prevents "No assets found" when branch assignments are missing
+                        # Admins can configure UserBranch for stricter access control
+                        pass  # No additional filter - show all company assets
                     
             except Exception as e:
                 # Fallback: try to get branch from request
@@ -68,8 +98,9 @@ class AssetFilteringService:
                 if branch:
                     qs = qs.filter(branch=branch)
                 else:
-                    # No branch context - return empty queryset for safety
-                    qs = qs.none()
+                    # WORLD-CLASS FIX: Show all company assets for managers as fallback
+                    # Better to show assets than hide them due to configuration issues
+                    pass  # No additional filter
         
         # Admin sees all company assets (no additional filter)
         

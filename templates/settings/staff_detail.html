@@ -294,10 +294,10 @@
 <!-- Action Bar -->
 <div class="mb-4 no-print" style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
     {% if user.role == 'admin' %}
-    <button class="action-btn btn btn-primary">
+    <button class="action-btn btn btn-primary" onclick="openEditProfileModal()">
         <i class="bi bi-pencil-square"></i>Edit Profile
     </button>
-    <button class="action-btn btn btn-warning">
+    <button class="action-btn btn btn-warning" onclick="openBulkTransferModal()">
         <i class="bi bi-box-arrow-right"></i>Transfer Assets
     </button>
     {% endif %}
@@ -452,9 +452,15 @@
                     <div class="info-row">
                         <span class="info-label">Status</span>
                         <span class="info-value">
-                            <span class="status-badge" style="background: {{ staff.is_active|yesno:'rgba(16, 185, 129, 0.1),rgba(107, 114, 128, 0.1)' }}; color: {{ staff.is_active|yesno:'#10b981,#6b7280' }};">
-                                {{ staff.is_active|yesno:'Active,Inactive' }}
+                            {% if staff.is_active %}
+                            <span class="status-badge" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                                Active
                             </span>
+                            {% else %}
+                            <span class="status-badge" style="background: rgba(107, 114, 128, 0.1); color: #6b7280;">
+                                Inactive
+                            </span>
+                            {% endif %}
                         </span>
                     </div>
                     <div class="info-row">
@@ -525,9 +531,19 @@
                         {% endif %}
                     </div>
                     <div class="col-md-3 text-end">
-                        <span class="status-badge" style="background: {% if asset.status == 'active' %}rgba(16, 185, 129, 0.1){% elif asset.status == 'in_maintenance' %}rgba(245, 158, 11, 0.1){% else %}rgba(107, 114, 128, 0.1){% endif %}; color: {% if asset.status == 'active' %}#10b981{% elif asset.status == 'in_maintenance' %}#f59e0b{% else %}#6b7280{% endif %};">
+                        {% if asset.status == 'active' %}
+                        <span class="status-badge" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
                             {{ asset.get_status_display }}
                         </span>
+                        {% elif asset.status == 'in_maintenance' %}
+                        <span class="status-badge" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                            {{ asset.get_status_display }}
+                        </span>
+                        {% else %}
+                        <span class="status-badge" style="background: rgba(107, 114, 128, 0.1); color: #6b7280;">
+                            {{ asset.get_status_display }}
+                        </span>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -625,5 +641,482 @@
         </div>
     </div>
 </div>
+
+{% endblock %}
+
+{% block dashboard_modals %}
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProfileModalLabel">
+                    <i class="bi bi-pencil-square me-2"></i>Edit Profile - {{ staff.get_full_name }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editProfileForm">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editFirstName" class="form-label fw-semibold">
+                                First Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="editFirstName" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="editLastName" class="form-label fw-semibold">
+                                Last Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="editLastName" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editEmail" class="form-label fw-semibold">
+                            Email <span class="text-danger">*</span>
+                        </label>
+                        <input type="email" class="form-control" id="editEmail" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPhone" class="form-label fw-semibold">Phone Number</label>
+                        <input type="tel" class="form-control" id="editPhone">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editRole" class="form-label fw-semibold">
+                            Role <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="editRole" required>
+                            <option value="user">User</option>
+                            <option value="manager">Manager</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="editIsActive">
+                            <label class="form-check-label fw-semibold" for="editIsActive">
+                                Active Account
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveProfileChanges()">
+                    <i class="bi bi-check-circle me-1"></i>Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Transfer Assets Modal -->
+<div class="modal fade" id="bulkTransferModal" tabindex="-1" aria-labelledby="bulkTransferModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkTransferModalLabel">
+                    <i class="bi bi-box-arrow-right me-2"></i>Transfer Assets - {{ staff.get_full_name }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- WORLD-CLASS: Explain approval workflow -->
+                <div class="alert alert-warning border-warning">
+                    <div class="d-flex align-items-start">
+                        <i class="bi bi-exclamation-triangle-fill me-2 mt-1"></i>
+                        <div>
+                            <strong>Transfer Approval Workflow</strong>
+                            <p class="mb-2 mt-1">Asset transfers require a multi-stage approval process:</p>
+                            <ol class="mb-0 ps-3">
+                                <li><strong>Initiation:</strong> You create the transfer request</li>
+                                <li><strong>Receiver Approval:</strong> The recipient must accept the assets</li>
+                                <li><strong>Admin Review:</strong> An administrator must approve the final transfer</li>
+                                <li><strong>Completion:</strong> Assets are transferred to the new owner</li>
+                            </ol>
+                            <p class="mb-0 mt-2 text-muted small">
+                                <i class="bi bi-info-circle me-1"></i>
+                                This workflow ensures accountability and prevents unauthorized asset movements.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="bi bi-box-arrow-right me-2"></i>
+                    <strong>Bulk Transfer:</strong> Initiate transfer for all {{ total_assets }} asset(s) from {{ staff.get_full_name }} to another user.
+                </div>
+                <form id="bulkTransferForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="transferToUser" class="form-label fw-semibold">
+                            Transfer To <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="transferToUser" required>
+                            <option value="">Select a user...</option>
+                            <!-- Will be populated dynamically -->
+                        </select>
+                        <small class="text-muted">Select the user who will receive all assets</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="transferReason" class="form-label fw-semibold">
+                            Reason <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" id="transferReason" rows="3" required placeholder="Enter reason for transfer..."></textarea>
+                        <small class="text-muted">Provide a clear reason for this bulk transfer</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Assets to Transfer</label>
+                        <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                            <div id="assetsToTransferList">
+                                <!-- Will be populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="executeBulkTransfer()">
+                    <i class="bi bi-box-arrow-right me-1"></i>Transfer All Assets
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// World-class staff detail page JavaScript
+const STAFF_ID = {{ staff.id }};
+const STAFF_DEBUG = true;
+
+// ============================================================================
+// EDIT PROFILE FUNCTIONALITY
+// ============================================================================
+
+function openEditProfileModal() {
+    if (STAFF_DEBUG) console.log('Opening edit profile modal for staff:', STAFF_ID);
+    
+    // Populate form with current data
+    document.getElementById('editFirstName').value = '{{ staff.first_name|escapejs }}';
+    document.getElementById('editLastName').value = '{{ staff.last_name|escapejs }}';
+    document.getElementById('editEmail').value = '{{ staff.email|escapejs }}';
+    document.getElementById('editPhone').value = '{{ staff.phone_number|default:""|escapejs }}';
+    document.getElementById('editRole').value = '{{ staff.role|escapejs }}';
+    document.getElementById('editIsActive').checked = {% if staff.is_active %}true{% else %}false{% endif %};
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('editProfileModal'));
+    modal.show();
+}
+
+async function saveProfileChanges() {
+    const form = document.getElementById('editProfileForm');
+    
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const profileData = {
+        first_name: document.getElementById('editFirstName').value.trim(),
+        last_name: document.getElementById('editLastName').value.trim(),
+        email: document.getElementById('editEmail').value.trim(),
+        phone_number: document.getElementById('editPhone').value.trim(),
+        role: document.getElementById('editRole').value,
+        is_active: document.getElementById('editIsActive').checked
+    };
+    
+    // WORLD-CLASS: Check if status is changing and prompt for reason
+    const originalStatus = {% if staff.is_active %}true{% else %}false{% endif %};
+    if (profileData.is_active !== originalStatus) {
+        const statusText = profileData.is_active ? 'activate' : 'deactivate';
+        const reason = prompt(`Please provide a reason for ${statusText}ing this account:\n\n(Minimum 10 characters required)`);
+        
+        if (reason === null) {
+            // User cancelled
+            return;
+        }
+        
+        if (!reason || reason.trim().length < 10) {
+            showToast('Reason must be at least 10 characters', 'error');
+            return;
+        }
+        
+        profileData.status_change_reason = reason.trim();
+    }
+    
+    if (STAFF_DEBUG) console.log('Saving profile changes:', profileData);
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    
+    // Show loading state
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+    
+    // Call API
+    fetch(`/api/users/${STAFF_ID}/update/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify(profileData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Profile updated successfully!', 'success');
+            
+            if (STAFF_DEBUG) console.log('✅ Profile updated:', data);
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editProfileModal'));
+            if (modal) modal.hide();
+            
+            // Reload page to show updated data
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            throw new Error(data.error || 'Failed to update profile');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating profile:', error);
+        showToast('Failed to update profile: ' + error.message, 'error');
+        
+        // Re-enable button
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    });
+}
+
+// ============================================================================
+// BULK TRANSFER FUNCTIONALITY
+// ============================================================================
+
+function openBulkTransferModal() {
+    if (STAFF_DEBUG) console.log('Opening bulk transfer modal for staff:', STAFF_ID);
+    
+    // Load available users
+    loadAvailableUsers();
+    
+    // Load assets to transfer
+    loadAssetsToTransfer();
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('bulkTransferModal'));
+    modal.show();
+}
+
+function loadAvailableUsers() {
+    const select = document.getElementById('transferToUser');
+    select.innerHTML = '<option value="">Loading users...</option>';
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    
+    fetch('/api/users/', {
+        headers: {
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.users) {
+            select.innerHTML = '<option value="">Select a user...</option>';
+            
+            // Filter out current staff member
+            const users = data.users.filter(u => u.id !== STAFF_ID);
+            
+            users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = `${user.full_name} (${user.role})`;
+                select.appendChild(option);
+            });
+            
+            if (STAFF_DEBUG) console.log('✅ Loaded', users.length, 'users');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading users:', error);
+        select.innerHTML = '<option value="">Error loading users</option>';
+    });
+}
+
+function loadAssetsToTransfer() {
+    const container = document.getElementById('assetsToTransferList');
+    container.innerHTML = '<div class="text-center"><span class="spinner-border spinner-border-sm me-2"></span>Loading assets...</div>';
+    
+    // For now, show the assets from the page
+    const assetCount = {{ total_assets|default:0 }};
+    
+    if (assetCount === 0) {
+        container.innerHTML = '<p class="text-muted text-center mb-0">No assets to transfer</p>';
+        return;
+    }
+    
+    container.innerHTML = `
+        <div class="alert alert-success mb-0">
+            <i class="bi bi-check-circle me-2"></i>
+            <strong>${assetCount}</strong> asset(s) will be transferred
+        </div>
+    `;
+}
+
+function executeBulkTransfer() {
+    const form = document.getElementById('bulkTransferForm');
+    
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const toUserId = document.getElementById('transferToUser').value;
+    const reason = document.getElementById('transferReason').value.trim();
+    
+    if (!toUserId) {
+        showToast('Please select a user to transfer to', 'error');
+        return;
+    }
+    
+    if (STAFF_DEBUG) console.log('Executing bulk transfer:', { toUserId, reason });
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    
+    // Show loading state
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Transferring...';
+    
+    // Get all assets for this user
+    const assetIds = [
+        {% for asset in assigned_assets %}
+        {{ asset.id }}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    if (assetIds.length === 0) {
+        showToast('No assets to transfer', 'warning');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        return;
+    }
+    
+    // Transfer each asset
+    let successCount = 0;
+    let errorCount = 0;
+    const totalAssets = assetIds.length;
+    
+    Promise.all(assetIds.map(assetId => 
+        fetch('/assets/api/transfers/initiate/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                asset_id: assetId,
+                to_user_id: parseInt(toUserId),
+                initiator_comment: reason
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                successCount++;
+            } else {
+                errorCount++;
+            }
+        })
+        .catch(() => {
+            errorCount++;
+        })
+    ))
+    .then(() => {
+        if (successCount > 0) {
+            // WORLD-CLASS: Accurate messaging reflecting approval workflow
+            const message = `Transfer request initiated for ${successCount} asset(s). The recipient will be notified to approve.`;
+            showToast(message, 'success');
+            
+            if (STAFF_DEBUG) console.log(`✅ Initiated transfer for ${successCount}/${totalAssets} assets`);
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('bulkTransferModal'));
+            if (modal) modal.hide();
+            
+            // Reload page to show updated status
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            throw new Error('Failed to initiate transfer for any assets');
+        }
+        
+        if (errorCount > 0) {
+            showToast(`${errorCount} asset(s) failed to initiate transfer`, 'warning');
+        }
+    })
+    .catch(error => {
+        console.error('Error during bulk transfer:', error);
+        showToast('Failed to initiate transfer: ' + error.message, 'error');
+        
+        // Re-enable button
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    });
+}
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+function showToast(message, type = 'info') {
+    // Create toast container if it doesn't exist
+    let toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toastContainer';
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        toastContainer.style.zIndex = '9999';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Create toast
+    const toastId = 'toast-' + Date.now();
+    const bgClass = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : type === 'warning' ? 'bg-warning' : 'bg-info';
+    const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'x-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle';
+    
+    const toastHtml = `
+        <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi bi-${icon} me-2"></i>${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
+    toast.show();
+    
+    // Remove toast after it's hidden
+    toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+    });
+}
+</script>
 
 {% endblock %}

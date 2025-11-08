@@ -148,37 +148,76 @@
           {% endif %}
 
           <!-- Actions (for pending requests) -->
-          {% if approval_request.status == 'pending' and can_approve %}
-            <div class="info-card bg-light">
-              <h5 class="fw-bold mb-3">
-                <i class="bi bi-hand-thumbs-up me-2 text-primary"></i>Take Action
-              </h5>
-              <form method="post" action="{% url 'approval_action' approval_request.pk %}">
-                {% csrf_token %}
-                <div class="row g-3">
-                  <div class="col-12">
-                    <label class="form-label fw-semibold">Notes / Reason</label>
-                    <textarea name="notes" id="actionNotes" class="form-control" rows="3" 
-                              placeholder="Add notes for approval or reason for rejection..."></textarea>
-                  </div>
-                  <div class="col-12">
-                    <div class="d-flex gap-2">
-                      <button type="submit" name="action" value="approve" class="btn btn-success flex-fill">
-                        <i class="bi bi-check-circle me-1"></i>Approve
-                      </button>
-                      <button type="submit" name="action" value="reject" class="btn btn-danger flex-fill"
-                              onclick="return confirm('Are you sure you want to reject this request?')">
-                        <i class="bi bi-x-circle me-1"></i>Reject
-                      </button>
-                      <button type="submit" name="action" value="escalate" class="btn btn-warning flex-fill"
-                              onclick="return confirm('Escalate this request to an administrator?')">
-                        <i class="bi bi-arrow-up-circle me-1"></i>Escalate
-                      </button>
+          {% if approval_request.status == 'pending' %}
+            {% if is_requester %}
+              <!-- Requester View: Cannot approve own request -->
+              <div class="info-card border-info bg-light">
+                <h5 class="fw-bold mb-3 text-info">
+                  <i class="bi bi-info-circle me-2"></i>Your Request Status
+                </h5>
+                <div class="alert alert-info mb-0">
+                  <div class="d-flex align-items-start">
+                    <i class="bi bi-clock-history fs-4 me-3"></i>
+                    <div>
+                      <h6 class="fw-bold mb-2">Awaiting Approval</h6>
+                      <p class="mb-2">
+                        Your request has been submitted and is currently being reviewed by 
+                        <strong>{{ approval_request.assigned_to.get_full_name|default:approval_request.assigned_to.username }}</strong>.
+                      </p>
+                      <p class="mb-0 small text-muted">
+                        <i class="bi bi-shield-check me-1"></i>
+                        <strong>Security Note:</strong> You cannot approve your own request. This ensures proper separation of duties and maintains audit integrity.
+                      </p>
                     </div>
                   </div>
                 </div>
-              </form>
-            </div>
+                <div class="mt-3">
+                  <a href="{% url 'approval_dashboard' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+                  </a>
+                </div>
+              </div>
+            {% elif can_approve %}
+              <!-- Approver View: Can take action -->
+              <div class="info-card bg-light">
+                <h5 class="fw-bold mb-3">
+                  <i class="bi bi-hand-thumbs-up me-2 text-primary"></i>Take Action
+                </h5>
+                <form method="post" action="{% url 'approval_action' approval_request.pk %}">
+                  {% csrf_token %}
+                  <div class="row g-3">
+                    <div class="col-12">
+                      <label class="form-label fw-semibold">Notes / Reason</label>
+                      <textarea name="notes" id="actionNotes" class="form-control" rows="3" 
+                                placeholder="Add notes for approval or reason for rejection..."></textarea>
+                    </div>
+                    <div class="col-12">
+                      <div class="d-flex gap-2">
+                        <button type="submit" name="action" value="approve" class="btn btn-success flex-fill">
+                          <i class="bi bi-check-circle me-1"></i>Approve
+                        </button>
+                        <button type="submit" name="action" value="reject" class="btn btn-danger flex-fill"
+                                onclick="return confirm('Are you sure you want to reject this request?')">
+                          <i class="bi bi-x-circle me-1"></i>Reject
+                        </button>
+                        <button type="submit" name="action" value="escalate" class="btn btn-warning flex-fill"
+                                onclick="return confirm('Escalate this request to an administrator?')">
+                          <i class="bi bi-arrow-up-circle me-1"></i>Escalate
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            {% else %}
+              <!-- Viewer: No permission -->
+              <div class="info-card border-warning bg-light">
+                <div class="alert alert-warning mb-0">
+                  <i class="bi bi-exclamation-triangle me-2"></i>
+                  <strong>View Only:</strong> You do not have permission to take action on this request.
+                </div>
+              </div>
+            {% endif %}
           {% endif %}
         </div>
 

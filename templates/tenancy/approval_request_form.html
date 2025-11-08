@@ -178,7 +178,7 @@
                   <span class="input-group-text" id="deadline-addon" aria-hidden="true">
                     <i class="bi bi-calendar-event"></i>
                   </span>
-                  {{ form.deadline.as_widget(attrs={'class': 'form-control', 'aria-describedby': 'deadline-help deadline-summary', 'aria-labelledby': form.deadline.id_for_label}) }}
+                  {{ form.deadline }}
                 </div>
                 <div class="d-flex flex-wrap gap-2 mt-2" aria-label="Quick deadline shortcuts">
                   <button type="button" class="btn btn-sm btn-outline-primary deadline-quick-set" data-deadline-days="3">

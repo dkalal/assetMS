@@ -31,9 +31,15 @@ class EnterpriseCSRFMiddleware(MiddlewareMixin):
     
     def is_login_page(self, request):
         """Check if current request is for login page"""
-        login_paths = ['/login/', '/accounts/login/']
+        login_paths = [
+            '/login/', 
+            '/accounts/login/',
+            '/users/login/',
+            '/admin/login/',  # Django admin login
+        ]
         return (
             request.path in login_paths or 
+            request.path.startswith('/admin/login/') or  # Admin login with query params
             (hasattr(request, 'resolver_match') and 
              request.resolver_match and 
              request.resolver_match.url_name == 'login')

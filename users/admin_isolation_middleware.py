@@ -9,78 +9,51 @@ logger = logging.getLogger(__name__)
 
 class AdminSessionIsolationMiddleware(MiddlewareMixin):
     """
-    Enterprise Admin Session Isolation Middleware
-    Prevents admin users from accessing regular site with admin session
+    WORLD-CLASS: Enterprise Admin Session Isolation Middleware
+    
+    NOTE: With independent sessions (SessionIsolationMiddleware), this middleware
+    is now primarily for logging and monitoring. Session isolation is handled
+    automatically by separate session cookies.
+    
+    This middleware now provides:
+    - Security monitoring and logging
+    - Access attempt tracking
+    - Audit trail for admin access
+    
+    Following best practices from:
+    - ServiceNow ITAM: Separate admin and user contexts
+    - IBM Maximo: Admin console isolation
+    - SAP EAM: Role-based session management
+    
+    Note: Sessions are now completely independent via SessionIsolationMiddleware.
+    Users can be logged into both admin and regular dashboard simultaneously.
     """
     
     def process_request(self, request):
-        """Enforce admin session isolation"""
+        """Monitor and log admin access attempts"""
         if not request.user.is_authenticated:
             return None
-            
-        # Get current session context
-        current_context = self.get_current_context(request)
         
-        # Check if user has admin session but accessing non-admin area
-        if hasattr(request, 'user_session'):
-            session_context = getattr(request.user_session, 'session_context', 'web')
-            
-            # Admin session trying to access web app
-            if session_context == 'admin' and current_context == 'web':
-                return self.handle_context_violation(request, 'admin_to_web')
-            
-            # Web session trying to access admin (Django handles this, but we log it)
-            elif session_context == 'web' and current_context == 'admin':
-                if not (request.user.is_superuser or request.user.role == 'admin'):
-                    logger.warning(f'Web session user {request.user.username} attempted admin access')
-                    return self.handle_context_violation(request, 'web_to_admin')
+        # Get current session context (set by SessionContextMiddleware)
+        session_context = getattr(request, 'session_context', 'regular')
+        current_path = request.path
         
-        return None
-    
-    def get_current_context(self, request):
-        """Determine current request context"""
-        path = request.path
-        
-        if path.startswith('/admin/'):
-            return 'admin'
-        elif path.startswith('/api/'):
-            return 'api'
-        else:
-            return 'web'
-    
-    def handle_context_violation(self, request, violation_type):
-        """Handle context access violations"""
-        user = request.user
-        ip_address = self.get_client_ip(request)
-        
-        # Log security violation
-        logger.warning(f'Context violation: {violation_type} by {user.username} from {ip_address}')
-        
-        # Create access log entry
-        from users.models import AccessLog
-        AccessLog.objects.create(
-            user=user,
-            action='failed_login',
-            ip_address=ip_address,
-            user_agent=request.META.get('HTTP_USER_AGENT', ''),
-            details=f'Context violation: {violation_type}'
-        )
-        
-        # Logout user and redirect with message
-        logout(request)
-        
-        if violation_type == 'admin_to_web':
-            messages.error(request, 
-                'Security Notice: Admin sessions cannot access the main application. '
-                'Please login with a regular account to access the dashboard.'
+        # Log admin access for security monitoring
+        if current_path.startswith('/admin/') and session_context == 'admin':
+            logger.info(
+                f'Admin access: {request.user.username} | '
+                f'Path: {current_path} | '
+                f'IP: {self.get_client_ip(request)}'
             )
-            return redirect('users:login')
         
-        elif violation_type == 'web_to_admin':
-            messages.error(request, 
-                'Access Denied: You do not have permission to access the admin panel.'
-            )
-            return redirect('users:login')
+        # Log if non-admin user tries to access admin (Django will handle rejection)
+        if current_path.startswith('/admin/'):
+            if not (request.user.is_superuser or getattr(request.user, 'is_staff', False)):
+                logger.warning(
+                    f'Unauthorized admin access attempt: {request.user.username} | '
+                    f'Path: {current_path} | '
+                    f'IP: {self.get_client_ip(request)}'
+                )
         
         return None
     
@@ -92,3 +65,7 @@ class AdminSessionIsolationMiddleware(MiddlewareMixin):
         else:
             ip = request.META.get('REMOTE_ADDR', '127.0.0.1')
         return ip
+    
+    # REMOVED: process_response method
+    # Django's built-in CSRF middleware already handles token rotation correctly
+    # Manual rotation was causing tokens to be invalidated before form submission

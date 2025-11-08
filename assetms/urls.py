@@ -118,6 +118,8 @@ urlpatterns = [
     path('api/field/<int:field_id>/delete/', api_delete_field, name='api_delete_field'),
     path('api/', include('users.api_urls')),
     path('api/tenancy/branches/', __import__('tenancy.api_views', fromlist=['api_branches_list']).api_branches_list, name='api_branches_list'),
+    path('api/tenancy/branches/<int:branch_id>/', __import__('tenancy.api_views', fromlist=['api_branch_detail']).api_branch_detail, name='api_branch_detail'),
+    path('api/tenancy/branches/<int:branch_id>/update/', __import__('tenancy.api_views', fromlist=['api_branch_update']).api_branch_update, name='api_branch_update'),
     path('help/', __import__('help.views', fromlist=['HelpCenterView']).HelpCenterView.as_view(), name='help_center'),
     path('documents/', __import__('help.views', fromlist=['DocumentsView']).DocumentsView.as_view(), name='documents'),
     path('security/privacy', RedirectView.as_view(pattern_name='settings:security_privacy_settings', permanent=False)),

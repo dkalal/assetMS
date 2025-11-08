@@ -7,6 +7,29 @@
 <div id="user-role" data-role="{{ user_role|default:'' }}" style="display:none;"></div>
 <h2 class="mb-4">{% if object %}Edit Asset{% else %}Register New Asset{% endif %}</h2>
 
+{% if not object and workflow_message %}
+<!-- Workflow Mode Banner (Unified Asset Creation) -->
+<div class="alert {% if requires_approval %}alert-info{% else %}alert-success{% endif %} d-flex align-items-center mb-4" role="alert">
+    <i class="bi {% if requires_approval %}bi-info-circle-fill{% else %}bi-check-circle-fill{% endif %} fs-4 me-3"></i>
+    <div class="flex-grow-1">
+        <h6 class="alert-heading mb-1 fw-bold">
+            {% if requires_approval %}
+            Approval Required
+            {% else %}
+            Direct Creation
+            {% endif %}
+        </h6>
+        <p class="mb-0">{{ workflow_message }}</p>
+        {% if requires_approval %}
+        <small class="text-muted mt-1 d-block">
+            <i class="bi bi-lightbulb me-1"></i>
+            You'll need to provide justification for this request. An admin will review and approve it.
+        </small>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
 {% if object and current_asset %}
 <!-- Current Asset Context Banner (Multi-Tenancy) -->
 <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
@@ -196,15 +219,60 @@
             {{ form.assigned_to.errors }}
         </div>
         <div class="col-md-6">
-            <label for="id_images" class="form-label">Image (max 2MB)</label>
+            <label for="id_images" class="form-label">
+                <i class="bi bi-image me-1"></i>Asset Image (Optional)
+            </label>
             {{ form.images }}
+            <div class="form-text">
+                <i class="bi bi-info-circle me-1"></i>Max 2MB. Supported: JPG, PNG, GIF
+            </div>
             {{ form.images.errors }}
-            <img id="image-preview" src="#" alt="Image Preview" class="img-fluid mt-2 d-none" style="max-width:150px;"/>
+            
+            <!-- Image Preview -->
+            {% if object and object.images %}
+            <div class="mt-2 p-2 border rounded bg-light">
+                <small class="text-muted d-block mb-1">Current Image:</small>
+                <img src="{{ object.images.url }}" alt="Current Asset Image" class="img-fluid rounded" style="max-width:150px; max-height:150px;"/>
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" name="images-clear" id="images-clear">
+                    <label class="form-check-label small text-danger" for="images-clear">
+                        <i class="bi bi-trash me-1"></i>Remove current image
+                    </label>
+                </div>
+            </div>
+            {% endif %}
+            <img id="image-preview" src="#" alt="New Image Preview" class="img-fluid mt-2 d-none rounded border" style="max-width:150px; max-height:150px;"/>
         </div>
         <div class="col-md-6">
-            <label for="id_documents" class="form-label">Document (PDF/Word, max 5MB)</label>
+            <label for="id_documents" class="form-label">
+                <i class="bi bi-file-earmark-pdf me-1"></i>Supporting Document (Optional)
+            </label>
             {{ form.documents }}
+            <div class="form-text">
+                <i class="bi bi-info-circle me-1"></i>Max 5MB. Supported: PDF, Word (DOC, DOCX)
+            </div>
             {{ form.documents.errors }}
+            
+            <!-- Document Preview -->
+            {% if object and object.documents %}
+            <div class="mt-2 p-2 border rounded bg-light">
+                <small class="text-muted d-block mb-1">Current Document:</small>
+                <a href="{{ object.documents.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-download me-1"></i>Download Current Document
+                </a>
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" name="documents-clear" id="documents-clear">
+                    <label class="form-check-label small text-danger" for="documents-clear">
+                        <i class="bi bi-trash me-1"></i>Remove current document
+                    </label>
+                </div>
+            </div>
+            {% endif %}
+            <div id="document-preview" class="mt-2 d-none">
+                <small class="text-success">
+                    <i class="bi bi-check-circle me-1"></i>New document selected: <span id="document-name"></span>
+                </small>
+            </div>
         </div>
         <!-- Depreciation Details -->
         <div class="col-12">
@@ -266,8 +334,62 @@
             </div>
         </div>
     </div>
+    
+    {% if not object and requires_approval %}
+    <!-- Approval Workflow Fields (Manager Only) -->
+    <div class="col-12">
+        <div class="card mb-3 border-info">
+            <div class="card-header bg-info text-white">
+                <i class="bi bi-clipboard-check me-2"></i>Approval Request Information
+            </div>
+            <div class="card-body row g-3">
+                <div class="col-12">
+                    <label for="id_title" class="form-label">Request Title <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="id_title" name="title" required 
+                           placeholder="e.g., New Laptop for IT Department">
+                    <div class="form-text">Brief title describing this asset creation request</div>
+                </div>
+                <div class="col-12">
+                    <label for="id_justification" class="form-label">Justification <span class="text-danger">*</span></label>
+                    <textarea class="form-control" id="id_justification" name="justification" rows="4" required
+                              placeholder="Explain why this asset is needed and how it will be used..."></textarea>
+                    <div class="form-text">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Provide a detailed explanation for why this asset is needed. This will help the admin make an informed decision.
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label for="id_priority" class="form-label">Priority</label>
+                    <select class="form-select" id="id_priority" name="priority">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                    </select>
+                    <div class="form-text">Set priority based on urgency</div>
+                </div>
+            </div>
+            <div class="card-footer small text-muted">
+                <i class="bi bi-lightbulb me-1"></i>
+                These fields are required for approval requests. Your request will be reviewed by an admin.
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
     <div class="mt-4">
-        <button type="submit" class="btn btn-primary">{% if object %}Save Changes{% else %}Register Asset{% endif %}</button>
+        <button type="submit" class="btn btn-primary">
+            {% if object %}
+                Save Changes
+            {% elif requires_approval %}
+                <i class="bi bi-send me-1"></i>Submit Request for Approval
+            {% else %}
+                <i class="bi bi-plus-circle me-1"></i>Register Asset
+            {% endif %}
+        </button>
+        <a href="{% url 'asset_list' %}" class="btn btn-outline-secondary ms-2">
+            <i class="bi bi-x-circle me-1"></i>Cancel
+        </a>
     </div>
 </form>
 {% if object and object.qr_code %}
@@ -385,6 +507,92 @@
 <!-- Phase 4: Dynamic Status Change Fields (World-Class UI/UX) -->
 <script src="{% static 'js/asset-status-fields.js' %}"></script>
 
+<!-- World-Class File Upload Preview -->
+<script>
+(function() {
+    'use strict';
+    
+    // Image preview functionality
+    const imageInput = document.getElementById('id_images');
+    const imagePreview = document.getElementById('image-preview');
+    
+    if (imageInput && imagePreview) {
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            
+            if (file) {
+                // Validate file size (2MB max)
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('⚠️ Image file is too large!\n\nMaximum size: 2MB\nYour file: ' + (file.size / 1024 / 1024).toFixed(2) + 'MB');
+                    imageInput.value = '';
+                    imagePreview.classList.add('d-none');
+                    return;
+                }
+                
+                // Validate file type
+                if (!file.type.startsWith('image/')) {
+                    alert('⚠️ Invalid file type!\n\nPlease select an image file (JPG, PNG, GIF).');
+                    imageInput.value = '';
+                    imagePreview.classList.add('d-none');
+                    return;
+                }
+                
+                // Show preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.classList.remove('d-none');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                imagePreview.classList.add('d-none');
+            }
+        });
+    }
+    
+    // Document preview functionality
+    const documentInput = document.getElementById('id_documents');
+    const documentPreview = document.getElementById('document-preview');
+    const documentName = document.getElementById('document-name');
+    
+    if (documentInput && documentPreview && documentName) {
+        documentInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            
+            if (file) {
+                // Validate file size (5MB max)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('⚠️ Document file is too large!\n\nMaximum size: 5MB\nYour file: ' + (file.size / 1024 / 1024).toFixed(2) + 'MB');
+                    documentInput.value = '';
+                    documentPreview.classList.add('d-none');
+                    return;
+                }
+                
+                // Validate file type
+                const allowedTypes = [
+                    'application/pdf',
+                    'application/msword',
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                ];
+                
+                if (!allowedTypes.includes(file.type)) {
+                    alert('⚠️ Invalid file type!\n\nPlease select a PDF or Word document (DOC, DOCX).');
+                    documentInput.value = '';
+                    documentPreview.classList.add('d-none');
+                    return;
+                }
+                
+                // Show file name
+                documentName.textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+                documentPreview.classList.remove('d-none');
+            } else {
+                documentPreview.classList.add('d-none');
+            }
+        });
+    }
+})();
+</script>
+
 <!-- World-Class Status Management (Legacy - kept for backward compatibility) -->
 <script>
 (function() {
@@ -453,27 +661,36 @@
     });
     
     // Form submission validation
+    // CRITICAL FIX: Only validate if status is actually changing to critical status
     const form = statusSelect.closest('form');
     if (form) {
         form.addEventListener('submit', function(e) {
             const currentStatus = statusSelect.value;
             
-            // Validate reason for critical statuses
-            if (criticalStatuses.includes(currentStatus)) {
-                const reason = reasonTextarea ? reasonTextarea.value.trim() : '';
+            // Only validate if:
+            // 1. Status is critical AND
+            // 2. Reason textarea exists AND is visible
+            if (criticalStatuses.includes(currentStatus) && reasonTextarea) {
+                const reasonContainer = document.getElementById('status-reason-container');
                 
-                if (!reason || reason.length < 10) {
-                    e.preventDefault();
-                    alert('⚠️ Validation Error\n\nPlease provide a detailed reason (at least 10 characters) for this critical status change.');
+                // Only validate if reason container is visible (status is changing)
+                if (reasonContainer && reasonContainer.style.display !== 'none') {
+                    const reason = reasonTextarea.value.trim();
                     
-                    if (reasonTextarea) {
+                    if (!reason || reason.length < 10) {
+                        e.preventDefault();
+                        alert('⚠️ Validation Error\n\nPlease provide a detailed reason (at least 10 characters) for this critical status change.');
+                        
                         reasonTextarea.focus();
                         reasonTextarea.classList.add('is-invalid');
+                        
+                        return false;
                     }
-                    
-                    return false;
                 }
             }
+            
+            // If validation passes or not needed, log and allow submission
+            console.log('✅ Status validation passed, form submitting...');
         });
     }
     

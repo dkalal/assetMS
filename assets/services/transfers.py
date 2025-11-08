@@ -67,9 +67,20 @@ def initiate_transfer(
     to_user,
     to_branch: Optional[Branch] = None,
     initiator_comment: str = "",
+    force_transfer: bool = False,
     context: Optional[Dict[str, Any]] = None,
 ) -> AssetTransfer:
-    """Create a new transfer request for an asset and notify the intended recipient."""
+    """
+    Create a new transfer request for an asset and notify the intended recipient.
+    
+    WORLD-CLASS: Handles assets in maintenance status intelligently.
+    - Default: Blocks transfer, provides guidance to complete maintenance first
+    - Override: Allows admin to force transfer with proper documentation
+    - Audit: Complete trail of decision and reasoning
+    
+    Args:
+        force_transfer: If True, allows transfer of asset in maintenance (admin only, requires detailed reason)
+    """
 
     if asset.company_id is None:
         raise ValidationError("Asset must belong to a company before transfer can be initiated.")
@@ -85,11 +96,74 @@ def initiate_transfer(
 
     if AssetTransfer.objects.filter(asset=asset, state__in=AssetTransfer.ACTIVE_STATES).exists():
         raise ValidationError("An active transfer already exists for this asset.")
+    
+    # WORLD-CLASS: Validate asset status for transfer (handle in_maintenance intelligently)
+    if asset.status == Asset.STATUS_IN_MAINTENANCE:
+        from assets.models import MaintenanceRecord
+        active_maintenance = MaintenanceRecord.objects.filter(
+            asset=asset,
+            status=MaintenanceRecord.Status.IN_PROGRESS
+        ).select_related('performed_by', 'supervisor').first()
+        
+        if active_maintenance and not force_transfer:
+            # Build detailed error with guidance
+            error_msg = (
+                f"Asset '{asset}' is currently undergoing maintenance. "
+                f"Maintenance Type: {active_maintenance.get_maintenance_type_display()}. "
+                f"Started: {active_maintenance.started_at.strftime('%Y-%m-%d %H:%M')}. "
+                f"Performed by: {active_maintenance.performed_by.get_full_name() if active_maintenance.performed_by else 'Unassigned'}. "
+                f"\n\nRecommended actions:\n"
+                f"1. Complete the maintenance work first (recommended)\n"
+                f"2. Cancel the maintenance if no longer needed\n"
+                f"3. Force transfer if urgent (admin only, requires detailed reason)"
+            )
+            raise ValidationError({
+                'asset': [error_msg],
+                'maintenance_uuid': str(active_maintenance.uuid),
+                'can_force': getattr(initiator, 'role', None) in ['admin'] or initiator.is_superuser,
+            })
+        
+        # If force_transfer=True, require detailed reason
+        if force_transfer:
+            if not initiator_comment or len(initiator_comment.strip()) < 20:
+                raise ValidationError(
+                    "Force transfer of asset in maintenance requires detailed reason (minimum 20 characters). "
+                    "Explain why transfer cannot wait for maintenance completion."
+                )
+            
+            # Verify user has permission to force transfer
+            if getattr(initiator, 'role', None) not in ['admin'] and not initiator.is_superuser:
+                raise PermissionDenied("Only admins can force transfer of assets in maintenance.")
+            
+            # Log the force transfer decision
+            log_audit(
+                initiator,
+                "transfer_force_in_maintenance",
+                asset,
+                f"Force transfer initiated while asset in maintenance. Reason: {initiator_comment}",
+                company=asset.company,
+                branch=asset.branch,
+                metadata={
+                    'force_transfer': True,
+                    'asset_status': asset.status,
+                    'maintenance_uuid': str(active_maintenance.uuid) if active_maintenance else None,
+                    'initiator_comment': initiator_comment,
+                    'to_user': to_user.username,
+                    'to_branch': to_branch.name if to_branch else None,
+                },
+            )
 
     from_user = asset.assigned_to
     from_branch = asset.branch
 
     with transaction.atomic():
+        # WORLD-CLASS FIX: Set asset to TRANSFERRED status during transfer process
+        # This temporarily blocks operations until transfer completes
+        # Inspired by ServiceNow ITAM, IBM Maximo, SAP EAM
+        previous_status = asset.status
+        asset.status = Asset.STATUS_TRANSFERRED
+        asset.save(update_fields=['status', 'updated_at'])
+        
         transfer = AssetTransfer.objects.create(
             company_id=asset.company_id,
             asset=asset,
@@ -106,10 +180,15 @@ def initiate_transfer(
             initiator,
             "transfer_initiated",
             asset,
-            f"Transfer initiated for asset to {to_user}. Comment: {initiator_comment}".strip(),
+            f"Transfer initiated for asset to {to_user}. Status: {previous_status} → transferred. Comment: {initiator_comment}".strip(),
             company=asset.company,
             branch=from_branch,
             related_user=to_user,
+            metadata={
+                'previous_status': previous_status,
+                'new_status': Asset.STATUS_TRANSFERRED,
+                'transfer_id': transfer.pk,
+            },
         )
 
         notifications = [
@@ -152,12 +231,19 @@ def receiver_review(
         transfer.receiver_comment = comment
         transfer.receiver_decided_at = timezone.now()
 
+        asset = transfer.asset
+        
         if decision == AssetTransfer.Decision.APPROVED:
             transfer.state = AssetTransfer.TransferState.AWAITING_ADMIN
             status_message = "Receiver approved the transfer. Awaiting admin review."
         else:
+            # WORLD-CLASS FIX: Restore asset to ACTIVE when receiver rejects
+            # Transfer is cancelled, asset returns to normal operations
+            asset.status = Asset.STATUS_ACTIVE
+            asset.save(update_fields=['status', 'updated_at'])
+            
             transfer.state = AssetTransfer.TransferState.RECEIVER_REJECTED
-            status_message = "Receiver rejected the transfer request."
+            status_message = "Receiver rejected the transfer request. Asset status restored to active."
 
         transfer.save(update_fields=[
             "receiver_decision",
@@ -175,6 +261,11 @@ def receiver_review(
             company=transfer.company,
             branch=transfer.to_branch or transfer.from_branch,
             related_user=transfer.initiator,
+            metadata={
+                'decision': decision,
+                'transfer_id': transfer.pk,
+                'status_restored': decision == AssetTransfer.Decision.REJECTED,
+            } if decision == AssetTransfer.Decision.REJECTED else None,
         )
 
         notifications = [
@@ -238,11 +329,65 @@ def admin_review(
         if decision == AssetTransfer.Decision.APPROVED:
             transfer.state = AssetTransfer.TransferState.COMPLETED
             previous_assignee = asset.assigned_to
+            previous_status = asset.status
             asset.assigned_to = transfer.to_user
             if transfer.to_branch_id:
                 asset.branch_id = transfer.to_branch_id
                 update_fields.append("branch")
-            asset.status = Asset.STATUS_TRANSFERRED
+            
+            # WORLD-CLASS: Handle asset in maintenance during transfer
+            # Check if asset was in maintenance when transferred
+            was_in_maintenance = (previous_status == Asset.STATUS_IN_MAINTENANCE)
+            
+            if was_in_maintenance:
+                # Keep asset in maintenance status, update maintenance record
+                from assets.models import MaintenanceRecord
+                active_maintenance = MaintenanceRecord.objects.filter(
+                    asset=asset,
+                    status=MaintenanceRecord.Status.IN_PROGRESS
+                ).first()
+                
+                if active_maintenance:
+                    # Update maintenance record with new branch/owner context
+                    active_maintenance.branch = asset.branch
+                    # Add note about transfer
+                    transfer_note = (
+                        f"\n\n[TRANSFER DURING MAINTENANCE]\n"
+                        f"Asset transferred from {previous_assignee} to {transfer.to_user} "
+                        f"on {timezone.now().strftime('%Y-%m-%d %H:%M')}.\n"
+                        f"Maintenance continues under new ownership."
+                    )
+                    active_maintenance.notes = (active_maintenance.notes or '') + transfer_note
+                    active_maintenance.save(update_fields=['branch', 'notes', 'updated_at'])
+                    
+                    # Notify maintenance supervisor
+                    if active_maintenance.supervisor:
+                        Alert.objects.create(
+                            company=asset.company,
+                            branch=asset.branch,
+                            recipient=active_maintenance.supervisor,
+                            level=Alert.LEVEL_WARNING,
+                            message=f"Asset {asset} was transferred while under maintenance. Please coordinate with new owner {transfer.to_user.get_full_name()}.",
+                            context={
+                                'asset_id': asset.pk,
+                                'transfer_id': transfer.pk,
+                                'maintenance_uuid': str(active_maintenance.uuid),
+                                'new_owner': transfer.to_user.get_full_name(),
+                                'new_owner_id': transfer.to_user.pk,
+                            }
+                        )
+                    
+                    # Asset remains in maintenance status
+                    asset.status = Asset.STATUS_IN_MAINTENANCE
+                else:
+                    # No active maintenance found, restore to active
+                    asset.status = Asset.STATUS_ACTIVE
+            else:
+                # Normal transfer: Restore asset to ACTIVE status
+                # Asset is now ready for use by new owner (can perform maintenance, etc.)
+                # Matches ServiceNow ITAM, IBM Maximo, SAP EAM behavior
+                asset.status = Asset.STATUS_ACTIVE
+            
             update_fields.extend(["assigned_to", "status", "updated_at"])
             asset.save(update_fields=update_fields)
 
@@ -256,14 +401,37 @@ def admin_review(
                 "updated_at",
             ])
 
+            # Build audit log message based on final status
+            if was_in_maintenance and asset.status == Asset.STATUS_IN_MAINTENANCE:
+                status_msg = f"Status: transferred → in_maintenance (maintenance continues)"
+                audit_metadata = {
+                    'previous_status': Asset.STATUS_TRANSFERRED,
+                    'new_status': Asset.STATUS_IN_MAINTENANCE,
+                    'transfer_id': transfer.pk,
+                    'previous_assignee': previous_assignee.username if previous_assignee else None,
+                    'new_assignee': transfer.to_user.username,
+                    'maintenance_continues': True,
+                    'maintenance_uuid': str(active_maintenance.uuid) if active_maintenance else None,
+                }
+            else:
+                status_msg = f"Status: transferred → active"
+                audit_metadata = {
+                    'previous_status': Asset.STATUS_TRANSFERRED,
+                    'new_status': Asset.STATUS_ACTIVE,
+                    'transfer_id': transfer.pk,
+                    'previous_assignee': previous_assignee.username if previous_assignee else None,
+                    'new_assignee': transfer.to_user.username,
+                }
+            
             log_audit(
                 reviewer,
                 ASSIGN_ACTION,
                 asset,
-                f"Transfer completed. Asset reassigned to {transfer.to_user}.",
+                f"Transfer completed. Asset reassigned to {transfer.to_user}. {status_msg}.",
                 company=transfer.company,
                 branch=transfer.to_branch or transfer.from_branch or asset.branch,
                 related_user=transfer.to_user,
+                metadata=audit_metadata,
             )
 
             if previous_assignee and previous_assignee != transfer.to_user:
@@ -277,6 +445,11 @@ def admin_review(
                     related_user=previous_assignee,
                 )
         else:
+            # WORLD-CLASS FIX: Restore asset to ACTIVE when transfer is rejected
+            # Asset returns to normal operations
+            asset.status = Asset.STATUS_ACTIVE
+            asset.save(update_fields=['status', 'updated_at'])
+            
             transfer.state = AssetTransfer.TransferState.CANCELLED
             transfer.save(update_fields=[
                 "admin_decision",
@@ -289,10 +462,15 @@ def admin_review(
                 reviewer,
                 "transfer_admin_rejected",
                 asset,
-                f"Transfer rejected by admin. Comment: {comment}",
+                f"Transfer rejected by admin. Status restored to active. Comment: {comment}",
                 company=transfer.company,
                 branch=transfer.from_branch or asset.branch,
                 related_user=transfer.initiator,
+                metadata={
+                    'previous_status': Asset.STATUS_TRANSFERRED,
+                    'new_status': Asset.STATUS_ACTIVE,
+                    'transfer_id': transfer.pk,
+                },
             )
 
         level = Alert.LEVEL_SUCCESS if decision == AssetTransfer.Decision.APPROVED else Alert.LEVEL_ERROR

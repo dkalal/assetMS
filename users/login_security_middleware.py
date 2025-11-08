@@ -23,26 +23,36 @@ class LoginPageSecurityMiddleware(MiddlewareMixin):
     
     def is_login_page(self, request):
         """Check if current request is for login page"""
-        login_paths = ['/login/', '/accounts/login/']
-        return request.path in login_paths or (
-            hasattr(request, 'resolver_match') and 
-            request.resolver_match and 
-            request.resolver_match.url_name == 'login'
+        login_paths = [
+            '/login/', 
+            '/accounts/login/',
+            '/users/login/',
+            '/admin/login/',  # Django admin login
+        ]
+        return (
+            request.path in login_paths or 
+            request.path.startswith('/admin/login/') or  # Admin login with query params
+            (hasattr(request, 'resolver_match') and 
+             request.resolver_match and 
+             request.resolver_match.url_name == 'login')
         )
     
     def handle_login_page_access(self, request):
         """Handle access to login page with security measures"""
-        # If user is already authenticated, handle appropriately
+        # WORLD-CLASS: Allow Django admin login even if authenticated on regular site
+        # This enables admins to use both admin and regular dashboard simultaneously
+        if request.path.startswith('/admin/login/'):
+            # Django admin handles its own authentication
+            # Don't interfere with admin login flow
+            return None
+        
+        # For regular login page: redirect authenticated users
         if request.user.is_authenticated:
             # Log the attempt
             logger.info(f"Authenticated user {request.user.username} accessed login page")
             
-            # Option 1: Redirect to dashboard (recommended for UX)
+            # Redirect to dashboard (better UX than forcing logout)
             return redirect('dashboard')
-            
-            # Option 2: Force logout and show login (uncomment if preferred)
-            # logout(request)
-            # logger.info(f"Forced logout of user {request.user.username} on login page access")
         
         # Clear any session data that might leak information
         self.clear_sensitive_session_data(request)

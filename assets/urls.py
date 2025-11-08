@@ -1,19 +1,24 @@
 from django.urls import path
 
-from . import api_views, views, asset_creation_views
+from . import api_views, views, asset_creation_views, asset_disposal_views
 from .views import AssetUpdateView, asset_delete, asset_bulk_delete, regenerate_qr_code, bulk_regenerate_qr_codes
 from .asset_creation_views import AssetCreationRequestView, api_pending_asset_creation_requests, api_quick_approve_asset_creation
+from .asset_disposal_views import AssetDisposalRequestView, api_pending_disposal_requests
 
 urlpatterns = [
     path('<uuid:uuid>/edit/', AssetUpdateView.as_view(), name='asset_update'),
-    path('<int:asset_id>/delete/', asset_delete, name='asset_delete'),
-    path('bulk-delete/', asset_bulk_delete, name='asset_bulk_delete'),
+    path('<int:asset_id>/delete/', asset_delete, name='asset_delete'),  # DEPRECATED - redirects to disposal
+    path('bulk-delete/', asset_bulk_delete, name='asset_bulk_delete'),  # DEPRECATED
+    path('admin/permanent-delete/<int:asset_id>/', views.asset_permanent_delete, name='asset_permanent_delete'),  # Super admin only
     path('<uuid:uuid>/regenerate-qr/', regenerate_qr_code, name='regenerate_qr_code'),
     path('bulk-regenerate-qr/', bulk_regenerate_qr_codes, name='bulk_regenerate_qr_codes'),
     # Asset Creation Requests (Manager Workflow)
     path('request-creation/', AssetCreationRequestView.as_view(), name='asset_creation_request'),
     path('api/pending-creation-requests/', api_pending_asset_creation_requests, name='api_pending_asset_creation_requests'),
     path('api/quick-approve-creation/<int:request_id>/', api_quick_approve_asset_creation, name='api_quick_approve_asset_creation'),
+    # Asset Disposal Requests (Approval Workflow)
+    path('<uuid:asset_uuid>/request-disposal/', AssetDisposalRequestView.as_view(), name='asset_disposal_request'),
+    path('api/pending-disposal-requests/', api_pending_disposal_requests, name='api_pending_disposal_requests'),
     # User Filtering API
     path('api/users-by-branch/', views.api_users_by_branch, name='api_users_by_branch'),
     # Transfer Management

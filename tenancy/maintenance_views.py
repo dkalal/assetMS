@@ -107,6 +107,10 @@ class MaintenanceListView(MaintenanceRBACMixin, TemplateView):
             status=MaintenanceRecord.Status.SCHEDULED,
             scheduled_for__lt=today,
         ).order_by("scheduled_for")
+        # WORLD-CLASS: Add IN_PROGRESS section for active maintenance work
+        in_progress_qs = records.filter(
+            status=MaintenanceRecord.Status.IN_PROGRESS,
+        ).order_by("started_at")
         recent_qs = records.filter(
             status=MaintenanceRecord.Status.COMPLETED,
             completed_at__gte=timezone.now() - timedelta(days=30),
@@ -114,6 +118,7 @@ class MaintenanceListView(MaintenanceRBACMixin, TemplateView):
 
         upcoming_records = list(upcoming_qs)
         overdue_records = list(overdue_qs)
+        in_progress_records = list(in_progress_qs)
         recent_records = list(recent_qs)
         eligible_assets = list(assets_qs)
 
@@ -121,12 +126,14 @@ class MaintenanceListView(MaintenanceRBACMixin, TemplateView):
             {
                 "upcoming_records": upcoming_records,
                 "overdue_records": overdue_records,
+                "in_progress_records": in_progress_records,
                 "recent_records": recent_records,
                 "assets": eligible_assets,
                 "stats": {
                     "eligible_assets": len(eligible_assets),
                     "upcoming": len(upcoming_records),
                     "overdue": len(overdue_records),
+                    "in_progress": len(in_progress_records),
                     "recent": len(recent_records),
                 },
                 "today": today,

@@ -889,6 +889,9 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<!-- WORLD-CLASS: CSRF Utility Functions -->
+<script src="{% static 'js/csrf-utils.js' %}"></script>
+
 <script>
     // WORLD-CLASS: Transfer Asset Function with comprehensive validation
     function submitTransfer() {
@@ -942,18 +945,8 @@
             payload.to_branch_id = parseInt(toBranchId);
         }
 
-        // Get CSRF token
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-        // Submit transfer request
-        fetch('{% url "asset_transfer_initiate" %}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            },
-            body: JSON.stringify(payload)
-        })
+        // Submit transfer request using CSRF-protected POST
+        postWithCSRF('{% url "asset_transfer_initiate" %}', payload)
         .then(response => {
             if (!response.ok) {
                 return response.json().then(err => Promise.reject(err));
@@ -1035,16 +1028,8 @@
             return;
         }
         
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-        
-        fetch('{% url "asset_transfer_cancel" %}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            },
-            body: JSON.stringify({ transfer_id: transferId })
-        })
+        // Cancel transfer using CSRF-protected POST
+        postWithCSRF('{% url "asset_transfer_cancel" %}', { transfer_id: transferId })
         .then(response => {
             if (!response.ok) {
                 return response.json().then(err => Promise.reject(err));

@@ -75,13 +75,20 @@ class AssetRegistrationForm {
         }
         
         // Form submission validation
+        // CRITICAL FIX: Only validate if we have dynamic fields loaded
+        // For edit forms, server-side validation is primary
         if (this.form) {
             this.form.addEventListener('submit', (e) => {
-                if (!this.validateForm()) {
-                    e.preventDefault();
-                    this.showGlobalError('Please fix the errors before submitting');
-                    return false;
+                // Only validate if we have dynamic fields to validate
+                if (Object.keys(this.currentFields).length > 0) {
+                    if (!this.validateForm()) {
+                        e.preventDefault();
+                        this.showGlobalError('Please fix the errors before submitting');
+                        return false;
+                    }
                 }
+                // If no dynamic fields, let form submit normally (server validates)
+                console.log('✅ Form validation passed, submitting...');
             });
         }
         

@@ -56,23 +56,40 @@
       <div class="d-flex align-items-center gap-2 gap-lg-3 ms-lg-3">
         
         <!-- Branch Selector (Multi-tenancy) -->
-        {% if user.is_authenticated and available_branches %}
-        <form class="d-inline" action="{% url 'switch_branch' %}" method="post">
-          {% csrf_token %}
-          <input type="hidden" name="next" value="{{ request.get_full_path }}">
-          <div class="input-group input-group-sm">
-            <label class="input-group-text bg-light border-end-0" for="branch-select-topbar">
-              <i class="bi bi-building"></i>
-            </label>
-            <select class="form-select border-start-0 ps-2" id="branch-select-topbar" name="branch_id" onchange="this.form.submit()" style="max-width: 180px;">
-              {% for membership in available_branches %}
-                <option value="{{ membership.branch.id }}" {% if active_branch and membership.branch.id == active_branch.id %}selected{% endif %}>
-                  {{ membership.branch.name|truncatechars:20 }}{% if membership.branch.is_head_office %} (HQ){% endif %}
-                </option>
-              {% endfor %}
-            </select>
+        {% if user.is_authenticated %}
+          {% if available_branches %}
+          <form class="d-inline" action="{% url 'switch_branch' %}" method="post" id="branch-switch-form">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <div class="input-group input-group-sm">
+              <label class="input-group-text bg-light border-end-0" for="branch-select-topbar" title="Switch Branch">
+                <i class="bi bi-building"></i>
+              </label>
+              <select class="form-select border-start-0 ps-2" 
+                      id="branch-select-topbar" 
+                      name="branch_id" 
+                      onchange="this.form.submit()" 
+                      style="max-width: 180px;"
+                      aria-label="Select branch">
+                {% for membership in available_branches %}
+                  {% if membership.branch and membership.branch.id and membership.branch.name %}
+                  <option value="{{ membership.branch.id }}" 
+                          {% if active_branch and membership.branch.id == active_branch.id %}selected{% endif %}
+                          data-branch-id="{{ membership.branch.id }}"
+                          data-is-hq="{{ membership.branch.is_head_office|yesno:'true,false' }}">
+                    {{ membership.branch.name|truncatechars:20 }}{% if membership.branch.is_head_office %} 🏢{% endif %}
+                  </option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+          </form>
+          {% else %}
+          <!-- No branches available - show info badge -->
+          <div class="badge bg-warning text-dark" title="No branches assigned" style="font-size: 0.75rem;">
+            <i class="bi bi-exclamation-triangle me-1"></i>No Branches
           </div>
-        </form>
+          {% endif %}
         {% endif %}
 
         <!-- Quick Actions -->

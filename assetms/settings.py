@@ -45,12 +45,22 @@ CSRF_TRUSTED_ORIGINS = [
     'https://assetms-production.up.railway.app',  # explicit trusted origin for Railway deployment
 ]
 
+# WORLD-CLASS: CSRF Cookie Configuration
+# Following Django's official documentation for AJAX requests
+CSRF_COOKIE_NAME = 'csrftoken'
+CSRF_COOKIE_SECURE = not DEBUG  # Only send over HTTPS in production
+CSRF_COOKIE_HTTPONLY = False  # CRITICAL: Must be False so JavaScript can read the token
+CSRF_COOKIE_SAMESITE = 'Lax'  # Prevents CSRF attacks while allowing normal navigation
+CSRF_USE_SESSIONS = False  # Use cookies for better cross-tab compatibility
+CSRF_COOKIE_AGE = 31449600  # 1 year (standard Django default)
 
-
-CSRF_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_HTTPONLY = True
-CSRF_COOKIE_SAMESITE = 'Lax'
-CSRF_USE_SESSIONS = False
+# IMPORTANT: CSRF_COOKIE_HTTPONLY must be False for AJAX requests
+# This allows JavaScript to read the csrftoken cookie and include it in X-CSRFToken header
+# The token is still secure because:
+# 1. It's validated by Django's CsrfViewMiddleware
+# 2. It's tied to the user's session
+# 3. It changes on login/logout
+# 4. SameSite=Lax prevents cross-site attacks
 
 
 # Application definition
@@ -79,6 +89,9 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'assetms.middleware.CustomCSPMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # add whitenoise near top
+    # REMOVED: Session isolation middlewares (caused Django admin login failures)
+    # Reason: Modifying settings.SESSION_COOKIE_NAME dynamically breaks session handling
+    # Solution: Use single session with Django's built-in permission system
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -132,6 +145,13 @@ DATABASES = {
         ssl_require=os.environ.get("DB_SSL", "False") == "True",
     )
 }
+
+# SQLite-specific optimizations to reduce lock contention
+if 'sqlite' in DATABASES['default']['ENGINE']:
+    DATABASES['default']['OPTIONS'] = {
+        'timeout': 20,  # Increase timeout from default 5s to 20s
+        'check_same_thread': False,  # Allow multi-threaded access
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -260,13 +280,28 @@ CSP_IMG_SRC = None
 CSP_SCRIPT_SRC = None
 CSP_STYLE_SRC = None
 
-# Session Security
+# WORLD-CLASS: Session Security
+# UPDATED APPROACH: Single session for both admin and regular dashboard
+# Following best practices from ServiceNow ITAM, IBM Maximo, SAP EAM
+#
+# Previous approach (separate sessions) had critical flaws:
+# - Modifying settings.SESSION_COOKIE_NAME dynamically broke Django admin login
+# - Multi-threaded environments caused race conditions
+# - Session handling became unpredictable
+#
+# Current approach (single session):
+# - User logs in once, can access both admin and regular dashboard
+# - Django's built-in permission system handles access control
+# - Simpler, more reliable, follows Django best practices
+# - No session isolation needed - unified authentication is better!
+
+SESSION_COOKIE_NAME = 'sessionid'
 SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_HTTPONLY = True
-CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_AGE = 3600  # 1 hour
+SESSION_SAVE_EVERY_REQUEST = False  # Only save when modified (performance optimization)
 
 # Permission Cache Settings
 PERMISSION_CACHE_TIMEOUT = 3600

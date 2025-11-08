@@ -78,7 +78,7 @@
                   <span class="badge bg-primary ms-2">Head Office</span>
                   {% endif %}
                 </td>
-                <td>{{ branch.location|default:"—" }}</td>
+                <td>{{ branch.address|default:"—" }}</td>
                 <td>
                   {% if branch.manager %}
                   {{ branch.manager.get_full_name }}
@@ -98,11 +98,15 @@
                 </td>
                 <td>
                   <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-primary" onclick="editBranch({{ branch.id }})">
+                    <button class="btn btn-outline-primary" 
+                            onclick="editBranch({{ branch.id }})"
+                            title="Edit branch">
                       <i class="bi bi-pencil"></i>
                     </button>
                     {% if not branch.is_head_office %}
-                    <button class="btn btn-outline-danger" onclick="deleteBranch({{ branch.id }})">
+                    <button class="btn btn-outline-danger" 
+                            onclick="deleteBranch({{ branch.id }}, '{{ branch.name|escapejs }}')"
+                            title="Delete branch">
                       <i class="bi bi-trash"></i>
                     </button>
                     {% endif %}
@@ -174,52 +178,7 @@
   </div>
 </div>
 
-<!-- Add Branch Modal -->
-<div class="modal fade" id="addBranchModal" tabindex="-1" aria-labelledby="addBranchModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="addBranchModalLabel">
-          <i class="bi bi-plus-circle me-2"></i>Add New Branch
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form id="addBranchForm">
-          {% csrf_token %}
-          <div class="mb-3">
-            <label for="branchName" class="form-label fw-semibold">Branch Name *</label>
-            <input type="text" class="form-control" id="branchName" required>
-          </div>
-          <div class="mb-3">
-            <label for="branchLocation" class="form-label fw-semibold">Location</label>
-            <input type="text" class="form-control" id="branchLocation">
-          </div>
-          <div class="mb-3">
-            <label for="branchManager" class="form-label fw-semibold">Branch Manager</label>
-            <select class="form-select" id="branchManager">
-              <option value="">Select Manager</option>
-              {% for manager in managers %}
-              <option value="{{ manager.id }}">{{ manager.get_full_name }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="mb-3">
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" id="branchIsActive" checked>
-              <label class="form-check-label" for="branchIsActive">
-                Active
-              </label>
-            </div>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary" onclick="saveBranch()">
-          <i class="bi bi-check-lg me-1"></i>Add Branch
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- ============================================================================
+     MODALS MOVED TO: templates/settings/partials/company_settings_modals.html
+     Modals are now in dashboard_modals block to fix backdrop stacking issues
+     ============================================================================ -->

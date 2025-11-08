@@ -6,7 +6,6 @@ from typing import Any, Dict, Iterable, Optional
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import JsonResponse
 from django.utils import timezone
-from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_http_methods
 
 from tenancy.models import Alert
@@ -51,12 +50,18 @@ def _parse_body(request) -> Dict[str, Any]:
 
 
 @api_login_required
-@csrf_protect
 @require_http_methods(["POST"])
 def api_transfer_initiate(request):
-    if not can(request.user, "edit_assets"):
-        return _json_error("You do not have permission to initiate transfers.", status=403, code="INSUFFICIENT_PERMISSIONS")
-
+    """
+    WORLD-CLASS: Initiate asset transfer
+    
+    Permission Logic (following ServiceNow ITAM, IBM Maximo, SAP EAM):
+    - Admins: Can transfer any asset in their company
+    - Managers: Can transfer any asset (have edit_assets permission)
+    - Users: Can transfer assets assigned to them OR unassigned assets in their branches
+    
+    CSRF Protection: Provided by CsrfViewMiddleware (global)
+    """
     try:
         payload = _parse_body(request)
     except ValidationError as exc:
@@ -65,6 +70,44 @@ def api_transfer_initiate(request):
     form = InitiateTransferForm(user=request.user, company=_company_from_request(request), data=payload)
     if not form.is_valid():
         return JsonResponse({"success": False, "errors": form.errors}, status=400)
+    
+    # WORLD-CLASS: Permission check based on role and ownership
+    # Get the asset from the form's cleaned data
+    asset = form.cleaned_data.get("asset")
+    user = request.user
+    
+    # Check if user has permission to transfer this specific asset
+    has_permission = False
+    
+    if can(user, "edit_assets"):
+        # Admins and Managers can transfer any asset
+        has_permission = True
+    else:
+        # Regular users can transfer:
+        # 1. Assets assigned to them (ownership-based)
+        # 2. Unassigned assets in their accessible branches
+        if asset.assigned_to_id == user.pk:
+            has_permission = True
+        elif not asset.assigned_to_id:
+            # Check if asset is in user's accessible branches
+            try:
+                from tenancy.policy_service import PolicyService
+                accessible_branch_ids = PolicyService.get_accessible_branches(user, asset.company)
+                has_permission = asset.branch_id in accessible_branch_ids
+            except Exception:
+                # Fallback: check if asset is in user's primary branch
+                has_permission = (
+                    hasattr(user, 'primary_branch') and 
+                    user.primary_branch and 
+                    asset.branch_id == user.primary_branch.id
+                )
+    
+    if not has_permission:
+        return _json_error(
+            "You do not have permission to transfer this asset. You can only transfer assets assigned to you or unassigned assets in your branches.",
+            status=403,
+            code="INSUFFICIENT_PERMISSIONS"
+        )
 
     cleaned = form.cleaned_data
     try:
@@ -96,9 +139,13 @@ def api_transfer_initiate(request):
 
 
 @api_login_required
-@csrf_protect
 @require_http_methods(["POST"])
 def api_transfer_receiver_decision(request):
+    """
+    WORLD-CLASS: Receiver decision on asset transfer
+    
+    CSRF Protection: Provided by CsrfViewMiddleware (global)
+    """
     try:
         payload = _parse_body(request)
     except ValidationError as exc:
@@ -136,9 +183,13 @@ def api_transfer_receiver_decision(request):
 
 
 @api_login_required
-@csrf_protect
 @require_http_methods(["POST"])
 def api_transfer_admin_review(request):
+    """
+    WORLD-CLASS: Admin/Manager review of asset transfer
+    
+    CSRF Protection: Provided by CsrfViewMiddleware (global)
+    """
     if getattr(request.user, "role", "user") not in {"admin", "manager"} and not can(request.user, "edit_assets"):
         return _json_error("Administrative privileges required.", status=403, code="INSUFFICIENT_PERMISSIONS")
 
@@ -179,10 +230,13 @@ def api_transfer_admin_review(request):
 
 
 @api_login_required
-@csrf_protect
 @require_http_methods(["POST"])
 def api_transfer_cancel(request):
-    """WORLD-CLASS: Cancel a pending transfer (initiator or admin only)."""
+    """
+    WORLD-CLASS: Cancel a pending transfer (initiator or admin only)
+    
+    CSRF Protection: Provided by CsrfViewMiddleware (global)
+    """
     try:
         payload = _parse_body(request)
     except ValidationError as exc:
@@ -287,9 +341,13 @@ def _filter_alerts_for_request(request) -> Iterable[Alert]:
 
 
 @api_login_required
-@csrf_protect
 @require_http_methods(["GET", "POST"])
 def api_transfer_alerts(request):
+    """
+    WORLD-CLASS: Transfer alerts management
+    
+    CSRF Protection: Provided by CsrfViewMiddleware (global)
+    """
     if request.method == "GET":
         limit_raw = request.GET.get("limit", 20)
         try:
@@ -768,10 +826,13 @@ def api_transfer_list(request):
 
 
 @api_login_required
-@csrf_protect
 @require_http_methods(["POST"])
 def api_category_update(request, category_id):
-    """Update category name and description - Admin only."""
+    """
+    WORLD-CLASS: Update category name and description - Admin only
+    
+    CSRF Protection: Provided by CsrfViewMiddleware (global)
+    """
     from assets.models import AssetCategory
     from audit.models import AuditLog
     
@@ -837,10 +898,13 @@ def api_category_update(request, category_id):
 
 
 @api_login_required
-@csrf_protect
 @require_http_methods(["POST"])
 def api_category_delete(request, category_id):
-    """Delete category - Admin only. Prevents deletion if assets exist."""
+    """
+    WORLD-CLASS: Delete category - Admin only. Prevents deletion if assets exist.
+    
+    CSRF Protection: Provided by CsrfViewMiddleware (global)
+    """
     from assets.models import AssetCategory, Asset
     from audit.models import AuditLog
     

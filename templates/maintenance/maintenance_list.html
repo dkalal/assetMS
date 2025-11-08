@@ -37,7 +37,7 @@
 
   {% if stats %}
   <section class="row g-3 mb-4" aria-label="Maintenance statistics overview">
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-sm-6 col-lg-3">
       <div class="glass h-100 p-3 rounded-4 shadow-sm border-0">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <span class="text-muted small">Eligible Assets</span>
@@ -47,17 +47,27 @@
         <p class="text-muted small mb-0">Assets with maintenance enabled</p>
       </div>
     </div>
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-sm-6 col-lg-3">
       <div class="glass h-100 p-3 rounded-4 shadow-sm border-0">
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <span class="text-muted small">Upcoming (7d)</span>
+          <span class="text-muted small">In Progress</span>
+          <i class="bi bi-hourglass-split text-warning fs-5" aria-hidden="true"></i>
+        </div>
+        <p class="fs-3 fw-bold mb-0 text-warning">{{ stats.in_progress|default:0 }}</p>
+        <p class="text-muted small mb-0">Currently being worked on</p>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="glass h-100 p-3 rounded-4 shadow-sm border-0">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-muted small">Upcoming</span>
           <i class="bi bi-calendar-event text-info fs-5" aria-hidden="true"></i>
         </div>
         <p class="fs-3 fw-bold mb-0">{{ stats.upcoming|default:0 }}</p>
-        <p class="text-muted small mb-0">Scheduled within the next 7 days</p>
+        <p class="text-muted small mb-0">Scheduled for next 30 days</p>
       </div>
     </div>
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-sm-6 col-lg-3">
       <div class="glass h-100 p-3 rounded-4 shadow-sm border-0">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <span class="text-muted small">Overdue</span>
@@ -65,16 +75,6 @@
         </div>
         <p class="fs-3 fw-bold mb-0 text-danger">{{ stats.overdue|default:0 }}</p>
         <p class="text-muted small mb-0">Require immediate attention</p>
-      </div>
-    </div>
-    <div class="col-sm-6 col-xl-3">
-      <div class="glass h-100 p-3 rounded-4 shadow-sm border-0">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <span class="text-muted small">Completed (30d)</span>
-          <i class="bi bi-clipboard-check text-success fs-5" aria-hidden="true"></i>
-        </div>
-        <p class="fs-3 fw-bold mb-0 text-success">{{ stats.recent|default:0 }}</p>
-        <p class="text-muted small mb-0">Closed in the last 30 days</p>
       </div>
     </div>
   </section>
@@ -150,6 +150,62 @@
   </section>
 
   <section class="row g-4" aria-label="Active maintenance queue">
+    <!-- IN PROGRESS MAINTENANCE (WORLD-CLASS: Shows active work) -->
+    <div class="col-12 col-lg-6">
+      <div class="glass h-100 p-0">
+        <header class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center" aria-live="polite">
+          <div>
+            <h2 class="h5 mb-0">
+              <i class="bi bi-hourglass-split text-warning me-2" aria-hidden="true"></i>In Progress
+            </h2>
+            <p class="text-muted small mb-0">Maintenance work currently being performed.</p>
+          </div>
+          <span class="badge bg-warning-subtle text-warning">{{ in_progress_records|length }} active</span>
+        </header>
+        <div class="list-group list-group-flush" role="list">
+          {% if in_progress_records %}
+            {% for record in in_progress_records %}
+            <article class="list-group-item border-start border-4 border-warning" role="listitem" aria-labelledby="in-progress-record-{{ record.pk }}">
+              <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
+                <div class="flex-grow-1">
+                  <h3 class="h6 mb-1" id="in-progress-record-{{ record.pk }}">
+                    {{ record.asset.description|default:record.asset.category.name }}
+                    <span class="badge bg-warning-subtle text-warning ms-2">Active</span>
+                  </h3>
+                  <div class="d-flex flex-wrap gap-3 text-muted small">
+                    <span><i class="bi bi-building me-1" aria-hidden="true"></i>{{ record.asset.branch.name|default:"Head Office" }}</span>
+                    <span><i class="bi bi-play-circle me-1" aria-hidden="true"></i>Started {{ record.started_at|date:"M d, Y H:i" }}</span>
+                    {% if record.performed_by %}
+                    <span><i class="bi bi-person me-1" aria-hidden="true"></i>{{ record.performed_by.get_full_name|default:record.performed_by.username }}</span>
+                    {% endif %}
+                  </div>
+                  {% if record.description %}
+                  <p class="mt-2 mb-0 small text-body-secondary">{{ record.description }}</p>
+                  {% endif %}
+                </div>
+                <div class="d-flex flex-md-column gap-2 align-self-stretch">
+                  <button type="button" class="btn btn-success btn-sm maintenance-action-trigger" data-bs-toggle="modal" data-bs-target="#maintenanceCompleteModal" data-action-url="{% url 'maintenance:complete' pk=record.pk %}" data-asset="{{ record.asset.description|default:record.asset.category.name }}" data-branch="{{ record.asset.branch.name|default:'Head Office' }}" data-scheduled-for="{{ record.scheduled_for|date:'M d, Y' }}">
+                    <i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Complete
+                  </button>
+                  <button type="button" class="btn btn-outline-danger btn-sm maintenance-action-trigger" data-bs-toggle="modal" data-bs-target="#maintenanceCancelModal" data-action-url="{% url 'maintenance:cancel' pk=record.pk %}" data-asset="{{ record.asset.description|default:record.asset.category.name }}" data-branch="{{ record.asset.branch.name|default:'Head Office' }}" data-scheduled-for="{{ record.scheduled_for|date:'M d, Y' }}">
+                    <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cancel
+                  </button>
+                </div>
+              </div>
+            </article>
+            {% endfor %}
+          {% else %}
+          <div class="text-center text-muted py-5">
+            <i class="bi bi-hourglass-split fs-2 mb-3" aria-hidden="true"></i>
+            <p class="mb-1">No maintenance in progress.</p>
+            <p class="small mb-0">Start scheduled maintenance to see active work here.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- UPCOMING MAINTENANCE -->
     <div class="col-12 col-lg-6">
       <div class="glass h-100 p-0">
         <header class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center" aria-live="polite">
@@ -200,15 +256,21 @@
         </div>
       </div>
     </div>
+  </section>
 
-    <div class="col-12 col-lg-6">
+  <!-- OVERDUE MAINTENANCE (Separate row for emphasis) -->
+  {% if overdue_records %}
+  <section class="row g-4 mt-0" aria-label="Overdue maintenance">
+    <div class="col-12">
       <div class="glass h-100 p-0">
-        <header class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center" aria-live="polite">
+        <header class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center bg-danger bg-opacity-10" aria-live="polite">
           <div>
-            <h2 class="h5 mb-0">Overdue maintenance</h2>
-            <p class="text-muted small mb-0">Escalate and resolve overdue activities.</p>
+            <h2 class="h5 mb-0 text-danger">
+              <i class="bi bi-exclamation-octagon me-2" aria-hidden="true"></i>Overdue maintenance
+            </h2>
+            <p class="text-muted small mb-0">Escalate and resolve overdue activities immediately.</p>
           </div>
-          <span class="badge bg-danger-subtle text-danger">{{ overdue_records|length }} overdue</span>
+          <span class="badge bg-danger">{{ overdue_records|length }} overdue</span>
         </header>
         <div class="list-group list-group-flush" role="list">
           {% if overdue_records %}
@@ -250,6 +312,7 @@
       </div>
     </div>
   </section>
+  {% endif %}
 
   <section class="glass p-4 mt-4" aria-labelledby="recent-maintenance-title">
     <div class="d-flex justify-content-between align-items-center mb-3">

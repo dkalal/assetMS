@@ -76,22 +76,45 @@ class EnterpriseConcurrentSessionMiddleware(MiddlewareMixin):
     def get_or_create_session(self, **kwargs):
         """Get or create session with proper concurrency handling"""
         try:
-            # Use update_or_create for atomic operation (reduces lock contention)
-            session, created = UserSession.objects.update_or_create(
+            # Try to get existing session first (read operation, no lock)
+            session = UserSession.objects.filter(
                 user=kwargs['user'],
                 session_key=kwargs['session_key'],
                 browser_fingerprint=kwargs['browser_fingerprint'],
-                session_context=kwargs['session_context'],
-                defaults={
-                    'device_fingerprint': kwargs['device_fingerprint'],
-                    'tab_id': kwargs['tab_id'],
-                    'ip_address': kwargs['ip_address'],
-                    'user_agent': kwargs['user_agent'],
-                    'last_activity': timezone.now(),
-                    'is_active': True,
-                }
-            )
-            return session
+                session_context=kwargs['session_context']
+            ).first()
+            
+            if session:
+                # Session exists, just return it (update happens separately)
+                return session
+            
+            # Only create if doesn't exist (reduces write contention)
+            try:
+                session = UserSession.objects.create(
+                    user=kwargs['user'],
+                    session_key=kwargs['session_key'],
+                    browser_fingerprint=kwargs['browser_fingerprint'],
+                    session_context=kwargs['session_context'],
+                    device_fingerprint=kwargs['device_fingerprint'],
+                    tab_id=kwargs['tab_id'],
+                    ip_address=kwargs['ip_address'],
+                    user_agent=kwargs['user_agent'],
+                    last_activity=timezone.now(),
+                    is_active=True,
+                )
+                return session
+            except Exception as create_error:
+                # Race condition: another request created it, fetch it
+                session = UserSession.objects.filter(
+                    user=kwargs['user'],
+                    session_key=kwargs['session_key'],
+                    browser_fingerprint=kwargs['browser_fingerprint'],
+                    session_context=kwargs['session_context']
+                ).first()
+                if session:
+                    return session
+                raise create_error
+                
         except UserSession.MultipleObjectsReturned:
             # Handle edge case of duplicate sessions
             sessions = UserSession.objects.filter(
@@ -111,7 +134,7 @@ class EnterpriseConcurrentSessionMiddleware(MiddlewareMixin):
             return UserSession.objects.filter(
                 user=kwargs['user'],
                 session_key=kwargs['session_key']
-            ).first() or UserSession.objects.create(**kwargs)
+            ).first()
     
     def generate_browser_fingerprint(self, request):
         """Generate enhanced browser fingerprint for better uniqueness"""

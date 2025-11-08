@@ -58,16 +58,46 @@ def profile(request):
         'form': form,
     })
 
-@csrf_protect
 @never_cache
 def custom_logout(request):
-    """Custom logout view with proper CSRF handling"""
-    if request.method == 'POST':
-        logout(request)
-        messages.success(request, 'You have been successfully logged out.')
-        return redirect('users:login')
+    """
+    WORLD-CLASS: Custom logout view with proper CSRF handling
     
-    return redirect('dashboard')
+    Supports both GET (shows confirmation) and POST (performs logout)
+    Following best practices from ServiceNow ITAM, IBM Maximo, SAP EAM
+    
+    Note: CSRF protection provided by CsrfViewMiddleware (global)
+    GET requests show confirmation page, POST requests perform logout
+    
+    IMPORTANT: Logout is GLOBAL - logs out from both regular dashboard AND Django admin
+    This is Django's standard behavior and matches industry best practices
+    """
+    if request.method == 'POST':
+        # POST request: Perform logout (CSRF protected by middleware)
+        # This logs out from BOTH regular dashboard and Django admin (single session)
+        
+        # Store username for message
+        username = request.user.username if request.user.is_authenticated else 'User'
+        
+        # Perform Django logout (clears session, deletes session cookie)
+        logout(request)
+        
+        # Success message
+        messages.success(request, f'{username}, you have been successfully logged out from all interfaces.')
+        
+        # Redirect to login page
+        response = redirect('users:login')
+        
+        # CRITICAL: Ensure session cookie is deleted
+        # This prevents any lingering session issues
+        response.delete_cookie('sessionid')
+        response.delete_cookie('csrftoken')
+        
+        return response
+    
+    # GET request: Show logout confirmation page
+    # This handles direct URL access (e.g., typing /users/logout/ in browser)
+    return render(request, 'registration/logout_confirm.html')
 
 @method_decorator([login_required, csrf_protect, never_cache], name='dispatch')
 class PasswordChangeRequiredView(PasswordChangeView):

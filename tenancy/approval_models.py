@@ -34,23 +34,26 @@ class ApprovalRequest(CompanyScopedModel):
     - Deadline management
     """
     
-    # Request Types
+    # Request Types (Simplified - Option 2)
     TYPE_ASSET_CREATION = 'asset_creation'
-    TYPE_ASSET_TRANSFER = 'asset_transfer'
-    TYPE_ASSET_MAINTENANCE = 'asset_maintenance'
     TYPE_ASSET_DISPOSAL = 'asset_disposal'
-    TYPE_USER_ACCESS = 'user_access'
-    TYPE_BUDGET = 'budget'
-    TYPE_CUSTOM = 'custom'
+    
+    # Future types (commented out for now - can be enabled later)
+    # TYPE_ASSET_TRANSFER = 'asset_transfer'
+    # TYPE_ASSET_MAINTENANCE = 'asset_maintenance'
+    # TYPE_USER_ACCESS = 'user_access'
+    # TYPE_BUDGET = 'budget'
+    # TYPE_CUSTOM = 'custom'
     
     REQUEST_TYPES = [
         (TYPE_ASSET_CREATION, 'Asset Creation'),
-        (TYPE_ASSET_TRANSFER, 'Asset Transfer'),
-        (TYPE_ASSET_MAINTENANCE, 'Asset Maintenance'),
         (TYPE_ASSET_DISPOSAL, 'Asset Disposal'),
-        (TYPE_USER_ACCESS, 'User Access Request'),
-        (TYPE_BUDGET, 'Budget Approval'),
-        (TYPE_CUSTOM, 'Custom Request'),
+        # Future types (commented out):
+        # (TYPE_ASSET_TRANSFER, 'Asset Transfer'),
+        # (TYPE_ASSET_MAINTENANCE, 'Asset Maintenance'),
+        # (TYPE_USER_ACCESS, 'User Access Request'),
+        # (TYPE_BUDGET, 'Budget Approval'),
+        # (TYPE_CUSTOM, 'Custom Request'),
     ]
     
     # Status
@@ -448,6 +451,88 @@ class ApprovalRequest(CompanyScopedModel):
                     'request_id': self.pk,
                     'asset_id': asset.id,
                     'asset_uuid': str(asset.uuid),
+                }
+            )
+            
+            return asset
+    
+    def execute_asset_disposal(self):
+        """Execute asset disposal from approved disposal request."""
+        if self.request_type != self.TYPE_ASSET_DISPOSAL:
+            raise ValidationError("This method only applies to asset disposal requests.")
+        
+        if self.status != self.STATUS_APPROVED:
+            raise ValidationError("Request must be approved before disposing asset.")
+        
+        asset_id = self.metadata.get('asset_id')
+        if not asset_id:
+            raise ValidationError("No asset ID found in request metadata.")
+        
+        # Import here to avoid circular dependency
+        from assets.models import Asset
+        
+        with transaction.atomic():
+            try:
+                asset = Asset.objects.get(id=asset_id, company=self.company)
+            except Asset.DoesNotExist:
+                raise ValidationError(f"Asset {asset_id} not found or doesn't belong to company.")
+            
+            # Get disposal details from metadata
+            disposal_reason = self.metadata.get('disposal_reason', self.description)
+            disposal_method = self.metadata.get('disposal_method', 'retired')
+            
+            # Update asset status
+            old_status = asset.status
+            if disposal_method == 'retired':
+                asset.status = Asset.STATUS_RETIRED
+            elif disposal_method == 'lost':
+                asset.status = Asset.STATUS_LOST
+            elif disposal_method == 'deleted':
+                asset.status = Asset.STATUS_DELETED
+            else:
+                asset.status = Asset.STATUS_RETIRED  # Default
+            
+            asset.save()
+            
+            # Store disposal reference in metadata
+            self.metadata['disposed_at'] = timezone.now().isoformat()
+            self.metadata['old_status'] = old_status
+            self.metadata['new_status'] = asset.status
+            self.save()
+            
+            # Log audit event
+            from audit.utils import log_audit
+            log_audit(
+                self.approved_by,
+                "asset_disposed_from_approval",
+                asset,
+                f"Asset disposed from approved request: {self.title}. Reason: {disposal_reason}",
+                company=self.company,
+                branch=asset.branch,
+                metadata={
+                    'request_id': self.pk,
+                    'requested_by': self.requested_by.username,
+                    'approved_by': self.approved_by.username,
+                    'disposal_reason': disposal_reason,
+                    'disposal_method': disposal_method,
+                    'old_status': old_status,
+                    'new_status': asset.status,
+                }
+            )
+            
+            # Notify requester
+            from tenancy.models import Alert
+            Alert.objects.create(
+                company=self.company,
+                branch=self.branch,
+                recipient=self.requested_by,
+                level=Alert.LEVEL_SUCCESS,
+                message=f"Your asset disposal request '{self.title}' has been approved and the asset has been disposed.",
+                context={
+                    'request_id': self.pk,
+                    'asset_id': asset.id,
+                    'asset_uuid': str(asset.uuid),
+                    'disposal_method': disposal_method,
                 }
             )
             

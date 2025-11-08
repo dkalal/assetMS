@@ -128,7 +128,9 @@
         <li>
           <form action="{% url 'users:logout' %}" method="post" class="mb-0">
             {% csrf_token %}
-            <button type="submit" class="dropdown-item text-danger">Logout</button>
+            <button type="submit" class="dropdown-item text-danger">
+              <i class="bi bi-box-arrow-right me-2"></i>Sign Out
+            </button>
           </form>
         </li>
       </ul>

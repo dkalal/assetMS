@@ -41,13 +41,22 @@ window.EnterpriseAuth = class EnterpriseAuth {
                 const response = await originalFetch(...args);
                 
                 // Handle API authentication/authorization errors (skip heartbeat logging)
+                // IMPORTANT: Don't consume response body here - let the caller handle it
                 if ((response.status === 401 || response.status === 403) && !isHeartbeat) {
+                    // Clone response so we can read it without consuming the original
+                    const clonedResponse = response.clone();
                     try {
-                        const data = await response.json();
-                        this.handleAuthError(data, response.status);
+                        const data = await clonedResponse.json();
+                        // Only show auth error for 401 (session expired)
+                        // For 403, let the caller handle it (might be CSRF or permission issue)
+                        if (response.status === 401) {
+                            this.handleAuthError(data, response.status);
+                        }
                     } catch (e) {
                         // Response might not be JSON
-                        this.handleAuthError({error: 'Authentication failed'}, response.status);
+                        if (response.status === 401) {
+                            this.handleAuthError({error: 'Authentication failed'}, response.status);
+                        }
                     }
                 }
                 
@@ -71,7 +80,7 @@ window.EnterpriseAuth = class EnterpriseAuth {
             message = 'Your session has expired. Please login again.';
             // Redirect to login after showing message
             setTimeout(() => {
-                window.location.href = '/login/';
+                window.location.href = '/users/login/';
             }, 3000);
         } else if (status === 403) {
             message = `Access denied. ${data.error || 'Insufficient permissions.'}`;

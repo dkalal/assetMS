@@ -75,7 +75,8 @@ class AssetForm(forms.ModelForm):
                     ).order_by('name')
                 
                 self.fields['branch'].queryset = branch_qs
-                self.fields['branch'].required = True  # Branch is mandatory
+                # WORLD-CLASS: Branch not required for existing assets (status updates)
+                self.fields['branch'].required = not (self.instance and self.instance.pk)
                 self.fields['branch'].empty_label = "-- Select Branch --"
             else:
                 self.fields['branch'].queryset = Branch.objects.none()
@@ -120,6 +121,22 @@ class AssetForm(forms.ModelForm):
         for fname in ['purchase_value', 'purchase_date', 'depreciation_method', 'useful_life_years']:
             if fname in self.fields:
                 self.fields[fname].required = False
+        
+        # WORLD-CLASS FIX: Detect if this is a status-only update
+        # When editing an existing asset and only changing status, skip dynamic field requirements
+        is_status_only_update = False
+        if self.instance and self.instance.pk and 'data' in kwargs and kwargs['data']:
+            # Check if status is being changed
+            new_status = kwargs['data'].get('status')
+            old_status = self.instance.status
+            
+            if new_status and new_status != old_status:
+                # This is a status change - check if other fields are unchanged
+                # If category is not in POST data or matches existing, it's status-only
+                posted_category = kwargs['data'].get('category')
+                if not posted_category or str(posted_category) == str(self.instance.category_id):
+                    is_status_only_update = True
+        
         # Add dynamic fields from category (ENHANCED to support all wizard field types)
         self.dynamic_field_names = []
         AssetCategoryModel = apps.get_model('assets', 'AssetCategory')
@@ -135,7 +152,8 @@ class AssetForm(forms.ModelForm):
                         'key': f.key,
                         'label': f.label,
                         'type': f.type,
-                        'required': getattr(f, 'required', False),
+                        # WORLD-CLASS: Make dynamic fields NOT required during status-only updates
+                        'required': getattr(f, 'required', False) and not is_status_only_update,
                         'help_text': getattr(f, 'help_text', ''),
                     }
                     
@@ -370,10 +388,20 @@ class AssetForm(forms.ModelForm):
     class Meta:
         model = Asset
         fields = [
+            # Core fields
             'company', 'category', 'branch', 'status', 'assigned_to', 'description',
+            # Financial fields
             'purchase_value', 'purchase_date', 'depreciation_method', 'useful_life_years',
+            # Maintenance fields
             'maintenance_enabled', 'maintenance_interval_days', 'maintenance_notes',
-            'qr_code', 'images', 'documents'
+            # Media fields
+            'qr_code', 'images', 'documents',
+            # CRITICAL: Status-specific fields (dynamically shown/hidden by JavaScript)
+            # These MUST be in fields list for Django to process them
+            'status_change_reason',
+            'maintenance_type',
+            'disposal_method', 'salvage_value',
+            'loss_date', 'loss_reason', 'loss_details', 'last_known_location', 'police_report_number',
         ]
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
@@ -422,19 +450,33 @@ class AssetForm(forms.ModelForm):
         branch = cleaned_data.get('branch')
         assigned_to = cleaned_data.get('assigned_to')
         
-        # WORLD-CLASS: Detect status change FIRST
-        # If status is changing, skip validation of unrelated fields
+        # WORLD-CLASS: Detect ACTUAL status change (not just form submission)
+        # Only treat as status change if the value is DIFFERENT from current
         is_status_change = False
         if self.instance and self.instance.pk:
             old_status = self.instance.status
             new_status = cleaned_data.get('status')
             
-            if old_status != new_status:
+            # CRITICAL FIX: Only flag as status change if values are ACTUALLY different
+            # This prevents false positives when editing other fields
+            if new_status and old_status and str(old_status) != str(new_status):
                 is_status_change = True
                 # Store for later use
                 cleaned_data['_status_changed'] = True
                 cleaned_data['_old_status'] = old_status
                 cleaned_data['_new_status'] = new_status
+                
+                # WORLD-CLASS FIX: Prevent manual status change TO "in_maintenance"
+                # This enforces proper workflow through Maintenance Center
+                # Inspired by ServiceNow ITAM, IBM Maximo, SAP EAM best practices
+                if old_status != Asset.STATUS_IN_MAINTENANCE and new_status == Asset.STATUS_IN_MAINTENANCE:
+                    raise forms.ValidationError({
+                        'status': [
+                            'Cannot manually set status to "In Maintenance". '
+                            'Please use the Maintenance Center (/maintenance/) to properly schedule and start maintenance. '
+                            'This ensures complete tracking, audit trail, and proper workflow.'
+                        ]
+                    })
         
         # CRITICAL: Ensure company is set (defensive check)
         if not company:
@@ -522,12 +564,13 @@ class AssetForm(forms.ModelForm):
                         )
         
         # WORLD-CLASS: Status Change Validation
-        # Validate status-specific fields when status is changing
+        # ONLY validate status-specific fields when status is ACTUALLY changing
         if is_status_change:
-            old_status = self.instance.status
-            new_status = cleaned_data.get('status')
+            old_status = cleaned_data.get('_old_status')
+            new_status = cleaned_data.get('_new_status')
             
-            if old_status != new_status:
+            # Double-check that status is actually different
+            if old_status and new_status and str(old_status) != str(new_status):
                 # Status is changing - validate based on transition
                 status_change_reason = cleaned_data.get('status_change_reason', '').strip()
                 
@@ -598,10 +641,15 @@ class AssetForm(forms.ModelForm):
                             'status_change_reason': 'Please provide a detailed reason for deletion (min 10 characters).'
                         })
                 
-                # Store status change data for view processing
-                cleaned_data['_status_changed'] = True
-                cleaned_data['_old_status'] = old_status
-                cleaned_data['_new_status'] = new_status
+                # Status change data already stored above
+                pass
+            else:
+                # Status values are the same - NOT a status change
+                # Clear the flag to prevent false validation
+                is_status_change = False
+                cleaned_data.pop('_status_changed', None)
+                cleaned_data.pop('_old_status', None)
+                cleaned_data.pop('_new_status', None)
         
         # WORLD-CLASS: Skip dynamic field assembly during status changes
         # Dynamic fields are not relevant for status transitions

@@ -78,12 +78,24 @@ class AssetStatusChangeService:
         cls._guard_admin_or_manager(user)
         cls._guard_company(user.company_id, asset)
 
-        # Validation
-        if asset.status != Asset.STATUS_ACTIVE:
-            raise ValidationError(f"Cannot start maintenance on asset with status '{asset.status}'. Asset must be ACTIVE.")
+        # Validation - WORLD-CLASS FIX: Case-insensitive comparison
+        # Normalize status for comparison to handle any case variations
+        current_status = asset.status.lower() if asset.status else ''
+        if current_status != Asset.STATUS_ACTIVE:
+            raise ValidationError(
+                f"Cannot start maintenance on asset with status '{asset.status}'. "
+                f"Asset must be ACTIVE. Current status: {asset.get_status_display()}"
+            )
 
-        if not asset.maintenance_enabled:
-            raise ValidationError("Maintenance tracking is not enabled for this asset.")
+        # WORLD-CLASS FIX: Don't require maintenance_enabled for corrective/emergency maintenance
+        # maintenance_enabled only controls SCHEDULED/PREVENTIVE maintenance
+        # Any asset can undergo corrective or emergency maintenance regardless of settings
+        # This follows industry best practices (ServiceNow, Maximo, SAP EAM)
+        if not asset.maintenance_enabled and maintenance_type == 'preventive':
+            raise ValidationError(
+                "Preventive maintenance tracking is not enabled for this asset. "
+                "Enable maintenance tracking in asset settings or use corrective/emergency maintenance type."
+            )
 
         if not reason or len(reason.strip()) < 10:
             raise ValidationError("Maintenance reason must be at least 10 characters.")
@@ -121,13 +133,9 @@ class AssetStatusChangeService:
             asset.status_changed_at = timezone.now()
             asset.status_changed_by = user
             asset.status_change_reason = reason
-            asset.save(update_fields=[
-                "status",
-                "status_changed_at",
-                "status_changed_by",
-                "status_change_reason",
-                "updated_at",
-            ])
+            # CRITICAL: Don't use update_fields - it discards form changes!
+            # Save all fields to preserve form data (assigned_to, branch, warranty, etc.)
+            asset.save()
 
             # Audit log
             log_audit(
@@ -256,23 +264,13 @@ class AssetStatusChangeService:
             asset.retirement_reason = reason
             asset.disposal_method = disposal_method
             asset.salvage_value = salvage_value
-            asset.assigned_to = None  # Unassign user
+            # DON'T force assigned_to = None - preserve form input for accountability
+            # User can explicitly unassign if needed via form
             asset.next_maintenance_date = None  # Clear scheduled maintenance
 
-            asset.save(update_fields=[
-                "status",
-                "status_changed_at",
-                "status_changed_by",
-                "status_change_reason",
-                "retired_at",
-                "retired_by",
-                "retirement_reason",
-                "disposal_method",
-                "salvage_value",
-                "assigned_to",
-                "next_maintenance_date",
-                "updated_at",
-            ])
+            # CRITICAL: Don't use update_fields - it discards form changes!
+            # Save all fields to preserve form data (branch, warranty, dynamic_data, etc.)
+            asset.save()
 
             # Cancel all scheduled maintenance
             MaintenanceRecord.objects.filter(
@@ -392,24 +390,13 @@ class AssetStatusChangeService:
             asset.loss_details = details
             asset.last_known_location = last_known_location
             asset.police_report_number = police_report_number
-            asset.assigned_to = None  # Unassign user
+            # DON'T force assigned_to = None - preserve form input for accountability
+            # User can explicitly unassign if needed via form
             asset.next_maintenance_date = None  # Clear scheduled maintenance
 
-            asset.save(update_fields=[
-                "status",
-                "status_changed_at",
-                "status_changed_by",
-                "status_change_reason",
-                "lost_at",
-                "lost_by",
-                "loss_reason",
-                "loss_details",
-                "last_known_location",
-                "police_report_number",
-                "assigned_to",
-                "next_maintenance_date",
-                "updated_at",
-            ])
+            # CRITICAL: Don't use update_fields - it discards form changes!
+            # Save all fields to preserve form data (branch, warranty, dynamic_data, etc.)
+            asset.save()
 
             # Cancel all scheduled maintenance and pending transfers
             MaintenanceRecord.objects.filter(

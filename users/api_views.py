@@ -12,6 +12,7 @@ from django.contrib.auth import update_session_auth_hash
 from .decorators import api_login_required, api_admin_required
 from .models import UserSession, RolePermissionMatrix
 from . import utils as user_utils
+from audit.models import AuditEvent
 import json
 import logging
 from django.utils.crypto import get_random_string
@@ -37,8 +38,10 @@ def api_users_list(request):
         if not company:
             return JsonResponse({'success': False, 'error': 'Company context required.'}, status=403)
 
-        # Build queryset scoped to company
-        queryset = User.objects.select_related('company').filter(company=company).order_by('username')
+        # Build queryset scoped to company with branch relationship
+        queryset = User.objects.select_related('company').prefetch_related(
+            'user_branches__branch'
+        ).filter(company=company).order_by('username')
         
         # Apply search filter
         if search:
@@ -64,6 +67,14 @@ def api_users_list(request):
             else:
                 role = 'User'
             
+            # Get primary branch information
+            branch_id = None
+            branch_name = None
+            primary_branch_rel = user.user_branches.filter(is_primary=True).first()
+            if primary_branch_rel and primary_branch_rel.branch:
+                branch_id = primary_branch_rel.branch.id
+                branch_name = primary_branch_rel.branch.name
+            
             users_data.append({
                 'id': user.id,
                 'username': user.username,
@@ -77,6 +88,8 @@ def api_users_list(request):
                 'is_superuser': user.is_superuser,
                 'date_joined': user.date_joined.isoformat(),
                 'last_login': user.last_login.isoformat() if user.last_login else None,
+                'branch_id': branch_id,
+                'branch_name': branch_name,
             })
         
         return JsonResponse({
@@ -548,7 +561,9 @@ def api_user_details(request, user_id):
         if not company:
             return JsonResponse({'success': False, 'error': 'Company context required.'}, status=403)
 
-        user = User.objects.get(id=user_id, company=company)
+        user = User.objects.select_related('company').prefetch_related(
+            'user_branches__branch'
+        ).get(id=user_id, company=company)
         
         # Determine user role
         if user.is_superuser:
@@ -558,17 +573,40 @@ def api_user_details(request, user_id):
         else:
             role = 'User'
         
+        # Get primary branch information
+        branch_id = None
+        branch_name = None
+        primary_branch_rel = user.user_branches.filter(is_primary=True).first()
+        if primary_branch_rel and primary_branch_rel.branch:
+            branch_id = primary_branch_rel.branch.id
+            branch_name = primary_branch_rel.branch.name
+        
+        # Get additional user info
+        initials = ''
+        if user.first_name and user.last_name:
+            initials = f"{user.first_name[0]}{user.last_name[0]}".upper()
+        elif user.username:
+            initials = user.username[:2].upper()
+        
         return JsonResponse({
             'success': True,
             'user': {
                 'id': user.id,
                 'username': user.username,
                 'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
                 'full_name': user.get_full_name() or user.username,
+                'initials': initials,
                 'role': role,
                 'is_staff': user.is_staff,
                 'is_superuser': user.is_superuser,
-                'is_active': user.is_active
+                'is_active': user.is_active,
+                'branch_id': branch_id,
+                'branch_name': branch_name,
+                'last_login': user.last_login.isoformat() if user.last_login else None,
+                'date_joined': user.date_joined.isoformat() if user.date_joined else None,
+                'is_online': False  # Can be enhanced with session tracking
             }
         })
         
@@ -631,11 +669,11 @@ def api_user_update(request, user_id):
         
         if 'username' in data:
             username = data['username'].strip()
-            # Check username uniqueness
-            if User.objects.filter(username=username).exclude(id=user.id).exists():
+            # Check username uniqueness within company (multi-tenancy)
+            if User.objects.filter(username=username, company=company).exclude(id=user.id).exists():
                 return JsonResponse({
                     'success': False,
-                    'error': 'Username already exists'
+                    'error': 'Username already exists in your organization'
                 }, status=400)
             user.username = username
         
@@ -658,16 +696,38 @@ def api_user_update(request, user_id):
                 if hasattr(user, 'role'):
                     user.role = 'user'
         
-        # Update branch
-        if 'branch_id' in data and hasattr(user, 'branch'):
-            from tenancy.models import Branch
+        # Update primary branch (with multi-tenancy validation)
+        if 'branch_id' in data:
+            from tenancy.models import Branch, UserBranch
             if data['branch_id']:
-                branch = Branch.objects.get(id=data['branch_id'], company=company)
-                user.branch = branch
+                try:
+                    # Ensure branch belongs to same company (multi-tenancy)
+                    branch = Branch.objects.get(id=data['branch_id'], company=company)
+                    
+                    # Remove old primary branch
+                    UserBranch.objects.filter(user=user, company=company, is_primary=True).update(is_primary=False)
+                    
+                    # Set new primary branch
+                    user_branch, created = UserBranch.objects.get_or_create(
+                        user=user,
+                        branch=branch,
+                        company=company,
+                        defaults={'is_primary': True}
+                    )
+                    if not created:
+                        user_branch.is_primary = True
+                        user_branch.save()
+                        
+                except Branch.DoesNotExist:
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Invalid branch selection'
+                    }, status=400)
             else:
-                user.branch = None
+                # Remove primary branch assignment
+                UserBranch.objects.filter(user=user, company=company, is_primary=True).update(is_primary=False)
         
-        # Update active status
+        # Update active status (WORLD-CLASS: Require reason for status changes)
         if 'is_active' in data:
             # Prevent self-deactivation
             if user.id == request.user.id and not data['is_active']:
@@ -675,22 +735,86 @@ def api_user_update(request, user_id):
                     'success': False,
                     'error': 'Cannot deactivate your own account'
                 }, status=400)
-            user.is_active = data['is_active']
+            
+            # Check if status is actually changing
+            new_status = bool(data['is_active'])
+            if new_status != user.is_active:
+                # WORLD-CLASS: Require reason for status change
+                reason = data.get('status_change_reason', '').strip()
+                if not reason:
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Reason is required when changing account status',
+                        'field': 'status_change_reason'
+                    }, status=400)
+                
+                if len(reason) < 10:
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Reason must be at least 10 characters',
+                        'field': 'status_change_reason'
+                    }, status=400)
+                
+                # Log status change with reason (separate audit event for importance)
+                status_text = 'activated' if new_status else 'deactivated'
+                AuditEvent.objects.create(
+                    user=request.user,
+                    company=company,
+                    action=f'USER_{status_text.upper()}',
+                    description=f'User account {status_text}: {user.username} - Reason: {reason}',
+                    severity='CRITICAL',  # Critical severity for account status changes
+                    metadata={
+                        'user_id': user.id,
+                        'username': user.username,
+                        'full_name': user.get_full_name(),
+                        'previous_status': user.is_active,
+                        'new_status': new_status,
+                        'reason': reason,
+                        'changed_by': request.user.username
+                    },
+                    ip_address=request.META.get('REMOTE_ADDR'),
+                    user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                    related_user=user
+                )
+            
+            user.is_active = new_status
         
         user.save()
         
-        # Log the action
-        from audit.models import AuditEvent
+        # Refresh from database to get updated relationships
+        user.refresh_from_db()
+        
+        # Log the action (AuditEvent already imported at top of file)
         AuditEvent.objects.create(
             user=request.user,
             company=company,
             action='USER_UPDATED',
-            model_name='User',
-            object_id=str(user.id),
             description=f'Updated user: {user.username}',
+            metadata={
+                'user_id': user.id,
+                'username': user.username,
+                'changes': data
+            },
             ip_address=request.META.get('REMOTE_ADDR'),
-            user_agent=request.META.get('HTTP_USER_AGENT', '')
+            user_agent=request.META.get('HTTP_USER_AGENT', ''),
+            related_user=user
         )
+        
+        # Get primary branch information for response
+        branch_id = None
+        branch_name = None
+        primary_branch_rel = user.user_branches.filter(is_primary=True).first()
+        if primary_branch_rel and primary_branch_rel.branch:
+            branch_id = primary_branch_rel.branch.id
+            branch_name = primary_branch_rel.branch.name
+        
+        # Determine role for response
+        if user.is_superuser:
+            role = 'Admin'
+        elif user.is_staff:
+            role = 'Manager'
+        else:
+            role = 'User'
         
         return JsonResponse({
             'success': True,
@@ -699,9 +823,13 @@ def api_user_update(request, user_id):
                 'id': user.id,
                 'username': user.username,
                 'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
                 'full_name': user.get_full_name() or user.username,
-                'role': getattr(user, 'role', 'user'),
-                'is_active': user.is_active
+                'role': role,
+                'is_active': user.is_active,
+                'branch_id': branch_id,
+                'branch_name': branch_name
             }
         })
         
@@ -756,17 +884,21 @@ def api_user_delete(request, user_id):
             action = 'USER_DEACTIVATED'
             message = f'User {user.username} deactivated'
         
-        # Log the action
-        from audit.models import AuditEvent
+        # Log the action (AuditEvent already imported at top of file)
         AuditEvent.objects.create(
             user=request.user,
             company=company,
             action=action,
-            model_name='User',
-            object_id=str(user_id),
+            severity='WARNING' if action == 'USER_DELETED' else 'INFO',
             description=message,
+            metadata={
+                'user_id': user_id,
+                'username': username if permanent else user.username,
+                'permanent': permanent
+            },
             ip_address=request.META.get('REMOTE_ADDR'),
-            user_agent=request.META.get('HTTP_USER_AGENT', '')
+            user_agent=request.META.get('HTTP_USER_AGENT', ''),
+            related_user=user if not permanent else None
         )
         
         return JsonResponse({

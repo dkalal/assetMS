@@ -5,10 +5,11 @@ from django.contrib import messages
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy, reverse
 from django.db.models import Q, Count
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
 from django.views.decorators.http import require_http_methods, require_GET
 from django.utils import timezone
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError, PermissionDenied
 from django.views.decorators.http import require_GET, require_POST
 from django.db.models import Count, Q
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie, csrf_protect
@@ -59,53 +60,125 @@ def is_admin_or_manager(user):
 
 # Create your views here.
 
-class AssetCreateView(UserPassesTestMixin, CreateView):
-    model = Asset
-    form_class = AssetForm
+class AssetCreateView(LoginRequiredMixin, BranchContextMixin, TemplateView):
+    """
+    Unified Asset Creation View with Smart Routing.
+    
+    World-Class Implementation:
+    - Single entry point for all asset creation
+    - Automatic role-based workflow routing:
+      * Admin → Direct creation (no approval)
+      * Manager → Approval workflow (if company policy requires)
+      * User → Permission denied
+    - Single form, single URL, smart backend
+    - Consistent UX across all roles
+    
+    URL: /assets/register/
+    Template: assets/asset_form.html
+    """
     template_name = 'assets/asset_form.html'
-    success_url = reverse_lazy('asset_list')
-
-    def test_func(self):
-        user = self.request.user
-        # Admins can create directly, managers must request
-        return user.is_authenticated and (can(user, 'create_assets') or can(user, 'request_asset_creation'))
     
     def dispatch(self, request, *args, **kwargs):
-        """Redirect managers to asset creation request form."""
+        """Check permissions and determine workflow mode."""
         user = request.user
         
-        # If manager without direct creation permission, redirect to request form
-        if user.is_authenticated and user.role == 'manager' and not can(user, 'create_assets'):
-            messages.info(request, "As a manager, please submit an asset creation request for admin approval.")
-            return redirect('asset_creation_request')
+        # Only admins and managers can create assets
+        if user.role not in ['admin', 'manager']:
+            messages.error(request, "You don't have permission to create assets.")
+            return redirect('asset_list')
         
         return super().dispatch(request, *args, **kwargs)
-
-    def form_valid(self, form):
-        asset = form.save(commit=False)
+    
+    def get_context_data(self, **kwargs):
+        """Prepare context with workflow mode and form."""
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        company = getattr(self.request, 'company', None)
         
-        # Company and branch are already set and validated by the form
-        # Just ensure company_id is explicitly set for Django's internal validation
+        # Determine workflow mode
+        if user.role == 'admin':
+            # Admins always create directly
+            context['workflow_mode'] = 'direct'
+            context['requires_approval'] = False
+            context['workflow_message'] = 'Asset will be created immediately'
+        elif user.role == 'manager':
+            # Check company policy for managers
+            # Default: require approval for managers
+            requires_approval = True  # Can be made configurable per company
+            context['workflow_mode'] = 'approval' if requires_approval else 'direct'
+            context['requires_approval'] = requires_approval
+            if requires_approval:
+                context['workflow_message'] = 'This request will be sent to an admin for approval'
+            else:
+                context['workflow_message'] = 'Asset will be created immediately'
+        
+        context['user_role'] = user.role
+        
+        # Provide form instance for template
+        if 'form' not in context:
+            from .forms import AssetForm
+            context['form'] = AssetForm(request=self.request)
+        
+        return context
+    
+    def get(self, request, *args, **kwargs):
+        """Display the unified creation form."""
+        return self.render_to_response(self.get_context_data())
+    
+    def post(self, request, *args, **kwargs):
+        """Handle form submission with smart routing."""
+        user = request.user
+        company = getattr(request, 'company', None)
+        
+        # Determine workflow
+        if user.role == 'admin':
+            # Admin: Direct creation
+            return self.create_asset_directly(request)
+        elif user.role == 'manager':
+            # Manager: Check if approval required
+            requires_approval = True  # Can be made configurable
+            if requires_approval:
+                return self.create_approval_request(request)
+            else:
+                return self.create_asset_directly(request)
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': 'Permission denied'
+            }, status=403)
+    
+    def create_asset_directly(self, request):
+        """Create asset directly without approval."""
+        from .forms import AssetForm
+        
+        form = AssetForm(request.POST, request=request)
+        
+        if not form.is_valid():
+            messages.error(request, "Please correct the errors below.")
+            context = self.get_context_data()
+            context['form'] = form
+            return self.render_to_response(context)
+        
+        # Save asset
+        asset = form.save(commit=False)
+        company = asset.company
+        branch = asset.branch
+        
         if asset.company and not asset.company_id:
             asset.company_id = asset.company.id
         
-        # Get company and branch from the validated form
-        company = asset.company
-        branch = asset.branch
-
         assigned_to = form.cleaned_data.get('assigned_to')
-        asset.save()  # Save first to ensure UUID is set
+        asset.save()
         
-        # Generate QR code with direct URL
+        # Generate QR code
         try:
             import os
             from django.conf import settings
             
-            # Ensure QR codes directory exists
             qr_dir = os.path.join(settings.MEDIA_ROOT, 'qr_codes')
             os.makedirs(qr_dir, exist_ok=True)
             
-            base_url = self.request.build_absolute_uri('/')[:-1]  # Remove trailing slash
+            base_url = request.build_absolute_uri('/')[:-1]
             qr_url = f"{base_url}/assets/{asset.uuid}/"
             qr = qrcode.make(qr_url)
             buffer = BytesIO()
@@ -113,48 +186,169 @@ class AssetCreateView(UserPassesTestMixin, CreateView):
             asset.qr_code.save(f"asset_{asset.uuid}.png", ContentFile(buffer.getvalue()), save=False)
         except Exception as e:
             print(f"QR code generation failed: {e}")
-            # Continue without QR code if generation fails
         
         asset.save()
+        
+        # Audit logs
         if assigned_to:
             log_audit(
-                self.request.user,
+                request.user,
                 ASSIGN_ACTION,
                 asset,
                 f'Asset assigned to {assigned_to}',
                 related_user=assigned_to,
                 company=company,
-                branch=asset.branch
+                branch=branch
             )
+        
         log_audit(
-            self.request.user,
+            request.user,
             'create',
             asset,
-            f'Asset created in branch: {asset.branch.name}',
+            f'Asset created in branch: {branch.name}',
             company=company,
-            branch=asset.branch
+            branch=branch
         )
-        messages.success(self.request, f"Asset '{asset}' registered successfully in {asset.branch.name}.")
-        print(f"[DEBUG] Asset created: {asset}")
-        return super().form_valid(form)
+        
+        messages.success(request, f"Asset '{asset}' registered successfully in {branch.name}.")
+        return redirect('asset_list')
+    
+    def create_approval_request(self, request):
+        """Create approval request for manager workflow."""
+        from tenancy.approval_models import ApprovalRequest
+        from tenancy.models import Alert, Branch
+        from .models import AssetCategory, AssetCategoryField
+        
+        try:
+            with transaction.atomic():
+                company = getattr(request, 'company', None)
+                user = request.user
+                
+                # Extract form data
+                title = request.POST.get('title', '').strip()
+                description = request.POST.get('description', '').strip()
+                category_id = request.POST.get('category')
+                branch_id = request.POST.get('branch')
+                justification = request.POST.get('justification', '').strip()
+                priority = request.POST.get('priority', ApprovalRequest.PRIORITY_MEDIUM)
+                
+                # Validate required fields
+                if not all([title, category_id, branch_id]):
+                    messages.error(request, "Please fill in all required fields.")
+                    context = self.get_context_data()
+                    return self.render_to_response(context)
+                
+                # Validate category
+                try:
+                    category = AssetCategory.objects.for_company(company).get(pk=category_id)
+                except AssetCategory.DoesNotExist:
+                    messages.error(request, "Invalid category selected.")
+                    context = self.get_context_data()
+                    return self.render_to_response(context)
+                
+                # Validate branch
+                try:
+                    branch = Branch.objects.get(pk=branch_id, company=company, is_active=True)
+                except Branch.DoesNotExist:
+                    messages.error(request, "Invalid branch selected.")
+                    context = self.get_context_data()
+                    return self.render_to_response(context)
+                
+                # Build asset data
+                asset_data = {
+                    'category_id': int(category_id),
+                    'branch_id': int(branch_id),
+                    'description': description,
+                    'status': request.POST.get('status', 'active'),
+                    'dynamic_data': {},
+                }
+                
+                # Extract dynamic fields
+                fields = AssetCategoryField.objects.for_company(company).filter(category=category)
+                for field in fields:
+                    field_value = request.POST.get(f'field_{field.key}', '').strip()
+                    if field_value:
+                        asset_data['dynamic_data'][field.key] = field_value
+                    elif field.required:
+                        messages.error(request, f"Required field '{field.label}' is missing.")
+                        context = self.get_context_data()
+                        return self.render_to_response(context)
+                
+                # Check for assigned_to
+                assigned_to_id = request.POST.get('assigned_to_id')
+                if assigned_to_id:
+                    asset_data['assigned_to_id'] = int(assigned_to_id)
+                
+                # Create approval request
+                approval_request = ApprovalRequest.objects.create(
+                    company=company,
+                    branch=branch,
+                    request_type=ApprovalRequest.TYPE_ASSET_CREATION,
+                    title=title or f"Asset Creation: {category.name}",
+                    description=f"{description}\n\nJustification: {justification}",
+                    requested_by=user,
+                    priority=priority,
+                    metadata={
+                        'asset_data': asset_data,
+                        'justification': justification,
+                        'category_name': category.name,
+                    }
+                )
+                
+                # Auto-assign to admin
+                from django.contrib.auth import get_user_model
+                User = get_user_model()
+                admin = User.objects.filter(
+                    company=company,
+                    role='admin',
+                    is_active=True
+                ).first()
+                
+                if admin:
+                    approval_request.assigned_to = admin
+                    approval_request.save()
+                    
+                    # Create notification
+                    Alert.objects.create(
+                        company=company,
+                        branch=branch,
+                        recipient=admin,
+                        level=Alert.LEVEL_INFO,
+                        message=f"New asset creation request from {user.get_full_name() or user.username}: {title}",
+                        context={
+                            'request_id': approval_request.pk,
+                            'request_type': 'asset_creation',
+                            'requested_by': user.pk,
+                        }
+                    )
+                
+                # Log audit
+                log_audit(
+                    user,
+                    "asset_creation_requested",
+                    details=f"Requested asset creation: {title}",
+                    company=company,
+                    branch=branch,
+                    metadata={
+                        'request_id': approval_request.pk,
+                        'category': category.name,
+                        'priority': priority,
+                    }
+                )
+                
+                messages.success(
+                    request,
+                    f"Asset creation request '{title}' submitted successfully. "
+                    f"Assigned to {approval_request.assigned_to.get_full_name() if approval_request.assigned_to else 'admin'} for review."
+                )
+                
+                return redirect('approval_dashboard')
+        
+        except Exception as e:
+            messages.error(request, f"Failed to submit request: {str(e)}")
+            context = self.get_context_data()
+            return self.render_to_response(context)
 
-    def form_invalid(self, form):
-        print(f"[DEBUG] Asset registration form invalid: {form.errors}")
-        print(f"[DEBUG] Form data: {form.data}")
-        messages.error(self.request, "Asset registration failed. Please correct the errors below.")
-        return super().form_invalid(form)
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['initial'] = kwargs.get('initial', {})
-        kwargs['initial']['request'] = self.request
-        kwargs['request'] = self.request
-        return kwargs
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['user_role'] = getattr(self.request.user, 'role', 'user')
-        return context
 
 asset_create = user_passes_test(is_admin_or_manager, login_url='users:login')(AssetCreateView.as_view())
 
@@ -175,138 +369,293 @@ class AssetUpdateView(UserPassesTestMixin, UpdateView):
         return user.is_authenticated and can(user, 'edit_assets')
 
     def form_valid(self, form):
+        """
+        WORLD-CLASS IMPLEMENTATION: Handle asset updates with proper data persistence.
+        
+        Architecture:
+        1. Capture old state for audit trail
+        2. Detect status changes vs normal edits
+        3. Route to appropriate handler (status service or direct save)
+        4. Single save point - no double saves
+        5. Complete audit logging
+        6. Clear success messages
+        
+        Multi-tenancy: All operations scoped to user's company
+        Security: Permissions checked, all changes audited
+        Performance: Single transaction, optimized queries
+        """
         from decimal import Decimal
         from assets.services.status_changes import AssetStatusChangeService
         from django.contrib import messages
+        from django.db import transaction
         
+        # DEBUG: Log form submission
+        print(f"✅ FORM_VALID called for asset {self.get_object().uuid}")
+        print(f"✅ Form data: {form.cleaned_data.keys()}")
+        
+        # Capture original state from database for audit trail
         old_obj = self.get_object()
-        # Capture old values for comparison
         old_assigned = old_obj.assigned_to
         old_status = old_obj.status
+        old_branch = old_obj.branch
         try:
             old_dyn = dict(old_obj.dynamic_data or {})
         except Exception:
             old_dyn = {}
-
-        # Check if status is changing
+        
+        # Get modified asset from form (has all form changes in memory)
+        asset = form.instance
+        
+        # Detect status change
         status_changed = form.cleaned_data.get('_status_changed', False)
         new_status = form.cleaned_data.get('_new_status')
         
-        if status_changed and new_status:
-            # WORLD-CLASS: Delegate to status change service
-            try:
-                # Get status-specific data from form
-                reason = form.cleaned_data.get('status_change_reason', '')
-                
-                # IN_MAINTENANCE transition
-                if new_status == 'in_maintenance':
-                    maintenance_type = form.cleaned_data.get('maintenance_type', 'corrective')
-                    asset, maintenance_record = AssetStatusChangeService.change_to_in_maintenance(
-                        asset=old_obj,
-                        user=self.request.user,
-                        reason=reason,
-                        maintenance_type=maintenance_type
-                    )
-                    messages.success(
-                        self.request,
-                        f'Asset placed under {maintenance_type} maintenance. Maintenance record #{maintenance_record.id} created.'
-                    )
-                
-                # RETIRED transition
-                elif new_status == 'retired':
-                    disposal_method = form.cleaned_data.get('disposal_method')
-                    salvage_value = form.cleaned_data.get('salvage_value')
-                    asset = AssetStatusChangeService.change_to_retired(
-                        asset=old_obj,
-                        user=self.request.user,
-                        reason=reason,
-                        disposal_method=disposal_method,
-                        salvage_value=salvage_value if salvage_value else None
-                    )
-                    messages.warning(
-                        self.request,
-                        f'Asset retired. Disposal method: {disposal_method}.'
-                    )
-                
-                # LOST transition
-                elif new_status == 'lost':
-                    loss_date = form.cleaned_data.get('loss_date')
-                    loss_reason = form.cleaned_data.get('loss_reason')
-                    loss_details = form.cleaned_data.get('loss_details', '')
-                    last_known_location = form.cleaned_data.get('last_known_location', '')
-                    police_report = form.cleaned_data.get('police_report_number', '')
+        # Use atomic transaction for data consistency
+        try:
+            with transaction.atomic():
+                if status_changed and new_status:
+                    # ============================================================
+                    # STATUS CHANGE WORKFLOW
+                    # ============================================================
+                    reason = form.cleaned_data.get('status_change_reason', '')
                     
-                    asset = AssetStatusChangeService.change_to_lost(
-                        asset=old_obj,
-                        user=self.request.user,
-                        loss_date=loss_date,
-                        loss_reason=loss_reason,
-                        details=loss_details,
-                        last_known_location=last_known_location,
-                        police_report_number=police_report
-                    )
-                    messages.error(
-                        self.request,
-                        f'Asset reported {loss_reason}. High-priority alert created.'
-                    )
-                
-                # For other status changes, save normally
-                else:
+                    # CRITICAL FIX: Prepare asset with all form changes BUT preserve original status
+                    # The service layer will handle the status change itself
                     asset = form.save(commit=False)
-                    asset.status_changed_at = timezone.now()
-                    asset.status_changed_by = self.request.user
-                    asset.status_change_reason = reason
-                    asset.save()
-                    messages.success(self.request, f'Asset status changed to {new_status}.')
-                
-                # Skip normal save since service handled it
-                return HttpResponseRedirect(self.get_success_url())
-                
-            except (PermissionDenied, ValidationError) as e:
-                messages.error(self.request, str(e))
-                return self.form_invalid(form)
-        
-        # Normal save (no status change)
-        asset = form.save(commit=False)
-        assigned_to = form.cleaned_data.get('assigned_to')
-        status = form.cleaned_data.get('status')
-        try:
-            new_dyn = dict(getattr(asset, 'dynamic_data', {}) or {})
-        except Exception:
-            new_dyn = {}
-
-        asset.save()
-
-        # Assignment logging: if assigned_to changes
-        if old_assigned != assigned_to:
-            if assigned_to:
-                log_audit(self.request.user, ASSIGN_ACTION, asset, f'Asset assigned to {assigned_to}', related_user=assigned_to)
-                messages.success(self.request, f'Asset assigned to {assigned_to.get_full_name() or assigned_to.username}.')
-            else:
-                # Unassignment event
-                log_audit(self.request.user, 'unassign', asset, f'Asset unassigned (previously {old_assigned})')
-                messages.info(self.request, 'Asset unassigned.')
-
-        # Optional: minimal dynamic data change summary (avoid large diffs)
-        try:
-            changed_keys = [k for k in set(old_dyn.keys()) | set(new_dyn.keys()) if (old_dyn.get(k) != new_dyn.get(k))]
-            if changed_keys:
-                # Limit to first 8 keys to keep logs concise
-                preview = ', '.join(changed_keys[:8]) + ('' if len(changed_keys) <= 8 else ', ...')
-                log_audit(self.request.user, 'edit', asset, f'Asset details updated (changed fields: {preview})')
-                # Specific: Warranty change tracking
-                if 'warranty_expiry' in changed_keys:
+                    
+                    # Restore original status - service will change it properly
+                    # This is critical because services validate the current status
+                    asset.status = old_status
+                    
+                    # Route to appropriate status change service
+                    if new_status == 'in_maintenance':
+                        maintenance_type = form.cleaned_data.get('maintenance_type', 'corrective')
+                        asset, maintenance_record = AssetStatusChangeService.change_to_in_maintenance(
+                            asset=asset,
+                            user=self.request.user,
+                            reason=reason,
+                            maintenance_type=maintenance_type
+                        )
+                        messages.success(
+                            self.request,
+                            f'✅ Asset placed under {maintenance_type} maintenance. '
+                            f'Maintenance record #{maintenance_record.id} created.'
+                        )
+                    
+                    elif new_status == 'retired':
+                        disposal_method = form.cleaned_data.get('disposal_method')
+                        salvage_value = form.cleaned_data.get('salvage_value')
+                        asset = AssetStatusChangeService.change_to_retired(
+                            asset=asset,
+                            user=self.request.user,
+                            reason=reason,
+                            disposal_method=disposal_method,
+                            salvage_value=salvage_value if salvage_value else None
+                        )
+                        messages.warning(
+                            self.request,
+                            f'⚠️ Asset retired. Disposal method: {disposal_method}.'
+                        )
+                    
+                    elif new_status == 'lost':
+                        loss_date = form.cleaned_data.get('loss_date')
+                        loss_reason = form.cleaned_data.get('loss_reason')
+                        loss_details = form.cleaned_data.get('loss_details', '')
+                        last_known_location = form.cleaned_data.get('last_known_location', '')
+                        police_report = form.cleaned_data.get('police_report_number', '')
+                        
+                        asset = AssetStatusChangeService.change_to_lost(
+                            asset=asset,
+                            user=self.request.user,
+                            loss_date=loss_date,
+                            loss_reason=loss_reason,
+                            details=loss_details,
+                            last_known_location=last_known_location,
+                            police_report_number=police_report
+                        )
+                        messages.error(
+                            self.request,
+                            f'🚨 Asset reported {loss_reason}. High-priority alert created.'
+                        )
+                    
+                    else:
+                        # Generic status change (active, deleted, etc.)
+                        asset.status = new_status
+                        asset.status_changed_at = timezone.now()
+                        asset.status_changed_by = self.request.user
+                        asset.status_change_reason = reason
+                        asset.save()
+                        messages.success(
+                            self.request,
+                            f'✅ Asset status changed to {new_status.replace("_", " ").title()}.'
+                        )
+                    
+                    # Save many-to-many relationships
+                    form.save_m2m()
+                    
+                    # Log status change
                     log_audit(
                         self.request.user,
-                        'warranty_change',
+                        'status_change',
                         asset,
-                        f"Warranty expiry changed from '{old_dyn.get('warranty_expiry')}' to '{new_dyn.get('warranty_expiry')}'"
+                        f'Status changed: {old_status} → {new_status}. Reason: {reason[:50]}'
                     )
-        except Exception:
-            pass
-
-        messages.success(self.request, 'Asset updated successfully.')
-        return super().form_valid(form)
+                    
+                else:
+                    # ============================================================
+                    # NORMAL EDIT WORKFLOW (No status change)
+                    # ============================================================
+                    
+                    # DEBUG: Log normal edit path
+                    print(f"📝 NORMAL EDIT: Saving asset without status change")
+                    print(f"📝 assigned_to in form: {form.cleaned_data.get('assigned_to')}")
+                    print(f"📝 branch in form: {form.cleaned_data.get('branch')}")
+                    
+                    # Save asset with all form changes
+                    asset = form.save()
+                    
+                    # DEBUG: Verify save
+                    print(f"✅ SAVED: assigned_to = {asset.assigned_to}")
+                    print(f"✅ SAVED: branch = {asset.branch}")
+                    print(f"✅ SAVED: dynamic_data = {asset.dynamic_data}")
+                    
+                    # Build change summary for user feedback
+                    changes = []
+                    
+                    # Track assignment changes
+                    new_assigned = asset.assigned_to
+                    if old_assigned != new_assigned:
+                        if new_assigned:
+                            log_audit(
+                                self.request.user,
+                                ASSIGN_ACTION,
+                                asset,
+                                f'Asset assigned to {new_assigned}',
+                                related_user=new_assigned
+                            )
+                            changes.append(f'assigned to {new_assigned.get_full_name() or new_assigned.username}')
+                        else:
+                            log_audit(
+                                self.request.user,
+                                'unassign',
+                                asset,
+                                f'Asset unassigned (previously {old_assigned})'
+                            )
+                            changes.append('unassigned')
+                    
+                    # Track branch changes
+                    new_branch = asset.branch
+                    if old_branch != new_branch:
+                        log_audit(
+                            self.request.user,
+                            'branch_change',
+                            asset,
+                            f'Branch changed: {old_branch} → {new_branch}'
+                        )
+                        changes.append(f'moved to {new_branch.name if new_branch else "head office"}')
+                    
+                    # Track dynamic data changes
+                    try:
+                        new_dyn = dict(asset.dynamic_data or {})
+                        changed_keys = [
+                            k for k in set(old_dyn.keys()) | set(new_dyn.keys())
+                            if old_dyn.get(k) != new_dyn.get(k)
+                        ]
+                        
+                        if changed_keys:
+                            # Log warranty changes specifically
+                            if 'warranty_expiry' in changed_keys or 'warranty_provider' in changed_keys:
+                                log_audit(
+                                    self.request.user,
+                                    'warranty_change',
+                                    asset,
+                                    f"Warranty updated: Provider='{new_dyn.get('warranty_provider', 'N/A')}', "
+                                    f"Expiry='{new_dyn.get('warranty_expiry', 'N/A')}'"
+                                )
+                                changes.append('warranty information updated')
+                            
+                            # Log other dynamic field changes
+                            preview = ', '.join(changed_keys[:5])
+                            if len(changed_keys) > 5:
+                                preview += f' and {len(changed_keys) - 5} more'
+                            log_audit(
+                                self.request.user,
+                                'edit',
+                                asset,
+                                f'Asset details updated: {preview}'
+                            )
+                    except Exception as e:
+                        # Don't fail on audit logging errors
+                        pass
+                    
+                    # Show success message with change summary
+                    if changes:
+                        change_summary = ', '.join(changes)
+                        messages.success(
+                            self.request,
+                            f'✅ Asset updated successfully: {change_summary}.'
+                        )
+                    else:
+                        messages.success(self.request, '✅ Asset updated successfully.')
+                
+                # Transaction committed here
+                
+        except (PermissionDenied, ValidationError) as e:
+            messages.error(self.request, f'❌ Error: {str(e)}')
+            return self.form_invalid(form)
+        except Exception as e:
+            messages.error(self.request, f'❌ Unexpected error: {str(e)}')
+            return self.form_invalid(form)
+        
+        # CRITICAL: Refresh asset from database to ensure all changes are committed
+        # This prevents stale data issues when redirecting
+        asset.refresh_from_db()
+        
+        # DEBUG: Verify final state
+        print(f"✅ FINAL STATE: status={asset.status}, assigned_to={asset.assigned_to}")
+        
+        # Return redirect to success URL with cache-busting
+        response = HttpResponseRedirect(self.get_success_url())
+        # Prevent browser caching of the redirect to ensure fresh data
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
+        return response
+    
+    def form_invalid(self, form):
+        """
+        WORLD-CLASS ERROR HANDLING: Provide detailed feedback on validation errors.
+        """
+        from django.contrib import messages
+        
+        # Log form errors for debugging
+        error_details = []
+        
+        # Field-specific errors
+        for field, errors in form.errors.items():
+            if field == '__all__':
+                for error in errors:
+                    error_details.append(f"Form error: {error}")
+            else:
+                for error in errors:
+                    error_details.append(f"{field}: {error}")
+        
+        # Show detailed error message to user
+        if error_details:
+            error_msg = "❌ Validation errors: " + "; ".join(error_details[:3])
+            if len(error_details) > 3:
+                error_msg += f" and {len(error_details) - 3} more"
+            messages.error(self.request, error_msg)
+        else:
+            messages.error(self.request, "❌ Please correct the errors in the form.")
+        
+        # Log to console for debugging
+        print(f"🔴 FORM VALIDATION FAILED for asset {self.get_object().uuid}")
+        print(f"🔴 Errors: {form.errors}")
+        if hasattr(form, 'cleaned_data'):
+            print(f"🔴 Cleaned data: {form.cleaned_data}")
+        
+        return super().form_invalid(form)
 
     def get_initial(self):
         """Pre-populate form fields with current asset data."""
@@ -385,12 +734,22 @@ class AssetListView(CompanyScopedQuerysetMixin, BranchContextMixin, LoginRequire
             return 20
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        """
+        WORLD-CLASS: Use unified filtering service for consistency.
+        
+        This ensures the asset list matches statistics exactly.
+        All role-based filtering is handled by the service.
+        """
+        from assets.services.filtering import asset_filtering_service
+        
+        company = getattr(self.request, 'company', None)
         user = self.request.user
-        role = getattr(user, 'role', 'user')
-        # Enforce role-based filtering
-        if role == 'user':
-            qs = qs.filter(assigned_to=user)
+        
+        # Get base queryset using unified filtering service
+        # This handles role-based filtering (admin/manager/user) consistently
+        qs = asset_filtering_service.get_base_queryset(company, user, self.request)
+        
+        # Extract filter parameters from request
         category = self.request.GET.get('category')
         status = self.request.GET.get('status')
         location = self.request.GET.get('location')
@@ -398,10 +757,19 @@ class AssetListView(CompanyScopedQuerysetMixin, BranchContextMixin, LoginRequire
         assigned = self.request.GET.get('assigned')
         warranty = self.request.GET.get('warranty')
         branch = self.request.GET.get('branch')  # Multi-tenancy: branch filter
-        # Dynamic field filters
-        company = getattr(self.request, 'company', None)
+        
+        # Apply standard filters using the service
+        qs = asset_filtering_service.apply_status_filter(qs, status)
+        qs = asset_filtering_service.apply_branch_filter(qs, branch)
+        qs = asset_filtering_service.apply_category_filter(qs, category)
+        qs = asset_filtering_service.apply_assigned_filter(qs, assigned)
+        qs = asset_filtering_service.apply_warranty_filter(qs, warranty)
+        qs = asset_filtering_service.apply_location_filter(qs, location)
+        qs = asset_filtering_service.apply_search_filter(qs, search)
+        
+        # Dynamic field filters (category-specific)
+        # These are applied AFTER standard filters for category-specific fields
         if category:
-            qs = qs.filter(category__id=category)
             # Fetch dynamic fields for this category
             fields = AssetCategoryField.objects.for_company(company).filter(category_id=category)
             for field in fields:
@@ -424,27 +792,7 @@ class AssetListView(CompanyScopedQuerysetMixin, BranchContextMixin, LoginRequire
                             qs = qs.filter(**{f'dynamic_data__{field.key}': iso_val})
                         except ValueError:
                             pass  # Invalid date format, ignore filter
-        if status:
-            qs = qs.filter(status=status)
-        if branch:  # Multi-tenancy: filter by branch
-            qs = qs.filter(branch__id=branch)
-        if assigned == 'yes':
-            qs = qs.filter(assigned_to__isnull=False)
-        elif assigned == 'no':
-            qs = qs.filter(assigned_to__isnull=True)
-        if warranty == 'expiring':
-            from datetime import timedelta
-            from django.utils import timezone
-            soon = timezone.now() + timedelta(days=30)
-            qs = qs.filter(dynamic_data__warranty_expiry__lte=soon.date().isoformat(), dynamic_data__warranty_expiry__gte=timezone.now().date().isoformat())
-        if location:
-            qs = qs.filter(dynamic_data__location__icontains=location)
-        if search:
-            qs = qs.filter(
-                Q(dynamic_data__name__icontains=search) |
-                Q(dynamic_data__model__icontains=search) |
-                Q(description__icontains=search)
-            )
+        
         return qs.order_by('-created_at')
 
     def get_context_data(self, **kwargs):
@@ -523,6 +871,17 @@ class AssetListView(CompanyScopedQuerysetMixin, BranchContextMixin, LoginRequire
             context['dynamic_fields'] = unique_fields
         
         return context
+    
+    def render_to_response(self, context, **response_kwargs):
+        """
+        WORLD-CLASS: Add cache-busting headers to ensure fresh data.
+        Prevents browser from caching stale asset data after edits.
+        """
+        response = super().render_to_response(context, **response_kwargs)
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
+        return response
 
 class AssetDetailView(BranchContextMixin, CompanyScopedQuerysetMixin, LoginRequiredMixin, DetailView):
     model = Asset
@@ -571,8 +930,14 @@ def asset_by_code(request):
         return JsonResponse({'success': True, 'asset': data})
     return JsonResponse({'success': False})
 
+@method_decorator(ensure_csrf_cookie, name='dispatch')
 class AssetDetailByUUIDView(DetailView):
-    """World-class asset detail view with dual-mode access (public/authenticated)."""
+    """
+    WORLD-CLASS: Asset detail view with dual-mode access (public/authenticated)
+    
+    @ensure_csrf_cookie decorator ensures CSRF cookie is set for AJAX requests
+    This is critical for transfer functionality to work correctly
+    """
     model = Asset
     template_name = 'assets/asset_detail_enhanced.html'
     context_object_name = 'asset'
@@ -614,10 +979,46 @@ class AssetDetailByUUIDView(DetailView):
         context['is_manager'] = is_manager
         context['is_user'] = is_user
         
+        # WORLD-CLASS: Smart transfer permissions based on ownership and role
+        # Following ServiceNow ITAM, IBM Maximo, and SAP EAM best practices:
+        # - Admins: Can transfer any asset in their company
+        # - Managers: Can transfer assets in their managed branches
+        # - Users: Can transfer assets assigned to them OR unassigned assets in their branches
+        can_transfer = False
+        if is_authenticated and has_company_access:
+            if is_admin:
+                # Admins can transfer any company asset
+                can_transfer = True
+            elif is_manager:
+                # Managers can transfer assets in their managed branches
+                can_transfer = True
+            elif is_user:
+                # Users can transfer:
+                # 1. Assets assigned to them (ownership-based)
+                # 2. Unassigned assets in their accessible branches (branch-based)
+                is_assigned_to_user = asset.assigned_to_id == user.pk
+                is_unassigned_in_accessible_branch = False
+                
+                if not asset.assigned_to_id:
+                    # Check if asset is in user's accessible branches
+                    try:
+                        from tenancy.policy_service import PolicyService
+                        accessible_branch_ids = PolicyService.get_accessible_branches(user, asset.company)
+                        is_unassigned_in_accessible_branch = asset.branch_id in accessible_branch_ids
+                    except Exception:
+                        # Fallback: check if asset is in user's primary branch
+                        is_unassigned_in_accessible_branch = (
+                            hasattr(user, 'primary_branch') and 
+                            user.primary_branch and 
+                            asset.branch_id == user.primary_branch.id
+                        )
+                
+                can_transfer = is_assigned_to_user or is_unassigned_in_accessible_branch
+        
         # Role-based permissions
         context['can_view_sensitive'] = is_authenticated and has_company_access
         context['can_edit'] = (is_admin or is_manager) and has_company_access
-        context['can_transfer'] = (is_admin or is_manager) and has_company_access
+        context['can_transfer'] = can_transfer
         context['can_delete'] = is_admin and has_company_access
         
         # Public data (always visible)
@@ -836,6 +1237,17 @@ class AssetDetailByUUIDView(DetailView):
             )
         
         return super().get(request, *args, **kwargs)
+    
+    def render_to_response(self, context, **response_kwargs):
+        """
+        WORLD-CLASS: Add cache-busting headers to ensure fresh data.
+        Prevents browser from caching stale asset data after edits.
+        """
+        response = super().render_to_response(context, **response_kwargs)
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
+        return response
 
 # Export endpoint (robust, supports GET and POST, individual/bulk)
 def asset_export(request):
@@ -2329,13 +2741,44 @@ def api_delete_field(request, field_id):
 @require_POST
 @csrf_protect
 def asset_delete(request, asset_id):
-    asset = Asset.objects.filter(pk=asset_id).first()
-    if not asset:
-        return JsonResponse({'success': False, 'error': 'Asset not found.'}, status=404)
-    asset_name = asset.dynamic_data.get('name', str(asset.pk))
-    asset.delete()
-    log_audit(request.user, 'delete', None, f'Asset deleted: {asset_name} (ID: {asset_id})')
-    return JsonResponse({'success': True, 'message': f'Asset {asset_name} deleted.'})
+    """
+    DEPRECATED: Direct deletion is no longer recommended.
+    
+    World-Class Best Practice:
+    - Use disposal workflow instead (soft delete with audit trail)
+    - Preserves asset history and relationships
+    - Requires admin approval
+    - Maintains compliance
+    
+    This endpoint redirects to the disposal request workflow.
+    For permanent deletion, super admins can use the dedicated endpoint.
+    """
+    try:
+        asset = Asset.objects.filter(pk=asset_id).first()
+        if not asset:
+            return JsonResponse({'success': False, 'error': 'Asset not found.'}, status=404)
+        
+        # Log deprecated usage
+        log_audit(
+            request.user,
+            'deprecated_delete_attempt',
+            asset,
+            f'User attempted deprecated direct delete. Redirected to disposal workflow.',
+            company=asset.company,
+            branch=asset.branch
+        )
+        
+        # Return redirect to disposal workflow
+        return JsonResponse({
+            'success': False,
+            'deprecated': True,
+            'message': 'Direct deletion is deprecated. Please use the disposal workflow to maintain audit trail and compliance.',
+            'redirect_url': reverse('asset_disposal_request', kwargs={'asset_uuid': asset.uuid}),
+            'action': 'redirect'
+        }, status=410)  # 410 Gone - Resource no longer available
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 @login_required
 @user_passes_test(lambda u: u.is_authenticated and u.role in ('admin', 'manager'))
@@ -2343,25 +2786,117 @@ def asset_delete(request, asset_id):
 @csrf_protect
 @transaction.atomic
 def asset_bulk_delete(request):
-    ids = request.POST.getlist('ids[]') or request.POST.getlist('ids')
-    # Validate IDs
-    valid_ids = [int(i) for i in ids if str(i).isdigit()]
-    if not valid_ids:
-        return JsonResponse({'success': False, 'error': 'No valid asset IDs provided.'}, status=400)
-    deleted = []
-    failed = []
-    for asset_id in valid_ids:
-        try:
-            asset = Asset.objects.get(pk=asset_id)
-            asset_name = asset.dynamic_data.get('name', str(asset.pk))
-            asset.delete()
-            log_audit(request.user, 'delete', None, f'Asset deleted: {asset_name} (ID: {asset_id})')
-            deleted.append(asset_id)
-        except Asset.DoesNotExist:
-            failed.append({'id': asset_id, 'error': 'Asset not found.'})
-        except Exception as e:
-            failed.append({'id': asset_id, 'error': str(e)})
-    return JsonResponse({'success': True, 'deleted': deleted, 'failed': failed, 'message': f'{len(deleted)} assets deleted.'})
+    """
+    DEPRECATED: Bulk deletion is no longer recommended.
+    Use bulk disposal workflow instead.
+    """
+    return JsonResponse({
+        'success': False,
+        'deprecated': True,
+        'message': 'Bulk deletion is deprecated. Please use the disposal workflow for each asset to maintain audit trail.',
+    }, status=410)
+
+
+@login_required
+@require_POST
+@csrf_protect
+def asset_permanent_delete(request, asset_id):
+    """
+    Permanently delete asset from database (RESTRICTED).
+    
+    Security & Compliance:
+    - Super admin only
+    - Asset must be archived for at least 90 days
+    - Requires confirmation token
+    - Full audit trail preserved
+    
+    Use Cases:
+    - Test data cleanup
+    - Duplicate removal
+    - GDPR compliance (right to be forgotten)
+    - Data retention policy enforcement
+    
+    URL: /assets/admin/permanent-delete/<id>/
+    """
+    # Super admin only
+    if not request.user.is_superuser:
+        return JsonResponse({
+            'success': False,
+            'error': 'Permission denied. Only super admins can permanently delete assets.'
+        }, status=403)
+    
+    try:
+        company = getattr(request, 'company', None)
+        asset = Asset.objects.get(pk=asset_id, company=company)
+        
+        # Must be archived (inactive)
+        if asset.status not in ['retired', 'disposed', 'lost', 'archived']:
+            return JsonResponse({
+                'success': False,
+                'error': 'Asset must be disposed/archived before permanent deletion.'
+            }, status=400)
+        
+        # Check 90-day retention period
+        if hasattr(asset, 'archived_at') and asset.archived_at:
+            days_archived = (timezone.now() - asset.archived_at).days
+            if days_archived < 90:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Asset must be archived for at least 90 days. Currently: {days_archived} days.',
+                    'days_remaining': 90 - days_archived
+                }, status=400)
+        
+        # Require confirmation token
+        confirmation = request.POST.get('confirmation', '')
+        expected_token = f'DELETE-{asset.uuid}'
+        if confirmation != expected_token:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid confirmation token.',
+                'required_token': expected_token
+            }, status=400)
+        
+        # Preserve asset data in audit log before deletion
+        asset_data = {
+            'id': asset.id,
+            'uuid': str(asset.uuid),
+            'description': str(asset),
+            'status': asset.status,
+            'company_id': asset.company_id,
+            'branch_id': asset.branch_id if asset.branch else None,
+            'category_id': asset.category_id if asset.category else None,
+            'dynamic_data': asset.dynamic_data,
+            'created_at': asset.created_at.isoformat() if asset.created_at else None,
+        }
+        
+        # Log before deletion
+        log_audit(
+            request.user,
+            'permanent_delete',
+            asset,
+            f'Asset permanently deleted from database: {asset}',
+            company=company,
+            branch=asset.branch,
+            metadata={
+                'asset_data': asset_data,
+                'reason': request.POST.get('reason', 'Not specified'),
+                'archived_at': asset.archived_at.isoformat() if hasattr(asset, 'archived_at') and asset.archived_at else None,
+            }
+        )
+        
+        asset_name = str(asset)
+        asset.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Asset "{asset_name}" permanently deleted from database.',
+            'warning': 'This action cannot be undone. Asset data has been preserved in audit log.'
+        })
+        
+    except Asset.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Asset not found.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 @login_required
 @user_passes_test(lambda u: u.is_authenticated and u.role in ('admin', 'manager'))
