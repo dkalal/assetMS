@@ -12,6 +12,7 @@
 // Global state
 let existingCategories = [];
 let isLoading = false;
+let searchTerm = '';
 
 // ==================== Category Loading ====================
 
@@ -50,6 +51,9 @@ function loadCategories() {
           categoryEditor.existingCategories = data.categories;
         }
         
+        // Update metrics
+        updateMetrics(data.categories);
+        
         renderCategories(data.categories);
       } else {
         throw new Error(data.error || 'Failed to load categories');
@@ -72,6 +76,70 @@ function loadCategories() {
     });
 }
 
+// ==================== Metrics Update ====================
+
+function updateMetrics(categories) {
+  if (!categories) return;
+  
+  // Calculate metrics
+  const totalCategories = categories.length;
+  const totalAssets = categories.reduce((sum, cat) => sum + (cat.asset_count || 0), 0);
+  const totalFields = categories.reduce((sum, cat) => sum + (cat.field_count || 0), 0);
+  const activeCategories = categories.filter(cat => (cat.asset_count || 0) > 0).length;
+  
+  // Update DOM
+  const metricTotal = document.getElementById('metric-total');
+  const metricAssets = document.getElementById('metric-assets');
+  const metricFields = document.getElementById('metric-fields');
+  const metricActive = document.getElementById('metric-active');
+  
+  if (metricTotal) metricTotal.textContent = totalCategories;
+  if (metricAssets) metricAssets.textContent = totalAssets;
+  if (metricFields) metricFields.textContent = totalFields;
+  if (metricActive) metricActive.textContent = activeCategories;
+}
+
+// ==================== Category Filtering ====================
+
+function filterCategories() {
+  if (!searchTerm) {
+    renderCategories(existingCategories);
+    return;
+  }
+  
+  const filtered = existingCategories.filter(category => {
+    const nameMatch = category.name.toLowerCase().includes(searchTerm);
+    const descMatch = category.description?.toLowerCase().includes(searchTerm);
+    return nameMatch || descMatch;
+  });
+  
+  renderCategories(filtered);
+  
+  // Show search results count
+  const container = document.getElementById('categoryListContainer');
+  if (filtered.length === 0 && searchTerm) {
+    container.innerHTML = `
+      <div class="text-center py-5">
+        <i class="bi bi-search" style="font-size: 4rem; color: #ccc;"></i>
+        <h5 class="mt-3 text-muted">No Results Found</h5>
+        <p class="text-muted">No categories match "${escapeHtml(searchTerm)}"</p>
+        <button class="btn btn-outline-primary mt-3" onclick="clearSearch()">
+          <i class="bi bi-x-circle me-2"></i>Clear Search
+        </button>
+      </div>
+    `;
+  }
+}
+
+function clearSearch() {
+  const searchInput = document.getElementById('categorySearchInput');
+  if (searchInput) {
+    searchInput.value = '';
+    searchTerm = '';
+    filterCategories();
+  }
+}
+
 // ==================== Category Rendering ====================
 
 function renderCategories(categories) {
@@ -81,12 +149,14 @@ function renderCategories(categories) {
   
   if (!categories || categories.length === 0) {
     container.innerHTML = `
-      <div class="text-center py-5">
-        <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
-        <h5 class="mt-3 text-muted">No Categories Found</h5>
-        <p class="text-muted">Create your first category to get started organizing your assets.</p>
-        <button class="btn btn-primary mt-3" onclick="categoryWizard.openWizard()">
-          <i class="bi bi-magic me-2"></i>Create Category
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <i class="bi bi-folder-x"></i>
+        </div>
+        <h3>No Categories Yet</h3>
+        <p>Create your first category to start organizing your assets with custom fields</p>
+        <button class="btn btn-primary btn-lg mt-2" onclick="categoryWizard.openWizard()">
+          <i class="bi bi-plus-circle me-2"></i>Create Your First Category
         </button>
       </div>
     `;
@@ -102,26 +172,38 @@ function renderCategories(categories) {
     
     html += `
       <div class="col-md-6 col-lg-4">
-        <div class="card h-100 shadow-sm hover-lift" style="transition: transform 0.2s ease, box-shadow 0.2s ease;">
-          <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start mb-3">
-              <h5 class="card-title mb-0 d-flex align-items-center">
-                <i class="bi bi-folder-fill me-2 text-primary"></i>
-                ${escapeHtml(category.name)}
-              </h5>
-              <div class="dropdown">
-                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <div class="card h-100 border-0 shadow-sm category-card" onclick="editCategory(${category.id})">
+          <div class="card-body p-4">
+            <div class="d-flex align-items-start mb-3">
+              <div class="category-icon-wrapper me-3">
+                <i class="bi bi-folder-fill"></i>
+              </div>
+              <div class="flex-grow-1">
+                <h5 class="card-title mb-1 fw-bold" style="color: #1e293b; font-size: 1.125rem;">
+                  ${escapeHtml(category.name)}
+                </h5>
+                <div class="d-flex gap-2 align-items-center mt-2">
+                  <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size: 0.75rem; padding: 0.35rem 0.65rem;">
+                    <i class="bi bi-box-seam me-1"></i>${assetCount}
+                  </span>
+                  <span class="badge bg-info bg-opacity-10 text-info" style="font-size: 0.75rem; padding: 0.35rem 0.65rem;">
+                    <i class="bi bi-sliders me-1"></i>${fieldCount}
+                  </span>
+                </div>
+              </div>
+              <div class="dropdown" onclick="event.stopPropagation();">
+                <button class="btn btn-sm btn-light border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 32px; height: 32px; padding: 0; border-radius: 8px;">
                   <i class="bi bi-three-dots-vertical"></i>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end">
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius: 12px; min-width: 160px;">
                   <li>
-                    <a class="dropdown-item" href="javascript:void(0)" onclick="editCategory(${category.id})">
-                      <i class="bi bi-pencil me-2"></i>Edit
+                    <a class="dropdown-item rounded" href="javascript:void(0)" onclick="editCategory(${category.id}); event.stopPropagation();" style="padding: 0.5rem 1rem;">
+                      <i class="bi bi-pencil-square me-2 text-primary"></i>Edit
                     </a>
                   </li>
-                  <li><hr class="dropdown-divider"></li>
+                  <li><hr class="dropdown-divider my-1"></li>
                   <li>
-                    <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteCategory(${category.id}, '${escapeHtml(category.name).replace(/'/g, "\\'")}')">
+                    <a class="dropdown-item rounded text-danger" href="javascript:void(0)" onclick="deleteCategory(${category.id}, '${escapeHtml(category.name).replace(/'/g, "\\'")}'); event.stopPropagation();" style="padding: 0.5rem 1rem;">
                       <i class="bi bi-trash me-2"></i>Delete
                     </a>
                   </li>
@@ -130,18 +212,24 @@ function renderCategories(categories) {
             </div>
             
             ${description ? `
-              <p class="text-muted small mb-3" style="line-height: 1.5;">
+              <p class="text-muted small mb-3" style="line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.4em;">
                 ${escapeHtml(description)}
               </p>
-            ` : ''}
+            ` : `
+              <p class="text-muted small fst-italic mb-3" style="min-height: 2.4em;">
+                No description provided
+              </p>
+            `}
             
-            <div class="d-flex gap-3 text-muted small mt-auto">
-              <span title="${fieldCount} custom field${fieldCount !== 1 ? 's' : ''}">
-                <i class="bi bi-list-ul me-1"></i>${fieldCount} field${fieldCount !== 1 ? 's' : ''}
-              </span>
-              <span title="${assetCount} asset${assetCount !== 1 ? 's' : ''}">
-                <i class="bi bi-box-seam me-1"></i>${assetCount} asset${assetCount !== 1 ? 's' : ''}
-              </span>
+            <div class="border-top pt-3">
+              <div class="d-flex justify-content-between align-items-center text-muted" style="font-size: 0.875rem;">
+                <span title="${fieldCount} custom field${fieldCount !== 1 ? 's' : ''}">
+                  <i class="bi bi-sliders me-1"></i>${fieldCount} field${fieldCount !== 1 ? 's' : ''}
+                </span>
+                <span title="${assetCount} asset${assetCount !== 1 ? 's' : ''}">
+                  <i class="bi bi-archive me-1"></i>${assetCount} asset${assetCount !== 1 ? 's' : ''}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -342,6 +430,15 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Load categories on page load
   loadCategories();
+  
+  // Initialize search functionality
+  const searchInput = document.getElementById('categorySearchInput');
+  if (searchInput) {
+    searchInput.addEventListener('input', function(e) {
+      searchTerm = e.target.value.toLowerCase().trim();
+      filterCategories();
+    });
+  }
   
   // Refresh categories every 30 seconds
   setInterval(function() {

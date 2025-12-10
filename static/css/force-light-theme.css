@@ -1,0 +1,630 @@
+/**
+ * FORCE LIGHT THEME GLOBALLY
+ * World-Class Override System
+ * 
+ * This file MUST be loaded LAST to override all dark theme CSS
+ * Purpose: Ensure entire application stays in light mode
+ */
+
+/* ===========================
+   CRITICAL: DISABLE DARK THEME
+   =========================== */
+
+/* Force light theme on root and all theme attributes */
+:root,
+html,
+body,
+[data-theme="dark"],
+[data-theme="light"],
+html[data-theme="dark"],
+body[data-theme="dark"] {
+  background: #f5f7fa !important;
+  color: #1f2937 !important;
+}
+
+/* Override ALL dark theme CSS variables */
+:root,
+[data-theme="dark"] {
+  --theme-bg-primary: #ffffff !important;
+  --theme-bg-secondary: #f8f9fa !important;
+  --theme-bg-tertiary: #e9ecef !important;
+  --theme-text-primary: #212529 !important;
+  --theme-text-secondary: #6c757d !important;
+  --theme-text-muted: #adb5bd !important;
+  --theme-card-bg: #ffffff !important;
+  --theme-sidebar-bg: #ffffff !important;
+  --theme-navbar-bg: #ffffff !important;
+  --theme-input-bg: #ffffff !important;
+  --theme-border-primary: #dee2e6 !important;
+  
+  /* Dashboard variables */
+  --dashboard-bg: #f5f7fa !important;
+  --dashboard-card-bg: #ffffff !important;
+  --dashboard-text: #1f2937 !important;
+  --dashboard-border: #e5e7eb !important;
+  
+  /* Sidebar variables */
+  --sidebar-bg: #ffffff !important;
+  --sidebar-text: #1f2937 !important;
+  --sidebar-hover: #f3f4f6 !important;
+  --sidebar-active: #e0e7ff !important;
+  
+  /* Table variables */
+  --table-bg: #ffffff !important;
+  --table-header-bg: #f9fafb !important;
+  --table-border: #e5e7eb !important;
+  --table-hover: #f9fafb !important;
+}
+
+/* ===========================
+   MAJOR COMPONENTS
+   =========================== */
+
+/* Force light theme on all major layout components */
+.dashboard-content,
+.main-content,
+.content-wrapper,
+.page-wrapper,
+.app-content,
+.container-fluid,
+.container {
+  background: #f5f7fa !important;
+  color: #1f2937 !important;
+}
+
+/* ===========================
+   CARDS & PANELS
+   =========================== */
+
+/* Override dark theme cards */
+.card,
+.asset-card,
+.metric-card,
+.info-card,
+.dashboard-card,
+.panel,
+.box {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.card-header,
+.card-footer {
+  background: #f9fafb !important;
+  color: #1f2937 !important;
+  border-color: #e5e7eb !important;
+}
+
+.card-body {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+}
+
+/* ===========================
+   TABLES
+   =========================== */
+
+/* Override dark theme tables */
+table,
+.table,
+.asset-table,
+.data-table,
+.enterprise-table {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  border-color: #e5e7eb !important;
+}
+
+table thead,
+.table thead,
+thead {
+  background: #f9fafb !important;
+  color: #1f2937 !important;
+}
+
+table th,
+.table th,
+th {
+  background: #f9fafb !important;
+  color: #1f2937 !important;
+  border-color: #e5e7eb !important;
+}
+
+table tbody tr,
+.table tbody tr,
+tbody tr {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+}
+
+table tbody tr:hover,
+.table tbody tr:hover,
+tbody tr:hover {
+  background: #f9fafb !important;
+  color: #1f2937 !important;
+}
+
+table td,
+.table td,
+td {
+  background: transparent !important;
+  color: #1f2937 !important;
+  border-color: #e5e7eb !important;
+}
+
+/* ===========================
+   SIDEBAR & NAVIGATION
+   =========================== */
+
+/* Override dark theme sidebar */
+.sidebar,
+.sidebar-enhanced,
+.app-sidebar,
+.side-menu,
+.nav-sidebar {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  border-right: 1px solid #e5e7eb !important;
+}
+
+.sidebar .nav-link,
+.sidebar-enhanced .nav-link,
+.sidebar a {
+  color: #4b5563 !important;
+}
+
+.sidebar .nav-link:hover,
+.sidebar-enhanced .nav-link:hover,
+.sidebar a:hover {
+  background: #f3f4f6 !important;
+  color: #1f2937 !important;
+}
+
+.sidebar .nav-link.active,
+.sidebar-enhanced .nav-link.active,
+.sidebar a.active {
+  background: #e0e7ff !important;
+  color: #4f46e5 !important;
+}
+
+/* ===========================
+   NAVBAR & TOPBAR
+   =========================== */
+
+/* Override dark theme navbar */
+.navbar,
+.topbar,
+.app-navbar,
+.header,
+.top-header {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+.navbar-brand,
+.navbar .nav-link {
+  color: #1f2937 !important;
+}
+
+/* ===========================
+   FORMS & INPUTS
+   =========================== */
+
+/* Override dark theme inputs globally */
+input,
+select,
+textarea,
+.form-control,
+.form-select,
+.form-input {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  border: 1px solid #d1d5db !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.form-control:focus,
+.form-select:focus {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  border-color: #6B9BD1 !important;
+  box-shadow: 0 0 0 0.2rem rgba(107, 155, 209, 0.25) !important;
+}
+
+input::placeholder,
+textarea::placeholder,
+.form-control::placeholder {
+  color: #9ca3af !important;
+}
+
+/* Form labels */
+label,
+.form-label,
+.control-label {
+  color: #1f2937 !important;
+}
+
+/* ===========================
+   BUTTONS
+   =========================== */
+
+/* Override dark theme buttons */
+.btn-secondary {
+  background: #6c757d !important;
+  border-color: #6c757d !important;
+  color: #ffffff !important;
+}
+
+.btn-secondary:hover {
+  background: #5a6268 !important;
+  border-color: #545b62 !important;
+}
+
+.btn-outline-secondary {
+  border-color: #6c757d !important;
+  color: #6c757d !important;
+  background: transparent !important;
+}
+
+.btn-outline-secondary:hover {
+  background: #6c757d !important;
+  color: #ffffff !important;
+}
+
+/* ===========================
+   MODALS
+   =========================== */
+
+/* Override dark theme modals */
+.modal-content {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+}
+
+.modal-header {
+  background: #f9fafb !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  color: #1f2937 !important;
+}
+
+.modal-body {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+}
+
+.modal-footer {
+  background: #f9fafb !important;
+  border-top: 1px solid #e5e7eb !important;
+}
+
+.modal-backdrop {
+  background: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* ===========================
+   DROPDOWNS & MENUS
+   =========================== */
+
+/* Override dark theme dropdowns */
+.dropdown-menu {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+.dropdown-item {
+  color: #1f2937 !important;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+  background: #f9fafb !important;
+  color: #1f2937 !important;
+}
+
+.dropdown-item.active {
+  background: #e0e7ff !important;
+  color: #4f46e5 !important;
+}
+
+/* ===========================
+   TEXT & TYPOGRAPHY
+   =========================== */
+
+/* Override dark theme text colors */
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+  color: #1f2937 !important;
+}
+
+p, span, div {
+  color: inherit;
+}
+
+.text-muted {
+  color: #6b7280 !important;
+}
+
+.text-secondary {
+  color: #6c757d !important;
+}
+
+.text-dark {
+  color: #1f2937 !important;
+}
+
+/* ===========================
+   LINKS
+   =========================== */
+
+/* Override dark theme links */
+a {
+  color: #6B9BD1 !important;
+}
+
+a:hover {
+  color: #5a8ab8 !important;
+}
+
+a:focus {
+  color: #4a7599 !important;
+}
+
+/* ===========================
+   BORDERS
+   =========================== */
+
+/* Override dark theme borders */
+.border,
+.border-top,
+.border-bottom,
+.border-left,
+.border-right {
+  border-color: #e5e7eb !important;
+}
+
+hr {
+  border-color: #e5e7eb !important;
+  opacity: 1 !important;
+}
+
+/* ===========================
+   ALERTS & NOTIFICATIONS
+   =========================== */
+
+.alert {
+  border: 1px solid !important;
+}
+
+.alert-info {
+  background: #dbeafe !important;
+  border-color: #93c5fd !important;
+  color: #1e40af !important;
+}
+
+.alert-success {
+  background: #d1fae5 !important;
+  border-color: #86efac !important;
+  color: #166534 !important;
+}
+
+.alert-warning {
+  background: #fef3c7 !important;
+  border-color: #fcd34d !important;
+  color: #92400e !important;
+}
+
+.alert-danger {
+  background: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+  color: #991b1b !important;
+}
+
+/* ===========================
+   BADGES
+   =========================== */
+
+.badge {
+  color: #ffffff !important;
+}
+
+.badge.bg-secondary {
+  background: #6c757d !important;
+}
+
+.badge.bg-light {
+  background: #f8f9fa !important;
+  color: #1f2937 !important;
+}
+
+/* ===========================
+   LIST GROUPS
+   =========================== */
+
+.list-group-item {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  border-color: #e5e7eb !important;
+}
+
+.list-group-item:hover {
+  background: #f9fafb !important;
+}
+
+.list-group-item.active {
+  background: #6B9BD1 !important;
+  border-color: #6B9BD1 !important;
+  color: #ffffff !important;
+}
+
+/* ===========================
+   BREADCRUMBS
+   =========================== */
+
+.breadcrumb {
+  background: transparent !important;
+}
+
+.breadcrumb-item {
+  color: #6b7280 !important;
+}
+
+.breadcrumb-item.active {
+  color: #1f2937 !important;
+}
+
+.breadcrumb-item a {
+  color: #6B9BD1 !important;
+}
+
+/* ===========================
+   PAGINATION
+   =========================== */
+
+.pagination .page-link {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  border-color: #e5e7eb !important;
+}
+
+.pagination .page-link:hover {
+  background: #f9fafb !important;
+  color: #1f2937 !important;
+}
+
+.pagination .page-item.active .page-link {
+  background: #6B9BD1 !important;
+  border-color: #6B9BD1 !important;
+  color: #ffffff !important;
+}
+
+/* ===========================
+   TOOLTIPS & POPOVERS
+   =========================== */
+
+.tooltip-inner {
+  background: #1f2937 !important;
+  color: #ffffff !important;
+}
+
+.popover {
+  background: #ffffff !important;
+  border-color: #e5e7eb !important;
+}
+
+.popover-header {
+  background: #f9fafb !important;
+  color: #1f2937 !important;
+  border-bottom-color: #e5e7eb !important;
+}
+
+.popover-body {
+  color: #1f2937 !important;
+}
+
+/* ===========================
+   SCROLLBARS (Webkit)
+   =========================== */
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1 !important;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1 !important;
+}
+
+/* ===========================
+   SELECTION
+   =========================== */
+
+::selection {
+  background: #6B9BD1 !important;
+  color: #ffffff !important;
+}
+
+::-moz-selection {
+  background: #6B9BD1 !important;
+  color: #ffffff !important;
+}
+
+/* ===========================
+   WORLD-CLASS: FINAL OVERRIDE
+   =========================== */
+
+/* NOTE: We don't use universal selector (*) as it would break icons/images.
+   Instead, we use specific selectors above for targeted overrides. */
+
+/* Ensure no dark background sneaks through */
+body::before,
+body::after,
+html::before,
+html::after {
+  background: #f5f7fa !important;
+}
+
+/* Override any inline dark styles */
+[style*="background: #1a1a1a"],
+[style*="background: #2d2d2d"],
+[style*="background: #404040"],
+[style*="background:#1a1a1a"],
+[style*="background:#2d2d2d"],
+[style*="background:#404040"] {
+  background: #ffffff !important;
+}
+
+[style*="color: #ffffff"],
+[style*="color:#ffffff"] {
+  color: #1f2937 !important;
+}
+
+/* ===========================
+   PRINT STYLES
+   =========================== */
+
+@media print {
+  body,
+  .dashboard-content,
+  .main-content {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+}
+
+/* ===========================
+   ACCESSIBILITY
+   =========================== */
+
+/* Ensure focus states are visible in light theme */
+*:focus {
+  outline: 2px solid #6B9BD1 !important;
+  outline-offset: 2px;
+}
+
+button:focus,
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid #6B9BD1 !important;
+  outline-offset: 2px;
+}
+
+/* ===========================
+   END OF FORCE LIGHT THEME
+   =========================== */

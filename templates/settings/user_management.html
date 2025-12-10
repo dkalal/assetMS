@@ -215,6 +215,145 @@
     background: var(--accent-primary);
     color: white;
 }
+
+/* ============================================================================
+   WORLD-CLASS SCROLLABLE STAFF LIST
+   Fixed-height container with smooth scrolling and professional styling
+   Inspired by ServiceNow ITAM, SAP Fiori, IBM Maximo
+   ============================================================================ */
+
+.staff-list-scrollable {
+    position: relative;
+    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-radius: 16px;
+    background: #f9fafb;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    
+    /* Professional scrollbar styling (WebKit browsers) */
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-primary) #e5e7eb;
+}
+
+.staff-list-scrollable::-webkit-scrollbar {
+    width: 10px;
+}
+
+.staff-list-scrollable::-webkit-scrollbar-track {
+    background: #e5e7eb;
+    border-radius: 10px;
+}
+
+.staff-list-scrollable::-webkit-scrollbar-thumb {
+    background: var(--accent-primary);
+    border-radius: 10px;
+    transition: background 0.3s ease;
+}
+
+.staff-list-scrollable::-webkit-scrollbar-thumb:hover {
+    background: #0d4a5f;
+}
+
+/* Smooth scroll behavior */
+.staff-list-scrollable {
+    scroll-behavior: smooth;
+}
+
+/* Scroll indicator (appears when content is scrollable) */
+.scroll-indicator {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(249, 250, 251, 0.95) 0%, transparent 100%);
+    padding: 1.5rem 0 0.5rem;
+    text-align: center;
+    color: var(--accent-primary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 10;
+}
+
+.scroll-indicator i {
+    display: block;
+    font-size: 1.2rem;
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    60% {
+        transform: translateY(-5px);
+    }
+}
+
+/* Show scroll indicator when content is scrollable and not at bottom */
+.staff-list-scrollable.has-scroll:not(.at-bottom) .scroll-indicator {
+    opacity: 1;
+}
+
+/* Fade out cards at bottom for scroll hint */
+.staff-list-scrollable::after {
+    content: '';
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: linear-gradient(to top, rgba(249, 250, 251, 1) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* Adjust staff card margins in scrollable container */
+.staff-list-scrollable .staff-card {
+    margin-bottom: 1rem;
+}
+
+.staff-list-scrollable .staff-card:last-child {
+    margin-bottom: 0;
+}
+
+/* Responsive height adjustments */
+@media (max-width: 1400px) {
+    .staff-list-scrollable {
+        max-height: 500px;
+    }
+}
+
+@media (max-width: 992px) {
+    .staff-list-scrollable {
+        max-height: 450px;
+    }
+}
+
+@media (max-width: 768px) {
+    .staff-list-scrollable {
+        max-height: 400px;
+    }
+}
+
+/* Accessibility: Focus indicator for keyboard navigation */
+.staff-list-scrollable:focus-within {
+    outline: 3px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+/* Performance: GPU acceleration for smooth scrolling */
+.staff-list-scrollable {
+    transform: translateZ(0);
+    will-change: scroll-position;
+}
 </style>
 {% endblock %}
 
@@ -232,17 +371,22 @@
                 Manage your team members, track their assets, and monitor activities
             </p>
         </div>
-        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        <div class="col-md-4 mt-3 mt-md-0">
             {% if user.role == 'admin' %}
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal" style="border-radius: 12px; padding: 0.75rem 1.5rem; margin-right: 0.5rem;">
-                <i class="bi bi-person-plus me-2"></i>Create New User
-            </button>
-            <button class="btn btn-light" onclick="document.getElementById('analyticsSection').scrollIntoView({behavior: 'smooth'})" style="border-radius: 12px; padding: 0.75rem 1.5rem; margin-right: 0.5rem;">
-                <i class="bi bi-graph-up me-2"></i>Analytics
-            </button>
-            <button class="btn btn-success" id="exportBtn" style="border-radius: 12px; padding: 0.75rem 1.5rem;">
-                <i class="bi bi-download me-2"></i>Export Excel
-            </button>
+            <div class="d-flex flex-wrap gap-2 justify-content-md-end justify-content-start">
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal" style="border-radius: 12px; padding: 0.75rem 1.5rem;">
+                    <i class="bi bi-person-plus me-2"></i>Create New User
+                </button>
+                <button class="btn btn-light" onclick="document.getElementById('analyticsSection').scrollIntoView({behavior: 'smooth'})" style="border-radius: 12px; padding: 0.75rem 1.5rem;">
+                    <i class="bi bi-graph-up me-2"></i>Analytics
+                </button>
+                <button class="btn btn-outline-primary" onclick="document.getElementById('staffDirectorySection').scrollIntoView({behavior: 'smooth'})" style="border-radius: 12px; padding: 0.75rem 1.5rem;">
+                    <i class="bi bi-people me-2"></i>Staff Directory
+                </button>
+                <button class="btn btn-success" id="exportBtn" style="border-radius: 12px; padding: 0.75rem 1.5rem;">
+                    <i class="bi bi-download me-2"></i>Export Excel
+                </button>
+            </div>
             {% endif %}
         </div>
     </div>
@@ -287,88 +431,6 @@
             <small class="text-muted">Last 30 days</small>
         </div>
     </div>
-</div>
-
-<!-- Search and Filters -->
-<div class="search-box">
-    <div class="position-relative">
-        <i class="bi bi-search search-icon"></i>
-        <input type="text" class="search-input" id="staffSearch" placeholder="Search staff by name, email, or role...">
-    </div>
-    <div class="filter-chips">
-        <button class="filter-chip active" data-filter="all">
-            <i class="bi bi-people me-1"></i>All Staff
-        </button>
-        <button class="filter-chip" data-filter="active">
-            <i class="bi bi-check-circle me-1"></i>Active
-        </button>
-        <button class="filter-chip" data-filter="inactive">
-            <i class="bi bi-x-circle me-1"></i>Inactive
-        </button>
-        <button class="filter-chip" data-filter="admin">
-            <i class="bi bi-shield me-1"></i>Admins
-        </button>
-        <button class="filter-chip" data-filter="manager">
-            <i class="bi bi-briefcase me-1"></i>Managers
-        </button>
-        <button class="filter-chip" data-filter="user">
-            <i class="bi bi-person me-1"></i>Users
-        </button>
-    </div>
-</div>
-
-<!-- Staff List -->
-<div id="staffList">
-    {% for staff_member in users %}
-    <div class="staff-card" onclick="window.location.href='{% url 'settings:staff_detail' staff_member.id %}'" 
-         data-status="{{ staff_member.is_active|yesno:'active,inactive' }}" 
-         data-role="{{ staff_member.role }}"
-         data-search="{{ staff_member.get_full_name|lower }} {{ staff_member.email|lower }} {{ staff_member.role|lower }}">
-        <div class="d-flex align-items-start">
-            <div class="staff-avatar">
-                {{ staff_member.first_name.0|upper }}{{ staff_member.last_name.0|upper }}
-            </div>
-            <div class="flex-grow-1">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="staff-name">{{ staff_member.get_full_name }}</div>
-                        <div class="staff-role">
-                            <i class="bi bi-{% if staff_member.role == 'admin' %}shield{% elif staff_member.role == 'manager' %}briefcase{% else %}person{% endif %} me-1"></i>
-                            {{ staff_member.get_role_display }}
-                            {% if staff_member.company %}
-                            <i class="bi bi-building ms-2 me-1"></i>{{ staff_member.company.name }}
-                            {% endif %}
-                        </div>
-                    </div>
-                    <span class="status-badge status-{{ staff_member.is_active|yesno:'active,inactive' }}">
-                        <i class="bi bi-{{ staff_member.is_active|yesno:'check-circle,x-circle' }}"></i>
-                        {{ staff_member.is_active|yesno:'Active,Inactive' }}
-                    </span>
-                </div>
-                <div class="staff-stats">
-                    <div class="staff-stat">
-                        <i class="bi bi-box-seam"></i>
-                        <strong>{{ staff_member.total_assets }}</strong> Assets
-                    </div>
-                    <div class="staff-stat">
-                        <i class="bi bi-activity"></i>
-                        <strong>{{ staff_member.total_activities }}</strong> Activities
-                    </div>
-                    <div class="staff-stat">
-                        <i class="bi bi-envelope"></i>
-                        {{ staff_member.email }}
-                    </div>
-                </div>
-            </div>
-            <i class="bi bi-chevron-right" style="color: #9ca3af; font-size: 1.5rem;"></i>
-        </div>
-    </div>
-    {% empty %}
-    <div class="text-center py-5">
-        <i class="bi bi-people" style="font-size: 4rem; color: #e5e7eb;"></i>
-        <p class="text-muted mt-3">No staff members found</p>
-    </div>
-    {% endfor %}
 </div>
 
 <!-- PRO-LEVEL ANALYTICS DASHBOARD -->
@@ -483,6 +545,237 @@
         </div>
     </div>
 </div>
+
+<!-- ============================================================================
+     STAFF DIRECTORY SECTION
+     Positioned after analytics for progressive disclosure pattern
+     Follows ServiceNow ITAM, IBM Maximo best practices
+     ============================================================================ -->
+<div id="staffDirectorySection" class="mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 style="color: var(--accent-primary); font-weight: 700;">
+            <i class="bi bi-people me-2"></i>Staff Directory
+        </h2>
+        <button onclick="document.getElementById('analyticsSection').scrollIntoView({behavior: 'smooth'})" 
+                class="btn btn-outline-primary" 
+                style="border-radius: 10px;">
+            <i class="bi bi-graph-up me-2"></i>Back to Analytics
+        </button>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="search-box">
+        <div class="row align-items-center mb-3">
+            <div class="col-md-8">
+                <div class="position-relative">
+                    <i class="bi bi-search search-icon"></i>
+                    <input type="text" class="search-input" id="staffSearch" placeholder="Search staff by name, email, or role...">
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="d-flex align-items-center justify-content-end gap-2">
+                    <label for="pageSizeSelect" class="text-muted mb-0" style="font-size: 0.9rem; white-space: nowrap;">
+                        <i class="bi bi-list-ul me-1"></i>Show:
+                    </label>
+                    <select id="pageSizeSelect" class="form-select form-select-sm" style="width: auto; border-radius: 8px;" onchange="changePageSize(this.value)">
+                        <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                        <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+                    </select>
+                    <span class="text-muted" style="font-size: 0.9rem;">
+                        <strong>{{ start_index }}-{{ end_index }}</strong> of <strong>{{ total_staff }}</strong>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="filter-chips">
+            <button class="filter-chip active" data-filter="all">
+                <i class="bi bi-people me-1"></i>All Staff
+            </button>
+            <button class="filter-chip" data-filter="active">
+                <i class="bi bi-check-circle me-1"></i>Active
+            </button>
+            <button class="filter-chip" data-filter="inactive">
+                <i class="bi bi-x-circle me-1"></i>Inactive
+            </button>
+            <button class="filter-chip" data-filter="admin">
+                <i class="bi bi-shield me-1"></i>Admins
+            </button>
+            <button class="filter-chip" data-filter="manager">
+                <i class="bi bi-briefcase me-1"></i>Managers
+            </button>
+            <button class="filter-chip" data-filter="user">
+                <i class="bi bi-person me-1"></i>Users
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================================================
+         WORLD-CLASS SCROLLABLE STAFF LIST
+         Fixed-height scrollable container with professional styling
+         Inspired by ServiceNow ITAM, SAP Fiori, IBM Maximo
+         ============================================================================ -->
+    <div id="staffListContainer" class="staff-list-scrollable">
+        <div id="staffList">
+            {% for staff_member in users %}
+            <div class="staff-card" onclick="window.location.href='{% url 'settings:staff_detail' staff_member.id %}'" 
+                 data-status="{{ staff_member.is_active|yesno:'active,inactive' }}" 
+                 data-role="{{ staff_member.role }}"
+                 data-search="{{ staff_member.get_full_name|lower }} {{ staff_member.email|lower }} {{ staff_member.role|lower }}">
+                <div class="d-flex align-items-start">
+                    <div class="staff-avatar">
+                        {{ staff_member.first_name.0|upper }}{{ staff_member.last_name.0|upper }}
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="staff-name">{{ staff_member.get_full_name }}</div>
+                                <div class="staff-role">
+                                    <i class="bi bi-{% if staff_member.role == 'admin' %}shield{% elif staff_member.role == 'manager' %}briefcase{% else %}person{% endif %} me-1"></i>
+                                    {{ staff_member.get_role_display }}
+                                    {% if staff_member.company %}
+                                    <i class="bi bi-building ms-2 me-1"></i>{{ staff_member.company.name }}
+                                    {% endif %}
+                                    {% if staff_member.primary_branch_name %}
+                                    <i class="bi bi-diagram-3 ms-3 me-1" aria-hidden="true"></i><span aria-label="Primary branch">{{ staff_member.primary_branch_name }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <span class="status-badge status-{{ staff_member.is_active|yesno:'active,inactive' }}">
+                                <i class="bi bi-{{ staff_member.is_active|yesno:'check-circle,x-circle' }}"></i>
+                                {{ staff_member.is_active|yesno:'Active,Inactive' }}
+                            </span>
+                        </div>
+                        <div class="staff-stats">
+                            <div class="staff-stat">
+                                <i class="bi bi-box-seam"></i>
+                                <strong>{{ staff_member.total_assets }}</strong> Assets
+                            </div>
+                            <div class="staff-stat">
+                                <i class="bi bi-activity"></i>
+                                <strong>{{ staff_member.total_activities }}</strong> Activities
+                            </div>
+                            <div class="staff-stat">
+                                <i class="bi bi-envelope"></i>
+                                {{ staff_member.email }}
+                            </div>
+                        </div>
+                    </div>
+                    <i class="bi bi-chevron-right" style="color: #9ca3af; font-size: 1.5rem;"></i>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-5">
+                <i class="bi bi-people" style="font-size: 4rem; color: #e5e7eb;"></i>
+                <p class="text-muted mt-3">No staff members found</p>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Scroll Indicator (appears when scrollable) -->
+        <div id="scrollIndicator" class="scroll-indicator">
+            <i class="bi bi-chevron-down"></i>
+            <span>Scroll for more</span>
+        </div>
+    </div>
+
+    <!-- ============================================================================
+         WORLD-CLASS PAGINATION CONTROLS
+         Professional pagination UI matching ServiceNow, IBM Maximo, SAP EAM
+         ============================================================================ -->
+    {% if paginator.num_pages > 1 %}
+    <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+        <div class="text-muted" style="font-size: 0.95rem;">
+            Showing <strong>{{ start_index }}-{{ end_index }}</strong> of <strong>{{ total_staff }}</strong> staff members
+        </div>
+        
+        <nav aria-label="Staff pagination">
+            <ul class="pagination mb-0" style="gap: 0.25rem;">
+                <!-- First Page -->
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1&page_size={{ page_size }}" aria-label="First" style="border-radius: 8px;">
+                        <i class="bi bi-chevron-bar-left"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&page_size={{ page_size }}" aria-label="Previous" style="border-radius: 8px;">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link" style="border-radius: 8px;">
+                        <i class="bi bi-chevron-bar-left"></i>
+                    </span>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link" style="border-radius: 8px;">
+                        <i class="bi bi-chevron-left"></i>
+                    </span>
+                </li>
+                {% endif %}
+
+                <!-- Page Numbers with Elision -->
+                {% for page_num in page_range %}
+                    {% if page_num == page_obj.paginator.ELLIPSIS %}
+                    <li class="page-item disabled">
+                        <span class="page-link" style="border-radius: 8px;">...</span>
+                    </li>
+                    {% else %}
+                    <li class="page-item {% if page_num == page_obj.number %}active{% endif %}">
+                        <a class="page-link" href="?page={{ page_num }}&page_size={{ page_size }}" style="border-radius: 8px; min-width: 40px; text-align: center;">
+                            {{ page_num }}
+                        </a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Next & Last Page -->
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&page_size={{ page_size }}" aria-label="Next" style="border-radius: 8px;">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ paginator.num_pages }}&page_size={{ page_size }}" aria-label="Last" style="border-radius: 8px;">
+                        <i class="bi bi-chevron-bar-right"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link" style="border-radius: 8px;">
+                        <i class="bi bi-chevron-right"></i>
+                    </span>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link" style="border-radius: 8px;">
+                        <i class="bi bi-chevron-bar-right"></i>
+                    </span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+
+        <!-- Jump to Page -->
+        <div class="d-flex align-items-center gap-2">
+            <label for="jumpToPage" class="text-muted mb-0" style="font-size: 0.9rem; white-space: nowrap;">
+                <i class="bi bi-skip-forward me-1"></i>Go to:
+            </label>
+            <input type="number" id="jumpToPage" class="form-control form-control-sm" 
+                   min="1" max="{{ paginator.num_pages }}" 
+                   placeholder="Page" 
+                   style="width: 80px; border-radius: 8px;"
+                   onkeypress="if(event.key === 'Enter') jumpToPage(this.value)">
+            <button class="btn btn-sm btn-outline-primary" onclick="jumpToPage(document.getElementById('jumpToPage').value)" style="border-radius: 8px;">
+                <i class="bi bi-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}
 
 {% block dashboard_modals %}
@@ -497,6 +790,46 @@
 {% block extra_scripts %}
 <script src="{% static 'js/staff-analytics.js' %}"></script>
 <script>
+// ============================================================================
+// WORLD-CLASS PAGINATION FUNCTIONS
+// ============================================================================
+
+/**
+ * Change page size and reload with new size
+ * Maintains current filters and search state
+ */
+function changePageSize(newSize) {
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('page_size', newSize);
+    urlParams.set('page', '1'); // Reset to first page when changing size
+    window.location.search = urlParams.toString();
+}
+
+/**
+ * Jump to specific page number
+ * Validates input and navigates to requested page
+ */
+function jumpToPage(pageNum) {
+    const maxPages = parseInt('{{ paginator.num_pages|default:"1" }}');
+    const page = parseInt(pageNum);
+    
+    // Validate page number
+    if (isNaN(page) || page < 1 || page > maxPages) {
+        alert('Please enter a valid page number between 1 and ' + maxPages);
+        return;
+    }
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('page', page);
+    window.location.search = urlParams.toString();
+}
+
+// ============================================================================
+// CLIENT-SIDE SEARCH & FILTER (within current page)
+// Note: This filters only the current page's results
+// For global search across all pages, implement server-side search API
+// ============================================================================
+
 // Search functionality
 document.getElementById('staffSearch').addEventListener('input', function(e) {
     const searchTerm = e.target.value.toLowerCase();
@@ -517,6 +850,8 @@ function filterStaff() {
     const activeFilter = document.querySelector('.filter-chip.active').dataset.filter;
     const staffCards = document.querySelectorAll('.staff-card');
     
+    let visibleCount = 0;
+    
     staffCards.forEach(card => {
         const searchData = card.dataset.search;
         const status = card.dataset.status;
@@ -527,8 +862,101 @@ function filterStaff() {
                           status === activeFilter || 
                           role === activeFilter;
         
-        card.style.display = (matchesSearch && matchesFilter) ? 'block' : 'none';
+        if (matchesSearch && matchesFilter) {
+            card.style.display = 'block';
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
+        }
     });
+    
+    // Show "no results" message if no cards visible
+    const noResultsMsg = document.getElementById('noResultsMessage');
+    if (visibleCount === 0 && !noResultsMsg) {
+        const msg = document.createElement('div');
+        msg.id = 'noResultsMessage';
+        msg.className = 'text-center py-5';
+        msg.innerHTML = `
+            <i class="bi bi-search" style="font-size: 3rem; color: #e5e7eb;"></i>
+            <p class="text-muted mt-3">No staff members match your search criteria</p>
+            <button class="btn btn-sm btn-outline-primary mt-2" onclick="clearFilters()">
+                <i class="bi bi-x-circle me-1"></i>Clear Filters
+            </button>
+        `;
+        document.getElementById('staffList').appendChild(msg);
+    } else if (visibleCount > 0 && noResultsMsg) {
+        noResultsMsg.remove();
+    }
+}
+
+/**
+ * Clear all filters and search
+ */
+function clearFilters() {
+    document.getElementById('staffSearch').value = '';
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    document.querySelector('.filter-chip[data-filter="all"]').classList.add('active');
+    filterStaff();
+}
+
+// ============================================================================
+// WORLD-CLASS SCROLLABLE LIST MANAGEMENT
+// Handles scroll indicator visibility and smooth scrolling behavior
+// ============================================================================
+
+/**
+ * Initialize scrollable staff list with scroll detection
+ */
+function initScrollableList() {
+    const container = document.getElementById('staffListContainer');
+    if (!container) return;
+    
+    // Check if content is scrollable
+    function updateScrollState() {
+        const isScrollable = container.scrollHeight > container.clientHeight;
+        const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 10;
+        
+        if (isScrollable) {
+            container.classList.add('has-scroll');
+        } else {
+            container.classList.remove('has-scroll');
+        }
+        
+        if (isAtBottom) {
+            container.classList.add('at-bottom');
+        } else {
+            container.classList.remove('at-bottom');
+        }
+    }
+    
+    // Update on scroll
+    container.addEventListener('scroll', updateScrollState);
+    
+    // Update on load and resize
+    updateScrollState();
+    window.addEventListener('resize', updateScrollState);
+    
+    // Update after filtering (with slight delay for DOM update)
+    const originalFilterStaff = window.filterStaff;
+    window.filterStaff = function() {
+        originalFilterStaff();
+        setTimeout(updateScrollState, 100);
+    };
+    
+    // Smooth scroll to top when page changes
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('page')) {
+        setTimeout(() => {
+            container.scrollTop = 0;
+        }, 100);
+    }
+}
+
+// Initialize on DOM ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initScrollableList);
+} else {
+    initScrollableList();
 }
 
 // ============================================================================

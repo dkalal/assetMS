@@ -5,77 +5,11 @@
 
 {% block extra_styles %}
   {{ block.super }}
-  <style>
-    .branch-card {
-      transition: all 0.3s ease;
-      border-left: 4px solid #667eea;
-      background: white;
-    }
-    .branch-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-    }
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      gap: 1rem;
-    }
-    .stat-box {
-      text-align: center;
-      padding: 1rem;
-      background: #f8f9fa;
-      border-radius: 0.75rem;
-      transition: all 0.3s ease;
-    }
-    .stat-box:hover {
-      background: #e9ecef;
-      transform: scale(1.05);
-    }
-    .stat-value {
-      font-size: 2rem;
-      font-weight: bold;
-      margin-bottom: 0.25rem;
-    }
-    .stat-label {
-      font-size: 0.875rem;
-      color: #6c757d;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .hero-section {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border-radius: 1rem;
-      padding: 2rem;
-      margin-bottom: 2rem;
-    }
-    .alert-badge {
-      background: #fff3cd;
-      color: #856404;
-      padding: 0.5rem 1rem;
-      border-radius: 2rem;
-      font-size: 0.875rem;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .metric-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-    }
-  </style>
+  <link rel="stylesheet" href="{% static 'css/dashboard-blue-modern.css' %}">
+  <link rel="stylesheet" href="{% static 'css/manager-dashboard.css' %}">
 {% endblock %}
 
-{% block dashboard_content %}
-<div class="container-fluid py-4">
-  <div class="row justify-content-center">
-    <div class="col-12 col-xl-11">
+{% block content %}
       
       <!-- Hero Section -->
       <div class="hero-section shadow-sm">
@@ -332,7 +266,4 @@
         </div>
       </div>
 
-    </div>
-  </div>
-</div>
 {% endblock %}

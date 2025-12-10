@@ -6,7 +6,9 @@ from django.conf import settings
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.db import models
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Subquery, OuterRef, Value
+from django.db.models.functions import Coalesce
+from decimal import Decimal, InvalidOperation
 
 from .models import SystemSetting
 from users.models import UserSession, AccessLog
@@ -164,10 +166,22 @@ def user_management(request):
     else:
         users = User.objects.none()
     
-    # Annotate with asset counts and activity
+    # Annotate with asset counts, activity, and primary branch name
+    # NOTE: Asset reverse name may vary; existing code uses 'asset' and is kept to preserve behavior
+    from django.db.models import Subquery, OuterRef, Value
+    from django.db.models.functions import Coalesce
+    from tenancy.models import UserBranch
+
+    primary_branch_name_sq = UserBranch.objects.filter(
+        user=OuterRef('pk'),
+        company=company,
+        is_primary=True
+    ).values('branch__name')[:1]
+
     users = users.annotate(
         total_assets=Count('asset', filter=Q(asset__status='active')),
-        total_activities=Count('auditlog', distinct=True)
+        total_activities=Count('auditlog', distinct=True),
+        primary_branch_name=Coalesce(Subquery(primary_branch_name_sq), Value(''))
     ).order_by('-is_active', 'first_name')
     
     # Calculate metrics
@@ -229,11 +243,35 @@ def staff_detail(request, user_id):
     maintenance_assets = assigned_assets.filter(status='in_maintenance').count()
     total_assets = assigned_assets.count()
     
-    # Calculate total asset value
-    total_value = 0
+    # Calculate total asset value from dynamic_data (purchase_value/price/cost/etc.)
+    def _parse_value(raw):
+        if raw is None:
+            return Decimal('0')
+        if isinstance(raw, (int, float, Decimal)):
+            try:
+                return Decimal(str(raw))
+            except Exception:
+                return Decimal('0')
+        if isinstance(raw, str):
+            cleaned = ''.join(ch for ch in raw if ch.isdigit() or ch in '.-')
+            if not cleaned or cleaned == '.':
+                return Decimal('0')
+            try:
+                return Decimal(cleaned)
+            except (InvalidOperation, ValueError):
+                return Decimal('0')
+        return Decimal('0')
+
+    keys = ('purchase_value', 'purchase_price', 'price', 'value', 'cost', 'acquisition_cost')
+    total_value = Decimal('0')
     for asset in assigned_assets:
-        if asset.purchase_value:
-            total_value += float(asset.purchase_value)
+        dd = asset.dynamic_data or {}
+        val = None
+        for k in keys:
+            if k in dd and dd.get(k) not in (None, ''):
+                val = dd.get(k)
+                break
+        total_value += _parse_value(val)
     
     # Activity history (last 50 activities)
     activities = AuditLog.objects.filter(
@@ -288,7 +326,15 @@ def staff_detail(request, user_id):
 
 @api_admin_or_manager_required
 def api_staff_analytics(request):
-    """Advanced staff analytics API - Pro Level"""
+    """
+    WORLD-CLASS: Advanced staff analytics API with multi-tenancy and error handling
+    
+    Inspired by ServiceNow ITAM, IBM Maximo, SAP EAM:
+    - Multi-tenancy: Company-scoped analytics
+    - Role-based access: Admin/Manager only
+    - Performance: Optimized queries with aggregation
+    - Security: Company context validation
+    """
     from django.contrib.auth import get_user_model
     from assets.models import Asset
     from audit.models import AuditLog
@@ -298,90 +344,109 @@ def api_staff_analytics(request):
     from datetime import timedelta
     import json
     
-    User = get_user_model()
-    company = request.company
+    try:
+        User = get_user_model()
+        
+        # WORLD-CLASS: Robust company context handling
+        company = getattr(request, 'company', None)
+        if not company:
+            # Fallback to user's company
+            company = getattr(request.user, 'company', None)
+        
+        if not company:
+            return JsonResponse({
+                'success': False,
+                'error': 'Company context required'
+            }, status=403)
     
-    # Time range filter
-    days = int(request.GET.get('days', 30))
-    start_date = timezone.now() - timedelta(days=days)
-    
-    # Staff activity distribution
-    activity_by_user = AuditLog.objects.filter(
-        company=company,
-        timestamp__gte=start_date
-    ).values('user__username', 'user__role').annotate(
-        count=Count('id')
-    ).order_by('-count')[:10]
-    
-    # Asset distribution by staff
-    assets_by_user = Asset.objects.filter(
-        company=company,
-        assigned_to__isnull=False
-    ).values('assigned_to__username').annotate(
-        count=Count('id'),
-        total_value=Sum('purchase_value')
-    ).order_by('-count')[:10]
-    
-    # Daily activity trend
-    daily_activity = AuditLog.objects.filter(
-        company=company,
-        timestamp__gte=start_date
-    ).annotate(
-        date=TruncDate('timestamp')
-    ).values('date').annotate(
-        count=Count('id')
-    ).order_by('date')
-    
-    # Role distribution
-    role_stats = User.objects.filter(
-        company=company
-    ).values('role').annotate(
-        count=Count('id'),
-        active_count=Count('id', filter=Q(is_active=True))
-    )
-    
-    # Top performers (most active)
-    top_performers = AuditLog.objects.filter(
-        company=company,
-        timestamp__gte=start_date
-    ).values(
-        'user__id',
-        'user__username',
-        'user__first_name',
-        'user__last_name',
-        'user__role'
-    ).annotate(
-        activity_count=Count('id')
-    ).order_by('-activity_count')[:5]
-    
-    # Asset allocation efficiency
-    total_assets = Asset.objects.filter(company=company).count()
-    assigned_assets = Asset.objects.filter(company=company, assigned_to__isnull=False).count()
-    allocation_rate = (assigned_assets / total_assets * 100) if total_assets > 0 else 0
-    
-    # Staff with no recent activity
-    inactive_staff = User.objects.filter(
-        company=company,
-        is_active=True
-    ).exclude(
-        auditlog__timestamp__gte=start_date
-    ).count()
-    
-    return JsonResponse({
-        'success': True,
-        'analytics': {
-            'activity_by_user': list(activity_by_user),
-            'assets_by_user': list(assets_by_user),
-            'daily_activity': list(daily_activity),
-            'role_stats': list(role_stats),
-            'top_performers': list(top_performers),
-            'allocation_rate': round(allocation_rate, 2),
-            'inactive_staff_count': inactive_staff,
-            'total_staff': User.objects.filter(company=company).count(),
-            'active_staff': User.objects.filter(company=company, is_active=True).count(),
-        },
-        'period': f'{days} days'
-    })
+        # Time range filter
+        days = int(request.GET.get('days', 30))
+        start_date = timezone.now() - timedelta(days=days)
+        
+        # Staff activity distribution
+        activity_by_user = AuditLog.objects.filter(
+            company=company,
+            timestamp__gte=start_date
+        ).values('user__username', 'user__role').annotate(
+            count=Count('id')
+        ).order_by('-count')[:10]
+        
+        # Asset distribution by staff
+        # IMPORTANT: Asset model does not have 'purchase_value'; avoid invalid aggregation that caused 500s
+        assets_by_user = Asset.objects.filter(
+            company=company,
+            assigned_to__isnull=False
+        ).values('assigned_to__username').annotate(
+            count=Count('id')
+        ).order_by('-count')[:10]
+        
+        # Daily activity trend
+        daily_activity = AuditLog.objects.filter(
+            company=company,
+            timestamp__gte=start_date
+        ).annotate(
+            date=TruncDate('timestamp')
+        ).values('date').annotate(
+            count=Count('id')
+        ).order_by('date')
+        
+        # Role distribution
+        role_stats = User.objects.filter(
+            company=company
+        ).values('role').annotate(
+            count=Count('id'),
+            active_count=Count('id', filter=Q(is_active=True))
+        )
+        
+        # Top performers (most active)
+        top_performers = AuditLog.objects.filter(
+            company=company,
+            timestamp__gte=start_date
+        ).values(
+            'user__id',
+            'user__username',
+            'user__first_name',
+            'user__last_name',
+            'user__role'
+        ).annotate(
+            activity_count=Count('id')
+        ).order_by('-activity_count')[:5]
+        
+        # Asset allocation efficiency
+        total_assets = Asset.objects.filter(company=company).count()
+        assigned_assets = Asset.objects.filter(company=company, assigned_to__isnull=False).count()
+        allocation_rate = (assigned_assets / total_assets * 100) if total_assets > 0 else 0
+        
+        # Staff with no recent activity
+        inactive_staff = User.objects.filter(
+            company=company,
+            is_active=True
+        ).exclude(
+            auditlog__timestamp__gte=start_date
+        ).count()
+        
+        return JsonResponse({
+            'success': True,
+            'analytics': {
+                'activity_by_user': list(activity_by_user),
+                'assets_by_user': list(assets_by_user),
+                'daily_activity': list(daily_activity),
+                'role_stats': list(role_stats),
+                'top_performers': list(top_performers),
+                'allocation_rate': round(allocation_rate, 2),
+                'inactive_staff_count': inactive_staff,
+                'total_staff': User.objects.filter(company=company).count(),
+                'active_staff': User.objects.filter(company=company, is_active=True).count(),
+            },
+            'period': f'{days} days'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in api_staff_analytics: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': f'Failed to load analytics: {str(e)}'
+        }, status=500)
 
 @api_admin_required
 def api_staff_export(request):

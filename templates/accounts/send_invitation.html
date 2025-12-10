@@ -1,0 +1,142 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Send Invitation - Asset Management System{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="bi bi-person-plus me-2"></i>Invite User
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <ul class="nav nav-tabs mb-4" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#single" type="button">
+                                Single Invitation
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#bulk" type="button">
+                                Bulk Invitation
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content">
+                        <!-- Single Invitation -->
+                        <div class="tab-pane fade show active" id="single" role="tabpanel">
+                            <form method="post">
+                                {% csrf_token %}
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label">Email Address</label>
+                                    {{ form.email }}
+                                    {% if form.email.errors %}
+                                        <div class="text-danger small">{{ form.email.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.first_name.id_for_label }}" class="form-label">First Name</label>
+                                        {{ form.first_name }}
+                                        {% if form.first_name.errors %}
+                                            <div class="text-danger small">{{ form.first_name.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.last_name.id_for_label }}" class="form-label">Last Name</label>
+                                        {{ form.last_name }}
+                                        {% if form.last_name.errors %}
+                                            <div class="text-danger small">{{ form.last_name.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.role.id_for_label }}" class="form-label">Role</label>
+                                        {{ form.role }}
+                                        {% if form.role.errors %}
+                                            <div class="text-danger small">{{ form.role.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.branch.id_for_label }}" class="form-label">Branch</label>
+                                        {{ form.branch }}
+                                        {% if form.branch.errors %}
+                                            <div class="text-danger small">{{ form.branch.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-send me-2"></i>Send Invitation
+                                </button>
+                                <a href="{% url 'accounts:invitation_list' %}" class="btn btn-outline-secondary ms-2">
+                                    Cancel
+                                </a>
+                            </form>
+                        </div>
+                        
+                        <!-- Bulk Invitation -->
+                        <div class="tab-pane fade" id="bulk" role="tabpanel">
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="bulk" value="true">
+                                
+                                <div class="mb-3">
+                                    <label for="{{ bulk_form.emails.id_for_label }}" class="form-label">Email Addresses</label>
+                                    {{ bulk_form.emails }}
+                                    {% if bulk_form.emails.errors %}
+                                        <div class="text-danger small">{{ bulk_form.emails.errors }}</div>
+                                    {% endif %}
+                                    {% if bulk_form.emails.help_text %}
+                                        <div class="form-text">{{ bulk_form.emails.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ bulk_form.role.id_for_label }}" class="form-label">Default Role</label>
+                                        {{ bulk_form.role }}
+                                        {% if bulk_form.role.errors %}
+                                            <div class="text-danger small">{{ bulk_form.role.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ bulk_form.branch.id_for_label }}" class="form-label">Default Branch</label>
+                                        {{ bulk_form.branch }}
+                                        {% if bulk_form.branch.errors %}
+                                            <div class="text-danger small">{{ bulk_form.branch.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-send me-2"></i>Send Invitations
+                                </button>
+                                <a href="{% url 'accounts:invitation_list' %}" class="btn btn-outline-secondary ms-2">
+                                    Cancel
+                                </a>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+
+
+
+

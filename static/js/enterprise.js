@@ -89,27 +89,8 @@ window.EnterpriseFramework = class EnterpriseFramework {
 
   // Responsive Enhancements
   initResponsive() {
-    // Mobile navigation toggle
-    const createMobileToggle = () => {
-      const navbar = document.querySelector('.navbar');
-      if (!navbar || navbar.querySelector('.mobile-toggle')) return;
-
-      const toggle = document.createElement('button');
-      toggle.className = 'btn btn-outline mobile-toggle lg:hidden';
-      toggle.innerHTML = '<i class="bi bi-list"></i>';
-      toggle.setAttribute('aria-label', 'Toggle navigation');
-      
-      const navItems = navbar.querySelector('.navbar-nav, .d-flex');
-      if (navItems) {
-        toggle.addEventListener('click', () => {
-          navItems.classList.toggle('show');
-          toggle.setAttribute('aria-expanded', navItems.classList.contains('show'));
-        });
-        navbar.appendChild(toggle);
-      }
-    };
-
-    createMobileToggle();
+    // Note: Mobile sidebar toggle is handled by sidebar-navbar-enhancements.js
+    // No need to create duplicate toggle buttons here
 
     // Responsive tables
     document.querySelectorAll('.table').forEach(table => {
@@ -132,12 +113,12 @@ window.EnterpriseFramework = class EnterpriseFramework {
   }
 
   handleResize() {
-    // Update mobile navigation
-    const mobileToggle = document.querySelector('.mobile-toggle');
-    const navItems = document.querySelector('.navbar-nav, .navbar .d-flex');
+    // Update mobile sidebar state on resize
+    const mobileToggle = document.getElementById('mobile-sidebar-toggle');
     
-    if (window.innerWidth >= 1024) {
-      if (navItems) navItems.classList.remove('show');
+    if (window.innerWidth >= 992) {
+      // Desktop: Ensure sidebar is visible, body class removed
+      document.body.classList.remove('sidebar-open');
       if (mobileToggle) mobileToggle.setAttribute('aria-expanded', 'false');
     }
   }

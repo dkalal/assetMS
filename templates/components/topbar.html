@@ -32,14 +32,37 @@
   <div class="d-flex align-items-center gap-2">
     {% if user.is_authenticated %}
       {% if user.role == 'admin' or user.role == 'manager' %}
-        <a class="btn btn-outline-secondary btn-sm" href="{% url 'asset_bulk_import' %}">Import</a>
-        <a class="btn btn-outline-secondary btn-sm" href="{% url 'asset_export' %}">Export</a>
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'asset_bulk_import' %}">
+          <i class="bi bi-file-earmark-arrow-up me-1"></i>Import
+        </a>
+        <button data-export-preview 
+                data-report-type="assets" 
+                data-format="xlsx" 
+                class="btn btn-outline-secondary btn-sm" 
+                type="button"
+                title="Export assets with preview">
+          <i class="bi bi-file-earmark-arrow-down me-1"></i>Export
+        </button>
         {% comment %} <a class="btn btn-primary btn-sm" href="{% url 'asset_register' %}">Add Asset</a> {% endcomment %}
       {% else %}
-        <a class="btn btn-outline-secondary btn-sm" href="{% url 'asset_export' %}">Export</a>
+        <button data-export-preview 
+                data-report-type="assets" 
+                data-format="xlsx" 
+                class="btn btn-outline-secondary btn-sm" 
+                type="button"
+                title="Export assets with preview">
+          <i class="bi bi-file-earmark-arrow-down me-1"></i>Export
+        </button>
       {% endif %}
     {% else %}
-      <a class="btn btn-outline-secondary btn-sm" href="{% url 'asset_export' %}">Export</a>
+      <button data-export-preview 
+              data-report-type="assets" 
+              data-format="xlsx" 
+              class="btn btn-outline-secondary btn-sm" 
+              type="button"
+              title="Export assets with preview">
+        <i class="bi bi-file-earmark-arrow-down me-1"></i>Export
+      </button>
     {% endif %}
     {% comment %} <button id="theme-toggle-btn" class="btn btn-glass btn-sm d-flex align-items-center justify-content-center"
       title="Toggle dark/light mode" aria-label="Toggle dark/light mode">

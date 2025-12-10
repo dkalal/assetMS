@@ -1,0 +1,451 @@
+/**
+ * Barcode/QR Scanner Styles - World-Class Implementation
+ * Inspired by: ServiceNow ITAM Mobile, IBM Maximo Scanner, SAP Fiori
+ */
+
+/* ===========================
+   1. SCANNER WRAPPER
+   =========================== */
+.scanner-wrapper {
+  background: var(--wizard-bg, #ffffff);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--wizard-border, #e5e7eb);
+}
+
+/* ===========================
+   2. SCANNER HEADER
+   =========================== */
+.scanner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--wizard-border, #e5e7eb);
+}
+
+.scanner-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--wizard-text, #1f2937);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.scanner-title i {
+  color: var(--wizard-primary, #6B9BD1);
+  font-size: 1.5rem;
+}
+
+.btn-close-scanner {
+  background: transparent;
+  border: none;
+  color: var(--wizard-text-secondary, #4b5563);
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-close-scanner:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--wizard-text, #1f2937);
+}
+
+/* ===========================
+   3. SCANNER CONTROLS
+   =========================== */
+.scanner-controls {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-scanner {
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.btn-scanner-primary {
+  background: linear-gradient(135deg, var(--wizard-primary, #6B9BD1) 0%, #4a90c8 100%);
+  color: white;
+}
+
+.btn-scanner-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(107, 155, 209, 0.3);
+}
+
+.btn-scanner-secondary {
+  background: transparent;
+  color: var(--wizard-text, #1f2937);
+  border: 2px solid var(--wizard-border, #e5e7eb);
+}
+
+.btn-scanner-secondary:hover {
+  background: rgba(107, 155, 209, 0.1);
+  border-color: var(--wizard-primary, #6B9BD1);
+}
+
+.btn-scanner-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+/* ===========================
+   4. SCANNER VIEW
+   =========================== */
+.scanner-view {
+  margin-bottom: 1.5rem;
+}
+
+.scanner-frame {
+  position: relative;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+#qr-reader {
+  width: 100%;
+  height: 100%;
+}
+
+#qr-reader video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Scanner Overlay */
+.scanner-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.scanner-box {
+  width: 250px;
+  height: 250px;
+  border: 3px solid var(--wizard-primary, #6B9BD1);
+  border-radius: 12px;
+  box-shadow: 
+    0 0 0 9999px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(107, 155, 209, 0.5);
+  animation: scannerPulse 2s ease-in-out infinite;
+}
+
+@keyframes scannerPulse {
+  0%, 100% {
+    border-color: var(--wizard-primary, #6B9BD1);
+    box-shadow: 
+      0 0 0 9999px rgba(0, 0, 0, 0.5),
+      0 0 20px rgba(107, 155, 209, 0.5);
+  }
+  50% {
+    border-color: #93c5fd;
+    box-shadow: 
+      0 0 0 9999px rgba(0, 0, 0, 0.5),
+      0 0 30px rgba(147, 197, 253, 0.8);
+  }
+}
+
+.scanner-instructions {
+  margin-top: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: center;
+  backdrop-filter: blur(8px);
+}
+
+/* ===========================
+   5. MANUAL ENTRY FORM
+   =========================== */
+.manual-entry-form {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+[data-theme="dark"] .manual-entry-form {
+  background: #111827;
+}
+
+.manual-entry-form .form-group {
+  margin-bottom: 0;
+}
+
+.manual-entry-form .input-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.manual-entry-form .form-control {
+  flex: 1;
+}
+
+.manual-entry-form .btn {
+  white-space: nowrap;
+}
+
+/* ===========================
+   6. SCAN STATUS
+   =========================== */
+.scan-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border-radius: 10px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+[data-theme="dark"] .scan-status {
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+}
+
+.scan-count {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+  color: var(--wizard-text, #1f2937);
+}
+
+.scan-count i {
+  color: var(--wizard-success, #10b981);
+  font-size: 1.25rem;
+}
+
+#scan-count-value {
+  font-size: 1.5rem;
+  color: var(--wizard-primary, #6B9BD1);
+}
+
+/* ===========================
+   7. SCAN HISTORY
+   =========================== */
+.scan-history {
+  margin-bottom: 1.5rem;
+}
+
+.scan-history-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--wizard-text, #1f2937);
+  margin-bottom: 1rem;
+}
+
+.scan-history-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--wizard-border, #e5e7eb);
+  border-radius: 10px;
+  background: var(--wizard-bg, #ffffff);
+}
+
+.scan-history-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--wizard-text-secondary, #4b5563);
+}
+
+.scan-history-empty i {
+  font-size: 3rem;
+  color: var(--wizard-muted, #9ca3af);
+  margin-bottom: 1rem;
+}
+
+.scan-history-empty p {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.scan-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--wizard-border, #e5e7eb);
+  transition: background 0.2s ease;
+}
+
+.scan-history-item:last-child {
+  border-bottom: none;
+}
+
+.scan-history-item:hover {
+  background: rgba(107, 155, 209, 0.05);
+}
+
+.scan-history-item-content {
+  flex: 1;
+}
+
+.scan-history-code {
+  font-weight: 600;
+  color: var(--wizard-text, #1f2937);
+  font-size: 0.9375rem;
+  margin-bottom: 0.25rem;
+  font-family: 'Courier New', monospace;
+}
+
+.scan-history-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8125rem;
+  color: var(--wizard-text-secondary, #4b5563);
+}
+
+.scan-history-format {
+  padding: 0.125rem 0.5rem;
+  background: rgba(107, 155, 209, 0.1);
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.btn-remove-scan {
+  background: transparent;
+  border: none;
+  color: var(--wizard-text-secondary, #4b5563);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-remove-scan:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+/* ===========================
+   8. SCANNER ACTIONS
+   =========================== */
+.scanner-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.scanner-actions .btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ===========================
+   9. RESPONSIVE DESIGN
+   =========================== */
+@media (max-width: 768px) {
+  .scanner-wrapper {
+    padding: 1rem;
+  }
+  
+  .scanner-controls {
+    flex-direction: column;
+  }
+  
+  .btn-scanner {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .scanner-box {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .scanner-actions {
+    flex-direction: column;
+  }
+  
+  .scanner-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 576px) {
+  .scanner-title {
+    font-size: 1.125rem;
+  }
+  
+  .scanner-box {
+    width: 180px;
+    height: 180px;
+  }
+  
+  .scan-status {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+}
+
+/* ===========================
+   10. ACCESSIBILITY
+   =========================== */
+.btn-scanner:focus-visible,
+.btn-remove-scan:focus-visible,
+.btn-close-scanner:focus-visible {
+  outline: 2px solid var(--wizard-primary, #6B9BD1);
+  outline-offset: 2px;
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .scanner-box {
+    animation: none;
+  }
+  
+  .btn-scanner,
+  .scan-history-item {
+    transition: none;
+  }
+}
+
+/* High Contrast */
+@media (prefers-contrast: high) {
+  .scanner-box {
+    border-width: 4px;
+  }
+  
+  .btn-scanner {
+    border-width: 3px;
+  }
+}

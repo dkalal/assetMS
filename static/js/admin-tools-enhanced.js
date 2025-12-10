@@ -658,6 +658,38 @@ class AdminToolsManager {
     async createField(formData) {
         if (!this.currentCategory) return;
         
+        // Client-side validation
+        const key = formData.get('key')?.trim();
+        const label = formData.get('label')?.trim();
+        const type = formData.get('type')?.trim();
+        
+        const errors = [];
+        
+        // Validate key
+        if (!key) {
+            errors.push('Field key is required.');
+        } else if (!/^[a-z][a-z0-9_]*$/.test(key)) {
+            errors.push('Field key must start with a lowercase letter and contain only lowercase letters, numbers, and underscores.');
+        }
+        
+        // Validate label
+        if (!label) {
+            errors.push('Field label is required.');
+        } else if (label.length < 2) {
+            errors.push('Field label must be at least 2 characters long.');
+        }
+        
+        // Validate type
+        if (!type) {
+            errors.push('Field type is required.');
+        }
+        
+        if (errors.length > 0) {
+            document.getElementById('enhanced-field-feedback').innerHTML = 
+                `<div class="alert alert-danger"><ul class="mb-0">${errors.map(e => `<li>${e}</li>`).join('')}</ul></div>`;
+            return;
+        }
+        
         try {
             const response = await fetch(`/api/category/${this.currentCategory.id}/fields/create/`, {
                 method: 'POST',
@@ -675,10 +707,26 @@ class AdminToolsManager {
                 this.closeFieldForm();
                 await this.loadFieldsWithAnalytics(this.currentCategory.id);
             } else {
-                document.getElementById('enhanced-field-feedback').innerHTML = 
-                    `<div class="alert alert-danger">${data.error}</div>`;
+                // Display detailed error messages
+                let errorHtml = `<div class="alert alert-danger">`;
+                
+                if (data.errors && Array.isArray(data.errors)) {
+                    errorHtml += `<ul class="mb-0">${data.errors.map(e => `<li>${e}</li>`).join('')}</ul>`;
+                } else {
+                    errorHtml += data.error || 'Failed to create field.';
+                }
+                
+                // Add debug info in development
+                if (data.debug && console) {
+                    console.error('Field creation failed:', data.debug);
+                    errorHtml += `<details class="mt-2"><summary class="text-muted small">Debug Info</summary><pre class="small mb-0">${JSON.stringify(data.debug, null, 2)}</pre></details>`;
+                }
+                
+                errorHtml += `</div>`;
+                document.getElementById('enhanced-field-feedback').innerHTML = errorHtml;
             }
         } catch (error) {
+            console.error('Network error creating field:', error);
             document.getElementById('enhanced-field-feedback').innerHTML = 
                 `<div class="alert alert-danger">Network error. Please try again.</div>`;
         }
@@ -692,8 +740,29 @@ class AdminToolsManager {
         this.openAddFieldForm();
         
         document.getElementById('enhanced-field-title').textContent = 'Edit Field';
-        document.getElementById('enhanced-field-key').value = field.key;
-        document.getElementById('enhanced-field-key').disabled = true;
+        
+        // Populate form fields
+        const keyInput = document.getElementById('enhanced-field-key');
+        keyInput.value = field.key || '';
+        
+        // Allow editing key for legacy fields (empty or invalid keys)
+        const isLegacyField = !field.key || !/^[a-z][a-z0-9_]*$/.test(field.key);
+        keyInput.disabled = !isLegacyField;
+        
+        // Show info message for legacy fields
+        const feedbackDiv = document.getElementById('enhanced-field-feedback');
+        if (isLegacyField) {
+            feedbackDiv.innerHTML = `
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Legacy Field Detected:</strong> This field was created before the new validation system. 
+                    You can now update the field key to follow the new format (lowercase letters, numbers, underscores).
+                </div>
+            `;
+        } else {
+            feedbackDiv.innerHTML = '';
+        }
+        
         document.getElementById('enhanced-field-label').value = field.label;
         document.getElementById('enhanced-field-type').value = field.type;
         document.getElementById('enhanced-field-required').checked = field.required;
@@ -701,6 +770,36 @@ class AdminToolsManager {
     
     async updateField(formData) {
         if (!this.editingField) return;
+        
+        // Client-side validation
+        const key = formData.get('key')?.trim();
+        const label = formData.get('label')?.trim();
+        const type = formData.get('type')?.trim();
+        
+        const errors = [];
+        
+        // Validate key (if provided)
+        if (key && !/^[a-z][a-z0-9_]*$/.test(key)) {
+            errors.push('Field key must start with a lowercase letter and contain only lowercase letters, numbers, and underscores.');
+        }
+        
+        // Validate label
+        if (!label) {
+            errors.push('Field label is required.');
+        } else if (label.length < 2) {
+            errors.push('Field label must be at least 2 characters long.');
+        }
+        
+        // Validate type
+        if (!type) {
+            errors.push('Field type is required.');
+        }
+        
+        if (errors.length > 0) {
+            document.getElementById('enhanced-field-feedback').innerHTML = 
+                `<div class="alert alert-danger"><ul class="mb-0">${errors.map(e => `<li>${e}</li>`).join('')}</ul></div>`;
+            return;
+        }
         
         try {
             const response = await fetch(`/api/field/${this.editingField.id}/update/`, {
@@ -719,10 +818,26 @@ class AdminToolsManager {
                 this.closeFieldForm();
                 await this.loadFieldsWithAnalytics(this.currentCategory.id);
             } else {
-                document.getElementById('enhanced-field-feedback').innerHTML = 
-                    `<div class="alert alert-danger">${data.error}</div>`;
+                // Display detailed error messages
+                let errorHtml = `<div class="alert alert-danger">`;
+                
+                if (data.errors && Array.isArray(data.errors)) {
+                    errorHtml += `<ul class="mb-0">${data.errors.map(e => `<li>${e}</li>`).join('')}</ul>`;
+                } else {
+                    errorHtml += data.error || 'Failed to update field.';
+                }
+                
+                // Add debug info in development
+                if (data.debug && console) {
+                    console.error('Field update failed:', data.debug);
+                    errorHtml += `<details class="mt-2"><summary class="text-muted small">Debug Info</summary><pre class="small mb-0">${JSON.stringify(data.debug, null, 2)}</pre></details>`;
+                }
+                
+                errorHtml += `</div>`;
+                document.getElementById('enhanced-field-feedback').innerHTML = errorHtml;
             }
         } catch (error) {
+            console.error('Network error updating field:', error);
             document.getElementById('enhanced-field-feedback').innerHTML = 
                 `<div class="alert alert-danger">Network error. Please try again.</div>`;
         }
@@ -1215,4 +1330,189 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
     console.log('✅ Admin Tools Manager initialized successfully');
+    
+    // Initialize auto-generation for field key
+    initializeFieldKeyAutoGeneration();
 });
+
+/**
+ * Initialize auto-generation of field key from label
+ * World-class UX: Label-first approach with optional customization
+ */
+function initializeFieldKeyAutoGeneration() {
+    const labelInput = document.getElementById('enhanced-field-label');
+    const keyInput = document.getElementById('enhanced-field-key');
+    const toggleBtn = document.getElementById('toggle-key-edit');
+    const autoBadge = document.getElementById('key-auto-badge');
+    const helpMessage = document.getElementById('key-help-message');
+    
+    if (!labelInput || !keyInput || !toggleBtn) return;
+    
+    let isAutoMode = true; // Start in auto mode
+    let userHasEditedKey = false; // Track if user manually edited key
+    
+    /**
+     * Generate valid field key from label
+     * Matches ServiceNow ITAM, IBM Maximo, SAP EAM standards
+     */
+    function generateKeyFromLabel(label) {
+        if (!label) return '';
+        
+        // Convert to lowercase
+        let key = label.toLowerCase();
+        
+        // Replace spaces and hyphens with underscores
+        key = key.replace(/[\s\-]+/g, '_');
+        
+        // Remove invalid characters (keep only a-z, 0-9, _)
+        key = key.replace(/[^a-z0-9_]/g, '');
+        
+        // Ensure starts with a letter (prepend 'field_' if starts with number/underscore)
+        if (key && !/^[a-z]/.test(key)) {
+            key = 'field_' + key;
+        }
+        
+        // Fallback if empty after processing
+        if (!key) {
+            key = 'custom_field';
+        }
+        
+        // Truncate to max length (50 chars)
+        if (key.length > 50) {
+            key = key.substring(0, 50);
+        }
+        
+        return key;
+    }
+    
+    /**
+     * Update key input with auto-generated value
+     */
+    function updateKeyFromLabel() {
+        if (!isAutoMode || userHasEditedKey) return;
+        
+        const label = labelInput.value.trim();
+        const generatedKey = generateKeyFromLabel(label);
+        
+        keyInput.value = generatedKey;
+        
+        // Visual feedback
+        if (generatedKey) {
+            keyInput.classList.remove('is-invalid');
+            keyInput.classList.add('is-valid');
+        } else {
+            keyInput.classList.remove('is-valid', 'is-invalid');
+        }
+    }
+    
+    /**
+     * Toggle between auto and manual mode
+     */
+    function toggleKeyEditMode() {
+        isAutoMode = !isAutoMode;
+        
+        if (isAutoMode) {
+            // Switch to AUTO mode
+            keyInput.readOnly = true;
+            keyInput.style.backgroundColor = '#f8f9fa';
+            keyInput.style.cursor = 'pointer';
+            toggleBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+            toggleBtn.title = 'Customize field key';
+            autoBadge.innerHTML = '<i class="bi bi-magic me-1"></i>Auto';
+            autoBadge.className = 'badge bg-info-subtle text-info-emphasis';
+            helpMessage.innerHTML = 'Automatically generated from field name. Click <i class="bi bi-pencil"></i> to customize.';
+            
+            // Regenerate key from current label
+            userHasEditedKey = false;
+            updateKeyFromLabel();
+        } else {
+            // Switch to MANUAL mode
+            keyInput.readOnly = false;
+            keyInput.style.backgroundColor = '#fff';
+            keyInput.style.cursor = 'text';
+            keyInput.focus();
+            toggleBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i>';
+            toggleBtn.title = 'Switch back to auto-generation';
+            autoBadge.innerHTML = '<i class="bi bi-pencil-fill me-1"></i>Manual';
+            autoBadge.className = 'badge bg-warning-subtle text-warning-emphasis';
+            helpMessage.innerHTML = 'Manual mode: You are customizing the field key. Click <i class="bi bi-arrow-clockwise"></i> to auto-generate again.';
+            
+            userHasEditedKey = true;
+        }
+    }
+    
+    /**
+     * Validate key format in real-time
+     */
+    function validateKeyFormat() {
+        const key = keyInput.value.trim();
+        
+        if (!key) {
+            keyInput.classList.remove('is-valid', 'is-invalid');
+            return;
+        }
+        
+        const isValid = /^[a-z][a-z0-9_]*$/.test(key);
+        
+        if (isValid) {
+            keyInput.classList.remove('is-invalid');
+            keyInput.classList.add('is-valid');
+        } else {
+            keyInput.classList.remove('is-valid');
+            keyInput.classList.add('is-invalid');
+        }
+    }
+    
+    // Event Listeners
+    
+    // Auto-generate key as user types label (debounced for performance)
+    let labelTimeout;
+    labelInput.addEventListener('input', () => {
+        clearTimeout(labelTimeout);
+        labelTimeout = setTimeout(() => {
+            updateKeyFromLabel();
+        }, 300); // 300ms debounce
+    });
+    
+    // Toggle edit mode when button clicked
+    toggleBtn.addEventListener('click', toggleKeyEditMode);
+    
+    // Allow clicking on readonly key input to enable editing
+    keyInput.addEventListener('click', () => {
+        if (isAutoMode) {
+            toggleKeyEditMode();
+        }
+    });
+    
+    // Validate key format in real-time when manually editing
+    keyInput.addEventListener('input', () => {
+        if (!isAutoMode) {
+            // Auto-format: lowercase and remove invalid chars
+            let value = keyInput.value.toLowerCase();
+            value = value.replace(/[^a-z0-9_]/g, '');
+            if (keyInput.value !== value) {
+                keyInput.value = value;
+            }
+            validateKeyFormat();
+        }
+    });
+    
+    // Reset to auto mode when form is reset/closed
+    const fieldForm = document.getElementById('enhanced-field-form');
+    if (fieldForm) {
+        fieldForm.addEventListener('reset', () => {
+            isAutoMode = true;
+            userHasEditedKey = false;
+            keyInput.readOnly = true;
+            keyInput.style.backgroundColor = '#f8f9fa';
+            keyInput.style.cursor = 'pointer';
+            toggleBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+            autoBadge.innerHTML = '<i class="bi bi-magic me-1"></i>Auto';
+            autoBadge.className = 'badge bg-info-subtle text-info-emphasis';
+            helpMessage.innerHTML = 'Automatically generated from field name. Click <i class="bi bi-pencil"></i> to customize.';
+            keyInput.classList.remove('is-valid', 'is-invalid');
+        });
+    }
+    
+    console.log('✅ Field key auto-generation initialized');
+}

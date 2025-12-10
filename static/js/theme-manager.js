@@ -36,7 +36,9 @@ window.EnterpriseThemeManager = class EnterpriseThemeManager {
     saveThemePreference() {
         localStorage.setItem(this.storageKey, this.currentTheme);
         
-        // Send to server for user profile
+        // Send to server for user profile (disabled until API endpoint is implemented)
+        // TODO: Implement /api/user/theme-preference/ endpoint in Django
+        /* 
         if (window.fetch && document.body.classList.contains('authenticated')) {
             fetch('/api/user/theme-preference/', {
                 method: 'POST',
@@ -45,21 +47,34 @@ window.EnterpriseThemeManager = class EnterpriseThemeManager {
                     'X-CSRFToken': this.getCSRFToken()
                 },
                 body: JSON.stringify({ theme: this.currentTheme })
-            }).catch(() => {
-                // Silent fail - theme still works locally
+            }).then(response => {
+                if (!response.ok) {
+                    console.warn('Theme preference API not available, using local storage only');
+                }
+            }).catch((error) => {
+                // Silent fail - theme still works locally via localStorage
+                console.debug('Theme saved locally only (API unavailable)');
             });
         }
+        */
     }
 
     createThemeToggle() {
-        // Only create if not exists
-        if (document.getElementById('enterpriseThemeToggle')) return;
+        // Find existing navbar toggle (world-class integration)
+        const existingToggle = document.getElementById('enterpriseThemeToggle');
+        if (existingToggle) {
+            this.toggleButton = existingToggle;
+            return;
+        }
 
+        // Fallback: Create inline toggle if navbar toggle doesn't exist (e.g., login page)
         const toggle = document.createElement('button');
         toggle.id = 'enterpriseThemeToggle';
-        toggle.className = 'theme-toggle';
+        toggle.className = 'theme-toggle-navbar btn btn-outline-secondary btn-sm';
         toggle.setAttribute('aria-label', 'Toggle theme');
+        toggle.setAttribute('title', 'Toggle dark/light mode (Ctrl+Shift+T)');
         toggle.innerHTML = '<i class="bi bi-moon-fill"></i>';
+        toggle.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 1050;';
         
         document.body.appendChild(toggle);
         this.toggleButton = toggle;

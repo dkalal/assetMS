@@ -79,10 +79,42 @@
         }
 
         initializeModals() {
-            return {
+            // WORLD-CLASS: Fix accessibility issue with aria-hidden on focused elements
+            const modals = {
                 detail: new bootstrap.Modal(document.getElementById('transferDetailModal')),
                 decision: new bootstrap.Modal(document.getElementById('decisionModal'))
             };
+            
+            // Fix aria-hidden accessibility warning
+            // Remove aria-hidden when modal is shown, add it back when hidden
+            Object.values(modals).forEach(modal => {
+                const modalEl = modal._element;
+                if (modalEl) {
+                    modalEl.addEventListener('shown.bs.modal', function() {
+                        this.removeAttribute('aria-hidden');
+                    });
+                    
+                    modalEl.addEventListener('hidden.bs.modal', function() {
+                        this.setAttribute('aria-hidden', 'true');
+                    });
+                }
+            });
+            
+            // Also fix for initiate and bulk transfer modals
+            ['initiateTransferModal', 'bulkTransferModal'].forEach(modalId => {
+                const modalEl = document.getElementById(modalId);
+                if (modalEl) {
+                    modalEl.addEventListener('shown.bs.modal', function() {
+                        this.removeAttribute('aria-hidden');
+                    });
+                    
+                    modalEl.addEventListener('hidden.bs.modal', function() {
+                        this.setAttribute('aria-hidden', 'true');
+                    });
+                }
+            });
+            
+            return modals;
         }
 
         bindEvents() {
@@ -634,6 +666,443 @@
     // Initialize on DOM ready
     document.addEventListener('DOMContentLoaded', () => {
         window.transferDashboard = new TransferDashboard();
+        
+        // Character counters
+        const initReasonTextarea = document.getElementById('initTransferReason');
+        const bulkReasonTextarea = document.getElementById('bulkTransferReason');
+        
+        if (initReasonTextarea) {
+            initReasonTextarea.addEventListener('input', function() {
+                document.getElementById('initReasonCharCount').textContent = this.value.length;
+            });
+        }
+        
+        if (bulkReasonTextarea) {
+            bulkReasonTextarea.addEventListener('input', function() {
+                document.getElementById('bulkReasonCharCount').textContent = this.value.length;
+            });
+        }
     });
+
+    // ========== WORLD-CLASS: TRANSFER INITIATION FUNCTIONS ==========
+
+    /**
+     * Open Initiate Transfer Modal
+     */
+    window.openInitiateTransferModal = async function() {
+        const modal = new bootstrap.Modal(document.getElementById('initiateTransferModal'));
+        modal.show();
+        
+        // Load assets and branches
+        await Promise.all([
+            loadAssetsForTransfer(),
+            loadBranchesForTransfer('init')
+        ]);
+    };
+
+    /**
+     * Open Bulk Transfer Modal
+     */
+    window.openBulkTransferModal = async function() {
+        const modal = new bootstrap.Modal(document.getElementById('bulkTransferModal'));
+        modal.show();
+        
+        // Load assets and branches
+        await Promise.all([
+            loadAssetsForBulkTransfer(),
+            loadBranchesForTransfer('bulk')
+        ]);
+    };
+
+    /**
+     * Load active assets for transfer
+     */
+    async function loadAssetsForTransfer() {
+        const select = document.getElementById('initAssetSelect');
+        select.innerHTML = '<option value="">Loading assets...</option>';
+        
+        try {
+            const response = await fetch('/assets/api/list/?status=active&limit=500', {
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                credentials: 'same-origin'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.assets) {
+                select.innerHTML = '<option value="">-- Select an asset --</option>';
+                data.assets.forEach(asset => {
+                    const option = document.createElement('option');
+                    option.value = asset.id;
+                    option.textContent = `${asset.name} (${asset.category}) - ${asset.branch || 'No Branch'}`;
+                    option.dataset.assetId = asset.id;
+                    select.appendChild(option);
+                });
+            } else {
+                select.innerHTML = '<option value="">No assets available</option>';
+            }
+        } catch (error) {
+            console.error('Error loading assets:', error);
+            select.innerHTML = '<option value="">Error loading assets</option>';
+        }
+    }
+
+    /**
+     * Load assets for bulk transfer with checkboxes
+     */
+    async function loadAssetsForBulkTransfer() {
+        const container = document.getElementById('bulkAssetCheckboxes');
+        container.innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Loading...</div>';
+        
+        try {
+            const response = await fetch('/assets/api/list/?status=active&limit=500', {
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                credentials: 'same-origin'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.assets) {
+                container.innerHTML = '';
+                data.assets.forEach(asset => {
+                    const div = document.createElement('div');
+                    div.className = 'form-check mb-2';
+                    div.innerHTML = `
+                        <input class="form-check-input bulk-asset-checkbox" type="checkbox" value="${asset.id}" id="asset-${asset.id}">
+                        <label class="form-check-label" for="asset-${asset.id}">
+                            <strong>${asset.name}</strong> - ${asset.category} 
+                            <span class="text-muted">(${asset.branch || 'No Branch'})</span>
+                        </label>
+                    `;
+                    container.appendChild(div);
+                });
+                
+                // Update counter on checkbox change
+                document.querySelectorAll('.bulk-asset-checkbox').forEach(cb => {
+                    cb.addEventListener('change', updateBulkSelectedCount);
+                });
+            } else {
+                container.innerHTML = '<div class="text-center text-muted py-3">No assets available</div>';
+            }
+        } catch (error) {
+            console.error('Error loading assets:', error);
+            container.innerHTML = '<div class="text-center text-danger py-3">Error loading assets</div>';
+        }
+    }
+
+    /**
+     * Update bulk selected count
+     */
+    function updateBulkSelectedCount() {
+        const checked = document.querySelectorAll('.bulk-asset-checkbox:checked').length;
+        document.getElementById('bulkSelectedCount').textContent = `${checked} selected`;
+        document.getElementById('bulkBtnCount').textContent = checked;
+    }
+
+    /**
+     * Load branches for transfer
+     */
+    async function loadBranchesForTransfer(type) {
+        const selectId = type === 'init' ? 'initBranchSelect' : 'bulkBranchSelect';
+        const select = document.getElementById(selectId);
+        select.innerHTML = '<option value="">Loading branches...</option>';
+        
+        try {
+            const response = await fetch('/settings/api/branches/', {
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                credentials: 'same-origin'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.branches) {
+                select.innerHTML = '<option value="">-- Select destination branch --</option>';
+                data.branches.forEach(branch => {
+                    const option = document.createElement('option');
+                    option.value = branch.id;
+                    option.textContent = branch.name;
+                    select.appendChild(option);
+                });
+            } else {
+                select.innerHTML = '<option value="">No branches available</option>';
+            }
+        } catch (error) {
+            console.error('Error loading branches:', error);
+            select.innerHTML = '<option value="">Error loading branches</option>';
+        }
+    }
+
+    /**
+     * Load users for init transfer (cascading)
+     */
+    window.loadUsersForInitTransfer = async function() {
+        const branchId = document.getElementById('initBranchSelect').value;
+        const userSelect = document.getElementById('initUserSelect');
+        const loadingState = document.getElementById('initUserLoadingState');
+        const userCountBadge = document.getElementById('initUserCountBadge');
+        const userSelectPrompt = document.getElementById('initUserSelectPrompt');
+        const userCount = document.getElementById('initUserCount');
+        
+        userSelect.disabled = true;
+        userSelect.innerHTML = '<option value="">Loading...</option>';
+        userCountBadge.classList.add('d-none');
+        userSelectPrompt.classList.add('d-none');
+        
+        if (!branchId) {
+            userSelect.innerHTML = '<option value="">Select a branch first...</option>';
+            userSelectPrompt.classList.remove('d-none');
+            return;
+        }
+        
+        loadingState.classList.remove('d-none');
+        
+        try {
+            const response = await fetch(`/assets/api/users-by-branch/?branch_id=${branchId}`, {
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                credentials: 'same-origin'
+            });
+            
+            const data = await response.json();
+            loadingState.classList.add('d-none');
+            
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to load users');
+            }
+            
+            if (data.users.length === 0) {
+                userSelect.innerHTML = '<option value="">No users in this branch</option>';
+                return;
+            }
+            
+            // Populate grouped users
+            userSelect.innerHTML = '<option value="">-- Select a user --</option>';
+            const grouped = data.grouped;
+            
+            ['administrators', 'managers', 'users'].forEach(role => {
+                if (grouped[role] && grouped[role].length > 0) {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = role === 'administrators' ? '👑 Administrators' : 
+                                     role === 'managers' ? '💼 Managers' : '👤 Users';
+                    grouped[role].forEach(user => {
+                        const option = document.createElement('option');
+                        option.value = user.id;
+                        option.textContent = `${user.full_name} (${user.email})`;
+                        optgroup.appendChild(option);
+                    });
+                    userSelect.appendChild(optgroup);
+                }
+            });
+            
+            userSelect.disabled = false;
+            userCount.textContent = data.users.length;
+            userCountBadge.classList.remove('d-none');
+            
+        } catch (error) {
+            console.error('Error loading users:', error);
+            loadingState.classList.add('d-none');
+            userSelect.innerHTML = '<option value="">Error loading users</option>';
+            showToast('Failed to load users. Please try again.', 'danger');
+        }
+    };
+
+    /**
+     * Load users for bulk transfer (cascading)
+     */
+    window.loadUsersForBulkTransfer = async function() {
+        const branchId = document.getElementById('bulkBranchSelect').value;
+        const userSelect = document.getElementById('bulkUserSelect');
+        const loadingState = document.getElementById('bulkUserLoadingState');
+        
+        userSelect.disabled = true;
+        userSelect.innerHTML = '<option value="">Loading...</option>';
+        
+        if (!branchId) {
+            userSelect.innerHTML = '<option value="">Select a branch first...</option>';
+            return;
+        }
+        
+        loadingState.classList.remove('d-none');
+        
+        try {
+            const response = await fetch(`/assets/api/users-by-branch/?branch_id=${branchId}`, {
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                credentials: 'same-origin'
+            });
+            
+            const data = await response.json();
+            loadingState.classList.add('d-none');
+            
+            if (!data.success || data.users.length === 0) {
+                userSelect.innerHTML = '<option value="">No users in this branch</option>';
+                return;
+            }
+            
+            // Populate grouped users
+            userSelect.innerHTML = '<option value="">-- Select a user --</option>';
+            const grouped = data.grouped;
+            
+            ['administrators', 'managers', 'users'].forEach(role => {
+                if (grouped[role] && grouped[role].length > 0) {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = role === 'administrators' ? '👑 Administrators' : 
+                                     role === 'managers' ? '💼 Managers' : '👤 Users';
+                    grouped[role].forEach(user => {
+                        const option = document.createElement('option');
+                        option.value = user.id;
+                        option.textContent = `${user.full_name} (${user.email})`;
+                        optgroup.appendChild(option);
+                    });
+                    userSelect.appendChild(optgroup);
+                }
+            });
+            
+            userSelect.disabled = false;
+            
+        } catch (error) {
+            console.error('Error loading users:', error);
+            loadingState.classList.add('d-none');
+            userSelect.innerHTML = '<option value="">Error loading users</option>';
+        }
+    };
+
+    /**
+     * Execute individual transfer
+     */
+    window.executeInitiateTransfer = async function() {
+        const assetId = document.getElementById('initAssetSelect').value;
+        const branchId = document.getElementById('initBranchSelect').value;
+        const userId = document.getElementById('initUserSelect').value;
+        const reason = document.getElementById('initTransferReason').value;
+        const priority = document.getElementById('initTransferPriority').value;
+        const btn = document.getElementById('executeInitTransferBtn');
+        const progress = document.getElementById('initTransferProgress');
+        
+        // Validation
+        if (!assetId || !branchId || !userId || !reason || reason.length < 10) {
+            showToast('Please fill all required fields correctly', 'danger');
+            return;
+        }
+        
+        // Confirmation
+        const selectedAsset = document.getElementById('initAssetSelect').selectedOptions[0]?.textContent;
+        const selectedUser = document.getElementById('initUserSelect').selectedOptions[0]?.textContent;
+        if (!confirm(`Transfer "${selectedAsset}" to ${selectedUser}?`)) {
+            return;
+        }
+        
+        btn.disabled = true;
+        progress.classList.remove('d-none');
+        
+        try {
+            const response = await fetch('/assets/api/transfers/initiate/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    asset_id: parseInt(assetId),
+                    to_user_id: parseInt(userId),
+                    to_branch_id: parseInt(branchId),
+                    initiator_comment: reason,
+                    context: { priority }
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast('✅ Transfer initiated successfully!', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('initiateTransferModal')).hide();
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                showToast('❌ ' + (data.error || 'Transfer failed'), 'danger');
+                btn.disabled = false;
+            }
+        } catch (error) {
+            showToast('❌ Network error: ' + error.message, 'danger');
+            btn.disabled = false;
+        } finally {
+            progress.classList.add('d-none');
+        }
+    };
+
+    /**
+     * Execute bulk transfer
+     */
+    window.executeBulkTransfer = async function() {
+        const selectedAssets = Array.from(document.querySelectorAll('.bulk-asset-checkbox:checked')).map(cb => parseInt(cb.value));
+        const branchId = document.getElementById('bulkBranchSelect').value;
+        const userId = document.getElementById('bulkUserSelect').value;
+        const reason = document.getElementById('bulkTransferReason').value;
+        const btn = document.getElementById('executeBulkTransferBtn');
+        const progress = document.getElementById('bulkTransferProgress');
+        const progressBar = document.getElementById('bulkProgressBar');
+        const progressText = document.getElementById('bulkProgressText');
+        
+        // Validation
+        if (selectedAssets.length === 0) {
+            showToast('Please select at least one asset', 'warning');
+            return;
+        }
+        
+        if (!branchId || !userId || !reason || reason.length < 10) {
+            showToast('Please fill all required fields correctly', 'danger');
+            return;
+        }
+        
+        // Confirmation
+        if (!confirm(`Transfer ${selectedAssets.length} asset(s)?`)) {
+            return;
+        }
+        
+        btn.disabled = true;
+        progress.classList.remove('d-none');
+        
+        let completed = 0;
+        const total = selectedAssets.length;
+        
+        try {
+            for (const assetId of selectedAssets) {
+                progressText.textContent = `Processing ${completed + 1} of ${total}...`;
+                progressBar.style.width = `${(completed / total) * 100}%`;
+                
+                const response = await fetch('/assets/api/transfers/initiate/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        asset_id: assetId,
+                        to_user_id: parseInt(userId),
+                        to_branch_id: parseInt(branchId),
+                        initiator_comment: reason,
+                        context: { bulk: true }
+                    })
+                });
+                
+                const data = await response.json();
+                if (!data.success) {
+                    console.error(`Failed to transfer asset ${assetId}:`, data.error);
+                }
+                
+                completed++;
+            }
+            
+            progressBar.style.width = '100%';
+            showToast(`✅ Successfully initiated ${completed} transfer(s)!`, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('bulkTransferModal')).hide();
+            setTimeout(() => window.location.reload(), 1500);
+            
+        } catch (error) {
+            showToast('❌ Bulk transfer error: ' + error.message, 'danger');
+            btn.disabled = false;
+        } finally {
+            progress.classList.add('d-none');
+        }
+    };
 
 })();

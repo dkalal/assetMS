@@ -1,26 +1,99 @@
+from datetime import date, timedelta
+
 from django.shortcuts import render, redirect
-from django.contrib.auth import logout
+from django.db.models import Q
+from django.contrib.auth import logout, get_user_model, authenticate
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from django.views.decorators.cache import never_cache
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, PasswordResetView
 from django.contrib.auth.views import PasswordChangeView
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-from .forms import UserProfileForm
-from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
 from django.utils import timezone
+from django import forms
+from django.contrib.auth.forms import AuthenticationForm
+from django.urls import reverse_lazy
+
+from .forms import UserProfileForm, PasswordResetEmailOrUsernameForm
+from audit.utils import (
+    log_login_success,
+    log_login_failure,
+    log_logout,
+    log_account_lockout
+)
+
+class EmailAuthenticationForm(AuthenticationForm):
+    """
+    Custom authentication form that accepts email or username.
+    
+    Modern SaaS standard: Email-based login (Slack, Asana, Salesforce)
+    Backward compatible: Also supports username for legacy users
+    """
+    username = forms.CharField(
+        label='Email or Username',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter your email or username',
+            'autocomplete': 'username',
+            'inputmode': 'email',  # mobile keyboard hint without enforcing email pattern
+            'type': 'text',        # allow plain usernames
+        }),
+        help_text='Enter your email address or username'
+    )
+    
+    password = forms.CharField(
+        label='Password',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter your password',
+            'autocomplete': 'current-password',
+        })
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Update field labels for better UX
+        self.fields['username'].label = 'Email or Username'
+        self.fields['password'].label = 'Password'
+    
+    def clean_username(self):
+        """
+        Validate that the input looks like an email or username.
+        """
+        username = self.cleaned_data.get('username')
+        if not username:
+            raise forms.ValidationError('Please enter your email address or username.')
+        return username
+
 
 @method_decorator([ensure_csrf_cookie, csrf_protect, never_cache], name='dispatch')
 class EnterpriseLoginView(LoginView):
-    """Enterprise Login View with enhanced CSRF protection"""
+    """
+    Enterprise Login View with enhanced security features.
+    
+    Features:
+    - Email-based login (modern SaaS standard)
+    - CSRF protection
+    - Audit logging for all login attempts
+    - Failed login attempt tracking
+    - Account lockout after threshold
+    - Multi-tenancy support
+    
+    Following world-class standards: ServiceNow ITAM, IBM Maximo, SAP EAM, Slack, Asana
+    """
     template_name = 'registration/login.html'
+    form_class = EmailAuthenticationForm
     redirect_authenticated_user = True
+    
+    # Account lockout settings
+    MAX_FAILED_ATTEMPTS = 5
+    LOCKOUT_DURATION_MINUTES = 30
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -36,6 +109,149 @@ class EnterpriseLoginView(LoginView):
         context['redirect_field_name'] = redirect_field_name
         context['redirect_field_value'] = redirect_to
         return context
+    
+    def form_valid(self, form):
+        """
+        Called when login is successful.
+        Logs the successful login and resets failed attempts.
+        """
+        user = form.get_user()
+        
+        # Reset failed login attempts on successful login
+        if hasattr(user, 'failed_login_attempts') and user.failed_login_attempts > 0:
+            user.failed_login_attempts = 0
+            user.account_locked_until = None
+            user.save(update_fields=['failed_login_attempts', 'account_locked_until'])
+        
+        # Log successful login
+        log_login_success(user, self.request)
+        
+        # Call parent form_valid to complete login
+        response = super().form_valid(form)
+
+        # WORLD-CLASS: Remember-me session handling
+        # If user selected "Remember me", extend session expiry to 30 days.
+        # Otherwise, expire at browser close (enterprise security default).
+        remember_me = self.request.POST.get('remember_me')
+        try:
+            if remember_me:
+                # 30 days in seconds
+                self.request.session.set_expiry(60 * 60 * 24 * 30)
+            else:
+                # Expire when browser closes
+                self.request.session.set_expiry(0)
+        except Exception:
+            # Never break login flow due to session expiry edge cases
+            pass
+
+        return response
+    
+    def form_invalid(self, form):
+        """
+        Called when login fails.
+        Tracks failed attempts and implements account lockout.
+        """
+        # Get username/email from form data
+        username_or_email = form.data.get('username', '')
+
+        if username_or_email:
+            User = get_user_model()
+            try:
+                # Try to find user by email or username (matches our backend)
+                user = User.objects.get(
+                    Q(email__iexact=username_or_email)
+                    | Q(username__iexact=username_or_email)
+                )
+
+                # Check if account is currently locked
+                if hasattr(user, 'account_locked_until') and user.account_locked_until:
+                    if timezone.now() < user.account_locked_until:
+                        # Account is still locked
+                        remaining = (user.account_locked_until - timezone.now()).total_seconds() / 60
+                        log_login_failure(
+                            username_or_email,
+                            self.request,
+                            f'Account locked (remaining: {remaining:.0f} minutes)',
+                        )
+                        messages.error(
+                            self.request,
+                            'Account is locked due to multiple failed login attempts. '
+                            f'Please try again in {remaining:.0f} minutes.',
+                        )
+                        return super().form_invalid(form)
+                    else:
+                        # Lockout period expired, reset counters
+                        user.account_locked_until = None
+                        user.failed_login_attempts = 0
+
+                # Increment failed login attempts
+                if hasattr(user, 'failed_login_attempts'):
+                    user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
+
+                    # Check if we should lock the account
+                    if user.failed_login_attempts >= self.MAX_FAILED_ATTEMPTS:
+                        user.account_locked_until = timezone.now() + timedelta(
+                            minutes=self.LOCKOUT_DURATION_MINUTES
+                        )
+                        user.save(
+                            update_fields=['failed_login_attempts', 'account_locked_until']
+                        )
+
+                        # Log account lockout
+                        log_account_lockout(
+                            user, self.request, user.failed_login_attempts
+                        )
+
+                        messages.error(
+                            self.request,
+                            'Account locked due to '
+                            f'{self.MAX_FAILED_ATTEMPTS} failed login attempts. '
+                            f'Please try again in {self.LOCKOUT_DURATION_MINUTES} minutes.',
+                        )
+                    else:
+                        user.save(update_fields=['failed_login_attempts'])
+                        remaining_attempts = (
+                            self.MAX_FAILED_ATTEMPTS - user.failed_login_attempts
+                        )
+                        messages.warning(
+                            self.request,
+                            'Invalid credentials. '
+                            f'{remaining_attempts} attempts remaining before account lockout.',
+                        )
+
+                # Log failed login attempt
+                log_login_failure(
+                    username_or_email, self.request, 'Invalid credentials'
+                )
+
+            except User.DoesNotExist:
+                # User doesn't exist - log but don't reveal this information
+                log_login_failure(username_or_email, self.request, 'User not found')
+
+        return super().form_invalid(form)
+
+
+@method_decorator([ensure_csrf_cookie, csrf_protect, never_cache], name='dispatch')
+class EnterprisePasswordResetView(PasswordResetView):
+    """Multi-tenant password reset view with Celery delivery.
+
+    The heavy lifting (multi-tenant user lookup, Celery dispatch, and
+    audit logging) is implemented in PasswordResetEmailOrUsernameForm.save.
+    This view simply wires the form to Django's auth flow and passes
+    the request into the form for tenancy context.
+    """
+
+    form_class = PasswordResetEmailOrUsernameForm
+    template_name = 'registration/password_reset_form.html'
+    email_template_name = 'registration/password_reset_email.html'
+    subject_template_name = 'registration/password_reset_subject.txt'
+    success_url = reverse_lazy('users:password_reset_done')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request
+        return kwargs
+
 
 @csrf_protect
 @login_required
@@ -58,13 +274,61 @@ def profile(request):
         'form': form,
     })
 
+
+@login_required
+def my_retirement_request(request):
+    """Self-service retirement request page for the current user.
+
+    - Enforces minimum notice period (2 weeks) via frontend
+    - Scopes company context to the authenticated user for multi-tenancy
+    - Renders the world-class retirement UI template
+    """
+    min_date = (date.today() + timedelta(days=14)).isoformat()
+
+    context = {
+        'min_date': min_date,
+        'company': getattr(request.user, 'company', None),
+    }
+
+    return render(request, 'retirement/my_retirement.html', context)
+
+
+@login_required
+def retirement_approval_center(request):
+    """Retirement approval center for managers and admins.
+    
+    - Only accessible to users with Manager or Admin role
+    - Displays pending retirement requests for approval
+    - Company-scoped for multi-tenancy
+    """
+    from users.models import User
+    
+    # Check if user has permission (Manager or Admin)
+    if request.user.role not in [User.MANAGER, User.ADMIN]:
+        from django.contrib import messages
+        messages.error(request, 'You do not have permission to access the approval center.')
+        return redirect('dashboard')
+    
+    context = {
+        'company': getattr(request.user, 'company', None),
+    }
+    
+    return render(request, 'retirement/approval_center.html', context)
+
+
 @never_cache
 def custom_logout(request):
     """
-    WORLD-CLASS: Custom logout view with proper CSRF handling
+    WORLD-CLASS: Custom logout view with audit logging.
     
     Supports both GET (shows confirmation) and POST (performs logout)
     Following best practices from ServiceNow ITAM, IBM Maximo, SAP EAM
+    
+    Features:
+    - Audit logging for logout events
+    - Session duration tracking
+    - CSRF protection
+    - Global logout (dashboard + admin)
     
     Note: CSRF protection provided by CsrfViewMiddleware (global)
     GET requests show confirmation page, POST requests perform logout
@@ -76,8 +340,18 @@ def custom_logout(request):
         # POST request: Perform logout (CSRF protected by middleware)
         # This logs out from BOTH regular dashboard and Django admin (single session)
         
-        # Store username for message
-        username = request.user.username if request.user.is_authenticated else 'User'
+        # Store user and calculate session duration before logout
+        user = request.user
+        username = user.username if user.is_authenticated else 'User'
+        
+        # Calculate session duration if possible
+        session_duration = None
+        if user.is_authenticated and user.last_login:
+            session_duration = (timezone.now() - user.last_login).total_seconds()
+        
+        # Log logout event BEFORE performing logout
+        if user.is_authenticated:
+            log_logout(user, request, session_duration)
         
         # Perform Django logout (clears session, deletes session cookie)
         logout(request)
@@ -224,3 +498,36 @@ def api_user_list(request):
         'users': user_list,
         'total': len(user_list)
     })
+
+
+@login_required
+def my_transfer_requests(request):
+    """
+    My Transfer Requests Page
+    
+    Display user's own branch transfer requests with statistics.
+    
+    WORLD-CLASS: Clean, accessible, user-friendly interface.
+    
+    Features:
+    - View all user's transfer requests
+    - Real-time statistics
+    - Status tracking
+    - Action buttons
+    - Responsive design
+    """
+    from tenancy.models import Branch
+    
+    # Get available branches for transfer (exclude current branch)
+    available_branches = Branch.objects.filter(
+        company=request.user.company,
+        is_active=True
+    ).exclude(
+        id=request.user.primary_branch.id if request.user.primary_branch else None
+    ).order_by('name')
+    
+    context = {
+        'available_branches': available_branches,
+    }
+    
+    return render(request, 'users/my_transfer_requests.html', context)

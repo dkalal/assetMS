@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Accept Invitation - Asset Management System{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h2 class="mb-0">
+                        <i class="bi bi-envelope-check me-2"></i>You're Invited!
+                    </h2>
+                </div>
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <h4>{{ invitation.company.name }}</h4>
+                        <p class="text-muted mb-0">has invited you to join their team</p>
+                    </div>
+                    
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <div class="mb-3 p-3 bg-light rounded">
+                        <div class="row">
+                            <div class="col-6"><strong>Email:</strong></div>
+                            <div class="col-6">{{ invitation.email }}</div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-6"><strong>Name:</strong></div>
+                            <div class="col-6">{{ invitation.first_name }} {{ invitation.last_name }}</div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-6"><strong>Role:</strong></div>
+                            <div class="col-6">{{ invitation.get_role_display }}</div>
+                        </div>
+                        {% if invitation.branch %}
+                        <div class="row mt-2">
+                            <div class="col-6"><strong>Branch:</strong></div>
+                            <div class="col-6">{{ invitation.branch.name }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.password.id_for_label }}" class="form-label">Password</label>
+                            {{ form.password }}
+                            {% if form.password.errors %}
+                                <div class="text-danger small">{{ form.password.errors }}</div>
+                            {% endif %}
+                            {% if form.password.help_text %}
+                                <div class="form-text">{{ form.password.help_text }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.password_confirm.id_for_label }}" class="form-label">Confirm Password</label>
+                            {{ form.password_confirm }}
+                            {% if form.password_confirm.errors %}
+                                <div class="text-danger small">{{ form.password_confirm.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            {{ form.terms_accepted }}
+                            <label for="{{ form.terms_accepted.id_for_label }}" class="form-check-label">
+                                I agree to the Terms of Service and Privacy Policy
+                            </label>
+                            {% if form.terms_accepted.errors %}
+                                <div class="text-danger small">{{ form.terms_accepted.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-check-circle me-2"></i>Accept Invitation
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+
+
+
+

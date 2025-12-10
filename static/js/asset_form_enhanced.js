@@ -49,12 +49,15 @@ class AssetRegistrationForm {
     init() {
         // Category change handler
         if (this.categorySelect) {
-            // Load on page load (for edit forms)
+            // WORLD-CLASS FIX: Load on page load (for edit forms)
+            // This ensures dynamic fields are rendered immediately with pre-populated data
             if (this.categorySelect.value) {
+                console.log('🔄 EDIT MODE: Loading category fields on page load');
                 this.loadCategoryFields(this.categorySelect.value);
             }
             
             this.categorySelect.addEventListener('change', (e) => {
+                console.log('🔄 Category changed, loading fields');
                 this.loadCategoryFields(e.target.value);
             });
             
@@ -170,13 +173,17 @@ class AssetRegistrationForm {
         
         this.dynamicFieldsContainer.innerHTML = html;
         
-        // Setup validation listeners
-        this.setupFieldValidation();
-        
-        // Prefill for edit forms
-        this.prefillDynamicFields();
-        
         console.log('✅ Fields rendered:', Object.keys(fields).length);
+        
+        // CRITICAL FIX: Use requestAnimationFrame to ensure DOM is fully updated
+        // This gives the browser time to paint the new fields before we try to fill them
+        requestAnimationFrame(() => {
+            // Setup validation listeners
+            this.setupFieldValidation();
+            
+            // Prefill for edit forms (with proper timing)
+            this.prefillDynamicFields();
+        });
     }
     
     renderFieldInput(key, field) {
@@ -184,6 +191,8 @@ class AssetRegistrationForm {
         const fieldName = `dyn_${key}`;
         const required = field.required;
         const requiredMark = required ? '<span class="text-danger" title="Required">*</span>' : '';
+        const isUnique = field.is_unique || false;  // CRITICAL FIX: Check if field is unique
+        const uniqueBadge = isUnique ? '<span class="badge bg-primary bg-opacity-10 text-primary ms-2"><i class="bi bi-shield-check me-1"></i>Unique Field</span>' : '';
         
         // Determine column width based on field type
         let colClass = 'col-md-6'; // Default: half width
@@ -202,6 +211,8 @@ class AssetRegistrationForm {
             ${field.placeholder ? `placeholder="${this.escapeHtml(field.placeholder)}"` : ''}
             aria-label="${this.escapeHtml(field.label)}"
             data-field-type="${field.type}"
+            ${isUnique ? 'data-unique-field="true"' : ''}
+            data-field-key="${key}"
         `.trim();
         
         switch (field.type) {
@@ -267,7 +278,7 @@ class AssetRegistrationForm {
         return `
             <div class="${colClass}">
                 <label for="${fieldId}" class="form-label fw-semibold">
-                    ${this.escapeHtml(field.label)} ${requiredMark}
+                    ${this.escapeHtml(field.label)} ${requiredMark} ${uniqueBadge}
                 </label>
                 ${inputHTML}
                 ${field.help_text && field.type !== 'file' ? 
@@ -275,15 +286,29 @@ class AssetRegistrationForm {
                         <i class="bi bi-info-circle me-1"></i>${this.escapeHtml(field.help_text)}
                     </small>` : 
                     ''}
+                ${isUnique ? '<div class="unique-field-feedback" style="display:none;"></div>' : ''}
                 <div class="invalid-feedback" id="${fieldId}-error"></div>
             </div>
         `;
     }
     
     setupFieldValidation() {
+        // CRITICAL FIX: Initialize unique field validator with category and asset context
+        if (window.uniqueFieldValidator && this.currentCategory) {
+            const assetId = this.getAssetIdFromURL();  // For edit mode
+            window.uniqueFieldValidator.init(this.currentCategory.id, assetId);
+            console.log('✅ Unique field validator initialized for category:', this.currentCategory.id);
+        }
+        
         Object.entries(this.currentFields).forEach(([key, field]) => {
             const input = document.getElementById(`id_dyn_${key}`);
             if (!input) return;
+            
+            // CRITICAL FIX: Attach unique field validator if field is unique
+            if (field.is_unique && window.uniqueFieldValidator) {
+                window.uniqueFieldValidator.attachValidator(input, key, field.label, true);
+                console.log('✅ Unique validator attached to field:', key);
+            }
             
             // Validate on blur
             input.addEventListener('blur', () => {
@@ -308,6 +333,18 @@ class AssetRegistrationForm {
                 this.setupCharacterCounter(input, field.max_length);
             }
         });
+        
+        // CRITICAL FIX: Prevent form submission if unique field duplicates exist
+        if (window.uniqueFieldValidator && this.form) {
+            window.uniqueFieldValidator.preventSubmitOnDuplicates(this.form);
+        }
+    }
+    
+    getAssetIdFromURL() {
+        // Extract asset ID from URL for edit mode
+        // URL pattern: /assets/<uuid>/edit/
+        const match = window.location.pathname.match(/\/assets\/([^\/]+)\/edit\//);
+        return match ? match[1] : null;
     }
     
     setupCharacterCounter(input, maxLength) {
@@ -443,34 +480,162 @@ class AssetRegistrationForm {
     }
     
     prefillDynamicFields() {
+        // WORLD-CLASS: Pre-fill dynamic fields from JSON script tag (edit mode)
         const initialDataScript = document.getElementById('asset-initial-dyn');
-        if (!initialDataScript) return;
+        if (!initialDataScript) {
+            console.log('ℹ️ No initial dynamic data found (likely a new asset)');
+            return;
+        }
         
         try {
-            const data = JSON.parse(initialDataScript.textContent);
+            const rawData = initialDataScript.textContent;
+            console.log('📋 RAW JSON DATA:', rawData.substring(0, 200) + '...');
+            
+            const data = JSON.parse(rawData);
+            const dataKeys = Object.keys(data);
+            
+            console.log('📋 EDIT MODE: Pre-filling dynamic fields from asset data');
+            console.log(`   → Found ${dataKeys.length} fields in asset.dynamic_data:`, dataKeys);
+            
+            // CRITICAL: Wait for DOM to be fully ready
+            const allInputs = document.querySelectorAll('[name^="dyn_"]');
+            console.log(`   → Found ${allInputs.length} dynamic input fields in DOM`);
+            
+            if (allInputs.length === 0) {
+                console.error('❌ CRITICAL: No dynamic fields found in DOM! Fields may not have rendered yet.');
+                // Retry after a short delay
+                setTimeout(() => this.prefillDynamicFields(), 100);
+                return;
+            }
+            
             let prefilledCount = 0;
+            let skippedCount = 0;
+            let notFoundCount = 0;
             
             Object.entries(data).forEach(([key, value]) => {
-                const input = document.querySelector(`[name="dyn_${key}"]`);
-                if (input && value !== null && value !== undefined) {
+                const fieldName = `dyn_${key}`;
+                const input = document.querySelector(`[name="${fieldName}"]`);
+                
+                if (!input) {
+                    console.warn(`⚠️ Field not found in DOM: ${fieldName} (value: ${value})`);
+                    notFoundCount++;
+                    return;
+                }
+                
+                // WORLD-CLASS: Allow empty strings and zeros (user may have intentionally set them)
+                // Only skip null and undefined
+                if (value === null || value === undefined) {
+                    console.log(`   → Skipping ${key}: value is null/undefined`);
+                    skippedCount++;
+                    return;
+                }
+                
+                // Handle different field types with robust error handling
+                try {
                     if (input.type === 'date' && typeof value === 'string') {
+                        // Date field - validate format
                         if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
                             input.value = value;
                             prefilledCount++;
+                            console.log(`   ✅ Date: ${key} = ${value}`);
+                        } else {
+                            console.warn(`   ⚠️ Invalid date format for ${key}: ${value}`);
+                            skippedCount++;
                         }
-                    } else {
-                        input.value = value;
+                    } else if (input.type === 'number') {
+                        // Number field - handle numbers and numeric strings
+                        const numValue = String(value);
+                        input.value = numValue;
                         prefilledCount++;
+                        console.log(`   ✅ Number: ${key} = ${numValue}`);
+                    } else if (input.tagName === 'SELECT') {
+                        // Select field - check if option exists
+                        const strValue = String(value);
+                        const optionExists = Array.from(input.options).some(opt => opt.value === strValue);
+                        if (optionExists) {
+                            input.value = strValue;
+                            prefilledCount++;
+                            console.log(`   ✅ Select: ${key} = ${strValue}`);
+                        } else {
+                            console.warn(`   ⚠️ Option "${strValue}" not found in select ${key}`);
+                            console.warn(`      Available options:`, Array.from(input.options).map(o => o.value));
+                            skippedCount++;
+                        }
+                    } else if (input.tagName === 'TEXTAREA') {
+                        // Textarea field
+                        input.value = String(value);
+                        prefilledCount++;
+                        const preview = String(value).substring(0, 50);
+                        console.log(`   ✅ Textarea: ${key} = ${preview}${value.length > 50 ? '...' : ''}`);
+                    } else if (input.type === 'checkbox') {
+                        // Checkbox field
+                        input.checked = Boolean(value);
+                        prefilledCount++;
+                        console.log(`   ✅ Checkbox: ${key} = ${value}`);
+                    } else if (input.type === 'file') {
+                        // File fields cannot be pre-filled for security reasons
+                        console.log(`   ℹ️ File field ${key} cannot be pre-filled (browser security)`);
+                        skippedCount++;
+                    } else {
+                        // Text field (default)
+                        input.value = String(value);
+                        prefilledCount++;
+                        console.log(`   ✅ Text: ${key} = ${value}`);
                     }
+                    
+                    // CRITICAL: Trigger change event for validation and UI updates
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                    
+                    // Add visual feedback that field was pre-filled
+                    input.classList.add('prefilled');
+                    setTimeout(() => input.classList.remove('prefilled'), 2000);
+                    
+                } catch (fieldError) {
+                    console.error(`   ❌ Error pre-filling field ${key}:`, fieldError);
+                    skippedCount++;
                 }
             });
             
-            if (prefilledCount > 0) {
-                console.log(`✅ Prefilled ${prefilledCount} dynamic fields for edit form`);
+            // Summary
+            console.log('\n📊 PRE-FILL SUMMARY:');
+            console.log(`   ✅ Successfully pre-filled: ${prefilledCount} fields`);
+            if (skippedCount > 0) {
+                console.log(`   ⚠️ Skipped: ${skippedCount} fields (empty, invalid, or file type)`);
             }
+            if (notFoundCount > 0) {
+                console.error(`   ❌ Not found in DOM: ${notFoundCount} fields`);
+            }
+            
+            // Show user feedback if some fields were pre-filled
+            if (prefilledCount > 0) {
+                this.showSuccessToast(`Pre-filled ${prefilledCount} field${prefilledCount > 1 ? 's' : ''} from existing data`);
+            }
+            
         } catch (error) {
-            console.warn('⚠️ Failed to prefill dynamic fields:', error);
+            console.error('❌ CRITICAL ERROR in prefillDynamicFields:', error);
+            console.error('   Stack trace:', error.stack);
         }
+    }
+    
+    showSuccessToast(message) {
+        // Simple toast notification (non-intrusive)
+        const toast = document.createElement('div');
+        toast.className = 'alert alert-success position-fixed top-0 end-0 m-3';
+        toast.style.zIndex = '9999';
+        toast.style.minWidth = '300px';
+        toast.innerHTML = `
+            <i class="bi bi-check-circle-fill me-2"></i>
+            ${message}
+        `;
+        document.body.appendChild(toast);
+        
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.5s';
+            setTimeout(() => toast.remove(), 500);
+        }, 3000);
     }
     
     addWizardButton() {

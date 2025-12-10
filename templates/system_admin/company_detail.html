@@ -1,0 +1,200 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ company.name }} - System Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-building me-2"></i>{{ company.name }}
+        </h2>
+        <div>
+            <a href="{% url 'system_admin:company_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to List
+            </a>
+        </div>
+    </div>
+    
+    <!-- Company Statistics -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center">
+                    <i class="bi bi-people text-primary" style="font-size: 2rem;"></i>
+                    <h3 class="mt-2">{{ user_count }}</h3>
+                    <p class="text-muted mb-0">Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center">
+                    <i class="bi bi-box-seam text-success" style="font-size: 2rem;"></i>
+                    <h3 class="mt-2">{{ asset_count }}</h3>
+                    <p class="text-muted mb-0">Assets</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center">
+                    <i class="bi bi-diagram-3 text-info" style="font-size: 2rem;"></i>
+                    <h3 class="mt-2">{{ branch_count }}</h3>
+                    <p class="text-muted mb-0">Branches</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center">
+                    <i class="bi bi-{% if company.registration.subscription_status == 'active' %}check-circle text-success{% elif company.registration.subscription_status == 'trial' %}clock text-warning{% else %}x-circle text-danger{% endif %}" style="font-size: 2rem;"></i>
+                    <h5 class="mt-2">
+                        {% if company.registration %}
+                            {{ company.registration.get_subscription_status_display }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </h5>
+                    <p class="text-muted mb-0">Status</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Company Information -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Company Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="40%">Company Name:</th>
+                            <td>{{ company.name }}</td>
+                        </tr>
+                        {% if company.registration %}
+                        <tr>
+                            <th>Plan:</th>
+                            <td><span class="badge bg-secondary">{{ company.registration.get_plan_display }}</span></td>
+                        </tr>
+                        <tr>
+                            <th>Status:</th>
+                            <td>
+                                <span class="badge bg-{% if company.registration.subscription_status == 'active' %}success{% elif company.registration.subscription_status == 'trial' %}warning{% else %}danger{% endif %}">
+                                    {{ company.registration.get_subscription_status_display }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Billing Email:</th>
+                            <td>{{ company.registration.billing_email }}</td>
+                        </tr>
+                        {% if company.registration.trial_ends_at %}
+                        <tr>
+                            <th>Trial Ends:</th>
+                            <td>{{ company.registration.trial_ends_at|date:"M d, Y" }}</td>
+                        </tr>
+                        {% endif %}
+                        {% endif %}
+                        <tr>
+                            <th>Created:</th>
+                            <td>{{ company.created_at|date:"M d, Y H:i" }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="col-md-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">Company Actions</h5>
+                </div>
+                <div class="card-body">
+                    {% if company.registration and company.registration.subscription_status == 'suspended' %}
+                        <form method="post" action="{% url 'system_admin:reactivate_company' company.id %}" class="mb-2">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-check-circle me-2"></i>Reactivate Company
+                            </button>
+                        </form>
+                    {% else %}
+                        <form method="post" action="{% url 'system_admin:suspend_company' company.id %}" class="mb-2">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger w-100" 
+                                    onclick="return confirm('Are you sure you want to suspend this company? All users will be deactivated.')">
+                                <i class="bi bi-x-circle me-2"></i>Suspend Company
+                            </button>
+                        </form>
+                    {% endif %}
+                    
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Note:</strong> Suspending a company will deactivate all users and prevent access to the system.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Users -->
+    <div class="card shadow-lg border-0">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Recent Users</h5>
+        </div>
+        <div class="card-body">
+            {% if recent_users %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in recent_users %}
+                                <tr>
+                                    <td>{{ user.get_full_name|default:user.username }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td><span class="badge bg-secondary">{{ user.get_role_display }}</span></td>
+                                    <td>
+                                        {% if user.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'system_admin:impersonate' user.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-person-check me-1"></i>Impersonate
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted text-center">No users found.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+
+
+
+

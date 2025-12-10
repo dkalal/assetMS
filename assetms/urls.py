@@ -101,6 +101,8 @@ urlpatterns = [
     path('settings/', include('settings.urls')),
     path('assets/', include('assets.urls')),
     path('categories/', include('categories.urls')),
+    path('accounts/', include('accounts.urls')),
+    path('', include('system_admin.urls')),
     path('api/create-category/', api_create_category, name='api_create_category'),
     path('api/categories/', api_categories, name='api_categories'),
     path('api/category-templates/', api_category_templates, name='api_category_templates'),

@@ -171,33 +171,75 @@ document.addEventListener('DOMContentLoaded', function() {
     .catch(() => alert('Delete failed due to network or server error.'));
   }
 
-  // Bulk asset delete
+  // Bulk asset delete - WORLD-CLASS: Show disposal info instead
   function handleBulkDelete() {
     const ids = getSelectedAssetIds();
     if (!ids.length) return alert('No assets selected.');
-    if (!confirm(`Are you sure you want to delete ${ids.length} selected asset(s)? This action cannot be undone.`)) return;
-    fetch('/assets/bulk-delete/', {
-      method: 'POST',
-      headers: {
-        'X-CSRFToken': getCSRFToken(),
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json',
-      },
-      body: ids.map(id => `ids[]=${encodeURIComponent(id)}`).join('&'),
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        data.deleted.forEach(id => {
-          const btn = document.querySelector(`button.delete-asset[data-asset-id="${id}"]`);
-          if (btn) btn.closest('tr').remove();
-        });
-        alert(data.message);
-      } else {
-        alert('Bulk delete failed.');
+    
+    // Show world-class informative modal
+    showDisposalInfoModal(ids.length);
+  }
+  
+  function showDisposalInfoModal(count) {
+    // Check if modal already exists
+    let modal = document.getElementById('disposalInfoModal');
+    if (modal) {
+      // Show existing modal
+      modal.style.display = 'block';
+      return;
+    }
+    
+    // Create modal
+    modal = document.createElement('div');
+    modal.id = 'disposalInfoModal';
+    modal.className = 'modal fade show';
+    modal.style.display = 'block';
+    modal.style.background = 'rgba(0,0,0,0.5)';
+    modal.innerHTML = `
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-warning bg-opacity-10">
+            <h5 class="modal-title">
+              <i class="bi bi-info-circle me-2 text-warning"></i>
+              Bulk Deletion Not Available
+            </h5>
+            <button type="button" class="btn-close" onclick="this.closest('.modal').style.display='none'"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-info mb-3">
+              <i class="bi bi-shield-check me-2"></i>
+              <strong>Audit Compliance Requirement</strong>
+            </div>
+            <p><strong>To maintain audit compliance</strong>, assets must be disposed through the proper disposal workflow.</p>
+            <p class="mb-2">This ensures:</p>
+            <ul class="mb-3">
+              <li>Complete audit trail (who, when, why)</li>
+              <li>Approval process (if required by your organization)</li>
+              <li>SOC2/GDPR compliance</li>
+              <li>Proper documentation for asset disposal</li>
+            </ul>
+            <p class="mb-0">
+              <strong>Next steps:</strong> Please dispose of assets individually through their detail pages, 
+              or contact your administrator to set up a bulk disposal workflow.
+            </p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').style.display='none'">
+              <i class="bi bi-x me-1"></i>Close
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.style.display = 'none';
       }
-    })
-    .catch(() => alert('Bulk delete failed due to network or server error.'));
+    });
   }
 
   // Attach event listeners

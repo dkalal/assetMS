@@ -10,6 +10,12 @@
   overflow: hidden;
 }
 
+/* Dark mode for enterprise table container */
+[data-theme="dark"] .enterprise-table-container {
+  background: rgba(30, 41, 59, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
 .enterprise-table-wrapper {
   position: relative;
   max-height: 600px;
@@ -56,6 +62,12 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* Dark mode for table header */
+[data-theme="dark"] .enterprise-table thead {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
 .enterprise-table thead th {
   padding: 16px 12px;
   text-align: left;
@@ -69,6 +81,13 @@
   transition: all 0.2s ease;
 }
 
+/* Dark mode for table header cells */
+[data-theme="dark"] .enterprise-table thead th {
+  color: #f9fafb !important;
+  border-bottom-color: #374151 !important;
+  border-right-color: #4b5563 !important;
+}
+
 .enterprise-table thead th:last-child {
   border-right: none;
 }
@@ -76,6 +95,12 @@
 .enterprise-table thead th:hover {
   background: linear-gradient(135deg, #f1f5f9 0%, #ddd6fe 100%);
   color: #4f46e5;
+}
+
+/* Dark mode for table header hover */
+[data-theme="dark"] .enterprise-table thead th:hover {
+  background: linear-gradient(135deg, #374151 0%, #4b5563 100%) !important;
+  color: #93c5fd !important;
 }
 
 .enterprise-table thead th.sortable {
@@ -114,15 +139,31 @@
   background: white;
 }
 
+/* Dark mode for table body */
+[data-theme="dark"] .enterprise-table tbody {
+  background: #1f2937 !important;
+}
+
 .enterprise-table tbody tr {
   transition: all 0.15s ease;
   border-bottom: 1px solid #f3f4f6;
+}
+
+/* Dark mode for table rows */
+[data-theme="dark"] .enterprise-table tbody tr {
+  border-bottom-color: #374151 !important;
 }
 
 .enterprise-table tbody tr:hover {
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Dark mode for table row hover */
+[data-theme="dark"] .enterprise-table tbody tr:hover {
+  background: linear-gradient(135deg, #374151 0%, #4b5563 100%) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
 }
 
 .enterprise-table tbody tr:last-child {
@@ -136,6 +177,12 @@
   vertical-align: middle;
 }
 
+/* Dark mode for table cells */
+[data-theme="dark"] .enterprise-table tbody td {
+  color: #f9fafb !important;
+  border-right-color: #4b5563 !important;
+}
+
 .enterprise-table tbody td:last-child {
   border-right: none;
 }
@@ -146,8 +193,19 @@
   border-color: #3b82f6;
 }
 
+/* Dark mode for selected rows */
+[data-theme="dark"] .enterprise-table tbody tr.selected {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
+  border-color: #3b82f6 !important;
+}
+
 .enterprise-table tbody tr.selected:hover {
   background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+}
+
+/* Dark mode for selected row hover */
+[data-theme="dark"] .enterprise-table tbody tr.selected:hover {
+  background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%) !important;
 }
 
 /* Status Badges */

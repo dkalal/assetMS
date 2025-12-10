@@ -6,12 +6,12 @@
     <!-- Brand / Logo with Company Branding -->
     {% if user.is_authenticated %}
     <a class="navbar-brand d-flex align-items-center me-3 me-lg-4" href="{% url 'dashboard' %}" aria-label="Dashboard Home">
-      {% if user.company.logo %}
+      {% if user.company.logo and user.company.logo.url %}
         <img src="{{ user.company.logo.url }}"
              alt="{{ user.company.name }} Logo"
              style="height: 40px; width: auto; max-width: 50px; object-fit: contain; margin-right: 12px; border-radius: 4px;"
              data-fallback="{% static 'img/logo.png' %}"
-             onerror="this.onerror=null; this.src=this.dataset.fallback;">
+             onerror="this.onerror=null; this.src=this.dataset.fallback; console.warn('Company logo failed to load, using fallback');">
       {% else %}
         <img src="{% static 'img/logo.png' %}"
              alt="Default Company Logo"
@@ -29,9 +29,25 @@
     </span>
     {% endif %}
 
-    <!-- Mobile Toggle -->
-    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
-      <i class="bi bi-list" style="font-size: 1.5rem;"></i>
+    <!-- Mobile Sidebar Toggle (Shows on mobile screens) -->
+    <button class="btn btn-outline-secondary btn-sm d-lg-none me-2" 
+            type="button" 
+            id="mobile-sidebar-toggle" 
+            aria-label="Toggle sidebar"
+            aria-expanded="false"
+            aria-controls="sidebar">
+      <i class="bi bi-list" style="font-size: 1.25rem;"></i>
+    </button>
+
+    <!-- Mobile Navbar Toggle (For collapsing navbar items) -->
+    <button class="navbar-toggler border-0 d-lg-none" 
+            type="button" 
+            data-bs-toggle="collapse" 
+            data-bs-target="#mainNavbar" 
+            aria-controls="mainNavbar" 
+            aria-expanded="false" 
+            aria-label="Toggle navigation menu">
+      <i class="bi bi-three-dots-vertical" style="font-size: 1.25rem;"></i>
     </button>
 
     <!-- Collapsible Navigation -->
@@ -107,7 +123,12 @@
             <i class="bi bi-file-earmark-arrow-up"></i>
             <span class="d-none d-xl-inline ms-1">Import</span>
           </a>
-          <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#exportModal" title="Export Assets">
+          <button data-export-preview 
+                  data-report-type="assets" 
+                  data-format="xlsx" 
+                  class="btn btn-outline-secondary" 
+                  type="button"
+                  title="Export assets with preview">
             <i class="bi bi-file-earmark-arrow-down"></i>
             <span class="d-none d-xl-inline ms-1">Export</span>
           </button>
@@ -181,6 +202,15 @@
             <li><a class="dropdown-item text-center small" href="#" role="button"><i class="bi bi-list me-1"></i>View all notifications</a></li>
           </ul>
         </div>
+
+        <!-- Theme Toggle (World-Class Integration) -->
+        <button class="btn btn-outline-secondary btn-sm theme-toggle-navbar" 
+                type="button" 
+                id="enterpriseThemeToggle" 
+                aria-label="Toggle theme" 
+                title="Toggle dark/light mode (Ctrl+Shift+T)">
+          <i class="bi bi-moon-fill"></i>
+        </button>
 
         <!-- User Profile Menu -->
         <div class="dropdown">

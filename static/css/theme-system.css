@@ -14,11 +14,11 @@
   --theme-danger: #dc3545;
   --theme-info: #0dcaf0;
   
-  /* Background Colors */
-  --theme-bg-primary: #ffffff;
-  --theme-bg-secondary: #f8f9fa;
-  --theme-bg-tertiary: #e9ecef;
-  --theme-bg-gradient: linear-gradient(135deg, #B4E9FC 0%, #e3f2ff 50%, #f0f9ff 100%);
+  /* Background Colors - Enhanced Blue Tint */
+  --theme-bg-primary: #f0f9ff;
+  --theme-bg-secondary: #e0f2fe;
+  --theme-bg-tertiary: #bae6fd;
+  --theme-bg-gradient: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 30%, #ffffff 70%, #f0f9ff 100%);
   
   /* Text Colors */
   --theme-text-primary: #212529;
@@ -64,11 +64,11 @@
   --theme-danger: #ef5350;
   --theme-info: #42a5f5;
   
-  /* Background Colors */
-  --theme-bg-primary: #1a1a1a;
-  --theme-bg-secondary: #2d2d2d;
-  --theme-bg-tertiary: #404040;
-  --theme-bg-gradient: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #404040 100%);
+  /* Background Colors - Enhanced Dark Blue Tint */
+  --theme-bg-primary: #0f1419;
+  --theme-bg-secondary: #1a2332;
+  --theme-bg-tertiary: #243447;
+  --theme-bg-gradient: linear-gradient(135deg, #0c1420 0%, #1a2332 30%, #0f1922 70%, #0c1420 100%);
   
   /* Text Colors */
   --theme-text-primary: #ffffff;
@@ -82,7 +82,7 @@
   --theme-border-light: rgba(255,255,255,0.125);
   
   /* Glass Effect */
-  --theme-glass-bg: rgba(30,30,30,0.35);
+  --theme-glass-bg: rgba(30,30,30,0.85);
   --theme-glass-border: rgba(255,255,255,0.1);
   --theme-shadow: 0 8px 32px 0 rgba(0,0,0,0.4);
   --theme-shadow-elevated: 0 16px 48px 0 rgba(0,0,0,0.6);
@@ -227,38 +227,53 @@ body.authenticated .glass {
   color: var(--theme-text-primary) !important;
 }
 
-/* Theme Toggle Button */
-.theme-toggle {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 1050;
-  background: var(--theme-glass-bg);
-  border: 1px solid var(--theme-glass-border);
-  border-radius: 50%;
-  width: 48px;
-  height: 48px;
-  display: flex;
+/* Theme Toggle Button - Navbar Integrated (World-Class) */
+.theme-toggle-navbar,
+#enterpriseThemeToggle {
+  display: inline-flex !important;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: var(--theme-transition);
-  backdrop-filter: blur(12px);
+  border: 1px solid var(--theme-border-primary);
+  background-color: var(--theme-bg-primary);
   color: var(--theme-text-primary);
+  position: relative;
+  z-index: 1;
 }
 
-.theme-toggle:hover {
-  transform: scale(1.1);
-  box-shadow: var(--theme-shadow);
+.theme-toggle-navbar:hover,
+#enterpriseThemeToggle:hover {
+  background-color: var(--theme-bg-secondary);
+  border-color: var(--theme-primary);
+  color: var(--theme-primary);
+  transform: translateY(-1px);
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .theme-toggle {
-    top: 10px;
-    right: 10px;
-    width: 40px;
-    height: 40px;
+.theme-toggle-navbar:active,
+#enterpriseThemeToggle:active {
+  transform: translateY(0);
+}
+
+.theme-toggle-navbar i,
+#enterpriseThemeToggle i {
+  font-size: 1rem;
+  transition: var(--theme-transition);
+}
+
+/* NOTE: Dark mode icon change (bi-moon-fill → bi-sun-fill) is handled by JavaScript in theme-manager.js */
+
+/* Responsive - Hide on very small mobile */
+@media (max-width: 400px) {
+  .theme-toggle-navbar,
+  #enterpriseThemeToggle {
+    width: 32px;
+    padding: 0.375rem !important;
+  }
+  
+  .theme-toggle-navbar i,
+  #enterpriseThemeToggle i {
+    font-size: 0.875rem;
   }
 }
 

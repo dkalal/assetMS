@@ -1,0 +1,131 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Companies - System Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-building me-2"></i>All Companies
+        </h2>
+        <a href="{% url 'system_admin:create_company' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i>Create Company
+        </a>
+    </div>
+    
+    <!-- Search and Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-6">
+                    <input type="text" name="search" class="form-control" 
+                           placeholder="Search companies..." value="{{ search_query }}">
+                </div>
+                <div class="col-md-4">
+                    <select name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="trial" {% if status_filter == 'trial' %}selected{% endif %}>Trial</option>
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                        <option value="suspended" {% if status_filter == 'suspended' %}selected{% endif %}>Suspended</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Companies Table -->
+    <div class="card shadow-lg border-0">
+        <div class="card-body">
+            {% if page_obj %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Company Name</th>
+                                <th>Users</th>
+                                <th>Assets</th>
+                                <th>Branches</th>
+                                <th>Plan</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for company in page_obj %}
+                                <tr>
+                                    <td><strong>{{ company.name }}</strong></td>
+                                    <td>{{ company.user_count }}</td>
+                                    <td>{{ company.asset_count }}</td>
+                                    <td>{{ company.branch_count }}</td>
+                                    <td>
+                                        {% if company.registration %}
+                                            <span class="badge bg-secondary">{{ company.registration.get_plan_display }}</span>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if company.registration %}
+                                            <span class="badge bg-{% if company.registration.subscription_status == 'active' %}success{% elif company.registration.subscription_status == 'trial' %}warning{% else %}danger{% endif %}">
+                                                {{ company.registration.get_subscription_status_display }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ company.created_at|date:"M d, Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'system_admin:company_detail' company.id %}" class="btn btn-sm btn-outline-primary">
+                                            View
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Previous</a>
+                                </li>
+                            {% endif %}
+                            
+                            <li class="page-item active">
+                                <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                            </li>
+                            
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Next</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox" style="font-size: 3rem; color: #6c757d;"></i>
+                    <p class="text-muted mt-3">No companies found.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+
+
+
+

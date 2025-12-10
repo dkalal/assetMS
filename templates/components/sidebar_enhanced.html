@@ -6,6 +6,8 @@
   <div class="sidebar-section">
     {% url 'dashboard' as dashboard_url %}
     {% url 'asset_list' as asset_list_url %}
+    {% url 'manager_dashboard' as manager_dashboard_url %}
+    {% url 'users:my_retirement' as my_retirement_url %}
     
     <a href="{{ dashboard_url }}" class="nav-link rail-item {% if request.path == dashboard_url %}active{% endif %}" title="Dashboard" {% if request.path == dashboard_url %}aria-current="page"{% endif %}>
       <i class="bi bi-speedometer2"></i>
@@ -19,6 +21,14 @@
       <span class="badge bg-primary-subtle text-primary ms-auto small">{{ total_assets_count }}</span>
       {% endif %}
     </a>
+
+    {# Self-service retirement – available to all authenticated users #}
+    {% if request.user.is_authenticated %}
+    <a href="{{ my_retirement_url }}" class="nav-link rail-item {% if request.path == my_retirement_url %}active{% endif %}" title="My Retirement" {% if request.path == my_retirement_url %}aria-current="page"{% endif %}>
+      <i class="bi bi-person-x"></i>
+      <span>My Retirement</span>
+    </a>
+    {% endif %}
     
     <!-- Transfers (All Users - role-appropriate labels) -->
     <a href="/assets/transfers/" class="nav-link rail-item {% if '/transfers/' in request.path %}active{% endif %}" title="{% if request.user.role == 'admin' %}All Transfers{% elif request.user.role == 'manager' %}Branch Transfers{% else %}My Transfers{% endif %}" {% if '/transfers/' in request.path %}aria-current="page"{% endif %}>
@@ -45,6 +55,12 @@
       Management
     </div>
     
+    <!-- Manager Dashboard (Managers & Admins) -->
+    <a href="{{ manager_dashboard_url }}" class="nav-link rail-item {% if request.path|slice:":23" == "/tenancy/manager-dashboard/" %}active{% endif %}" title="Manager Dashboard" {% if request.path|slice:":23" == "/tenancy/manager-dashboard/" %}aria-current="page"{% endif %}>
+      <i class="bi bi-briefcase"></i>
+      <span>{% if request.user.role == 'admin' %}Manager Dashboard{% else %}My Branches{% endif %}</span>
+    </a>
+    
     {% url 'maintenance:list' as maintenance_url %}
     <a href="{{ maintenance_url }}" class="nav-link rail-item {% if request.path|slice:":13" == "/maintenance/" %}active{% endif %}" title="Maintenance" {% if request.path|slice:":13" == "/maintenance/" %}aria-current="page"{% endif %}>
       <i class="bi bi-tools"></i>
@@ -55,12 +71,18 @@
     </a>
     
     {% url 'approval_dashboard' as approvals_url %}
-    <a href="{{ approvals_url }}" class="nav-link rail-item {% if '/approvals/' in request.path %}active{% endif %}" title="Approvals" {% if '/approvals/' in request.path %}aria-current="page"{% endif %}>
+    <a href="{{ approvals_url }}" class="nav-link rail-item {% if '/approvals/' in request.path and 'retirement' not in request.path %}active{% endif %}" title="Approvals" {% if '/approvals/' in request.path %}aria-current="page"{% endif %}>
       <i class="bi bi-check-circle"></i>
       <span>Approvals</span>
       {% if pending_approvals_count > 0 %}
       <span class="badge bg-danger ms-auto">{{ pending_approvals_count }}</span>
       {% endif %}
+    </a>
+    
+    {% url 'users:retirement_approvals' as retirement_approvals_url %}
+    <a href="{{ retirement_approvals_url }}" class="nav-link rail-item {% if request.path == retirement_approvals_url %}active{% endif %}" title="Retirement Approvals" {% if request.path == retirement_approvals_url %}aria-current="page"{% endif %}>
+      <i class="bi bi-clipboard-check"></i>
+      <span>Retirement Approvals</span>
     </a>
   </div>
 

@@ -40,9 +40,9 @@ class ApprovalDashboardView(LoginRequiredMixin, BranchContextMixin, TemplateView
     - Users see only their own requests
     
     URL: /tenancy/approvals/
-    Template: tenancy/approval_dashboard_simplified.html
+    Template: tenancy/approval_dashboard_worldclass.html
     """
-    template_name = "tenancy/approval_dashboard_simplified.html"
+    template_name = "tenancy/approval_dashboard_worldclass.html"
 
     def get_context_data(self, **kwargs):
         """Prepare approval dashboard data."""

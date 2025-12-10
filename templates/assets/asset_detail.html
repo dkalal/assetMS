@@ -223,6 +223,11 @@
       {% if user.is_authenticated and can_view_sensitive %}
       <div class="d-grid gap-2">
         <a href="{% url 'asset_list' %}" class="btn btn-light border">Back to List</a>
+        {% if user.is_authenticated and is_admin_or_manager and asset.maintenance_enabled and asset.status == 'active' %}
+        <a href="{% url 'maintenance:schedule' asset_uuid=asset.uuid %}" class="btn btn-warning">
+          <i class="bi bi-tools me-1"></i>Schedule Maintenance
+        </a>
+        {% endif %}
         {% if user.is_authenticated and is_admin_or_manager %}
         <a href="{% url 'asset_update' asset.uuid %}" class="btn btn-primary">Edit Asset</a>
         {% endif %}

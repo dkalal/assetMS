@@ -1,0 +1,96 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Onboarding - Invite Team{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="bi bi-people me-2"></i>Invite Your Team
+                    </h3>
+                    <p class="mb-0 mt-2 opacity-75">Step 2 of 3: Team Invitation (Optional)</p>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Progress Bar -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="small text-muted">Progress</span>
+                            <span class="small text-muted">{{ progress.completion_percentage }}%</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-primary" role="progressbar" 
+                                 style="width: {{ progress.completion_percentage }}%"></div>
+                        </div>
+                    </div>
+                    
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="step" value="2">
+                        
+                        <div class="mb-3 form-check">
+                            {{ form.invite_team }}
+                            <label for="{{ form.invite_team.id_for_label }}" class="form-check-label">
+                                Invite team members now
+                            </label>
+                        </div>
+                        
+                        <div id="teamInviteSection" style="display: none;">
+                            <div class="mb-3">
+                                <label for="{{ form.emails.id_for_label }}" class="form-label">Email Addresses</label>
+                                {{ form.emails }}
+                                {% if form.emails.errors %}
+                                    <div class="text-danger small">{{ form.emails.errors }}</div>
+                                {% endif %}
+                                {% if form.emails.help_text %}
+                                    <div class="form-text">{{ form.emails.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'accounts:onboarding' %}?skip=true" class="btn btn-outline-secondary">
+                                Skip for now
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                Continue <i class="bi bi-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Toggle team invite section
+    const inviteTeamCheckbox = document.getElementById('{{ form.invite_team.id_for_label }}');
+    const teamInviteSection = document.getElementById('teamInviteSection');
+    
+    if (inviteTeamCheckbox && teamInviteSection) {
+        inviteTeamCheckbox.addEventListener('change', function() {
+            teamInviteSection.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+</script>
+{% endblock %}
+
+
+
+
+
+
+

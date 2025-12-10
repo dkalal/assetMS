@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, api_views
 
 app_name = 'settings'
 
@@ -58,4 +58,7 @@ urlpatterns = [
     # Multi-Tenancy Policy API endpoints
     path('api/tenancy-policy/', views.api_get_tenancy_policy, name='api_get_tenancy_policy'),
     path('api/tenancy-policy/update/', views.api_update_tenancy_policy, name='api_update_tenancy_policy'),
+    
+    # WORLD-CLASS: Branches API endpoint
+    path('api/branches/', api_views.api_branches, name='api_branches'),
 ]

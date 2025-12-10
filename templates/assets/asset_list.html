@@ -1,106 +1,103 @@
 {% extends 'base_dashboard.html' %}
 {% load asset_extras %}
 {% load static %}
-{% block title %}Asset List{% endblock %}
-{% block content %}
-{% include 'components/breadcrumbs.html' with root_label='Dashboard' root_url='/dashboard/' current_label='Assets' %}
 
-<!-- Statistics Dashboard -->
+{% block title %}Asset Management · AssetPro{% endblock %}
+
+{% block extra_head %}
+<!-- World-Class Asset List Styling -->
+<link rel="stylesheet" href="{% static 'css/asset-list-worldclass.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero Section -->
+<div class="asset-page-header">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1>
+                <i class="bi bi-box-seam me-3"></i>Asset Management
+            </h1>
+            <p>
+                Manage your organization's assets, track assignments, and monitor asset lifecycle
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <a href="{% url 'asset_register' %}" class="btn btn-light btn-lg me-2">
+                <i class="bi bi-plus-circle me-2"></i>Register Asset
+            </a>
+            <a href="{% url 'asset_scan' %}" class="btn btn-outline-light btn-lg">
+                <i class="bi bi-upc-scan me-2"></i>Scan
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Metrics Row -->
 {% if statistics %}
-<div class="row g-3 mb-4">
-  <div class="col-md-2">
-    <a href="?" class="text-decoration-none">
-      <div class="glass p-3 rounded-3 h-100" style="transition: all 0.3s ease; cursor: pointer; border: 1px solid rgba(0,0,0,0.05);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';" onmouseout="this.style.transform=''; this.style.boxShadow='';">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="text-muted small">Total Assets</span>
-          <i class="bi bi-boxes text-primary fs-5"></i>
-        </div>
-        <div class="h3 mb-1 fw-bold">{{ statistics.total|default:0 }}</div>
-        <div class="small text-primary">View all →</div>
+<div class="asset-metrics-grid">
+  <a href="?" class="asset-metric-card">
+    <div class="asset-metric-icon primary">
+        <i class="bi bi-boxes"></i>
       </div>
-    </a>
-  </div>
-  <div class="col-md-2">
-    <a href="?status=active" class="text-decoration-none">
-      <div class="glass p-3 rounded-3 h-100" style="transition: all 0.3s ease; cursor: pointer; border: 1px solid rgba(0,0,0,0.05);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';" onmouseout="this.style.transform=''; this.style.boxShadow='';">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="text-muted small">Active</span>
-          <i class="bi bi-check-circle text-success fs-5"></i>
-        </div>
-        <div class="h3 mb-1 fw-bold text-success">{{ statistics.active|default:0 }}</div>
-        <div class="small text-success">Filter →</div>
+    <div class="asset-metric-value">{{ statistics.total|default:0 }}</div>
+    <div class="asset-metric-label">Total Assets</div>
+  </a>
+  <a href="?status=active" class="asset-metric-card">
+    <div class="asset-metric-icon success">
+        <i class="bi bi-check-circle"></i>
       </div>
-    </a>
-  </div>
-  <div class="col-md-2">
-    <a href="?status=maintenance" class="text-decoration-none">
-      <div class="glass p-3 rounded-3 h-100" style="transition: all 0.3s ease; cursor: pointer; border: 1px solid rgba(0,0,0,0.05);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';" onmouseout="this.style.transform=''; this.style.boxShadow='';">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="text-muted small">Maintenance</span>
-          <i class="bi bi-tools text-warning fs-5"></i>
-        </div>
-        <div class="h3 mb-1 fw-bold text-warning">{{ statistics.in_maintenance|default:0 }}</div>
-        <div class="small text-warning">Filter →</div>
+    <div class="asset-metric-value">{{ statistics.active|default:0 }}</div>
+    <div class="asset-metric-label">Active</div>
+  </a>
+  <a href="?status=maintenance" class="asset-metric-card">
+    <div class="asset-metric-icon warning">
+        <i class="bi bi-tools"></i>
       </div>
-    </a>
-  </div>
-  <div class="col-md-2">
-    <a href="?status=retired" class="text-decoration-none">
-      <div class="glass p-3 rounded-3 h-100" style="transition: all 0.3s ease; cursor: pointer; border: 1px solid rgba(0,0,0,0.05);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';" onmouseout="this.style.transform=''; this.style.boxShadow='';">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="text-muted small">Retired</span>
-          <i class="bi bi-archive text-secondary fs-5"></i>
-        </div>
-        <div class="h3 mb-1 fw-bold text-secondary">{{ statistics.retired|default:0 }}</div>
-        <div class="small text-secondary">Filter →</div>
+    <div class="asset-metric-value">{{ statistics.in_maintenance|default:0 }}</div>
+    <div class="asset-metric-label">Maintenance</div>
+  </a>
+  <a href="?status=retired" class="asset-metric-card">
+    <div class="asset-metric-icon secondary">
+        <i class="bi bi-archive"></i>
       </div>
-    </a>
-  </div>
-  <div class="col-md-2">
-    <a href="?assigned=yes" class="text-decoration-none">
-      <div class="glass p-3 rounded-3 h-100" style="transition: all 0.3s ease; cursor: pointer; border: 1px solid rgba(0,0,0,0.05);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';" onmouseout="this.style.transform=''; this.style.boxShadow='';">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="text-muted small">Assigned</span>
-          <i class="bi bi-person-check text-info fs-5"></i>
-        </div>
-        <div class="h3 mb-1 fw-bold text-info">{{ statistics.assigned|default:0 }}</div>
-        <div class="small text-info">Filter →</div>
+    <div class="asset-metric-value">{{ statistics.retired|default:0 }}</div>
+    <div class="asset-metric-label">Retired</div>
+  </a>
+  <a href="?assigned=yes" class="asset-metric-card">
+    <div class="asset-metric-icon info">
+        <i class="bi bi-person-check"></i>
       </div>
-    </a>
-  </div>
-  <div class="col-md-2">
-    <a href="?assigned=no" class="text-decoration-none">
-      <div class="glass p-3 rounded-3 h-100" style="transition: all 0.3s ease; cursor: pointer; border: 1px solid rgba(0,0,0,0.05);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';" onmouseout="this.style.transform=''; this.style.boxShadow='';">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="text-muted small">Unassigned</span>
-          <i class="bi bi-person-x text-danger fs-5"></i>
-        </div>
-        <div class="h3 mb-1 fw-bold text-danger">{{ statistics.unassigned|default:0 }}</div>
-        <div class="small text-danger">Filter →</div>
+    <div class="asset-metric-value">{{ statistics.assigned|default:0 }}</div>
+    <div class="asset-metric-label">Assigned</div>
+  </a>
+  <a href="?assigned=no" class="asset-metric-card">
+    <div class="asset-metric-icon danger">
+        <i class="bi bi-person-x"></i>
       </div>
-    </a>
-  </div>
+    <div class="asset-metric-value">{{ statistics.unassigned|default:0 }}</div>
+    <div class="asset-metric-label">Unassigned</div>
+  </a>
 </div>
 {% endif %}
-
-<ul class="nav nav-tabs section-tabs" role="tablist" aria-label="Assets filters">
-  <li class="nav-item" role="presentation">
-    <a class="nav-link {% if not request.GET.status and not request.GET.assigned %}active{% endif %}" href="{% url 'asset_list' %}">All</a>
-  </li>
-  <li class="nav-item" role="presentation">
-    <a class="nav-link {% if request.GET.status == 'active' %}active{% endif %}" href="{% url 'asset_list' %}?status=active">Active</a>
-  </li>
-  <li class="nav-item" role="presentation">
-    <a class="nav-link {% if request.GET.status == 'maintenance' %}active{% endif %}" href="{% url 'asset_list' %}?status=maintenance">Maintenance</a>
-  </li>
-  <li class="nav-item" role="presentation">
-    <a class="nav-link {% if request.GET.assigned == 'no' %}active{% endif %}" href="{% url 'asset_list' %}?assigned=no">Unassigned</a>
-  </li>
-</ul>
-<h2 class="mb-4">All Assets</h2>
-<!-- World-Class Filter Bar -->
-<form method="get" class="row g-3 mb-4 align-items-end">
-    <div class="col-md-3">
+<!-- World-Class Search & Filter Bar -->
+<div class="asset-search-bar">
+<form method="get" id="assetFilterForm">
+<div class="row g-3 align-items-end">
+    <!-- Primary Search -->
+    <div class="col-md-5">
+        <label class="form-label fw-semibold">
+            <i class="bi bi-search me-1 text-secondary"></i>Search Assets
+        </label>
+        <input type="text" 
+               name="search" 
+               class="form-control form-control-lg" 
+               placeholder="Search by name, model, serial number, or description..." 
+               value="{{ request.GET.search|default:'' }}">
+    </div>
+    
+    <!-- Primary Filters -->
+    <div class="col-md-2">
         <label class="form-label fw-semibold">
             <i class="bi bi-folder2 me-1 text-primary"></i>Category
         </label>
@@ -108,7 +105,7 @@
             <option value="">All Categories</option>
             {% for cat in categories %}
             <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:'s' %}selected{% endif %}>
-                {{ cat.name }} ({{ cat.asset_count }} asset{{ cat.asset_count|pluralize }})
+                {{ cat.name }}
             </option>
             {% endfor %}
         </select>
@@ -142,106 +139,257 @@
     </div>
     {% endif %}
     
-    <div class="col-md-3">
-        <label class="form-label fw-semibold">
-            <i class="bi bi-search me-1 text-secondary"></i>Search
-        </label>
-        <input type="text" 
-               name="search" 
-               class="form-control" 
-               placeholder="Search by name, model, or description..." 
-               value="{{ request.GET.search|default:'' }}">
+    <!-- Action Buttons -->
+    <div class="col-md-1">
+        <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-funnel"></i>
+        </button>
+    </div>
+</div>
+
+<!-- Advanced Filters Toggle -->
+{% if dynamic_fields %}
+<div class="mt-3">
+    <div class="advanced-filters-toggle d-flex align-items-center gap-2" 
+         onclick="toggleAdvancedFilters()" 
+         role="button" 
+         aria-expanded="false"
+         aria-controls="advancedFiltersContent"
+         tabindex="0">
+        <i class="bi bi-sliders2 text-primary"></i>
+        <span class="fw-semibold text-primary">Advanced Filters</span>
+        <i class="bi bi-chevron-down text-primary" id="advancedFiltersIcon"></i>
+        <span class="badge bg-primary-subtle text-primary ms-2 d-none" id="advancedFiltersCount">0 active</span>
     </div>
     
-    <div class="col-md-2 d-flex flex-column gap-2">
-        <button type="submit" class="btn btn-primary w-100">
-            <i class="bi bi-funnel"></i> Apply Filters
-        </button>
-        {% if request.GET.category or request.GET.status or request.GET.branch or request.GET.search %}
-        <a href="?" class="btn btn-outline-secondary w-100">
-            <i class="bi bi-x-circle"></i> Clear All
-        </a>
-        {% endif %}
-    </div>
-    {% if dynamic_fields %}
-        <!-- Dynamic Category Fields -->
-        <div class="w-100"></div>
-        <div class="col-12">
-            <div class="alert alert-light border d-flex align-items-center py-2 mb-0">
-                <i class="bi bi-sliders2 me-2 text-primary"></i>
-                <strong class="small">Category-Specific Filters</strong>
+    <div class="advanced-filters-content" id="advancedFiltersContent">
+        <div class="row g-3 mt-2">
+            {% for field in dynamic_fields %}
+            {% with dyn_key='dyn_'|add:field.key %}
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">{{ field.label }}</label>
+                {% if field.type == 'text' %}
+                    <input type="text" 
+                           name="dyn_{{ field.key }}" 
+                           class="form-control form-control-sm advanced-filter-input" 
+                           placeholder="Enter {{ field.label|lower }}..." 
+                           value="{{ request.GET|get_item:dyn_key|default:'' }}">
+                {% elif field.type == 'number' %}
+                    <input type="number" 
+                           name="dyn_{{ field.key }}" 
+                           class="form-control form-control-sm advanced-filter-input" 
+                           placeholder="Enter {{ field.label|lower }}..." 
+                           value="{{ request.GET|get_item:dyn_key|default:'' }}">
+                {% elif field.type == 'date' %}
+                    <input type="date" 
+                           name="dyn_{{ field.key }}" 
+                           class="form-control form-control-sm advanced-filter-input" 
+                           value="{{ request.GET|get_item:dyn_key|default:'' }}">
+                {% endif %}
             </div>
+            {% endwith %}
+            {% endfor %}
         </div>
-        {% for field in dynamic_fields %}
-        {% with dyn_key='dyn_'|add:field.key %}
-        <div class="col-md-3">
-            <label class="form-label small fw-semibold">{{ field.label }}</label>
-            {% if field.type == 'text' %}
-                <input type="text" 
-                       name="dyn_{{ field.key }}" 
-                       class="form-control form-control-sm" 
-                       placeholder="Enter {{ field.label|lower }}..." 
-                       value="{{ request.GET|get_item:dyn_key|default:'' }}">
-            {% elif field.type == 'number' %}
-                <input type="number" 
-                       name="dyn_{{ field.key }}" 
-                       class="form-control form-control-sm" 
-                       placeholder="Enter {{ field.label|lower }}..." 
-                       value="{{ request.GET|get_item:dyn_key|default:'' }}">
-            {% elif field.type == 'date' %}
-                <input type="date" 
-                       name="dyn_{{ field.key }}" 
-                       class="form-control form-control-sm" 
-                       value="{{ request.GET|get_item:dyn_key|default:'' }}">
+    </div>
+</div>
+{% endif %}
+
+<!-- Active Filter Chips -->
+{% if request.GET.category or request.GET.status or request.GET.branch or request.GET.search or dynamic_fields %}
+<div class="mt-3 d-flex flex-wrap gap-2 align-items-center">
+    <span class="text-muted small fw-semibold">Active Filters:</span>
+    
+    {% if request.GET.category %}
+        {% for cat in categories %}
+            {% if request.GET.category == cat.id|stringformat:'s' %}
+            <span class="filter-chip">
+                <i class="bi bi-folder2"></i>
+                <span>{{ cat.name }}</span>
+                <i class="bi bi-x remove-filter" onclick="removeFilter('category')"></i>
+            </span>
             {% endif %}
-        </div>
-        {% endwith %}
         {% endfor %}
     {% endif %}
-</form>
-  <!-- Applied Filters Summary (presentational) -->
-  <div class="mb-2" aria-live="polite">
-    {% if request.GET.category or request.GET.status or request.GET.location or request.GET.search or dynamic_fields %}
-      <div class="d-flex flex-wrap gap-2 align-items-center">
-        <span class="text-muted small">Filters:</span>
-        {% if request.GET.category %}
-          {% for cat in categories %}
-            {% if request.GET.category == cat.id|stringformat:'s' %}
-              <span class="badge rounded-pill bg-primary-subtle text-primary">
-                <i class="bi bi-folder2-open me-1"></i>{{ cat.name }}
-              </span>
-            {% endif %}
-          {% endfor %}
-        {% endif %}
-        {% if request.GET.status %}
-          <span class="badge rounded-pill bg-info-subtle text-info">
-            <i class="bi bi-sliders me-1"></i>{{ request.GET.status|title }}
-          </span>
-        {% endif %}
-        {% if request.GET.location %}
-          <span class="badge rounded-pill bg-warning-subtle text-warning">
-            <i class="bi bi-geo-alt me-1"></i>{{ request.GET.location }}
-          </span>
-        {% endif %}
-        {% if request.GET.search %}
-          <span class="badge rounded-pill bg-success-subtle text-success">
-            <i class="bi bi-search me-1"></i>{{ request.GET.search }}
-          </span>
-        {% endif %}
-        {% if dynamic_fields %}
-          {% for field in dynamic_fields %}
-            {% with key='dyn_'|add:field.key %}
-              {% if request.GET|get_item:key %}
-                <span class="badge rounded-pill bg-secondary-subtle text-secondary">
-                  <i class="bi bi-filter me-1"></i>{{ field.label }}: {{ request.GET|get_item:key }}
-                </span>
-              {% endif %}
-            {% endwith %}
-          {% endfor %}
-        {% endif %}
-      </div>
+    
+    {% if request.GET.status %}
+    <span class="filter-chip">
+        <i class="bi bi-circle-fill"></i>
+        <span>{{ request.GET.status|title }}</span>
+        <i class="bi bi-x remove-filter" onclick="removeFilter('status')"></i>
+    </span>
     {% endif %}
-  </div>
+    
+    {% if request.GET.branch %}
+        {% for branch in branches %}
+            {% if request.GET.branch == branch.id|stringformat:'s' %}
+            <span class="filter-chip">
+                <i class="bi bi-geo-alt"></i>
+                <span>{{ branch.name }}</span>
+                <i class="bi bi-x remove-filter" onclick="removeFilter('branch')"></i>
+            </span>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+    
+    {% if request.GET.search %}
+    <span class="filter-chip">
+        <i class="bi bi-search"></i>
+        <span>"{{ request.GET.search }}"</span>
+        <i class="bi bi-x remove-filter" onclick="removeFilter('search')"></i>
+    </span>
+    {% endif %}
+    
+    {% if dynamic_fields %}
+        {% for field in dynamic_fields %}
+            {% with key='dyn_'|add:field.key %}
+                {% if request.GET|get_item:key %}
+                <span class="filter-chip">
+                    <i class="bi bi-filter"></i>
+                    <span>{{ field.label }}: {{ request.GET|get_item:key }}</span>
+                    <i class="bi bi-x remove-filter" onclick="removeFilter('{{ key }}')"></i>
+                </span>
+                {% endif %}
+            {% endwith %}
+        {% endfor %}
+    {% endif %}
+    
+    <a href="?" class="btn btn-sm btn-outline-danger rounded-pill">
+        <i class="bi bi-x-circle me-1"></i>Clear All
+    </a>
+</div>
+{% endif %}
+
+</form>
+</div>
+
+<script>
+function toggleAdvancedFilters(event) {
+    // Prevent event bubbling
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
+    const content = document.getElementById('advancedFiltersContent');
+    const icon = document.getElementById('advancedFiltersIcon');
+    const toggle = event ? event.currentTarget : document.querySelector('.advanced-filters-toggle');
+    
+    console.log('🔍 Toggle Advanced Filters called');
+    console.log('  - Content element:', content);
+    console.log('  - Icon element:', icon);
+    console.log('  - Current show state:', content ? content.classList.contains('show') : 'N/A');
+    
+    if (!content) {
+        console.error('❌ advancedFiltersContent element not found! Check template IDs.');
+        return;
+    }
+    
+    // Toggle the show class
+    const isCurrentlyShown = content.classList.contains('show');
+    
+    if (isCurrentlyShown) {
+        console.log('  ➡️ Hiding filters');
+        content.classList.remove('show');
+        if (icon) {
+            icon.classList.remove('bi-chevron-up');
+            icon.classList.add('bi-chevron-down');
+        }
+        if (toggle) toggle.setAttribute('aria-expanded', 'false');
+    } else {
+        console.log('  ➡️ Showing filters');
+        content.classList.add('show');
+        if (icon) {
+            icon.classList.remove('bi-chevron-down');
+            icon.classList.add('bi-chevron-up');
+        }
+        if (toggle) toggle.setAttribute('aria-expanded', 'true');
+    }
+    
+    // CRITICAL: Force style recalculation for animation
+    content.offsetHeight; // Trigger reflow
+    
+    // Debug: Log computed styles after toggle
+    setTimeout(() => {
+        const computedStyle = window.getComputedStyle(content);
+        console.log('  - After toggle:');
+        console.log('    display:', computedStyle.display);
+        console.log('    maxHeight:', computedStyle.maxHeight);
+        console.log('    opacity:', computedStyle.opacity);
+        console.log('    visibility:', computedStyle.visibility);
+        console.log('    padding:', computedStyle.padding);
+        console.log('    classList:', content.classList.toString());
+    }, 50);
+}
+
+// Also add keyboard support (Enter key on toggle)
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleEl = document.querySelector('.advanced-filters-toggle');
+    if (toggleEl) {
+        toggleEl.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleAdvancedFilters(e);
+            }
+        });
+        
+        // CRITICAL: Initialize filters in hidden state
+        const content = document.getElementById('advancedFiltersContent');
+        if (content) {
+            // Ensure it starts hidden
+            content.classList.remove('show');
+            console.log('🔧 Advanced filters initialized in hidden state');
+        }
+    }
+    
+    // CRITICAL: Add click event listener with proper event handling
+    const toggleButton = document.querySelector('.advanced-filters-toggle');
+    if (toggleButton) {
+        // Remove any existing listeners to prevent duplicates
+        toggleButton.removeEventListener('click', toggleAdvancedFilters);
+        // Add fresh listener
+        toggleButton.addEventListener('click', function(e) {
+            console.log('🖱️ Advanced filters toggle clicked via event listener');
+            toggleAdvancedFilters(e);
+        });
+        console.log('🔧 Advanced filters click event listener attached');
+    }
+    console.log('✅ Advanced filters keyboard support initialized');
+});
+
+function removeFilter(filterName) {
+    const form = document.getElementById('assetFilterForm');
+    const input = form.querySelector(`[name="${filterName}"]`);
+    if (input) {
+        input.value = '';
+        form.submit();
+    }
+}
+
+// Count active advanced filters on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const advancedInputs = document.querySelectorAll('.advanced-filter-input');
+    let activeCount = 0;
+    
+    advancedInputs.forEach(input => {
+        if (input.value && input.value.trim() !== '') {
+            activeCount++;
+        }
+    });
+    
+    if (activeCount > 0) {
+        const badge = document.getElementById('advancedFiltersCount');
+        badge.textContent = `${activeCount} active`;
+        badge.style.display = 'inline-block';
+        
+        // Auto-expand if filters are active
+        document.getElementById('advancedFiltersContent').classList.add('show');
+        document.getElementById('advancedFiltersIcon').classList.remove('bi-chevron-down');
+        document.getElementById('advancedFiltersIcon').classList.add('bi-chevron-up');
+    }
+});
+</script>
+
+<!-- Action Buttons Row -->
   <div class="d-flex justify-content-between align-items-center mb-2">
     <div class="d-flex align-items-center gap-2">
       <a href="{% url 'asset_register' %}" class="btn btn-primary">Register New Asset</a>
@@ -252,7 +400,14 @@
     <div class="d-flex align-items-center gap-2">
       <span class="badge bg-secondary-subtle text-secondary" id="selected-count-badge" aria-live="polite" title="Selected assets count">0 selected</span>
       <a href="{% url 'asset_bulk_import' %}" class="btn btn-outline-primary">Bulk Import</a>
-      <button id="openExportModal" class="btn btn-outline-success" type="button">Export</button>
+      <button data-export-preview 
+              data-report-type="assets" 
+              data-format="xlsx" 
+              class="btn btn-outline-success" 
+              type="button"
+              title="Export assets with preview">
+        <i class="bi bi-download me-1"></i>Export
+      </button>
       {% if perms.assets.delete_asset %}
       <button id="deleteSelectedAssets" class="btn btn-outline-danger" type="button" disabled>
         <i class="bi bi-trash"></i> Delete Selected
@@ -260,20 +415,20 @@
       {% endif %}
     </div>
   </div>
-  <div class="enterprise-table-container">
-  <div class="enterprise-table-wrapper position-relative" style="max-height: 520px; overflow:auto;">
+  <!-- Asset List Scrollable Container -->
+  <div class="asset-list-scrollable">
+  <div class="position-relative">
     <!-- Loading overlay (UI-only, hidden by default) -->
-    <div class="d-none" id="asset-table-loading-overlay" aria-hidden="true"
-         style="position:absolute; inset:0; backdrop-filter: blur(2px); background: rgba(255,255,255,.5); display:flex; align-items:center; justify-content:center; z-index: 2;">
+    <div class="d-none" id="asset-table-loading-overlay" aria-hidden="true">
       <div class="text-center">
         <div class="spinner-border text-primary" role="status" aria-label="Loading"></div>
         <div class="small text-muted mt-2">Loading assets…</div>
       </div>
     </div>
-    <table class="enterprise-table">
-      <thead style="position: sticky; top: 0; z-index: 1; background: var(--bs-body-bg); box-shadow: 0 2px 0 rgba(0,0,0,.03);">
+    <table class="enterprise-table asset-table">
+      <thead>
         <tr>
-          <th style="width: 36px;"><input type="checkbox" id="select-all-assets" aria-label="Select all assets"></th>
+          <th><input type="checkbox" id="select-all-assets" aria-label="Select all assets"></th>
           <th>Category</th>
           <th>Status</th>
           <th>Assigned To</th>
@@ -281,7 +436,7 @@
           {% for field in dynamic_fields %}
             <th>{{ field.label }}</th>
           {% endfor %}
-          <th style="width: 120px;">Actions</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -399,7 +554,7 @@
     
     <div class="d-flex align-items-center gap-2">
       <label for="page-size-select" class="text-muted small mb-0">Per page:</label>
-      <select id="page-size-select" class="form-select form-select-sm" style="width: auto;" onchange="changePageSize(this.value)">
+      <select id="page-size-select" class="form-select form-select-sm w-auto" onchange="changePageSize(this.value)">
         <option value="20" {% if request.GET.page_size == '20' or not request.GET.page_size %}selected{% endif %}>20</option>
         <option value="50" {% if request.GET.page_size == '50' %}selected{% endif %}>50</option>
         <option value="100" {% if request.GET.page_size == '100' %}selected{% endif %}>100</option>
@@ -411,12 +566,13 @@
 {% endif %}
 
 <!-- Mobile Scan FAB -->
-<a href="{% url 'asset_scan' %}" class="btn btn-primary rounded-circle position-fixed d-sm-none"
-   style="width:56px;height:56px;right:1rem;bottom:1rem;box-shadow:0 10px 20px rgba(0,0,0,.15);"
+<a href="{% url 'asset_scan' %}" class="btn btn-primary rounded-circle position-fixed d-sm-none mobile-scan-fab"
    aria-label="Open camera to scan asset">
-  <i class="bi bi-upc-scan" style="font-size:1.5rem;line-height:1;"></i>
+  <i class="bi bi-upc-scan"></i>
 </a>
-<!-- Custom Export Modal (Bootstrap-independent) -->
+<!-- ⚠️ DEPRECATED: Old Custom Export Modal (Replaced by Unified Export Preview System) -->
+<!-- Kept for reference only. The new unified-export-preview.js handles all export functionality -->
+<!--
 <div id="exportModalCustom" class="custom-modal-overlay" tabindex="-1">
   <div class="glass-modal" role="dialog" aria-modal="true" aria-labelledby="exportModalCustomLabel">
     <div class="custom-modal-header d-flex align-items-center justify-content-between">
@@ -444,7 +600,6 @@
           <div class="col-md-8">
             <label class="form-label">Columns to Export</label>
             <div class="row" id="export-columns-list">
-              <!-- Columns will be dynamically populated by JS in next step -->
               <div class="col-12"><em>Column selection coming soon...</em></div>
             </div>
           </div>
@@ -456,6 +611,7 @@
     </div>
   </div>
 </div>
+-->
 
 <!-- Include Delete Modal -->
 {% include 'components/delete_modal.html' %}
@@ -463,8 +619,11 @@
 {% endblock %}
 
 {% block extra_scripts %}
-{% load static %}
+<!-- World-Class Asset List JavaScript -->
+<script src="{% static 'js/asset-list-enhanced.js' %}"></script>
 <script src="{% static 'js/asset_list.js' %}"></script>
+<!-- WORLD-CLASS FIX: unified-export-preview.js is already loaded in base_dashboard.html -->
+<!-- Removed duplicate script include to prevent "Identifier already declared" error -->
 <script>
 (function() {
     // Asset deletion handling
@@ -581,7 +740,7 @@
             event.preventDefault();
             
             try {
-                const response = await fetch('{% url "asset_bulk_delete" %}', {
+                const response = await fetch('{% url "assets:asset_bulk_delete" %}', {
                     method: 'POST',
                     headers: {
                         'X-CSRFToken': '{{ csrf_token }}',

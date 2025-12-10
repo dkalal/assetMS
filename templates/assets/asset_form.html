@@ -1,11 +1,167 @@
 {% extends 'base_dashboard.html' %}
 {% load asset_extras %}
-{% block title %}{% if object %}Edit Asset{% else %}Register Asset{% endif %}{% endblock %}
+{% load static %}
+
+{% block title %}{% if object %}Edit Asset{% else %}Register Asset{% endif %} · AssetPro{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<!-- Intelligent Duplicate Detection - World-Class UI -->
+<link rel="stylesheet" href="{% static 'css/duplicate-detection.css' %}">
+<style>
+:root {
+    --accent-primary: #176B87;
+    --accent-secondary: #64CCC5;
+    --accent-success: #10b981;
+    --accent-warning: #f59e0b;
+    --accent-danger: #ef4444;
+}
+
+/* Hero Section */
+.register-hero {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    border-radius: 20px;
+    padding: 2.5rem;
+    color: white;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 40px rgba(23, 107, 135, 0.3);
+}
+
+/* Form Container */
+.form-container {
+    background: white;
+    border-radius: 16px;
+    padding: 2.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+/* Section Headers */
+.section-header {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    border-left: 4px solid var(--accent-primary);
+    padding: 1rem 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    margin-top: 2rem;
+}
+
+.section-header:first-of-type {
+    margin-top: 0;
+}
+
+.section-header h5 {
+    margin: 0;
+    font-weight: 600;
+    color: #374151;
+}
+
+/* Form Controls */
+.form-control, .form-select {
+    border-radius: 10px;
+    border: 2px solid #e5e7eb;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(23, 107, 135, 0.1);
+}
+
+.form-label {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+/* Dynamic Fields Card */
+.dynamic-fields-card {
+    background: #f9fafb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 2px dashed #e5e7eb;
+    margin-top: 1rem;
+}
+
+/* Action Buttons */
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    border: none;
+    border-radius: 10px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(23, 107, 135, 0.3);
+}
+
+.btn-outline-secondary {
+    border-radius: 10px;
+    border: 2px solid #e5e7eb;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-secondary:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+/* Image Preview */
+#image-preview {
+    max-width: 300px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    margin-top: 1rem;
+}
+
+/* Alert Enhancements */
+.alert {
+    border-radius: 12px;
+    border: none;
+}
+
+/* Input Group Enhancements */
+.input-group .btn {
+    border-radius: 0 10px 10px 0;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 {% include 'components/breadcrumbs.html' with root_label='Dashboard' root_url='/dashboard/' parent_label='Assets' parent_url='/assets/' current_label=object|yesno:'Edit Asset,Register Asset' %}
-<!-- User role for JS (CSP-compliant, non-intrusive, extensible) -->
+
+<!-- User role for JS (CSP-compliant) -->
 <div id="user-role" data-role="{{ user_role|default:'' }}" style="display:none;"></div>
-<h2 class="mb-4">{% if object %}Edit Asset{% else %}Register New Asset{% endif %}</h2>
+
+<!-- Hero Section -->
+<div class="register-hero">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">
+                <i class="bi bi-{% if object %}pencil-square{% else %}plus-circle{% endif %} me-3"></i>
+                {% if object %}Edit Asset{% else %}Register New Asset{% endif %}
+            </h1>
+            <p style="font-size: 1.1rem; opacity: 0.9; margin-bottom: 0;">
+                {% if object %}
+                Update asset information and track changes in audit trail
+                {% else %}
+                Add a new asset to your organization's inventory
+                {% endif %}
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <a href="{% url 'asset_list' %}" class="btn btn-outline-light btn-lg" style="border-radius: 12px; padding: 0.75rem 1.5rem;">
+                <i class="bi bi-arrow-left me-2"></i>Back to Assets
+            </a>
+        </div>
+    </div>
+</div>
 
 {% if not object and workflow_message %}
 <!-- Workflow Mode Banner (Unified Asset Creation) -->
@@ -76,45 +232,63 @@
         <li>{{ error }}</li>
       {% endfor %}
     </ul>
-    <pre style="font-size:0.9em; color:#333; background:#f8f9fa; border-radius:6px; padding:8px; margin-top:8px;">{{ form.errors.as_json }}</pre>
   </div>
 {% endif %}
-<form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+
+<!-- Form Container -->
+<div class="form-container">
+<form method="post" enctype="multipart/form-data" class="needs-validation" novalidate id="assetForm">
     {% csrf_token %}
     {# CRITICAL: Company hidden field must be rendered for multi-tenancy validation #}
     {{ form.company }}
     {{ form.non_field_errors }}
-    <div class="row g-3">
+    
+    <!-- Basic Information Section -->
+    <div class="section-header">
+        <h5><i class="bi bi-info-circle me-2"></i>Basic Information</h5>
+    </div>
+    
+    <div class="row g-3 mb-4">
         <div class="col-md-6">
-            <label for="id_category" class="form-label">Category <span class="text-danger">*</span></label>
+            <label for="id_category" class="form-label">
+                <i class="bi bi-folder2 me-1 text-primary"></i>Category
+                <span class="text-danger">*</span>
+            </label>
             {{ form.category }}
             {{ form.category.errors }}
         </div>
         <div class="col-md-6">
             <label for="id_branch" class="form-label">
-                Branch <span class="text-danger">*</span>
-                <i class="bi bi-info-circle text-muted" 
-                   data-bs-toggle="tooltip" 
-                   title="Select the branch that will own this asset"></i>
+                <i class="bi bi-geo-alt me-1 text-info"></i>Branch
+                <span class="text-danger">*</span>
             </label>
             {{ form.branch }}
-            <div class="form-text">
+            <small class="form-text text-muted">
                 {% if user.role == 'admin' %}
-                    You can assign assets to any active branch.
+                    <i class="bi bi-shield-check"></i> You can assign assets to any active branch.
                 {% elif user.role == 'manager' %}
-                    You can only assign assets to branches you manage.
+                    <i class="bi bi-people"></i> You can only assign assets to branches you manage.
                 {% else %}
-                    You can only assign assets to your assigned branches.
+                    <i class="bi bi-person"></i> You can only assign assets to your assigned branches.
                 {% endif %}
-            </div>
+            </small>
             {{ form.branch.errors }}
         </div>
-        <div class="col-md-6">
+    </div>
+    
+    <!-- Status Section (Always shown, different for Create vs Edit) -->
+    <div class="section-header">
+        <h5><i class="bi bi-circle-fill me-2"></i>Asset Status</h5>
+    </div>
+    
+    <div class="row g-3 mb-4">
+        <div class="col-md-12">
+            {% if object %}
+            <!-- EDIT MODE: Show status selector with current status display -->
             <label for="id_status" class="form-label">
                 <i class="bi bi-circle-fill me-1"></i>Asset Status <span class="text-danger">*</span>
             </label>
             
-            {% if object %}
             <!-- Current Status Display -->
             <div class="alert alert-sm {% if object.status == 'active' %}alert-success{% elif object.status == 'in_maintenance' %}alert-warning{% elif object.status == 'retired' %}alert-secondary{% else %}alert-danger{% endif %} d-flex align-items-center mb-2 py-2" role="alert">
                 <i class="bi bi-{% if object.status == 'active' %}check-circle-fill{% elif object.status == 'in_maintenance' %}tools{% elif object.status == 'retired' %}archive-fill{% elif object.status == 'lost' %}exclamation-triangle-fill{% elif object.status == 'deleted' %}trash-fill{% else %}arrow-left-right{% endif %} fs-5 me-2"></i>
@@ -128,9 +302,24 @@
                     </small>
                 </div>
             </div>
-            {% endif %}
             
             {{ form.status }}
+            {% else %}
+            <!-- CREATE MODE: Status is automatically set to Active, show info message -->
+            <div class="alert alert-success d-flex align-items-center mb-2 py-2" role="alert">
+                <i class="bi bi-check-circle-fill fs-5 me-2"></i>
+                <div class="small flex-grow-1">
+                    <strong>Asset Status:</strong> 
+                    <span class="badge bg-success">Active</span>
+                    <small class="text-muted d-block mt-1">
+                        <i class="bi bi-info-circle me-1"></i>New assets are automatically set to Active status
+                    </small>
+                </div>
+            </div>
+            
+            <!-- Hidden status field with default value -->
+            <input type="hidden" name="status" value="active" id="id_status">
+            {% endif %}
             
             <!-- WORLD-CLASS: Legacy status change reason field removed -->
             <!-- Dynamic status-specific fields are now handled by asset-status-fields.js -->
@@ -164,16 +353,51 @@
             
             {{ form.status.errors }}
         </div>
-        <!-- Dynamic fields placeholder -->
-        <div class="col-12" id="dynamic-fields-container">
-            <!-- Dynamic fields will be rendered here by JS -->
+    </div>
+    
+    <div class="section-header">
+        <h5><i class="bi bi-tools me-2"></i>Maintenance Tracking</h5>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="form-check form-switch">
+                {{ form.maintenance_enabled }}
+                <label class="form-check-label" for="id_maintenance_enabled">
+                    Enable Maintenance Tracking
+                </label>
+            </div>
+            <div class="form-text text-muted">
+                Assets with tracking enabled appear in the Maintenance Center for scheduling.
+            </div>
+            {{ form.maintenance_enabled.errors }}
         </div>
-        <div class="col-12">
-            <label for="id_description" class="form-label">Description</label>
-            {{ form.description }}
-            {{ form.description.errors }}
+        <div class="col-md-4">
+            <label for="id_maintenance_interval_days" class="form-label">
+                Maintenance Interval (days)
+            </label>
+            {{ form.maintenance_interval_days }}
+            <div class="form-text text-muted">
+                Example: 90 for quarterly, 180 for semi-annual, 365 for annual.
+            </div>
+            {{ form.maintenance_interval_days.errors }}
         </div>
-        <div class="col-md-6">
+        <div class="col-md-12">
+            <label for="id_maintenance_notes" class="form-label">
+                Maintenance Notes
+            </label>
+            {{ form.maintenance_notes }}
+            {{ form.maintenance_notes.errors }}
+        </div>
+    </div>
+    
+    <!-- Assignment Section -->
+    <div class="section-header">
+        <h5><i class="bi bi-person-check me-2"></i>Assignment (Optional)</h5>
+    </div>
+    
+    <div class="row g-3 mb-4">
+        <div class="col-md-12">
             <label for="id_assigned_to" class="form-label">
                 Assigned To
                 <i class="bi bi-info-circle text-muted ms-1" 
@@ -198,9 +422,25 @@
             {% endif %}
             
             <div class="input-group">
-                {{ form.assigned_to }}
-                {% if user_role == 'admin' %}
-                <button type="button" class="btn btn-outline-success" id="openAddUserModal">
+                <select name="assigned_to" id="id_assigned_to" class="form-select">
+                    <option value="">-- Not Assigned --</option>
+                    {% for user in form.fields.assigned_to.queryset %}
+                    <option value="{{ user.id }}" 
+                            data-branch-ids="{% for ub in user.user_branches.all %}{{ ub.branch_id }}{% if not forloop.last %},{% endif %}{% endfor %}"
+                            {% if form.assigned_to.value == user.id|stringformat:'s' %}selected{% endif %}>
+                        {% if user.first_name or user.last_name %}
+                            {{ user.first_name }} {{ user.last_name }}
+                        {% else %}
+                            {{ user.username }}
+                        {% endif %}
+                        {% if user.user_branches.exists %}
+                        ({% for ub in user.user_branches.all %}{{ ub.branch.name }}{% if not forloop.last %}, {% endif %}{% endfor %})
+                        {% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if user.role == 'admin' %}
+                <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#createUserModal">
                     <i class="bi bi-person-plus"></i> Add User
                 </button>
                 {% endif %}
@@ -218,7 +458,27 @@
             
             {{ form.assigned_to.errors }}
         </div>
-        <div class="col-md-6">
+    </div>
+    
+    <!-- Dynamic Category Fields -->
+    <div id="dynamic-fields-container" class="dynamic-fields-card" style="display: none;">
+        <!-- Dynamic fields will be rendered here by JS -->
+    </div>
+    
+    <!-- Additional Information -->
+    <div class="section-header">
+        <h5><i class="bi bi-file-text me-2"></i>Additional Information</h5>
+    </div>
+    
+    <div class="row g-3 mb-4">
+        <div class="col-md-12">
+            <label for="id_description" class="form-label">
+                <i class="bi bi-card-text me-1 text-secondary"></i>Description
+            </label>
+            {{ form.description }}
+            {{ form.description.errors }}
+        </div>
+        <div class="col-md-12">
             <label for="id_images" class="form-label">
                 <i class="bi bi-image me-1"></i>Asset Image (Optional)
             </label>
@@ -274,456 +534,180 @@
                 </small>
             </div>
         </div>
-        <!-- Depreciation Details -->
-        <div class="col-12">
-            <div class="card mb-3">
-                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
-                    <span>Depreciation</span>
-                    <span class="small text-muted">Optional — leave all blank to skip</span>
-                </div>
-                <div class="card-body row g-3">
-                    <div class="col-md-3">
-                        <label for="id_purchase_value" class="form-label">Purchase Value</label>
-                        {{ form.purchase_value }}
-                        <div class="form-text">Initial cost (e.g., 1200.00)</div>
-                        {{ form.purchase_value.errors }}
-                    </div>
-                    <div class="col-md-3">
-                        <label for="id_purchase_date" class="form-label">Purchase Date</label>
-                        {{ form.purchase_date }}
-                        <div class="form-text">Acquisition date</div>
-                        {{ form.purchase_date.errors }}
-                    </div>
-                    <div class="col-md-3">
-                        <label for="id_depreciation_method" class="form-label">Depreciation Method</label>
-                        {{ form.depreciation_method }}
-                        <div class="form-text">Default is Straight Line</div>
-                        {{ form.depreciation_method.errors }}
-                    </div>
-                    <div class="col-md-3">
-                        <label for="id_useful_life_years" class="form-label">Useful Life (Years)</label>
-                        {{ form.useful_life_years }}
-                        <div class="form-text">Positive integer (e.g., 3)</div>
-                        {{ form.useful_life_years.errors }}
-                    </div>
-                </div>
-                <div class="card-footer small text-muted">
-                    If you enter any depreciation value, you must provide the complete set (value, date, method, useful life). Otherwise, leave all fields blank to disable depreciation for this asset.
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Warranty (Optional) -->
-    <div class="col-12">
-        <div class="card mb-3">
-            <div class="card-header bg-light text-dark">Warranty (Optional)</div>
-            <div class="card-body row g-3">
-                <div class="col-md-4">
-                    <label for="id_dyn_warranty_expiry" class="form-label">Warranty Expiry</label>
-                    {{ form.dyn_warranty_expiry }}
-                    {{ form.dyn_warranty_expiry.errors }}
-                </div>
-                <div class="col-md-8">
-                    <label for="id_dyn_warranty_provider" class="form-label">Warranty Provider</label>
-                    {{ form.dyn_warranty_provider }}
-                    {{ form.dyn_warranty_provider.errors }}
-                </div>
-            </div>
-            <div class="card-footer small text-muted">
-                Warranty fields are optional. Provide them if the asset includes warranty coverage.
-            </div>
-        </div>
     </div>
     
-    {% if not object and requires_approval %}
-    <!-- Approval Workflow Fields (Manager Only) -->
-    <div class="col-12">
-        <div class="card mb-3 border-info">
-            <div class="card-header bg-info text-white">
-                <i class="bi bi-clipboard-check me-2"></i>Approval Request Information
-            </div>
-            <div class="card-body row g-3">
-                <div class="col-12">
-                    <label for="id_title" class="form-label">Request Title <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" id="id_title" name="title" required 
-                           placeholder="e.g., New Laptop for IT Department">
-                    <div class="form-text">Brief title describing this asset creation request</div>
-                </div>
-                <div class="col-12">
-                    <label for="id_justification" class="form-label">Justification <span class="text-danger">*</span></label>
-                    <textarea class="form-control" id="id_justification" name="justification" rows="4" required
-                              placeholder="Explain why this asset is needed and how it will be used..."></textarea>
-                    <div class="form-text">
-                        <i class="bi bi-info-circle me-1"></i>
-                        Provide a detailed explanation for why this asset is needed. This will help the admin make an informed decision.
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <label for="id_priority" class="form-label">Priority</label>
-                    <select class="form-select" id="id_priority" name="priority">
-                        <option value="low">Low</option>
-                        <option value="medium" selected>Medium</option>
-                        <option value="high">High</option>
-                        <option value="urgent">Urgent</option>
-                    </select>
-                    <div class="form-text">Set priority based on urgency</div>
-                </div>
-            </div>
-            <div class="card-footer small text-muted">
-                <i class="bi bi-lightbulb me-1"></i>
-                These fields are required for approval requests. Your request will be reviewed by an admin.
-            </div>
-        </div>
+    <!-- World-Class Duplicate Detection Results -->
+    <div id="duplicate-detection-results" class="mt-4" style="display: none;">
+        <!-- Duplicate detection results will be shown here -->
     </div>
-    {% endif %}
     
-    <div class="mt-4">
-        <button type="submit" class="btn btn-primary">
-            {% if object %}
-                Save Changes
-            {% elif requires_approval %}
-                <i class="bi bi-send me-1"></i>Submit Request for Approval
-            {% else %}
-                <i class="bi bi-plus-circle me-1"></i>Register Asset
-            {% endif %}
-        </button>
-        <a href="{% url 'asset_list' %}" class="btn btn-outline-secondary ms-2">
-            <i class="bi bi-x-circle me-1"></i>Cancel
+    <!-- Action Buttons -->
+    <div class="d-flex justify-content-between align-items-center pt-4 border-top">
+        <a href="{% url 'asset_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-x-circle me-2"></i>Cancel
         </a>
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-{% if object %}save{% else %}plus-circle{% endif %} me-2"></i>
+            {% if object %}Save Changes{% else %}Register Asset{% endif %}
+        </button>
     </div>
 </form>
-{% if object and object.qr_code %}
-<div class="mt-4 text-center">
-    <h5>Asset QR Code</h5>
-    <img src="{{ object.qr_code.url }}" alt="Asset QR Code" class="img-fluid" style="max-width:200px;">
-    <div class="mt-2">
-        <a href="{{ object.qr_code.url }}" download class="btn btn-outline-secondary btn-sm">Download QR</a>
-    </div>
 </div>
+
+<!-- Hidden data for JavaScript -->
+{% if object and object.dynamic_data %}
+{{ object.dynamic_data|json_script:"asset-initial-dyn" }}
 {% endif %}
 
-{% if object %}
-  {# Safely embed initial dynamic data for JS to prefill on edit #}
-  {{ object.dynamic_data|json_script:"asset-initial-dyn" }}
-{% endif %}
+{% endblock %}
 
-<!-- Custom Add User Modal (Admin Only) -->
-{% if user_role == 'admin' %}
-<style>
-.custom-modal-overlay {
-  display: none;
-  position: fixed;
-  top: 0; left: 0; width: 100vw; height: 100vh;
-  background: rgba(0,0,0,0.5);
-  z-index: 2000;
-  justify-content: center;
-  align-items: center;
-}
-.custom-modal-overlay.active {
-  display: flex;
-}
-.custom-modal {
-  background: #fff;
-  border-radius: 12px;
-  max-width: 500px;
-  width: 100%;
-  box-shadow: 0 8px 32px 0 rgba(31,38,135,0.37);
-  padding: 0;
-  overflow: hidden;
-}
-.custom-modal-header {
-  background: #00A6EB;
-  color: #fff;
-  padding: 1rem 1.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.custom-modal-body {
-  padding: 1.5rem;
-}
-.custom-modal-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  color: #fff;
-  cursor: pointer;
-}
-</style>
-<div id="addUserModalCustom" class="custom-modal-overlay" tabindex="-1">
-  <div class="glass-modal" role="dialog" aria-modal="true" aria-labelledby="addUserModalCustomLabel">
-    <div class="custom-modal-header d-flex align-items-center justify-content-between">
-      <h4 class="modal-title fw-bold mb-0" id="addUserModalCustomLabel">
-        <i class="bi bi-person-plus me-2 text-success"></i> Add New User
-      </h4>
-      <button type="button" class="custom-modal-close" id="closeAddUserModal" aria-label="Close">
-        <span aria-hidden="true">&times;</span>
-      </button>
-    </div>
-    <div class="custom-modal-body">
-      <form id="add-user-form">
-        <div class="mb-3">
-          <label for="new-username" class="form-label">Username</label>
-          <input type="text" class="form-control" id="new-username" name="username" required autocomplete="off">
-        </div>
-        <div class="mb-3">
-          <label for="new-email" class="form-label">Email</label>
-          <input type="email" class="form-control" id="new-email" name="email" required autocomplete="off">
-        </div>
-        <div class="mb-3">
-          <label for="new-role" class="form-label">Role</label>
-          <select class="form-select" id="new-role" name="role" required>
-            <option value="user">User</option>
-            <option value="manager">Manager</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-        <div class="mb-3">
-          <label for="new-password1" class="form-label">Password</label>
-          <input type="password" class="form-control" id="new-password1" name="password1" required>
-        </div>
-        <div class="mb-3">
-          <label for="new-password2" class="form-label">Confirm Password</label>
-          <input type="password" class="form-control" id="new-password2" name="password2" required>
-        </div>
-        <div id="add-user-errors" class="alert alert-danger d-none"></div>
-        <div id="add-user-success" class="alert alert-success d-none"></div>
-        <div class="d-flex justify-content-end gap-2 mt-3">
-          <button type="button" class="btn btn-outline-secondary px-4" id="cancelAddUserModal">Cancel</button>
-          <button type="submit" class="btn btn-primary px-4 fw-bold">Add User</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
+{% block modals %}
+<!-- Include World-Class Create User Modal (DRY - Reusable Component) -->
+{% if user.role == 'admin' %}
+{% include 'settings/partials/create_user_modal.html' %}
 {% endif %}
 {% endblock %}
+
 {% block extra_scripts %}
-{% load static %}
-<!-- Enhanced asset form with wizard integration and all field types support -->
-<script src="{% static 'js/asset_form_enhanced.js' %}"></script>
-<!-- Phase 1: World-Class Features (Auto-Save, Duplicate Detection, Smart Suggestions) -->
-<script src="{% static 'js/asset_form_phase1.js' %}"></script>
-<!-- Phase 4: Dynamic Status Change Fields (World-Class UI/UX) -->
+<script src="{% static 'js/asset_form.js' %}"></script>
+{% if object %}
 <script src="{% static 'js/asset-status-fields.js' %}"></script>
+{% endif %}
 
-<!-- World-Class File Upload Preview -->
+<!-- ========================================
+     WORLD-CLASS DUPLICATE DETECTION SYSTEM
+     Real-time Detection with Multi-layer Protection
+     ======================================== -->
+
+<!-- Load World-Class Duplicate Detection Component -->
+<script src="{% static 'js/duplicate-detection.js' %}"></script>
+
+<!-- Initialize Duplicate Detection System -->
 <script>
-(function() {
-    'use strict';
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Initializing World-Class Duplicate Detection System...');
     
-    // Image preview functionality
-    const imageInput = document.getElementById('id_images');
-    const imagePreview = document.getElementById('image-preview');
-    
-    if (imageInput && imagePreview) {
-        imageInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            
-            if (file) {
-                // Validate file size (2MB max)
-                if (file.size > 2 * 1024 * 1024) {
-                    alert('⚠️ Image file is too large!\n\nMaximum size: 2MB\nYour file: ' + (file.size / 1024 / 1024).toFixed(2) + 'MB');
-                    imageInput.value = '';
-                    imagePreview.classList.add('d-none');
-                    return;
-                }
-                
-                // Validate file type
-                if (!file.type.startsWith('image/')) {
-                    alert('⚠️ Invalid file type!\n\nPlease select an image file (JPG, PNG, GIF).');
-                    imageInput.value = '';
-                    imagePreview.classList.add('d-none');
-                    return;
-                }
-                
-                // Show preview
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    imagePreview.src = e.target.result;
-                    imagePreview.classList.remove('d-none');
-                };
-                reader.readAsDataURL(file);
-            } else {
-                imagePreview.classList.add('d-none');
-            }
-        });
+    // Get form element
+    const form = document.getElementById('assetForm');
+    if (!form) {
+        console.error('❌ Asset form not found!');
+        return;
     }
     
-    // Document preview functionality
-    const documentInput = document.getElementById('id_documents');
-    const documentPreview = document.getElementById('document-preview');
-    const documentName = document.getElementById('document-name');
-    
-    if (documentInput && documentPreview && documentName) {
-        documentInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            
-            if (file) {
-                // Validate file size (5MB max)
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('⚠️ Document file is too large!\n\nMaximum size: 5MB\nYour file: ' + (file.size / 1024 / 1024).toFixed(2) + 'MB');
-                    documentInput.value = '';
-                    documentPreview.classList.add('d-none');
-                    return;
-                }
-                
-                // Validate file type
-                const allowedTypes = [
-                    'application/pdf',
-                    'application/msword',
-                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                ];
-                
-                if (!allowedTypes.includes(file.type)) {
-                    alert('⚠️ Invalid file type!\n\nPlease select a PDF or Word document (DOC, DOCX).');
-                    documentInput.value = '';
-                    documentPreview.classList.add('d-none');
-                    return;
-                }
-                
-                // Show file name
-                documentName.textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
-                documentPreview.classList.remove('d-none');
-            } else {
-                documentPreview.classList.add('d-none');
-            }
+    // Initialize duplicate detection
+    try {
+        // Check if our DuplicateDetector class is available
+        if (typeof DuplicateDetector === 'undefined') {
+            console.error('❌ DuplicateDetector not loaded! Check duplicate-detection.js');
+            return;
+        }
+        
+        // Initialize with correct API endpoints and asset context
+        const detector = new DuplicateDetector({
+            formSelector: '#assetForm',
+            apiUrl: '/assets/api/check-duplicates/',
+            {% if object %}
+            excludeAssetId: {{ object.id }},
+            {% endif %}
+            watchFields: ['serial_number', 'asset_tag', 'qr_string'],
+            debounceDelay: 300
         });
+        
+        console.log('✅ World-Class Duplicate Detection System Initialized!');
+        console.log('🔍 Real-time validation active on fields: serial_number, asset_tag');
+        
+        // Make globally accessible for debugging
+        window.duplicateDetector = detector;
+        
+    } catch (error) {
+        console.error('❌ Failed to initialize duplicate detection:', error);
+        // System works without JS - graceful degradation
+        console.log('📝 Form will use server-side validation only');
     }
-})();
+});
 </script>
 
-<!-- World-Class Status Management (Legacy - kept for backward compatibility) -->
+<!-- ========================================
+     PHASE 8: AUTO-SAVE & VALIDATION SYSTEM
+     World-Class Form Enhancement
+     ======================================== -->
 <script>
-(function() {
-    'use strict';
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Phase 8: Initializing Auto-Save & Validation...');
     
-    const statusSelect = document.getElementById('id_status');
-    const reasonContainer = document.getElementById('status-reason-container');
-    const reasonTextarea = document.getElementById('status_change_reason');
-    
-    if (!statusSelect) return;
-    
-    // Store original status for comparison
-    const originalStatus = statusSelect.value;
-    statusSelect.dataset.oldStatus = originalStatus;
-    
-    // Critical statuses that require reason
-    const criticalStatuses = ['lost', 'retired', 'deleted'];
-    
-    // Status change handler
-    statusSelect.addEventListener('change', function(e) {
-        const newStatus = e.target.value;
-        const oldStatus = this.dataset.oldStatus;
-        
-        // Show/hide reason field for critical statuses
-        if (criticalStatuses.includes(newStatus)) {
-            reasonContainer.style.display = 'block';
-            if (reasonTextarea) {
-                reasonTextarea.required = true;
-            }
-            
-            // Show confirmation dialog if changing from another status
-            if (oldStatus && oldStatus !== newStatus) {
-                const statusLabels = {
-                    'lost': 'Lost',
-                    'retired': 'Retired',
-                    'deleted': 'Deleted'
-                };
-                
-                const confirmed = confirm(
-                    `⚠️ WARNING: Critical Status Change\n\n` +
-                    `You are about to mark this asset as "${statusLabels[newStatus]}".\n\n` +
-                    `This action will:\n` +
-                    `• Trigger notifications to administrators\n` +
-                    `• Require a detailed explanation (minimum 10 characters)\n` +
-                    `• Be permanently recorded in the audit log\n` +
-                    `• May trigger compliance workflows\n\n` +
-                    `Are you absolutely sure you want to continue?`
-                );
-                
-                if (!confirmed) {
-                    e.target.value = oldStatus;
-                    reasonContainer.style.display = 'none';
-                    if (reasonTextarea) {
-                        reasonTextarea.required = false;
-                    }
-                    return;
+    // Initialize Auto-Save Draft System
+    try {
+        if (typeof FormAutoSave !== 'undefined') {
+            const autoSave = new FormAutoSave('assetForm', {
+                saveInterval: 30000, // Save every 30 seconds
+                excludeFields: ['csrfmiddlewaretoken', 'images', 'documents'], // Exclude CSRF and file fields
+                showIndicator: true,
+                storageKeyPrefix: 'asset_form_draft',
+                onSave: function(draftData) {
+                    console.log('💾 Draft saved:', draftData.timestamp);
+                },
+                onRestore: function(draftData) {
+                    console.log('🔄 Draft restored:', draftData.timestamp);
                 }
-            }
+            });
+            
+            console.log('✅ Auto-Save System Initialized!');
+            window.formAutoSave = autoSave; // Make globally accessible
         } else {
-            reasonContainer.style.display = 'none';
-            if (reasonTextarea) {
-                reasonTextarea.required = false;
-                reasonTextarea.value = ''; // Clear reason if not critical
-            }
+            console.warn('⚠️ FormAutoSave not loaded');
         }
-    });
+    } catch (error) {
+        console.error('❌ Auto-Save initialization failed:', error);
+    }
     
-    // Form submission validation
-    // CRITICAL FIX: Only validate if status is actually changing to critical status
-    const form = statusSelect.closest('form');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            const currentStatus = statusSelect.value;
-            
-            // Only validate if:
-            // 1. Status is critical AND
-            // 2. Reason textarea exists AND is visible
-            if (criticalStatuses.includes(currentStatus) && reasonTextarea) {
-                const reasonContainer = document.getElementById('status-reason-container');
-                
-                // Only validate if reason container is visible (status is changing)
-                if (reasonContainer && reasonContainer.style.display !== 'none') {
-                    const reason = reasonTextarea.value.trim();
-                    
-                    if (!reason || reason.length < 10) {
-                        e.preventDefault();
-                        alert('⚠️ Validation Error\n\nPlease provide a detailed reason (at least 10 characters) for this critical status change.');
-                        
-                        reasonTextarea.focus();
-                        reasonTextarea.classList.add('is-invalid');
-                        
-                        return false;
+    // Initialize Real-Time Validation Engine
+    try {
+        if (typeof FormValidator !== 'undefined') {
+            const validator = new FormValidator('assetForm', {
+                fields: {
+                    category: {
+                        rules: ['required'],
+                        messages: {
+                            required: 'Category is required'
+                        }
+                    },
+                    branch: {
+                        rules: ['required'],
+                        messages: {
+                            required: 'Branch is required'
+                        }
+                    },
+                    status: {
+                        rules: ['required'],
+                        messages: {
+                            required: 'Status is required'
+                        }
                     }
-                }
-            }
+                },
+                validateOnInput: true,
+                validateOnBlur: true,
+                showSuccessState: true,
+                scrollToError: true,
+                debounceDelay: 500
+            });
             
-            // If validation passes or not needed, log and allow submission
-            console.log('✅ Status validation passed, form submitting...');
-        });
-    }
-    
-    // Character counter for reason field (optional enhancement)
-    if (reasonTextarea) {
-        const maxLength = 500;
-        const counterDiv = document.createElement('div');
-        counterDiv.className = 'form-text text-end mt-1';
-        counterDiv.id = 'reason-counter';
-        reasonTextarea.parentNode.insertBefore(counterDiv, reasonTextarea.nextSibling);
-        
-        function updateCounter() {
-            const length = reasonTextarea.value.length;
-            const remaining = maxLength - length;
-            counterDiv.textContent = `${length} / ${maxLength} characters`;
-            
-            if (remaining < 50) {
-                counterDiv.classList.add('text-warning', 'fw-bold');
-            } else {
-                counterDiv.classList.remove('text-warning', 'fw-bold');
-            }
+            console.log('✅ Validation Engine Initialized!');
+            window.formValidator = validator; // Make globally accessible
+        } else {
+            console.warn('⚠️ FormValidator not loaded');
         }
-        
-        reasonTextarea.addEventListener('input', updateCounter);
-        reasonTextarea.maxLength = maxLength;
-        updateCounter();
+    } catch (error) {
+        console.error('❌ Validation initialization failed:', error);
     }
     
-    // Initialize tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-})();
+    console.log('🎉 Phase 8 Form Enhancements Active!');
+});
 </script>
-{% endblock %} 
+
+<!-- ========================================
+     USER CREATION MODAL
+     Include modal for "Add User" button
+     ======================================== -->
+{% include 'settings/partials/create_user_modal.html' %}
+
+{% endblock %}

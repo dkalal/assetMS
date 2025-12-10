@@ -146,8 +146,13 @@ function loadAssignedAssets(page = 1) {
   const tableBody = document.getElementById('assigned-assets-table-body');
   const emptyDiv = document.getElementById('assigned-assets-empty');
   const countSpan = document.getElementById('assigned-assets-count');
-  tableBody.innerHTML = '';
-  emptyDiv.classList.add('d-none');
+  const badgeSpan = document.getElementById('assigned-assets-badge');
+  const table = tableBody?.closest('table');
+  
+  if (tableBody) tableBody.innerHTML = '';
+  if (emptyDiv) emptyDiv.classList.add('d-none');
+  if (table) table.style.display = '';
+  
   fetch(`/api/user-assets/?page=${page}&page_size=${assignedAssetsPagination.pageSize}`)
     .then(res => {
       if (!res.ok) throw new Error('Network error');
@@ -158,6 +163,7 @@ function loadAssignedAssets(page = 1) {
       assignedAssetsPagination.page = data.page || 1;
       assignedAssetsPagination.numPages = data.num_pages || 1;
       updateAssignedAssetsPaginationControls();
+      
       if (data.assets && data.assets.length) {
         data.assets.forEach((a, idx) => {
           const tr = document.createElement('tr');
@@ -167,19 +173,27 @@ function loadAssignedAssets(page = 1) {
             <td>${a.assigned || ''}</td>
             <td>${a.status || ''}</td>
           `;
-          if (idx % 2 === 1) tr.classList.add('table-active');
           tableBody.appendChild(tr);
         });
-        if (countSpan) countSpan.textContent = data.total ? `${data.total} total` : data.assets.length + ' total';
+        // Update both metric card and badge
+        const total = data.total || data.assets.length;
+        if (countSpan) countSpan.textContent = total;
+        if (badgeSpan) badgeSpan.textContent = total;
       } else {
-        emptyDiv.classList.remove('d-none');
+        if (table) table.style.display = 'none';
+        if (emptyDiv) emptyDiv.classList.remove('d-none');
         if (countSpan) countSpan.textContent = '0';
+        if (badgeSpan) badgeSpan.textContent = '0';
       }
     })
     .catch(e => {
-      emptyDiv.classList.remove('d-none');
-      emptyDiv.textContent = 'Unable to load assigned assets. Please log in again.';
+      if (table) table.style.display = 'none';
+      if (emptyDiv) {
+        emptyDiv.classList.remove('d-none');
+        emptyDiv.innerHTML = '<i class="bi bi-exclamation-triangle fs-1 text-danger mb-3 d-block"></i><p class="mb-0">Unable to load assigned assets. Please log in again.</p>';
+      }
       if (countSpan) countSpan.textContent = '0';
+      if (badgeSpan) badgeSpan.textContent = '0';
     });
 }
 
@@ -187,8 +201,13 @@ function loadUserActivity(page = 1) {
   const tableBody = document.getElementById('user-activity-table-body');
   const emptyDiv = document.getElementById('user-activity-empty');
   const countSpan = document.getElementById('user-activity-count');
-  tableBody.innerHTML = '';
-  emptyDiv.classList.add('d-none');
+  const badgeSpan = document.getElementById('user-activity-badge');
+  const table = tableBody?.closest('table');
+  
+  if (tableBody) tableBody.innerHTML = '';
+  if (emptyDiv) emptyDiv.classList.add('d-none');
+  if (table) table.style.display = '';
+  
   fetch(`/api/user-activity/?page=${page}&page_size=${userActivityPagination.pageSize}`)
     .then(res => {
       if (!res.ok) throw new Error('Network error');
@@ -199,6 +218,7 @@ function loadUserActivity(page = 1) {
       userActivityPagination.page = data.page || 1;
       userActivityPagination.numPages = data.num_pages || 1;
       updateUserActivityPaginationControls();
+      
       if (data.logs && data.logs.length) {
         data.logs.forEach((l, idx) => {
           const tr = document.createElement('tr');
@@ -208,19 +228,27 @@ function loadUserActivity(page = 1) {
             <td>${l.time || ''}</td>
             <td>${l.details || ''}</td>
           `;
-          if (idx % 2 === 1) tr.classList.add('table-active');
           tableBody.appendChild(tr);
         });
-        if (countSpan) countSpan.textContent = data.total ? `${data.total} total` : data.logs.length + ' total';
+        // Update both metric card and badge
+        const total = data.total || data.logs.length;
+        if (countSpan) countSpan.textContent = total;
+        if (badgeSpan) badgeSpan.textContent = total;
       } else {
-        emptyDiv.classList.remove('d-none');
+        if (table) table.style.display = 'none';
+        if (emptyDiv) emptyDiv.classList.remove('d-none');
         if (countSpan) countSpan.textContent = '0';
+        if (badgeSpan) badgeSpan.textContent = '0';
       }
     })
     .catch(e => {
-      emptyDiv.classList.remove('d-none');
-      emptyDiv.textContent = 'Unable to load recent activity. Please log in again.';
+      if (table) table.style.display = 'none';
+      if (emptyDiv) {
+        emptyDiv.classList.remove('d-none');
+        emptyDiv.innerHTML = '<i class="bi bi-exclamation-triangle fs-1 text-danger mb-3 d-block"></i><p class="mb-0">Unable to load recent activity. Please log in again.</p>';
+      }
       if (countSpan) countSpan.textContent = '0';
+      if (badgeSpan) badgeSpan.textContent = '0';
     });
 }
 
@@ -252,13 +280,31 @@ function refreshCategoryDropdowns(newCategory) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  // Edit profile logic
+  // Edit profile logic - Updated for new design
   const editBtn = document.getElementById('edit-profile-btn');
-  const form = document.getElementById('profile-form');
+  const profileEditSection = document.getElementById('profile-edit-section');
+  const profileHero = document.querySelector('.profile-hero');
+  const metricsGrid = document.querySelector('.metrics-grid');
   const cancelBtn = document.getElementById('cancel-edit-profile');
-  if (editBtn && form && cancelBtn) {
-    editBtn.addEventListener('click', () => { form.classList.remove('d-none'); editBtn.classList.add('d-none'); });
-    cancelBtn.addEventListener('click', () => { form.classList.add('d-none'); editBtn.classList.remove('d-none'); });
+  
+  if (editBtn && profileEditSection && cancelBtn) {
+    editBtn.addEventListener('click', () => {
+      // Hide hero and metrics, show edit form
+      if (profileHero) profileHero.style.display = 'none';
+      if (metricsGrid) metricsGrid.style.display = 'none';
+      profileEditSection.classList.remove('d-none');
+      // Scroll to top smoothly
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    
+    cancelBtn.addEventListener('click', () => {
+      // Show hero and metrics, hide edit form
+      if (profileHero) profileHero.style.display = 'block';
+      if (metricsGrid) metricsGrid.style.display = 'grid';
+      profileEditSection.classList.add('d-none');
+      // Scroll to top smoothly
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   }
   // Theme preference (robust, professional)
   const themeSelect = document.getElementById('theme-select');
@@ -346,19 +392,57 @@ document.addEventListener('DOMContentLoaded', function() {
       if (userPermissionsSummary.classList.contains('d-none')) {
         loadCurrentUserPermissions();
         userPermissionsSummary.classList.remove('d-none');
-        this.textContent = 'Hide My Permissions';
+        // Update button text and icon
+        this.innerHTML = '<i class="bi bi-eye-slash me-2"></i>Hide My Permissions';
       } else {
         userPermissionsSummary.classList.add('d-none');
-        this.textContent = 'View My Permissions';
+        // Update button text and icon
+        this.innerHTML = '<i class="bi bi-shield-lock me-2"></i>View My Permissions';
       }
     });
   }
   
   function loadCurrentUserPermissions() {
-    if (!currentUserPermissions) return;
+    if (!currentUserPermissions) {
+      console.error('❌ Permissions container not found');
+      return;
+    }
     
-    // Get current user role from the page
-    const userRole = document.querySelector('.badge').textContent.toLowerCase();
+    // Get current user role from the page - multiple fallback selectors
+    let userRole = 'user'; // default
+    
+    // Try multiple selectors to find the role badge
+    const selectors = [
+      '.profile-hero__subtitle .badge',
+      '.section-card .badge.bg-danger',
+      '.section-card .badge.bg-warning',
+      '.section-card .badge.bg-secondary',
+      '.badge.bg-danger',
+      '.badge.bg-warning',
+      '.badge.bg-secondary'
+    ];
+    
+    for (const selector of selectors) {
+      const badge = document.querySelector(selector);
+      if (badge && badge.textContent.trim()) {
+        const roleText = badge.textContent.trim().toLowerCase();
+        console.log('🔍 Found role badge:', roleText, 'using selector:', selector);
+        
+        // Map display text to role value
+        if (roleText.includes('admin')) {
+          userRole = 'admin';
+          break;
+        } else if (roleText.includes('manager')) {
+          userRole = 'manager';
+          break;
+        } else if (roleText.includes('user')) {
+          userRole = 'user';
+          break;
+        }
+      }
+    }
+    
+    console.log('✅ Detected user role:', userRole);
     
     const permissions = {
       admin: [

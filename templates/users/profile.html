@@ -5,26 +5,235 @@
 {{ block.super }}
 <link href="{% static 'css/admin-tools-enhanced.css' %}?v=2.0" rel="stylesheet">
 <link href="{% static 'css/wizard-styles-v2.css' %}?v=2.0" rel="stylesheet">
+<style>
+/* World-Class Profile Page Styles - Matching Dashboard Design */
+.profile-hero {
+  background: linear-gradient(135deg, var(--primary, #6B9BD1) 0%, var(--primary-dark, #4169E1) 100%);
+  border-radius: var(--radius-xl, 1rem);
+  padding: var(--space-8, 2rem);
+  margin-bottom: var(--space-6, 1.5rem);
+  color: white;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
+}
+
+.profile-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  transform: translate(30%, -30%);
+}
+
+.profile-hero__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-6, 1.5rem);
+}
+
+.profile-avatar-large {
+  flex-shrink: 0;
+}
+
+.profile-hero__info {
+  flex-grow: 1;
+}
+
+.profile-hero__title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: var(--space-2, 0.5rem);
+  color: white;
+}
+
+.profile-hero__subtitle {
+  font-size: 1rem;
+  opacity: 0.9;
+  margin-bottom: var(--space-3, 0.75rem);
+}
+
+.profile-hero__meta {
+  display: flex;
+  gap: var(--space-4, 1rem);
+  flex-wrap: wrap;
+  font-size: 0.875rem;
+  opacity: 0.95;
+}
+
+.profile-hero__meta-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+}
+
+.profile-hero__actions {
+  flex-shrink: 0;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-4, 1rem);
+  margin-bottom: var(--space-6, 1.5rem);
+}
+
+.metric-card {
+  background: var(--card-bg, #ffffff);
+  border-radius: var(--radius-xl, 1rem);
+  padding: var(--space-6, 1.5rem);
+  box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+  transition: var(--transition-base, 200ms ease-in-out);
+  border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.metric-card:hover {
+  box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
+  transform: translateY(-2px);
+}
+
+.metric-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4, 1rem);
+}
+
+.metric-card__title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.metric-card__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md, 0.5rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.metric-card__value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary, #111827);
+  margin-bottom: var(--space-2, 0.5rem);
+}
+
+.metric-card__subtitle {
+  font-size: 0.875rem;
+  color: var(--text-muted, #9ca3af);
+}
+
+.section-card {
+  background: var(--card-bg, #ffffff);
+  border-radius: var(--radius-xl, 1rem);
+  padding: var(--space-6, 1.5rem);
+  box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+  margin-bottom: var(--space-6, 1.5rem);
+  border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.section-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: between;
+  margin-bottom: var(--space-4, 1rem);
+  padding-bottom: var(--space-4, 1rem);
+  border-bottom: 1px solid var(--border-light, #f3f4f6);
+}
+
+.section-card__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary, #111827);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+}
+
+.section-card__badge {
+  margin-left: auto;
+}
+
+@media (max-width: 768px) {
+  .profile-hero__content {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .profile-hero__title {
+    font-size: 1.5rem;
+  }
+  
+  .profile-hero__meta {
+    justify-content: center;
+  }
+  
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
 {% endblock %}
-{% block dashboard_content %}
-<div class="row justify-content-center">
-  <div class="col-xl-8 col-lg-10 col-md-12">
-    <div class="glass p-4 mb-4 shadow-sm">
-      <div class="d-flex align-items-center mb-4">
-        <div class="me-4">
-          {% include "components/profile_avatar.html" with user=user_obj size=96 extra_classes="rounded-circle border border-3 border-primary shadow" %}
+{% block content %}
+<!-- Modern Hero Section -->
+<div class="profile-hero">
+  <div class="profile-hero__content">
+    <div class="profile-avatar-large">
+      {% include "components/profile_avatar.html" with user=user_obj size=96 extra_classes="rounded-circle border border-3 border-white shadow-lg" %}
+    </div>
+    <div class="profile-hero__info">
+      <h1 class="profile-hero__title">{{ user_obj.get_full_name|default:user_obj.username }}</h1>
+      <div class="profile-hero__subtitle">
+        <span class="badge bg-white bg-opacity-25 text-white px-3 py-2 fs-6">{{ user_obj.get_role_display }}</span>
+      </div>
+      <div class="profile-hero__meta">
+        <div class="profile-hero__meta-item">
+          <i class="bi bi-envelope"></i>
+          <span>{{ user_obj.email }}</span>
         </div>
-        <div class="flex-grow-1">
-          <h2 class="mb-1 fw-bold" style="color:var(--accent);">{{ user_obj.get_full_name|default:user_obj.username }}</h2>
-          <div class="text-muted small mb-1"><i class="bi bi-envelope me-1"></i> {{ user_obj.email }}</div>
-          <span class="badge bg-primary fs-6">{{ user_obj.get_role_display }}</span>
-          {% if user_obj.phone_number %}<div class="text-muted small mt-1"><i class="bi bi-telephone me-1"></i> {{ user_obj.phone_number }}</div>{% endif %}
+        {% if user_obj.phone_number %}
+        <div class="profile-hero__meta-item">
+          <i class="bi bi-telephone"></i>
+          <span>{{ user_obj.phone_number }}</span>
         </div>
-        <div class="ms-auto">
-          <button class="btn btn-outline-primary btn-lg px-4" id="edit-profile-btn"><i class="bi bi-pencil"></i> Edit</button>
+        {% endif %}
+        <div class="profile-hero__meta-item">
+          <i class="bi bi-clock"></i>
+          <span>Last login: {{ user_obj.last_login|date:'M d, Y' }}</span>
         </div>
       </div>
-      <form id="profile-form" method="post" enctype="multipart/form-data" class="row g-3 d-none">
+    </div>
+    <div class="profile-hero__actions">
+      <button class="btn btn-light btn-lg px-4" id="edit-profile-btn">
+        <i class="bi bi-pencil me-2"></i>Edit Profile
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Profile Form (Hidden by default) -->
+<div class="section-card d-none" id="profile-edit-section">
+  <div class="section-card__header">
+    <h2 class="section-card__title">
+      <i class="bi bi-pencil-square text-primary"></i>
+      Edit Profile
+    </h2>
+  </div>
+      <form id="profile-form" method="post" enctype="multipart/form-data" class="row g-3">
         {% csrf_token %}
         <div class="col-md-6">
           <label class="form-label">First Name</label>
@@ -52,126 +261,217 @@
           {{ form.role }}
         </div>
         {% endif %}
-        <div class="col-12 d-flex justify-content-end">
-          <button type="submit" class="btn btn-success px-4">Save</button>
-          <button type="button" class="btn btn-secondary ms-2 px-4" id="cancel-edit-profile">Cancel</button>
+        <div class="col-12 d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-outline-secondary px-4" id="cancel-edit-profile">Cancel</button>
+          <button type="submit" class="btn btn-primary px-4">
+            <i class="bi bi-check-lg me-2"></i>Save Changes
+          </button>
         </div>
       </form>
-      {% if messages %}
-        {% for message in messages %}
-          <div class="alert alert-{{ message.tags }} mt-3">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-    </div>
-    <div class="glass p-4 mb-4 shadow-sm">
-      <div class="d-flex align-items-center mb-3">
-        <i class="bi bi-laptop me-2 fs-4 text-primary"></i>
-        <h4 class="mb-0 fw-bold flex-grow-1">Assigned Assets</h4>
-        <span id="assigned-assets-count" class="badge bg-light text-dark fs-6"></span>
+</div>
+
+<!-- Messages -->
+{% if messages %}
+<div class="mb-4">
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+    <i class="bi bi-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' or message.tags == 'danger' %}exclamation-triangle{% elif message.tags == 'warning' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Metrics Grid -->
+<div class="metrics-grid">
+  <!-- Assigned Assets Metric -->
+  <div class="metric-card">
+    <div class="metric-card__header">
+      <h3 class="metric-card__title">Assigned Assets</h3>
+      <div class="metric-card__icon bg-primary bg-opacity-10 text-primary">
+        <i class="bi bi-laptop"></i>
       </div>
+    </div>
+    <div class="metric-card__value" id="assigned-assets-count">—</div>
+    <div class="metric-card__subtitle">Currently assigned to you</div>
+  </div>
+  
+  <!-- Recent Activity Metric -->
+  <div class="metric-card">
+    <div class="metric-card__header">
+      <h3 class="metric-card__title">Recent Activity</h3>
+      <div class="metric-card__icon bg-info bg-opacity-10 text-info">
+        <i class="bi bi-clock-history"></i>
+      </div>
+    </div>
+    <div class="metric-card__value" id="user-activity-count">—</div>
+    <div class="metric-card__subtitle">Actions in last 30 days</div>
+  </div>
+</div>
+
+<!-- Assigned Assets Section -->
+<div class="section-card">
+  <div class="section-card__header">
+    <h2 class="section-card__title">
+      <i class="bi bi-laptop text-primary"></i>
+      Assigned Assets
+    </h2>
+    <span class="section-card__badge badge bg-light text-dark fs-6" id="assigned-assets-badge">—</span>
+  </div>
       <div class="table-responsive rounded-3 shadow-sm">
-        <table class="table table-hover table-bordered align-middle mb-0" id="assigned-assets-table-professional">
+    <table class="table table-hover align-middle mb-0" id="assigned-assets-table-professional">
           <thead class="table-light">
-            <tr>
-              <th>Name</th>
-              <th>Serial</th>
-              <th>Assigned</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="assigned-assets-table-body">
-            <!-- Populated by JS -->
-          </tbody>
-        </table>
-      </div>
-      <div id="assigned-assets-empty" class="text-center text-muted py-3 d-none">No assets assigned.</div>
-      <nav class="d-flex justify-content-between align-items-center mt-2" aria-label="Assigned Assets pagination">
-        <button id="assigned-assets-prev" class="btn btn-outline-primary btn-sm" disabled>Previous</button>
-        <span id="assigned-assets-page-info" class="mx-2"></span>
-        <button id="assigned-assets-next" class="btn btn-outline-primary btn-sm" disabled>Next</button>
-      </nav>
-      <!-- Placeholder for future: search/filter/export -->
-    </div>
-    <div class="glass p-4 mb-4 shadow-sm">
-      <div class="d-flex align-items-center mb-3">
-        <i class="bi bi-clock-history me-2 fs-4 text-info"></i>
-        <h4 class="mb-0 fw-bold flex-grow-1">Recent Activity</h4>
-        <span id="user-activity-count" class="badge bg-light text-dark fs-6"></span>
-      </div>
-      <div class="table-responsive rounded-3 shadow-sm">
-        <table class="table table-striped table-hover table-bordered align-middle mb-0" id="user-activity-table-professional">
+        <tr>
+          <th>Name</th>
+          <th>Serial</th>
+          <th>Assigned</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="assigned-assets-table-body">
+        <!-- Populated by JS -->
+      </tbody>
+    </table>
+  </div>
+  <div id="assigned-assets-empty" class="text-center text-muted py-5 d-none">
+    <i class="bi bi-inbox fs-1 text-muted mb-3 d-block"></i>
+    <p class="mb-0">No assets assigned to you</p>
+  </div>
+  <nav class="d-flex justify-content-between align-items-center mt-3" aria-label="Assigned Assets pagination">
+    <button id="assigned-assets-prev" class="btn btn-outline-primary btn-sm" disabled>
+      <i class="bi bi-chevron-left me-1"></i>Previous
+    </button>
+    <span id="assigned-assets-page-info" class="text-muted small"></span>
+    <button id="assigned-assets-next" class="btn btn-outline-primary btn-sm" disabled>
+      Next<i class="bi bi-chevron-right ms-1"></i>
+    </button>
+  </nav>
+</div>
+
+<!-- Recent Activity Section -->
+<div class="section-card">
+  <div class="section-card__header">
+    <h2 class="section-card__title">
+      <i class="bi bi-clock-history text-info"></i>
+      Recent Activity
+    </h2>
+    <span class="section-card__badge badge bg-light text-dark fs-6" id="user-activity-badge">—</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0" id="user-activity-table-professional">
           <thead class="table-light">
-            <tr>
-              <th>Action</th>
-              <th>Asset</th>
-              <th>Time</th>
-              <th>Details</th>
-            </tr>
-          </thead>
-          <tbody id="user-activity-table-body">
-            <!-- Populated by JS -->
-          </tbody>
-        </table>
-      </div>
-      <div id="user-activity-empty" class="text-center text-muted py-3 d-none">No recent activity.</div>
-      <nav class="d-flex justify-content-between align-items-center mt-2" aria-label="Recent Activity pagination">
-        <button id="user-activity-prev" class="btn btn-outline-primary btn-sm" disabled>Previous</button>
-        <span id="user-activity-page-info" class="mx-2"></span>
-        <button id="user-activity-next" class="btn btn-outline-primary btn-sm" disabled>Next</button>
-      </nav>
-      <!-- Placeholder for future: search/filter/export -->
-    </div>
-    <div class="glass p-4 mb-4 shadow-sm">
-      <h4 class="mb-3">Preferences</h4>
+        <tr>
+          <th>Action</th>
+          <th>Asset</th>
+          <th>Time</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody id="user-activity-table-body">
+        <!-- Populated by JS -->
+      </tbody>
+    </table>
+  </div>
+  <div id="user-activity-empty" class="text-center text-muted py-5 d-none">
+    <i class="bi bi-clock-history fs-1 text-muted mb-3 d-block"></i>
+    <p class="mb-0">No recent activity</p>
+  </div>
+  <nav class="d-flex justify-content-between align-items-center mt-3" aria-label="Recent Activity pagination">
+    <button id="user-activity-prev" class="btn btn-outline-primary btn-sm" disabled>
+      <i class="bi bi-chevron-left me-1"></i>Previous
+    </button>
+    <span id="user-activity-page-info" class="text-muted small"></span>
+    <button id="user-activity-next" class="btn btn-outline-primary btn-sm" disabled>
+      Next<i class="bi bi-chevron-right ms-1"></i>
+    </button>
+  </nav>
+</div>
+
+<!-- Preferences Section -->
+<div class="section-card">
+  <div class="section-card__header">
+    <h2 class="section-card__title">
+      <i class="bi bi-sliders text-secondary"></i>
+      Preferences
+    </h2>
+  </div>
       <div class="row g-3">
         <div class="col-md-4">
-          <label class="form-label">Theme</label>
-          <select id="theme-select" class="form-select">
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </select>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Language <span class="text-muted" title="Coming soon!" style="cursor:help;">(soon)</span></label>
-          <select id="language-select" class="form-select" disabled title="Language selection coming soon!">
-            <option value="en">English</option>
-          </select>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Notifications <span class="text-muted" title="Coming soon!" style="cursor:help;">(soon)</span></label>
-          <select id="notif-select" class="form-select" disabled title="Notification preferences coming soon!">
-            <option value="email">Email</option>
-            <option value="sms">SMS</option>
-            <option value="in-app">In-App</option>
-          </select>
-        </div>
-      </div>
-      <div class="mt-2 text-muted small">Preferences are saved locally. Cross-device sync coming soon.</div>
+      <label class="form-label fw-semibold">Theme</label>
+      <select id="theme-select" class="form-select">
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+      </select>
     </div>
-    <div class="glass p-4 mb-4 shadow-sm">
-      <h4 class="mb-3"><i class="bi bi-shield-check me-2"></i>Security & Permissions</h4>
+    <div class="col-md-4">
+      <label class="form-label fw-semibold">Language <span class="text-muted small">(coming soon)</span></label>
+      <select id="language-select" class="form-select" disabled title="Language selection coming soon!">
+        <option value="en">English</option>
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-semibold">Notifications <span class="text-muted small">(coming soon)</span></label>
+      <select id="notif-select" class="form-select" disabled title="Notification preferences coming soon!">
+        <option value="email">Email</option>
+        <option value="sms">SMS</option>
+        <option value="in-app">In-App</option>
+      </select>
+    </div>
+  </div>
+  <div class="alert alert-info mt-3 mb-0">
+    <i class="bi bi-info-circle me-2"></i>
+    Preferences are saved locally. Cross-device sync coming soon.
+  </div>
+</div>
+
+<!-- Security & Permissions Section -->
+<div class="section-card">
+  <div class="section-card__header">
+    <h2 class="section-card__title">
+      <i class="bi bi-shield-check text-success"></i>
+      Security & Permissions
+    </h2>
+  </div>
       <div class="row g-3">
         <div class="col-md-6">
-          <div class="mb-2"><strong>Last Login:</strong> {{ user_obj.last_login|date:'Y-m-d H:i' }}</div>
-          <div class="mb-2"><strong>Role:</strong> <span class="badge bg-{% if user_obj.role == 'admin' %}danger{% elif user_obj.role == 'manager' %}warning{% else %}secondary{% endif %}">{{ user_obj.get_role_display }}</span></div>
-        </div>
-        <div class="col-md-6">
-          <a href="{% url 'password_change' %}" class="btn btn-outline-warning btn-sm mb-2">Change Password</a>
-          {% if user_obj.role == 'admin' %}
-          <button class="btn btn-outline-info btn-sm d-block" id="viewMyPermissions">View My Permissions</button>
-          {% endif %}
-        </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold text-muted small">Last Login</label>
+        <div class="fw-semibold">{{ user_obj.last_login|date:'M d, Y H:i' }}</div>
       </div>
-      <div id="user-permissions-summary" class="mt-3 d-none">
-        <h6 class="fw-bold mb-2">My Permissions:</h6>
-        <div class="row g-2" id="current-user-permissions">
-          <!-- Populated by JS -->
+      <div>
+        <label class="form-label fw-semibold text-muted small">Role</label>
+        <div>
+          <span class="badge bg-{% if user_obj.role == 'admin' %}danger{% elif user_obj.role == 'manager' %}warning{% else %}secondary{% endif %} px-3 py-2">
+            {{ user_obj.get_role_display }}
+          </span>
         </div>
       </div>
     </div>
-    {% if user_obj.role == 'admin' %}
-    <!-- Enhanced Admin Tools Section -->
-    {% include 'components/enhanced_admin_tools.html' %}
+    <div class="col-md-6">
+      <div class="d-grid gap-2">
+        <a href="{% url 'password_change' %}" class="btn btn-outline-warning">
+          <i class="bi bi-key me-2"></i>Change Password
+        </a>
+        {% if user_obj.role == 'admin' %}
+        <button class="btn btn-outline-info" id="viewMyPermissions">
+          <i class="bi bi-shield-lock me-2"></i>View My Permissions
+        </button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div id="user-permissions-summary" class="mt-4 d-none">
+    <h6 class="fw-bold mb-3">My Permissions:</h6>
+    <div class="row g-2" id="current-user-permissions">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- Admin Tools Section (Admin Only) -->
+{% if user_obj.role == 'admin' %}
+{% include 'components/enhanced_admin_tools.html' %}
 {% endif %}
 
 <!-- ============================================================================
@@ -605,7 +905,8 @@
 </style>
 {% endblock %}
 
-{% block modals %}
+{% block dashboard_modals %}
+<!-- ✅ FIXED: Using correct block name (dashboard_modals instead of modals) -->
 <!-- Enhanced Admin Modals -->
 {% if user_obj.role == 'admin' %}
 {% include 'components/enhanced_admin_modals.html' %}

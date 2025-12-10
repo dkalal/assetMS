@@ -4,6 +4,7 @@ from django import forms
 from django.apps import apps
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.http import QueryDict
 
 from .models import Asset, AssetCategory, AssetCategoryField, MaintenanceRecord
 from users.fields import UserWithBranchChoiceField
@@ -28,12 +29,21 @@ class AssetForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop('request', None)
         self.company = getattr(self.request, 'company', None) if self.request else None
-        # Get category from POST, GET, or initial
+        # Get category from POST, GET, initial, or instance (for edit forms)
         category_id = None
-        if 'data' in kwargs and kwargs['data']:
-            category_id = kwargs['data'].get('category')
+        data = kwargs.get('data')
+        # Support both keyword and positional data (e.g., AssetForm(request.POST, request=request))
+        if data is None and args:
+            first_arg = args[0]
+            if isinstance(first_arg, (dict, QueryDict)):
+                data = first_arg
+        if data:
+            category_id = data.get('category')
         if not category_id and 'initial' in kwargs and kwargs['initial']:
             category_id = kwargs['initial'].get('category')
+        # CRITICAL FIX: For edit forms, get category from instance
+        if not category_id and 'instance' in kwargs and kwargs['instance']:
+            category_id = getattr(kwargs['instance'], 'category_id', None)
         super().__init__(*args, **kwargs)
         
         # Set company field (CRITICAL: Must be set before any validation)
@@ -48,6 +58,35 @@ class AssetForm(forms.ModelForm):
             else:
                 self.fields['company'].queryset = Company.objects.none()
         
+        # WORLD-CLASS FIX: Set default status for new assets
+        # This prevents "status is required" error when creating new assets
+        if 'status' in self.fields and not self.instance.pk:
+            self.fields['status'].initial = Asset.STATUS_ACTIVE
+            self.initial['status'] = Asset.STATUS_ACTIVE
+
+        # WORLD-CLASS: Make UI match backend rules for IN_MAINTENANCE
+        # Manual status changes to "in_maintenance" are blocked in clean(),
+        # so hide that choice in the dropdown for normal edits and treat it
+        # as a system-controlled status set by Maintenance Center / services.
+        if 'status' in self.fields and self.instance and self.instance.pk:
+            status_field = self.fields['status']
+            current_status = getattr(self.instance, 'status', None)
+
+            if current_status == Asset.STATUS_IN_MAINTENANCE:
+                # While an asset is under maintenance, prevent manual status
+                # edits from this form. Maintenance workflows will return it
+                # to ACTIVE.
+                status_field.disabled = True
+            else:
+                # Hide the IN_MAINTENANCE option from the manual dropdown to
+                # avoid confusing users, since backend validation forbids it.
+                filtered_choices = [
+                    (value, label)
+                    for (value, label) in status_field.choices
+                    if value != Asset.STATUS_IN_MAINTENANCE
+                ]
+                status_field.choices = filtered_choices
+
         # Limit category choices to company scope
         if 'category' in self.fields:
             category_qs = AssetCategory.objects.for_company(self.company) if self.company else AssetCategory.objects.none()
@@ -117,10 +156,6 @@ class AssetForm(forms.ModelForm):
                 assigned_field.queryset = assigned_qs
             else:
                 assigned_field.queryset = assigned_field.queryset.none()
-        # Ensure depreciation fields are not required at the form level
-        for fname in ['purchase_value', 'purchase_date', 'depreciation_method', 'useful_life_years']:
-            if fname in self.fields:
-                self.fields[fname].required = False
         
         # WORLD-CLASS FIX: Detect if this is a status-only update
         # When editing an existing asset and only changing status, skip dynamic field requirements
@@ -186,6 +221,44 @@ class AssetForm(forms.ModelForm):
                 widget=forms.TextInput(attrs={'class': 'form-control'})
             )
             self.dynamic_field_names.append('dyn_warranty_provider')
+        
+        # ============================================================
+        # WORLD-CLASS FIX: Pre-populate dynamic fields from instance
+        # ============================================================
+        # For EDIT forms, pre-populate dynamic fields from asset.dynamic_data
+        # This ensures users see all their existing data without re-entering
+        if self.instance and self.instance.pk and hasattr(self.instance, 'dynamic_data'):
+            try:
+                dynamic_data = self.instance.dynamic_data if isinstance(self.instance.dynamic_data, dict) else {}
+                
+                if dynamic_data:
+                    populated_count = 0
+                    
+                    for key, value in dynamic_data.items():
+                        field_name = f'dyn_{key}'
+                        
+                        # Only populate if field exists in form
+                        # Allow None and empty string (user may have intentionally left it empty)
+                        if field_name in self.fields:
+                            # CRITICAL FIX: Set BOTH form.initial AND field.initial
+                            # Django uses form.initial for form-level, but field.initial for widget rendering
+                            # We need BOTH to ensure values appear in HTML
+                            prepared_value = value if value is not None else ''
+                            
+                            # Set form-level initial (used by Django form logic)
+                            self.initial[field_name] = prepared_value
+                            
+                            # Set field-level initial (used by widget rendering)
+                            self.fields[field_name].initial = prepared_value
+                            
+                            populated_count += 1
+                    
+                    if populated_count > 0:
+                        print(f"✅ FORM INIT: Pre-populated {populated_count} dynamic fields from instance")
+                        
+            except Exception as e:
+                # Don't fail form initialization if dynamic data has issues
+                print(f"⚠️ Warning: Could not pre-populate dynamic fields in form: {e}")
 
     def _make_field(self, field):
         """
@@ -298,7 +371,7 @@ class AssetForm(forms.ModelForm):
     disposal_method = forms.ChoiceField(
         required=False,
         choices=[
-            ('', '-- Select Disposal Method --'),
+            ('', '-- Select Method --'),
             ('sell', 'Sell'),
             ('donate', 'Donate'),
             ('scrap', 'Scrap'),
@@ -390,8 +463,8 @@ class AssetForm(forms.ModelForm):
         fields = [
             # Core fields
             'company', 'category', 'branch', 'status', 'assigned_to', 'description',
-            # Financial fields
-            'purchase_value', 'purchase_date', 'depreciation_method', 'useful_life_years',
+            # WORLD-CLASS DUPLICATE DETECTION FIELDS
+            'serial_number', 'asset_tag', 'qr_string',
             # Maintenance fields
             'maintenance_enabled', 'maintenance_interval_days', 'maintenance_notes',
             # Media fields
@@ -400,12 +473,14 @@ class AssetForm(forms.ModelForm):
             # These MUST be in fields list for Django to process them
             'status_change_reason',
             'maintenance_type',
-            'disposal_method', 'salvage_value',
+            'disposal_method',
             'loss_date', 'loss_reason', 'loss_details', 'last_known_location', 'police_report_number',
         ]
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
             'maintenance_notes': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
+            'maintenance_enabled': forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'id_maintenance_enabled'}),
+            'maintenance_interval_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
             'status': forms.Select(attrs={
                 'class': 'form-select',
                 'id': 'id_status',
@@ -563,6 +638,62 @@ class AssetForm(forms.ModelForm):
                             f'to user {assigned_to.username} in branch {user_primary_branch.id} ({user_primary_branch.name})'
                         )
         
+        # WORLD-CLASS DUPLICATE DETECTION VALIDATION
+        # Layer 1: Hard constraint validation (prevents database errors)
+        if not is_status_change:  # Skip during status-only changes
+            from assets.services.duplicate_detection import DuplicateDetectionService
+            
+            # Get duplicate detection fields
+            serial_number = cleaned_data.get('serial_number', '').strip() if cleaned_data.get('serial_number') else None
+            asset_tag = cleaned_data.get('asset_tag', '').strip() if cleaned_data.get('asset_tag') else None
+            qr_string = cleaned_data.get('qr_string', '').strip() if cleaned_data.get('qr_string') else None
+            
+            # Validate hard constraints (database-level uniqueness)
+            exclude_id = self.instance.id if self.instance and self.instance.pk else None
+            constraint_errors = DuplicateDetectionService.validate_hard_constraints(
+                serial_number=serial_number,
+                asset_tag=asset_tag,
+                qr_string=qr_string,
+                company=company,
+                exclude_asset_id=exclude_id
+            )
+            
+            # Add any constraint errors to form errors
+            for field, error_list in constraint_errors.items():
+                if field in cleaned_data:
+                    if field not in self._errors:
+                        self._errors[field] = self.error_class()
+                    self._errors[field].extend(error_list)
+            
+            # Layer 2: Soft duplicate detection (warnings stored in form for display)
+            if not constraint_errors and (serial_number or asset_tag):  # Only if hard constraints pass
+                asset_data = {
+                    'serial_number': serial_number,
+                    'asset_tag': asset_tag,
+                }
+                
+                # Add dynamic field data for similarity comparison
+                dynamic_data = {}
+                for field_name in self.dynamic_field_names:
+                    if field_name in cleaned_data and cleaned_data[field_name]:
+                        # Remove 'dyn_' prefix to get actual field key
+                        actual_key = field_name[4:] if field_name.startswith('dyn_') else field_name
+                        dynamic_data[actual_key] = cleaned_data[field_name]
+                
+                asset_data.update(dynamic_data)
+                
+                # Find potential duplicates
+                potential_duplicates = DuplicateDetectionService.find_potential_duplicates(
+                    asset_data=asset_data,
+                    company=company,
+                    category=category,
+                    exclude_asset_id=exclude_id
+                )
+                
+                # Store warnings in form for template display (non-blocking)
+                if potential_duplicates:
+                    cleaned_data['_duplicate_warnings'] = potential_duplicates
+        
         # WORLD-CLASS: Status Change Validation
         # ONLY validate status-specific fields when status is ACTUALLY changing
         if is_status_change:
@@ -693,11 +824,87 @@ class AssetForm(forms.ModelForm):
         return cleaned_data
 
     def save(self, commit=True):
+        """
+        WORLD-CLASS SAVE: Properly persist dynamic field data to JSONField.
+        
+        Critical Fix:
+        - Extract all dynamic field values from cleaned_data
+        - Build dynamic_data dict with proper structure
+        - Preserve existing data not in form
+        - Handle file uploads and type conversions
+        
+        Architecture:
+        1. Call parent save (creates instance, sets standard fields)
+        2. Build dynamic_data dict from all dyn_* fields
+        3. Merge with existing data (for partial updates)
+        4. Validate at model level
+        5. Save to database
+        
+        Multi-tenancy: All data scoped to company context
+        Performance: Single database write with JSONField
+        Security: Validated and sanitized data only
+        """
         instance = super().save(commit=False)
-        instance.dynamic_data = self.cleaned_data.get('dynamic_data', {})
+        
+        # ================================================================
+        # CRITICAL FIX: Build dynamic_data from individual dynamic fields
+        # ================================================================
+        # Initialize with existing data (for edit forms) or empty dict
+        if instance.pk and hasattr(instance, 'dynamic_data') and isinstance(instance.dynamic_data, dict):
+            dynamic_data = instance.dynamic_data.copy()
+        else:
+            dynamic_data = {}
+        
+        # Extract all dynamic field values from cleaned_data
+        for field_name in self.dynamic_field_names:
+            if field_name in self.cleaned_data:
+                value = self.cleaned_data[field_name]
+                
+                # Remove 'dyn_' prefix to get actual key for storage
+                # e.g., 'dyn_serial_number' → 'serial_number'
+                actual_key = field_name[4:] if field_name.startswith('dyn_') else field_name
+                
+                # Handle different field types for proper JSON serialization
+                if value is None:
+                    # Preserve None for optional fields
+                    dynamic_data[actual_key] = None
+                elif isinstance(value, date):
+                    # Convert dates to ISO format strings for JSON
+                    dynamic_data[actual_key] = value.isoformat()
+                elif isinstance(value, bool):
+                    # Preserve boolean type
+                    dynamic_data[actual_key] = value
+                elif isinstance(value, (int, float)):
+                    # Preserve numeric types
+                    dynamic_data[actual_key] = value
+                elif hasattr(value, 'url'):
+                    # File upload - store URL (CloudinaryField, ImageField, FileField)
+                    dynamic_data[actual_key] = value.url
+                else:
+                    # String or other types - convert to string
+                    dynamic_data[actual_key] = str(value) if value != '' else ''
+        
+        # Assign the built dynamic_data dict to instance
+        instance.dynamic_data = dynamic_data
+        
+        # Log for debugging (remove in production)
+        if dynamic_data:
+            print(f"💾 SAVE: Persisting {len(dynamic_data)} dynamic fields to database")
+            for key, val in dynamic_data.items():
+                print(f"   - {key}: {val}")
+        
+        # CRITICAL FIX: Call full_clean() to trigger model-level validation
+        # This ensures _validate_unique_fields() is called for duplicate detection
         if commit:
+            try:
+                instance.full_clean()  # Triggers Asset.clean() which calls _validate_unique_fields()
+            except ValidationError as e:
+                # Re-raise as form validation error for proper display
+                raise forms.ValidationError(e.message_dict if hasattr(e, 'message_dict') else str(e))
+            
             instance.save()
             self.save_m2m()
+        
         return instance 
 
 

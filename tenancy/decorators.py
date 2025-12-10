@@ -1,15 +1,73 @@
 """
-Permission decorators for branch manager functionality.
+Permission decorators for multi-tenancy and branch manager functionality.
 
-Provides decorators to restrict access to manager-specific views and
-enforce branch manager permissions.
+Provides decorators to enforce multi-tenancy, restrict access to manager-specific
+views, and enforce branch manager permissions.
+
+World-Class Multi-Tenancy Standards (ServiceNow, Salesforce, IBM Maximo)
 """
 from functools import wraps
 
 from django.contrib import messages
 from django.shortcuts import redirect
+from django.http import HttpResponseForbidden
 
-from tenancy.models import Branch
+from tenancy.models import Branch, Company
+
+
+def company_required(view_func):
+    """
+    Decorator to enforce multi-tenancy by ensuring user has a company.
+    
+    Automatically attaches the user's company to the request object as request.company.
+    This is a foundational decorator for all multi-tenant views.
+    
+    World-Class Multi-Tenancy Pattern (ServiceNow, Salesforce, IBM Maximo):
+    - Every request must be scoped to a company
+    - Company is attached to request for easy access
+    - Prevents cross-tenant data leakage
+    - Provides clear error messages
+    
+    Usage:
+        @login_required
+        @company_required
+        def my_view(request):
+            company = request.company  # Automatically available
+            assets = Asset.objects.filter(company=company)
+            return render(request, 'template.html', {'assets': assets})
+    
+    Security:
+        - Enforces multi-tenancy at decorator level
+        - Prevents accidental cross-tenant queries
+        - Fails fast if company is missing
+        - Provides user-friendly error messages
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        # Check authentication
+        if not request.user.is_authenticated:
+            messages.error(request, "You must be logged in to access this page.")
+            return redirect('login')
+        
+        # Get user's company
+        company = getattr(request.user, 'company', None)
+        
+        if not company:
+            # User has no company - critical error
+            messages.error(
+                request,
+                "Your account is not associated with a company. "
+                "Please contact your administrator."
+            )
+            return redirect('dashboard')
+        
+        # Attach company to request for easy access in view
+        request.company = company
+        
+        # Call the view
+        return view_func(request, *args, **kwargs)
+    
+    return wrapper
 
 
 def branch_manager_required(view_func):

@@ -45,7 +45,7 @@ def normalize_asset_statuses(apps, schema_editor):
                 asset.save(update_fields=['status'])
                 fixed_count += 1
     
-    print(f"✅ Normalized {fixed_count} asset status values to lowercase")
+    print(f"[OK] Normalized {fixed_count} asset status values to lowercase")
 
 
 def reverse_normalize(apps, schema_editor):
@@ -53,7 +53,7 @@ def reverse_normalize(apps, schema_editor):
     Reverse migration - not recommended as it would break the system.
     This is a no-op to prevent accidental reversal.
     """
-    print("⚠️ Reverse migration skipped - status normalization is required for system integrity")
+    print("[WARNING] Reverse migration skipped - status normalization is required for system integrity")
 
 
 class Migration(migrations.Migration):

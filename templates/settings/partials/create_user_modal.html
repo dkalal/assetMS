@@ -342,6 +342,15 @@ window.UserCreationManager = class UserCreationManager {
                 setTimeout(() => window.location.reload(), 2000);
             } else {
                 console.error('❌ User creation failed:', result);
+                console.error('❌ Validation errors:', result.errors);
+                
+                // Log each field error for debugging
+                if (result.errors && typeof result.errors === 'object') {
+                    for (const [field, errors] of Object.entries(result.errors)) {
+                        console.error(`  ❌ ${field}:`, errors);
+                    }
+                }
+                
                 const errorMsg = result.details || result.error || 'Failed to create user';
                 this.displayErrors(result.errors || errorMsg);
             }
@@ -393,16 +402,58 @@ window.UserCreationManager = class UserCreationManager {
     }
     
     displayErrors(errors) {
-        let errorHtml = '<ul class="mb-0">';
+        // Field label mapping for better UX
+        const fieldLabels = {
+            'username': 'Username',
+            'email': 'Email Address',
+            'first_name': 'First Name',
+            'last_name': 'Last Name',
+            'phone_number': 'Phone Number',
+            'password1': 'Password',
+            'password2': 'Confirm Password',
+            'role': 'User Role',
+            'primary_branch': 'Primary Branch',
+            'send_invitation': 'Send Invitation',
+            'force_password_change': 'Force Password Change'
+        };
         
-        if (typeof errors === 'object') {
+        let errorHtml = '<div class="alert alert-danger alert-dismissible fade show" role="alert">';
+        errorHtml += '<h6 class="alert-heading mb-2"><i class="bi bi-exclamation-triangle-fill me-2"></i>Validation Errors</h6>';
+        errorHtml += '<ul class="mb-0 ps-3">';
+        
+        if (typeof errors === 'object' && errors !== null) {
+            // Highlight fields with errors
             for (const [field, messages] of Object.entries(errors)) {
+                const fieldLabel = fieldLabels[field] || field;
+                const fieldElement = document.getElementById(field) || 
+                                   document.querySelector(`[name="${field}"]`);
+                
+                // Add visual feedback to the field
+                if (fieldElement) {
+                    fieldElement.classList.add('is-invalid');
+                    
+                    // Create or update invalid feedback
+                    let feedbackDiv = fieldElement.nextElementSibling;
+                    if (!feedbackDiv || !feedbackDiv.classList.contains('invalid-feedback')) {
+                        feedbackDiv = document.createElement('div');
+                        feedbackDiv.className = 'invalid-feedback';
+                        fieldElement.parentNode.insertBefore(feedbackDiv, fieldElement.nextSibling);
+                    }
+                    
+                    if (Array.isArray(messages)) {
+                        feedbackDiv.textContent = messages.join(', ');
+                    } else {
+                        feedbackDiv.textContent = messages;
+                    }
+                }
+                
+                // Add to error list
                 if (Array.isArray(messages)) {
                     messages.forEach(msg => {
-                        errorHtml += `<li><strong>${field}:</strong> ${msg}</li>`;
+                        errorHtml += `<li><strong>${fieldLabel}:</strong> ${msg}</li>`;
                     });
                 } else {
-                    errorHtml += `<li><strong>${field}:</strong> ${messages}</li>`;
+                    errorHtml += `<li><strong>${fieldLabel}:</strong> ${messages}</li>`;
                 }
             }
         } else {
@@ -410,7 +461,26 @@ window.UserCreationManager = class UserCreationManager {
         }
         
         errorHtml += '</ul>';
-        this.showAlert(errorHtml, 'danger');
+        errorHtml += '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>';
+        errorHtml += '</div>';
+        
+        // Display the error alert
+        this.alertDiv.innerHTML = errorHtml;
+        this.alertDiv.classList.remove('d-none');
+        
+        // Scroll to the alert
+        this.alertDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        
+        // Remove invalid class when user starts typing
+        document.querySelectorAll('.is-invalid').forEach(field => {
+            field.addEventListener('input', function() {
+                this.classList.remove('is-invalid');
+                const feedback = this.nextElementSibling;
+                if (feedback && feedback.classList.contains('invalid-feedback')) {
+                    feedback.remove();
+                }
+            }, { once: true });
+        });
     }
     
     showAlert(message, type = 'info') {

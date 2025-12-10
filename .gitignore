@@ -54,3 +54,43 @@ dist/
 *.crt
 *.der
 backup.*
+
+# Documentation files (too many)
+*.md
+!README.md
+!CHANGELOG.md
+
+# Test files
+test_*.py
+*_test.py
+test_*.html
+test_*.js
+
+# Backup files
+*.backup
+*.bak
+*_backup.*
+*_old.*
+
+# Generated reports
+reports/*.pdf
+reports/*.xlsx
+reports/*.csv
+asset_docs/
+asset_images/
+company/logos/
+profile_images/
+qr_codes/
+backups/
+tmp/
+
+# Celery
+celery_broker.db
+
+# Batch files
+*.bat
+*.ps1
+
+# Temporary files
+temp_*
+*.tmp

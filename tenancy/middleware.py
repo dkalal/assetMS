@@ -76,6 +76,7 @@ class TenancyMiddleware:
         if (
             require_company
             and getattr(request.user, "is_authenticated", False)
+            and not getattr(request.user, "is_system_admin", False)
             and context.company is None
             and not any(request.path.startswith(prefix) for prefix in exempt_prefixes)
         ):

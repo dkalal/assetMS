@@ -21,6 +21,11 @@ class CategoryWizard {
     this.existingCategories = [];
     this.isSubmitting = false;
     this.editingFieldIndex = null;
+    this.validationDebounce = null;
+    this.previousFocus = null;
+    
+    // Bind keyboard handler
+    this.handleKeyboard = this.handleKeyboard.bind(this);
     
     console.log('✅ Category Wizard initialized');
   }
@@ -32,8 +37,21 @@ class CategoryWizard {
     this.reset();
     const modal = document.getElementById('categoryWizardModal');
     if (modal) {
+      // Store current focus to restore on close
+      this.previousFocus = document.activeElement;
+      
       modal.classList.add('active');
-      document.getElementById('wizard-category-name')?.focus();
+      
+      // Add keyboard listener
+      document.addEventListener('keydown', this.handleKeyboard);
+      
+      // Focus first input with slight delay for animation
+      setTimeout(() => {
+        document.getElementById('wizard-category-name')?.focus();
+      }, 100);
+      
+      // Announce to screen readers
+      this.announce('Category creation wizard opened. Step 1 of 3: Basic Information');
     }
   }
 
@@ -43,6 +61,17 @@ class CategoryWizard {
     const modal = document.getElementById('categoryWizardModal');
     if (modal) {
       modal.classList.remove('active');
+      
+      // Remove keyboard listener
+      document.removeEventListener('keydown', this.handleKeyboard);
+      
+      // Restore focus
+      if (this.previousFocus && this.previousFocus.focus) {
+        this.previousFocus.focus();
+      }
+      
+      // Announce closure
+      this.announce('Wizard closed');
     }
     this.reset();
   }
@@ -119,11 +148,23 @@ class CategoryWizard {
     // Update buttons
     this.updateButtons();
     
+    // Update progress bar aria-valuenow
+    const progressBar = document.querySelector('.wizard-progress');
+    if (progressBar) {
+      const percentage = Math.round((step / this.totalSteps) * 100);
+      progressBar.setAttribute('aria-valuenow', percentage);
+      progressBar.style.setProperty('--progress-width', `${percentage}%`);
+    }
+    
     // Load step-specific data
     if (step === 2) {
       this.renderFieldsList();
+      this.announce(`Step ${step} of ${this.totalSteps}: Configure Dynamic Fields`);
     } else if (step === 3) {
       this.renderReview();
+      this.announce(`Step ${step} of ${this.totalSteps}: Review and Confirm`);
+    } else {
+      this.announce(`Step ${step} of ${this.totalSteps}: Basic Information`);
     }
   }
 
@@ -193,11 +234,14 @@ class CategoryWizard {
   }
 
   validateName(input) {
+    // Debounce validation for performance
+    clearTimeout(this.validationDebounce);
+    
     const value = input.value.trim();
     const counter = document.getElementById('wizard-name-counter');
     const validation = document.getElementById('wizard-name-validation');
     
-    // Update counter
+    // Update counter immediately
     counter.textContent = `${value.length}/100`;
     counter.className = value.length > 90 ? 'text-warning fw-bold' : 'text-muted';
     
@@ -207,27 +251,30 @@ class CategoryWizard {
     
     if (value.length === 0) return;
     
-    if (value.length < 2) {
-      validation.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i>Name must be at least 2 characters';
-      input.classList.add('is-invalid');
-      return;
-    }
-    
-    // Check duplicates
-    const isDuplicate = this.existingCategories.some(cat => 
-      cat.name.toLowerCase() === value.toLowerCase()
-    );
-    
-    if (isDuplicate) {
-      validation.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>A category with this name already exists';
-      input.classList.add('is-invalid');
-      return;
-    }
-    
-    // Valid
-    input.classList.add('is-valid');
-    validation.innerHTML = '<i class="bi bi-check-circle me-1 text-success"></i>Name is available';
-    validation.className = 'text-success small';
+    // Debounce the actual validation
+    this.validationDebounce = setTimeout(() => {
+      if (value.length < 2) {
+        validation.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i>Name must be at least 2 characters';
+        input.classList.add('is-invalid');
+        return;
+      }
+      
+      // Check duplicates
+      const isDuplicate = this.existingCategories.some(cat => 
+        cat.name.toLowerCase() === value.toLowerCase()
+      );
+      
+      if (isDuplicate) {
+        validation.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>A category with this name already exists';
+        input.classList.add('is-invalid');
+        return;
+      }
+      
+      // Valid
+      input.classList.add('is-valid');
+      validation.innerHTML = '<i class="bi bi-check-circle me-1 text-success"></i>Name is available';
+      validation.className = 'text-success small';
+    }, 300);
   }
 
   showValidationError(prefix, message) {
@@ -302,6 +349,7 @@ class CategoryWizard {
     const label = document.getElementById('field-label').value.trim();
     const type = document.getElementById('field-type').value;
     const required = document.getElementById('field-required').checked;
+    const is_unique = document.getElementById('field-unique').checked;
 
     // Validate
     if (!label) {
@@ -325,7 +373,7 @@ class CategoryWizard {
       }
     }
     
-    const field = { key, label, type, required };
+    const field = { key, label, type, required, is_unique };
     
     if (this.editingFieldIndex !== null) {
       // Update existing field
@@ -352,6 +400,7 @@ class CategoryWizard {
     if (preview) preview.textContent = field.key;
     document.getElementById('field-type').value = field.type;
     document.getElementById('field-required').checked = field.required;
+    document.getElementById('field-unique').checked = field.is_unique || false;
     document.getElementById('field-form-title').textContent = 'Edit Field';
 
     // Show form
@@ -445,6 +494,7 @@ class CategoryWizard {
             <span class="field-key">${field.key}</span>
             <span class="badge bg-secondary ms-2">${field.type}</span>
             ${field.required ? '<span class="badge bg-danger ms-1">Required</span>' : ''}
+            ${field.is_unique ? '<span class="badge bg-primary ms-1"><i class="bi bi-shield-check me-1"></i>Unique</span>' : ''}
           </div>
         </div>
         <div class="field-actions">
@@ -585,12 +635,15 @@ class CategoryWizard {
     if (!container) return;
     
     container.innerHTML = `
-      <div class="alert alert-${type} alert-dismissible fade show">
-        <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+        <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle'} me-2" aria-hidden="true"></i>
         ${message}
-        <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+        <button type="button" class="btn-close" onclick="this.parentElement.remove()" aria-label="Close alert"></button>
       </div>
     `;
+    
+    // Announce to screen readers
+    this.announce(message, type === 'danger' ? 'assertive' : 'polite');
     
     if (type === 'success' || type === 'info') {
       setTimeout(() => { container.innerHTML = ''; }, 5000);
@@ -606,6 +659,44 @@ class CategoryWizard {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+  
+  // ARIA announcements for screen readers
+  announce(message, priority = 'polite') {
+    const announcer = document.getElementById('wizard-announcer');
+    if (!announcer) return;
+    
+    announcer.setAttribute('aria-live', priority);
+    announcer.textContent = message;
+    
+    // Clear after announcement
+    setTimeout(() => {
+      announcer.textContent = '';
+    }, 1000);
+  }
+  
+  // Keyboard shortcuts handler
+  handleKeyboard(e) {
+    // ESC to close
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      this.closeWizard();
+      return;
+    }
+    
+    // Don't interfere with form inputs
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+      return;
+    }
+    
+    // Arrow keys for navigation (when not in input)
+    if (e.key === 'ArrowRight' && this.currentStep < this.totalSteps) {
+      e.preventDefault();
+      this.nextStep();
+    } else if (e.key === 'ArrowLeft' && this.currentStep > 1) {
+      e.preventDefault();
+      this.prevStep();
+    }
   }
 
   // Load existing categories for validation
@@ -629,6 +720,16 @@ window.categoryWizard = categoryWizard; // Expose on window for global access
 // Load existing categories on page load
 document.addEventListener('DOMContentLoaded', () => {
   categoryWizard.loadExistingCategories();
+  
+  // Add click outside to close (optional)
+  const modal = document.getElementById('categoryWizardModal');
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal && !categoryWizard.isSubmitting) {
+        categoryWizard.closeWizard();
+      }
+    });
+  }
 });
 
 console.log('✅ Category Wizard (Simple) loaded');

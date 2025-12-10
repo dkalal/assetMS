@@ -1,0 +1,128 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Invitations - Asset Management System{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-envelope-paper me-2"></i>User Invitations
+        </h2>
+        <a href="{% url 'accounts:send_invitation' %}" class="btn btn-primary">
+            <i class="bi bi-person-plus me-2"></i>Send Invitation
+        </a>
+    </div>
+    
+    <!-- Status Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="btn-group" role="group">
+                <a href="{% url 'accounts:invitation_list' %}" 
+                   class="btn btn-outline-primary {% if not status_filter %}active{% endif %}">
+                    All
+                </a>
+                <a href="{% url 'accounts:invitation_list' %}?status=pending" 
+                   class="btn btn-outline-primary {% if status_filter == 'pending' %}active{% endif %}">
+                    Pending
+                </a>
+                <a href="{% url 'accounts:invitation_list' %}?status=accepted" 
+                   class="btn btn-outline-primary {% if status_filter == 'accepted' %}active{% endif %}">
+                    Accepted
+                </a>
+                <a href="{% url 'accounts:invitation_list' %}?status=expired" 
+                   class="btn btn-outline-primary {% if status_filter == 'expired' %}active{% endif %}">
+                    Expired
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Invitations Table -->
+    <div class="card shadow-lg border-0">
+        <div class="card-body">
+            {% if invitations %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th>Name</th>
+                                <th>Role</th>
+                                <th>Branch</th>
+                                <th>Status</th>
+                                <th>Sent</th>
+                                <th>Expires</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for invitation in invitations %}
+                                <tr>
+                                    <td>{{ invitation.email }}</td>
+                                    <td>{{ invitation.first_name }} {{ invitation.last_name }}</td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ invitation.get_role_display }}</span>
+                                    </td>
+                                    <td>{{ invitation.branch.name if invitation.branch else 'Not assigned' }}</td>
+                                    <td>
+                                        {% if invitation.status == 'pending' %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% elif invitation.status == 'accepted' %}
+                                            <span class="badge bg-success">Accepted</span>
+                                        {% elif invitation.status == 'expired' %}
+                                            <span class="badge bg-danger">Expired</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ invitation.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ invitation.sent_at|date:"M d, Y" }}</td>
+                                    <td>
+                                        {% if invitation.is_valid %}
+                                            <span class="text-success">{{ invitation.expires_at|date:"M d, Y" }}</span>
+                                        {% else %}
+                                            <span class="text-danger">{{ invitation.expires_at|date:"M d, Y" }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if invitation.status == 'pending' %}
+                                            <form method="post" action="{% url 'accounts:resend_invitation' invitation.id %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-primary" title="Resend">
+                                                    <i class="bi bi-arrow-clockwise"></i>
+                                                </button>
+                                            </form>
+                                            <form method="post" action="{% url 'accounts:cancel_invitation' invitation.id %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Cancel" 
+                                                        onclick="return confirm('Are you sure you want to cancel this invitation?')">
+                                                    <i class="bi bi-x-circle"></i>
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox" style="font-size: 3rem; color: #6c757d;"></i>
+                    <p class="text-muted mt-3">No invitations found.</p>
+                    <a href="{% url 'accounts:send_invitation' %}" class="btn btn-primary">
+                        <i class="bi bi-person-plus me-2"></i>Send First Invitation
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+
+
+
+

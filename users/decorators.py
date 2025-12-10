@@ -63,3 +63,32 @@ def api_admin_or_manager_required(view_func):
         
         return view_func(request, *args, **kwargs)
     return wrapper
+
+
+def api_manager_or_admin_required(view_func):
+    """
+    Decorator for API views that require manager or admin role
+    Checks User.role field (MANAGER or ADMIN)
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({
+                'success': False,
+                'error': 'Authentication required',
+                'code': 'AUTHENTICATION_REQUIRED'
+            }, status=401)
+        
+        # Import User model here to avoid circular imports
+        from users.models import User
+        
+        # Check if user has MANAGER or ADMIN role
+        if request.user.role not in [User.MANAGER, User.ADMIN]:
+            return JsonResponse({
+                'success': False,
+                'error': 'Manager or Admin role required',
+                'code': 'INSUFFICIENT_PERMISSIONS'
+            }, status=403)
+        
+        return view_func(request, *args, **kwargs)
+    return wrapper

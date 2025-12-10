@@ -196,156 +196,159 @@
 {% endblock %}
 
 {% block content %}
-{% include "components/sidebar_enhanced.html" %}
-<div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
+<!-- Breadcrumb Navigation -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a></li>
+        <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-arrow-left-right"></i> Transfers</li>
+    </ol>
+</nav>
 
-<main class="dashboard-content">
-    <!-- Breadcrumb Navigation -->
-    <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a></li>
-            <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-arrow-left-right"></i> Transfers</li>
-        </ol>
-    </nav>
-
-    <!-- Header -->
-    <div class="transfer-header">
-        <div class="d-flex justify-content-between align-items-start">
-            <div>
-                <h1 class="mb-2"><i class="bi bi-arrow-left-right me-2"></i>Transfer Management</h1>
-                <p class="mb-0 opacity-90">Manage asset transfers across branches and users</p>
-            </div>
+<!-- Header -->
+<div class="transfer-header">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div>
+            <h1 class="mb-2"><i class="bi bi-arrow-left-right me-2"></i>Transfer Management</h1>
+            <p class="mb-0 opacity-90">Manage asset transfers across branches and users</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-success" onclick="openInitiateTransferModal()">
+                <i class="bi bi-plus-circle me-2"></i>Initiate Transfer
+            </button>
+            <button class="btn btn-warning" onclick="openBulkTransferModal()">
+                <i class="bi bi-collection me-2"></i>Bulk Transfer
+            </button>
             <button class="btn btn-light" onclick="window.location.reload()">
                 <i class="bi bi-arrow-clockwise me-2"></i>Refresh
             </button>
         </div>
+    </div>
 
-        <!-- Statistics -->
-        <div class="transfer-stats">
-            <div class="stat-card">
-                <div class="stat-value" id="stat-total">0</div>
-                <div class="stat-label">Total Transfers</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="stat-pending">0</div>
-                <div class="stat-label">Awaiting Your Action</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="stat-completed">0</div>
-                <div class="stat-label">Completed</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="stat-rejected">0</div>
-                <div class="stat-label">Rejected</div>
+    <!-- Statistics -->
+    <div class="transfer-stats">
+        <div class="stat-card">
+            <div class="stat-value" id="stat-total">0</div>
+            <div class="stat-label">Total Transfers</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="stat-pending">0</div>
+            <div class="stat-label">Awaiting Your Action</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="stat-completed">0</div>
+            <div class="stat-label">Completed</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="stat-rejected">0</div>
+            <div class="stat-label">Rejected</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label small text-muted mb-1">Search</label>
+            <input type="text" 
+                   class="form-control search-input" 
+                   id="searchInput" 
+                   placeholder="Search by asset, user, or reason...">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small text-muted mb-1">Status</label>
+            <select class="form-select" id="filterStatus">
+                <option value="">All Statuses</option>
+                <option value="pending_receiver">Pending Receiver</option>
+                <option value="awaiting_admin">Awaiting Admin</option>
+                <option value="completed">Completed</option>
+                <option value="receiver_rejected">Rejected</option>
+                <option value="cancelled">Cancelled</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small text-muted mb-1">Role</label>
+            <select class="form-select" id="filterRole">
+                <option value="">All Transfers</option>
+                <option value="receiver">As Receiver</option>
+                <option value="initiator">As Initiator</option>
+                <option value="admin">For Review (Admin)</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small text-muted mb-1">Date Range</label>
+            <select class="form-select" id="filterDate">
+                <option value="">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-outline-secondary w-100" id="clearFilters">
+                <i class="bi bi-x-circle me-1"></i>Clear
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button">
+            <i class="bi bi-hourglass-split me-2"></i>Pending Actions <span class="badge bg-warning ms-2" id="badge-pending">0</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button">
+            <i class="bi bi-list-ul me-2"></i>All Transfers
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button">
+            <i class="bi bi-clock-history me-2"></i>History
+        </button>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content">
+    <!-- Pending Actions -->
+    <div class="tab-pane fade show active" id="pending" role="tabpanel">
+        <div id="pending-transfers-list">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="text-muted mt-3">Loading pending transfers...</p>
             </div>
         </div>
     </div>
 
-    <!-- Filter Bar -->
-    <div class="filter-bar">
-        <div class="row g-3 align-items-end">
-            <div class="col-md-4">
-                <label class="form-label small text-muted mb-1">Search</label>
-                <input type="text" 
-                       class="form-control search-input" 
-                       id="searchInput" 
-                       placeholder="Search by asset, user, or reason...">
-            </div>
-            <div class="col-md-2">
-                <label class="form-label small text-muted mb-1">Status</label>
-                <select class="form-select" id="filterStatus">
-                    <option value="">All Statuses</option>
-                    <option value="pending_receiver">Pending Receiver</option>
-                    <option value="awaiting_admin">Awaiting Admin</option>
-                    <option value="completed">Completed</option>
-                    <option value="receiver_rejected">Rejected</option>
-                    <option value="cancelled">Cancelled</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label small text-muted mb-1">Role</label>
-                <select class="form-select" id="filterRole">
-                    <option value="">All Transfers</option>
-                    <option value="receiver">As Receiver</option>
-                    <option value="initiator">As Initiator</option>
-                    <option value="admin">For Review (Admin)</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label small text-muted mb-1">Date Range</label>
-                <select class="form-select" id="filterDate">
-                    <option value="">All Time</option>
-                    <option value="today">Today</option>
-                    <option value="week">This Week</option>
-                    <option value="month">This Month</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <button class="btn btn-outline-secondary w-100" id="clearFilters">
-                    <i class="bi bi-x-circle me-1"></i>Clear
-                </button>
+    <!-- All Transfers -->
+    <div class="tab-pane fade" id="all" role="tabpanel">
+        <div id="all-transfers-list">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="text-muted mt-3">Loading all transfers...</p>
             </div>
         </div>
     </div>
 
-    <!-- Tabs -->
-    <ul class="nav nav-tabs mb-3" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button">
-                <i class="bi bi-hourglass-split me-2"></i>Pending Actions <span class="badge bg-warning ms-2" id="badge-pending">0</span>
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button">
-                <i class="bi bi-list-ul me-2"></i>All Transfers
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button">
-                <i class="bi bi-clock-history me-2"></i>History
-            </button>
-        </li>
-    </ul>
-
-    <!-- Tab Content -->
-    <div class="tab-content">
-        <!-- Pending Actions -->
-        <div class="tab-pane fade show active" id="pending" role="tabpanel">
-            <div id="pending-transfers-list">
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="text-muted mt-3">Loading pending transfers...</p>
+    <!-- History -->
+    <div class="tab-pane fade" id="history" role="tabpanel">
+        <div id="history-transfers-list">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
                 </div>
-            </div>
-        </div>
-
-        <!-- All Transfers -->
-        <div class="tab-pane fade" id="all" role="tabpanel">
-            <div id="all-transfers-list">
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="text-muted mt-3">Loading all transfers...</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- History -->
-        <div class="tab-pane fade" id="history" role="tabpanel">
-            <div id="history-transfers-list">
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="text-muted mt-3">Loading transfer history...</p>
-                </div>
+                <p class="text-muted mt-3">Loading transfer history...</p>
             </div>
         </div>
     </div>
-</main>
+</div>
 {% endblock %}
 
 {% block dashboard_modals %}
@@ -390,6 +393,218 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn" id="confirmDecisionBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- WORLD-CLASS: Initiate Transfer Modal -->
+<div class="modal fade" id="initiateTransferModal" tabindex="-1" aria-labelledby="initiateTransferModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="initiateTransferModalLabel">
+                    <i class="bi bi-plus-circle me-2"></i>Initiate Asset Transfer
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="initiateTransferForm">
+                    {% csrf_token %}
+                    
+                    <!-- Asset Selection -->
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-box-seam me-1"></i>Select Asset <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="initAssetSelect" required>
+                            <option value="">-- Loading assets --</option>
+                        </select>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Only active assets you have access to
+                        </div>
+                    </div>
+
+                    <!-- Branch Selection -->
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-building me-1"></i>Destination Branch <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="initBranchSelect" required onchange="loadUsersForInitTransfer()">
+                            <option value="">-- Select destination branch --</option>
+                        </select>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Choose the branch where the asset will be transferred
+                        </div>
+                    </div>
+
+                    <!-- User Selection (Cascading) -->
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-person me-1"></i>Transfer To User <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="initUserSelect" required disabled>
+                            <option value="">Select a branch first...</option>
+                        </select>
+                        
+                        <!-- Loading State -->
+                        <div id="initUserLoadingState" class="d-none mt-2">
+                            <div class="d-flex align-items-center text-primary">
+                                <div class="spinner-border spinner-border-sm me-2" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <span>Loading users...</span>
+                            </div>
+                        </div>
+                        
+                        <!-- User Count Badge -->
+                        <div class="form-text">
+                            <span id="initUserCountBadge" class="d-none">
+                                <i class="bi bi-people me-1"></i>
+                                <span id="initUserCount">0</span> user(s) available
+                            </span>
+                            <span id="initUserSelectPrompt">
+                                <i class="bi bi-arrow-up me-1"></i>
+                                Please select a branch first
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Reason -->
+                    <div class="mb-3">
+                        <label class="form-label">Reason for Transfer <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="initTransferReason" rows="3" required minlength="10" 
+                                  placeholder="Provide a detailed reason for this transfer (minimum 10 characters)"></textarea>
+                        <div class="form-text">
+                            <span id="initReasonCharCount">0</span>/10 characters minimum
+                        </div>
+                    </div>
+
+                    <!-- Priority -->
+                    <div class="mb-3">
+                        <label class="form-label">Priority</label>
+                        <select class="form-select" id="initTransferPriority">
+                            <option value="normal">Normal</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                </form>
+
+                <!-- Progress -->
+                <div id="initTransferProgress" class="d-none mt-3">
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 100%"></div>
+                    </div>
+                    <p class="text-center mt-2 text-muted">
+                        <i class="bi bi-hourglass-split me-2"></i>Initiating transfer...
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="executeInitTransferBtn" onclick="executeInitiateTransfer()">
+                    <i class="bi bi-send me-2"></i>Initiate Transfer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- WORLD-CLASS: Bulk Transfer Modal -->
+<div class="modal fade" id="bulkTransferModal" tabindex="-1" aria-labelledby="bulkTransferModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkTransferModalLabel">
+                    <i class="bi bi-collection me-2"></i>Bulk Asset Transfer
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Bulk Transfer:</strong> Transfer multiple assets to the same user and branch in one operation.
+                </div>
+
+                <form id="bulkTransferForm">
+                    {% csrf_token %}
+                    
+                    <!-- Asset Selection (Multiple) -->
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-box-seam me-1"></i>Select Assets <span class="text-danger">*</span>
+                        </label>
+                        <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                            <div id="bulkAssetCheckboxes">
+                                <div class="text-center py-3">
+                                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                    <span class="ms-2">Loading assets...</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-text">
+                            <span id="bulkSelectedCount" class="badge bg-primary">0 selected</span>
+                            <span class="ms-2">Select multiple assets to transfer together</span>
+                        </div>
+                    </div>
+
+                    <!-- Branch Selection -->
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-building me-1"></i>Destination Branch <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="bulkBranchSelect" required onchange="loadUsersForBulkTransfer()">
+                            <option value="">-- Select destination branch --</option>
+                        </select>
+                    </div>
+
+                    <!-- User Selection -->
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-person me-1"></i>Transfer To User <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="bulkUserSelect" required disabled>
+                            <option value="">Select a branch first...</option>
+                        </select>
+                        
+                        <!-- Loading State -->
+                        <div id="bulkUserLoadingState" class="d-none mt-2">
+                            <div class="d-flex align-items-center text-primary">
+                                <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                <span>Loading users...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reason -->
+                    <div class="mb-3">
+                        <label class="form-label">Reason for Bulk Transfer <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="bulkTransferReason" rows="3" required minlength="10" 
+                                  placeholder="Provide a reason for this bulk transfer (minimum 10 characters)"></textarea>
+                        <div class="form-text">
+                            <span id="bulkReasonCharCount">0</span>/10 characters minimum
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Progress -->
+                <div id="bulkTransferProgress" class="d-none mt-3">
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" role="progressbar" style="width: 0%" id="bulkProgressBar"></div>
+                    </div>
+                    <p class="text-center mt-2 text-muted">
+                        <i class="bi bi-hourglass-split me-2"></i>
+                        <span id="bulkProgressText">Processing transfers...</span>
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="executeBulkTransferBtn" onclick="executeBulkTransfer()">
+                    <i class="bi bi-send me-2"></i>Transfer <span id="bulkBtnCount">0</span> Assets
+                </button>
             </div>
         </div>
     </div>

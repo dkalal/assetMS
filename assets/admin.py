@@ -100,21 +100,18 @@ class AssetAdminForm(forms.ModelForm):
 class AssetAdmin(ImportExportModelAdmin):
     form = AssetAdminForm
     resource_class = AssetResource
-    list_display = ('pk', 'category', 'status', 'assigned_to', 'created_at', 'purchase_value', 'purchase_date', 'depreciation_method', 'useful_life_years')
-    list_filter = ('status', 'category', 'depreciation_method')
+    list_display = ('pk', 'category', 'status', 'assigned_to', 'branch', 'created_at')
+    list_filter = ('status', 'category', 'branch')
     search_fields = ('description',)
     actions = ['export_as_pdf']
     fieldsets = (
         (None, {
             'fields': (
                 'category',
+                'branch',
                 'status',
                 'assigned_to',
                 'description',
-                'purchase_value',
-                'purchase_date',
-                'depreciation_method',
-                'useful_life_years',
                 'qr_code',
                 'images',
                 'documents',

@@ -8,26 +8,17 @@
 {% endblock %}
 
 {% block content %}
-{% include "components/sidebar_enhanced.html" %}
-<div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
-
-<main class="dashboard-content">
-  <div class="container-fluid py-4">
-    <!-- Breadcrumb Navigation -->
-    <nav aria-label="breadcrumb" class="mb-3">
-      <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a></li>
-        <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-gear"></i> Settings</li>
-      </ol>
-    </nav>
-    <div class="row">
-      <div class="col-12">
-        <div class="glass p-4">
-        <div class="d-flex align-items-center justify-content-between mb-4">
-          <h1 class="h3 mb-0">
-            <i class="bi bi-gear text-primary me-2"></i>
-            Settings
-          </h1>
+  <!-- World-Class Settings Page -->
+  <div class="settings-page-container">
+    <!-- Page Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+      <div>
+        <h1 class="h2 mb-1">
+          <i class="bi bi-gear text-primary me-2"></i>
+          Settings
+        </h1>
+        <p class="text-muted mb-0">Manage your account, company, and system preferences</p>
+      </div>
           <div class="d-flex gap-2">
             <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetSettings()">
               <i class="bi bi-arrow-clockwise me-1"></i>
@@ -203,11 +194,8 @@
           </div>
           {% endif %}
         </div>
-        </div>
-      </div>
     </div>
   </div>
-</main>
 {% endblock %}
 
 {% block dashboard_modals %}

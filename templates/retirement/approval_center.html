@@ -1,0 +1,202 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Retirement Approval Center - {{ company.name }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<link rel="stylesheet" href="{% static 'css/retirement-worldclass.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Retirement Approval Center</li>
+        </ol>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="retirement-hero">
+        <div class="d-flex align-items-center gap-3">
+            <div class="retirement-icon-large">
+                <i class="bi bi-clipboard-check"></i>
+            </div>
+            <div>
+                <h2 class="mb-2">Retirement Approval Center</h2>
+                <p class="mb-0" style="opacity: 0.9;">Review and manage retirement requests</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="metric-card">
+                <div class="metric-icon warning">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <div class="metric-value" id="pendingCount">-</div>
+                <div class="metric-label">Pending Approval</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="metric-card">
+                <div class="metric-icon success">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <div class="metric-value" id="approvedCount">-</div>
+                <div class="metric-label">Approved</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="metric-card">
+                <div class="metric-icon info">
+                    <i class="bi bi-arrow-repeat"></i>
+                </div>
+                <div class="metric-value" id="inProgressCount">-</div>
+                <div class="metric-label">In Progress</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="filter-card">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <input type="text" id="searchInput" class="search-input-modern w-100" placeholder="Search by employee name or email..." aria-label="Search employees">
+            </div>
+            <div class="col-md-3">
+                <select id="statusFilter" class="form-select" aria-label="Filter by status">
+                    <option value="">All Statuses</option>
+                    <option value="requested">Requested</option>
+                    <option value="pending_approval">Pending Approval</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select id="sortBy" class="form-select" aria-label="Sort by">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="effective_date">By Effective Date</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approvals Container (Scrollable like Staff List) -->
+    <div class="approvals-container">
+        <!-- Header -->
+        <div class="approvals-header">
+            <h5>
+                <i class="bi bi-list-check"></i>
+                Pending Retirement Requests
+            </h5>
+        </div>
+        
+        <!-- Scrollable Body -->
+        <div class="approvals-body">
+            <!-- Loading State -->
+            <div id="loadingState" style="display: none;">
+                <div class="text-center py-5">
+                    <div class="loading-spinner mx-auto mb-3"></div>
+                    <p class="text-muted">Loading retirement requests...</p>
+                </div>
+            </div>
+
+            <!-- Approvals List -->
+            <div id="approvalsList"></div>
+
+            <!-- Empty State -->
+            <div id="emptyState" style="display: none;">
+                <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <p>No pending retirement requests</p>
+                    <small class="text-muted">There are no retirement requests waiting for your approval</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="approvals-footer">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="text-muted small">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Showing all pending requests
+                </div>
+                <button class="btn btn-sm btn-outline-primary" onclick="loadPendingApprovals()">
+                    <i class="bi bi-arrow-clockwise me-1"></i>
+                    Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Approve Modal -->
+<div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 16px; border: none;">
+            <div class="modal-header" style="border-bottom: 2px solid #e5e7eb;">
+                <h5 class="modal-title" id="approveModalLabel">
+                    <i class="bi bi-check-circle text-success"></i> Approve Retirement Request
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">Are you sure you want to approve this retirement request?</p>
+                <div class="form-group-modern">
+                    <label for="approvalComments">Comments (Optional)</label>
+                    <textarea id="approvalComments" class="form-control" placeholder="Add any comments or notes..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 2px solid #e5e7eb;">
+                <button type="button" class="action-btn action-btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x"></i> Cancel
+                </button>
+                <button type="button" class="action-btn action-btn-success" id="confirmApproveBtn">
+                    <i class="bi bi-check-circle"></i> Approve Request
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 16px; border: none;">
+            <div class="modal-header" style="border-bottom: 2px solid #e5e7eb;">
+                <h5 class="modal-title" id="rejectModalLabel">
+                    <i class="bi bi-x-circle text-danger"></i> Reject Retirement Request
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">Please provide a reason for rejecting this request.</p>
+                <div class="form-group-modern">
+                    <label for="rejectionReason">Rejection Reason *</label>
+                    <textarea id="rejectionReason" class="form-control" required placeholder="Explain why this request is being rejected..." minlength="10"></textarea>
+                    <div class="form-help-text">
+                        <i class="bi bi-info-circle"></i>
+                        <span>Minimum 10 characters required</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 2px solid #e5e7eb;">
+                <button type="button" class="action-btn action-btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x"></i> Cancel
+                </button>
+                <button type="button" class="action-btn action-btn-danger" id="confirmRejectBtn">
+                    <i class="bi bi-x-circle"></i> Reject Request
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/retirement-admin.js' %}"></script>
+{% endblock %}

@@ -214,6 +214,123 @@
             color: var(--primary);
         }
 
+        .password-field {
+            position: relative;
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            background: none;
+            border: none;
+            padding: 0.5rem;
+            cursor: pointer;
+            z-index: 3;
+            transition: color 0.15s ease-out;
+            text-decoration: none;
+        }
+        
+        .password-toggle:hover,
+        .password-toggle:focus {
+            color: var(--primary);
+            outline: none;
+        }
+        
+        .password-toggle:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+        
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .form-check {
+            margin: 0;
+        }
+        
+        .form-check-input {
+            margin-top: 0.25rem;
+            cursor: pointer;
+        }
+        
+        .form-check-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .forgot-password-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.15s ease-out;
+        }
+        
+        .forgot-password-link:hover,
+        .forgot-password-link:focus {
+            color: var(--secondary);
+            text-decoration: underline;
+        }
+        
+        .forgot-password-link:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+        
+        .register-link {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: var(--border);
+        }
+        
+        .register-link-text {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.15s ease-out;
+        }
+        
+        .register-link-text:hover,
+        .register-link-text:focus {
+            color: var(--secondary);
+            text-decoration: underline;
+        }
+        
+        .register-link-text:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+        
+        .invalid-feedback {
+            display: block;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: #ef4444;
+        }
+        
+        .form-control.is-invalid {
+            border-color: #ef4444;
+        }
+        
+        .form-control.is-invalid:focus {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+        }
+
         .login-btn {
             width: 100%;
             height: 64px;
@@ -333,35 +450,90 @@
                 {% endfor %}
             {% endif %}
 
-            <form method="post" id="loginForm" action="{% url 'users:login' %}">
+            <form method="post" id="loginForm" action="{% url 'users:login' %}" novalidate>
                 {% csrf_token %}
                 {% if redirect_field_value %}
                     <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
                 {% endif %}
                 
                 <div class="form-floating">
-                    <input type="text" class="form-control" id="id_username" name="username" 
-                           placeholder="Username" required autocomplete="username">
-                    <label for="id_username">Username</label>
-                    <i class="bi bi-person form-icon"></i>
+                    <input type="text" 
+                           inputmode="email"
+                           class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
+                           id="id_username" 
+                           name="username" 
+                           placeholder="Enter your email or username" 
+                           required 
+                           autocomplete="username"
+                           aria-describedby="emailHelp"
+                           aria-invalid="{% if form.username.errors %}true{% else %}false{% endif %}">
+                    <label for="id_username">Email or Username</label>
+                    <i class="bi bi-envelope form-icon"></i>
+                    {% if form.username.errors %}
+                        <div class="invalid-feedback" id="emailError">
+                            {% for error in form.username.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                    <small id="emailHelp" class="form-text text-muted d-none">Enter the email address you used to register</small>
                 </div>
 
-                <div class="form-floating">
-                    <input type="password" class="form-control" id="id_password" name="password" 
-                           placeholder="Password" required autocomplete="current-password">
+                <div class="form-floating password-field">
+                    <input type="password" 
+                           class="form-control {% if form.password.errors %}is-invalid{% endif %}" 
+                           id="id_password" 
+                           name="password" 
+                           placeholder="Enter your password" 
+                           required 
+                           autocomplete="current-password"
+                           aria-describedby="passwordHelp"
+                           aria-invalid="{% if form.password.errors %}true{% else %}false{% endif %}">
                     <label for="id_password">Password</label>
                     <i class="bi bi-lock form-icon"></i>
+                    <button type="button" 
+                            class="btn btn-link password-toggle" 
+                            id="passwordToggle" 
+                            aria-label="Toggle password visibility"
+                            tabindex="-1">
+                        <i class="bi bi-eye" id="passwordToggleIcon"></i>
+                    </button>
+                    {% if form.password.errors %}
+                        <div class="invalid-feedback" id="passwordError">
+                            {% for error in form.password.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
                 </div>
 
-                <button type="submit" class="btn login-btn" id="loginButton">
+                <div class="form-options">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="rememberMe" name="remember_me">
+                        <label class="form-check-label" for="rememberMe">
+                            Remember me for 30 days
+                        </label>
+                    </div>
+                    <a href="{% url 'users:password_reset' %}" class="forgot-password-link" tabindex="0">
+                        Forgot password?
+                    </a>
+                </div>
+
+                <button type="submit" class="btn login-btn" id="loginButton" aria-label="Sign in to your account">
                     <span class="btn-text">
                         <i class="bi bi-box-arrow-in-right me-2"></i>Sign In Securely
                     </span>
                     <span class="btn-loading d-none">
-                        <span class="spinner-border spinner-border-sm me-2"></span>Authenticating...
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span aria-live="polite">Authenticating...</span>
                     </span>
                 </button>
             </form>
+            
+            <div class="register-link">
+                <p class="text-center mb-0">
+                    Don't have an account? 
+                    <a href="{% url 'accounts:register' %}" class="register-link-text" tabindex="0">
+                        Create an account
+                    </a>
+                </p>
+            </div>
 
             <div class="security-notice">
                 <i class="bi bi-shield-lock security-notice-icon"></i>
@@ -375,32 +547,47 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const themeToggle = document.getElementById('themeToggle');
-            const themeIcon = document.getElementById('themeIcon');
+        document.addEventListener('DOMContentLoaded', () => {
             const form = document.getElementById('loginForm');
             const submitBtn = document.getElementById('loginButton');
+            const emailInput = document.getElementById('id_username');
+            const passwordInput = document.getElementById('id_password');
+            const passwordToggle = document.getElementById('passwordToggle');
+            const passwordToggleIcon = document.getElementById('passwordToggleIcon');
 
-            // Theme will be handled by global theme manager
+            if (passwordToggle && passwordInput) {
+                passwordToggle.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    const showing = passwordInput.getAttribute('type') === 'text';
+                    passwordInput.setAttribute('type', showing ? 'password' : 'text');
+                    passwordToggleIcon.classList.toggle('bi-eye', showing);
+                    passwordToggleIcon.classList.toggle('bi-eye-slash', !showing);
+                    passwordToggle.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+                });
+            }
 
-            // Form submission
-            form.addEventListener('submit', function() {
-                const btnText = submitBtn.querySelector('.btn-text');
-                const btnLoading = submitBtn.querySelector('.btn-loading');
-                
-                btnText.classList.add('d-none');
-                btnLoading.classList.remove('d-none');
-                submitBtn.disabled = true;
-                
-                setTimeout(() => {
-                    btnText.classList.remove('d-none');
-                    btnLoading.classList.add('d-none');
-                    submitBtn.disabled = false;
-                }, 5000);
-            });
+            if (form && submitBtn) {
+                form.addEventListener('submit', () => {
+                    const btnText = submitBtn.querySelector('.btn-text');
+                    const btnLoading = submitBtn.querySelector('.btn-loading');
+                    if (btnText && btnLoading) {
+                        btnText.classList.add('d-none');
+                        btnLoading.classList.remove('d-none');
+                    }
+                    submitBtn.disabled = true;
+                    submitBtn.setAttribute('aria-busy', 'true');
+                });
+            }
 
-            // Focus first field
-            document.getElementById('id_username').focus();
+            if (emailInput) {
+                emailInput.focus({ preventScroll: true });
+            }
+
+            const errorAlert = document.querySelector('.alert-danger');
+            if (errorAlert) {
+                errorAlert.setAttribute('role', 'alert');
+                errorAlert.setAttribute('aria-live', 'polite');
+            }
         });
     </script>
 </body>

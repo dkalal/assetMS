@@ -98,3 +98,19 @@ imagekitio==3.2.0
 cloudinary==1.41.0
 # Content Security Policy
 django-csp==3.8
+# CRITICAL: urllib3 must be <2.0 for imagekitio compatibility
+urllib3>=1.26,<2.0
+# Celery for async task processing
+celery[redis]==5.4.0
+# Redis client for Celery broker (optional, using Django DB for development)
+redis==5.2.1
+# Kombu with SQLAlchemy for Django DB broker
+kombu[sqlalchemy]>=5.6.0
+# Database-backed periodic tasks
+django-celery-beat==2.7.0
+# Store task results in Django DB
+django-celery-results==2.5.1
+# Celery monitoring UI (optional)
+flower==2.0.1
+# Fuzzy string matching for intelligent duplicate detection (world-class performance)
+rapidfuzz==3.10.1

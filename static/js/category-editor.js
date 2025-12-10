@@ -315,6 +315,7 @@ class CategoryEditor {
             <span class="field-key">${field.key}</span>
             <span class="badge bg-secondary ms-2">${field.type}</span>
             ${field.required ? '<span class="badge bg-danger ms-1">Required</span>' : ''}
+            ${field.is_unique ? '<span class="badge bg-primary ms-1"><i class="bi bi-shield-check me-1"></i>Unique</span>' : ''}
           </div>
         </div>
         <div class="field-actions">
@@ -349,6 +350,7 @@ class CategoryEditor {
         if (hint) hint.textContent = 'Key is locked because it is already in use';
         document.getElementById('edit-field-type').value = field.type;
         document.getElementById('edit-field-required').checked = field.required;
+        document.getElementById('edit-field-unique').checked = field.is_unique || false;
         document.getElementById('edit-field-form-title').textContent = 'Edit Field';
         
         const labelInput = document.getElementById('edit-field-label');
@@ -366,6 +368,7 @@ class CategoryEditor {
       if (hint) hint.textContent = 'Auto-generated from the label';
       document.getElementById('edit-field-type').value = 'text';
       document.getElementById('edit-field-required').checked = false;
+      document.getElementById('edit-field-unique').checked = false;
       document.getElementById('edit-field-form-title').textContent = 'Add New Field';
       
       const labelInput = document.getElementById('edit-field-label');
@@ -400,6 +403,7 @@ class CategoryEditor {
     const key = this.editingFieldId ? document.getElementById('edit-field-key').value.trim() : this.generateKeyFromLabel(label);
     const type = document.getElementById('edit-field-type').value;
     const required = document.getElementById('edit-field-required').checked;
+    const is_unique = document.getElementById('edit-field-unique').checked;
     
     // Validate
     if (!label) {
@@ -434,7 +438,7 @@ class CategoryEditor {
             'X-CSRFToken': this.getCSRFToken(),
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ label, type, required })
+          body: JSON.stringify({ label, type, required, is_unique })
         });
       } else {
         // Create new field
@@ -444,7 +448,7 @@ class CategoryEditor {
             'X-CSRFToken': this.getCSRFToken(),
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ key, label, type, required })
+          body: JSON.stringify({ key, label, type, required, is_unique })
         });
       }
       

@@ -78,6 +78,8 @@ INSTALLED_APPS = [
     # Project apps
     'tenancy',
     'users',
+    'accounts',  # User registration, onboarding, invitations
+    'system_admin',  # System-level administration
     'assets',
     'categories',
     'audit',
@@ -124,6 +126,8 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'users.context_processors.user_view_data',
                 'tenancy.context_processors.tenancy_context',
+                'accounts.context_processors.trial_status',
+                'accounts.context_processors.company_limits',
             ],
         },
     },
@@ -261,6 +265,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Custom user model
 AUTH_USER_MODEL = 'users.User'
 
+# Custom authentication backend for email-based login
+# Supports both email and username for backward compatibility
+AUTHENTICATION_BACKENDS = [
+    'users.backends.EmailOrUsernameBackend',  # Custom: email or username login
+    'django.contrib.auth.backends.ModelBackend',  # Fallback to default
+]
+
 # Ensure all login-required redirects use the branded login page
 LOGIN_URL = 'users:login'
 LOGIN_REDIRECT_URL = '/dashboard/'
@@ -375,3 +386,65 @@ DEFAULT_FROM_EMAIL = _env('DEFAULT_FROM_EMAIL', 'AssetMS <no-reply@assetms.local
 
 # Custom CSP middleware handles Content Security Policy
 # See assetms/middleware.py for CSP configuration
+
+# ==========================
+# Celery Configuration
+# ==========================
+# Development: Use EAGER mode (tasks execute synchronously, no worker/broker needed)
+# Production: Use Redis broker for true async execution
+if DEBUG:
+    # EAGER mode: Tasks execute immediately in the same process
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = True
+    CELERY_BROKER_URL = 'memory://'
+    CELERY_RESULT_BACKEND = 'django-db'
+    print("🔧 Celery EAGER mode enabled - tasks execute synchronously (no worker needed)")
+else:
+    # Production: Redis broker for async execution
+    CELERY_TASK_ALWAYS_EAGER = False
+    CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+    CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/1')
+
+# Celery Task Settings
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ENABLE_UTC = True
+
+# Task execution settings
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes hard limit
+CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # 25 minutes soft limit
+CELERY_TASK_ACKS_LATE = True  # Task acknowledged after execution
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # One task at a time per worker
+
+# Result backend settings
+CELERY_RESULT_EXPIRES = 3600  # Results expire after 1 hour
+CELERY_RESULT_PERSISTENT = True  # Persist results to backend
+
+# Task retry settings
+CELERY_TASK_DEFAULT_RETRY_DELAY = 60  # Retry after 60 seconds
+CELERY_TASK_MAX_RETRIES = 3  # Maximum 3 retries
+
+# Worker settings
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000  # Restart worker after 1000 tasks
+CELERY_WORKER_DISABLE_RATE_LIMITS = False  # Enable rate limiting
+
+# Monitoring
+CELERY_SEND_TASK_SENT_EVENT = True  # Send task-sent events
+CELERY_SEND_TASK_ERROR_EMAILS = not DEBUG  # Email on task errors in production
+
+# Security
+CELERY_TASK_REJECT_ON_WORKER_LOST = True  # Reject task if worker dies
+CELERY_TASK_IGNORE_RESULT = False  # Store task results
+
+# Django Celery Beat (Database-backed periodic tasks)
+INSTALLED_APPS += [
+    'django_celery_beat',
+    'django_celery_results',
+]
+
+# Store task results in Django database
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_CACHE_BACKEND = 'django-cache'

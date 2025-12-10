@@ -142,37 +142,78 @@
                         <div id="enhanced-field-feedback" class="mb-3"></div>
                         <form id="enhanced-field-form">
                             <div class="row g-3">
-                                <div class="col-md-6">
+                                <!-- Primary Input: Field Label (User fills this) -->
+                                <div class="col-12">
                                     <label class="form-label fw-semibold">
-                                        Field Key <span class="text-danger">*</span>
+                                        <i class="bi bi-tag me-1 text-primary"></i>
+                                        Field Name <span class="text-danger">*</span>
                                     </label>
-                                    <input type="text" class="form-control" id="enhanced-field-key" 
-                                           name="key" maxlength="50" required 
-                                           placeholder="e.g., serial_number">
-                                    <div class="form-text">Unique identifier (lowercase, underscores)</div>
+                                    <input type="text" class="form-control form-control-lg" id="enhanced-field-label" 
+                                           name="label" maxlength="100" required minlength="2"
+                                           placeholder="e.g., Serial Number, Purchase Date, Model Number"
+                                           autocomplete="off">
+                                    <div class="form-text">
+                                        <i class="bi bi-lightbulb me-1 text-warning"></i>
+                                        Enter a descriptive name for this field (e.g., "Serial Number", "Purchase Date")
+                                    </div>
+                                    <div class="invalid-feedback">
+                                        Field name must be at least 2 characters long.
+                                    </div>
+                                </div>
+
+                                <!-- Auto-Generated Key (Read-only by default, click to customize) -->
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold d-flex align-items-center justify-content-between">
+                                        <span>
+                                            <i class="bi bi-key me-1 text-secondary"></i>
+                                            Field Key (Auto-generated)
+                                        </span>
+                                        <span class="badge bg-info-subtle text-info-emphasis" id="key-auto-badge">
+                                            <i class="bi bi-magic me-1"></i>Auto
+                                        </span>
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="enhanced-field-key" 
+                                               name="key" maxlength="50" required 
+                                               pattern="^[a-z][a-z0-9_]*$"
+                                               placeholder="Auto-generated from field name"
+                                               readonly
+                                               style="background-color: #f8f9fa; cursor: pointer;"
+                                               title="Click to customize">
+                                        <button class="btn btn-outline-secondary" type="button" id="toggle-key-edit"
+                                                title="Customize field key">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-text" id="key-help-text">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        <span id="key-help-message">Automatically generated from field name. Click <i class="bi bi-pencil"></i> to customize.</span>
+                                    </div>
+                                    <div class="invalid-feedback">
+                                        Must start with a letter and contain only lowercase letters, numbers, and underscores.
+                                    </div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">
-                                        Field Label <span class="text-danger">*</span>
+                                        Field Type <span class="text-danger">*</span>
                                     </label>
-                                    <input type="text" class="form-control" id="enhanced-field-label" 
-                                           name="label" maxlength="100" required 
-                                           placeholder="e.g., Serial Number">
-                                    <div class="form-text">Display name for users</div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Field Type</label>
                                     <select class="form-select" id="enhanced-field-type" name="type" required>
+                                        <option value="">-- Select Type --</option>
                                         <option value="text">Text</option>
                                         <option value="number">Number</option>
                                         <option value="date">Date</option>
                                     </select>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Data type for this field
+                                    </div>
                                 </div>
                                 <div class="col-md-6 d-flex align-items-end">
                                     <div class="form-check form-switch">
                                         <input class="form-check-input" type="checkbox" 
                                                id="enhanced-field-required" name="required">
                                         <label class="form-check-label fw-semibold" for="enhanced-field-required">
+                                            <i class="bi bi-asterisk text-danger me-1"></i>
                                             Required Field
                                         </label>
                                     </div>
@@ -227,75 +268,111 @@
     </div>
 </div>
 
-<!-- Enhanced Category Creation Wizard -->
-<div id="categoryWizardModal" class="custom-modal-overlay" tabindex="-1">
-    <div class="custom-modal glass-modal wizard-modal" role="dialog" aria-modal="true" style="max-width:900px;width:100%;">
-        <div class="custom-modal-header">
-            <h4 class="modal-title fw-bold mb-0">
-                <i class="bi bi-magic me-2"></i>Create Category
-            </h4>
-            <button type="button" class="custom-modal-close" onclick="adminTools.closeWizard()">
-                <span>&times;</span>
-            </button>
+<!-- ============================================================================
+     CATEGORY CREATION WIZARD - CLEAN MINIMAL DESIGN
+     Multi-Step Process | Professional UI/UX
+     ============================================================================ -->
+<div id="categoryWizardModal" class="custom-modal-overlay" tabindex="-1" style="background: rgba(0, 0, 0, 0.5);">
+    <div class="custom-modal glass-modal wizard-modal" role="dialog" aria-modal="true" 
+         style="max-width:900px; width:90%; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); overflow: hidden; background: white;">
+        
+        <!-- Simple Clean Header -->
+        <div class="custom-modal-header" style="background: #6B9BD1; padding: 1rem 1.5rem; border-radius: 16px 16px 0 0;">
+            <div class="d-flex align-items-center justify-content-between">
+                <h5 class="modal-title fw-semibold mb-0" style="color: white; font-size: 1.1rem;">
+                    <i class="bi bi-folder-plus me-2"></i>Create Category
+                </h5>
+                <button type="button" class="btn-close btn-close-white" onclick="adminTools.closeWizard()" aria-label="Close"></button>
+            </div>
         </div>
         
-        <!-- Progress Indicator -->
-        <div class="wizard-progress">
-            <div class="wizard-steps">
-                <div class="wizard-step active" data-step="1">
-                    <div class="wizard-step-number">1</div>
-                    <div class="wizard-step-label">Choose Path</div>
+        <!-- Minimal Step Indicator -->
+        <div class="wizard-progress" style="background: white; padding: 0.75rem 1.5rem; border-bottom: 1px solid #e9ecef;">
+            <div class="wizard-steps" style="display: flex; align-items: center; justify-content: center; gap: 1rem; position: relative;">
+                <!-- Step 1 -->
+                <div class="wizard-step active" data-step="1" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div class="wizard-step-number" style="width: 32px; height: 32px; border-radius: 50%; background: #6B9BD1; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.9rem;">
+                        1
+                    </div>
+                    <span class="wizard-step-label" style="font-size: 0.875rem; font-weight: 500; color: #6B9BD1;">Choose Path</span>
                 </div>
-                <div class="wizard-step-connector"></div>
-                <div class="wizard-step" data-step="2">
-                    <div class="wizard-step-number">2</div>
-                    <div class="wizard-step-label">Category Info</div>
+                
+                <!-- Connector -->
+                <div style="width: 40px; height: 2px; background: #e9ecef;"></div>
+                
+                <!-- Step 2 -->
+                <div class="wizard-step" data-step="2" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div class="wizard-step-number" style="width: 32px; height: 32px; border-radius: 50%; background: #e9ecef; color: #9ca3af; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.9rem;">
+                        2
+                    </div>
+                    <span class="wizard-step-label" style="font-size: 0.875rem; font-weight: 500; color: #9ca3af;">Category Info</span>
                 </div>
-                <div class="wizard-step-connector"></div>
-                <div class="wizard-step" data-step="3">
-                    <div class="wizard-step-number">3</div>
-                    <div class="wizard-step-label">Add Fields</div>
+                
+                <!-- Connector -->
+                <div style="width: 40px; height: 2px; background: #e9ecef;"></div>
+                
+                <!-- Step 3 -->
+                <div class="wizard-step" data-step="3" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div class="wizard-step-number" style="width: 32px; height: 32px; border-radius: 50%; background: #e9ecef; color: #9ca3af; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.9rem;">
+                        3
+                    </div>
+                    <span class="wizard-step-label" style="font-size: 0.875rem; font-weight: 500; color: #9ca3af;">Add Fields</span>
                 </div>
-                <div class="wizard-step-connector"></div>
-                <div class="wizard-step" data-step="4">
-                    <div class="wizard-step-number">4</div>
-                    <div class="wizard-step-label">Review</div>
+                
+                <!-- Connector -->
+                <div style="width: 40px; height: 2px; background: #e9ecef;"></div>
+                
+                <!-- Step 4 -->
+                <div class="wizard-step" data-step="4" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div class="wizard-step-number" style="width: 32px; height: 32px; border-radius: 50%; background: #e9ecef; color: #9ca3af; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.9rem;">
+                        4
+                    </div>
+                    <span class="wizard-step-label" style="font-size: 0.875rem; font-weight: 500; color: #9ca3af;">Review</span>
                 </div>
             </div>
         </div>
         
-        <div class="custom-modal-body wizard-body">
+        <!-- Clean Body -->
+        <div class="custom-modal-body wizard-body" style="padding: 1.25rem 1.5rem; min-height: auto; background: white;">
             <div id="wizard-feedback" class="mb-3"></div>
             
-            <!-- Step 1: Choose Path -->
+            <!-- Step 1: Choose Path - MINIMAL CLEAN DESIGN -->
             <div class="wizard-content" data-step="1">
-                <div class="text-center mb-4">
-                    <h5 class="fw-bold">How would you like to create your category?</h5>
-                    <p class="text-muted">Choose the method that works best for you</p>
+                <div class="text-center mb-2">
+                    <h6 class="fw-semibold mb-1" style="color: #1f2937; font-size: 0.95rem;">How would you like to create your category?</h6>
+                    <p class="text-muted mb-0" style="font-size: 0.8rem;">Choose the method that works best for you</p>
                 </div>
                 
-                <div class="row g-4">
+                <div class="row g-2 justify-content-center mt-1">
+                    <!-- Template Option -->
                     <div class="col-md-6">
                         <div class="wizard-path-card" onclick="adminTools.selectWizardPath('template')">
                             <div class="wizard-path-icon">
                                 <i class="bi bi-lightning-charge-fill"></i>
                             </div>
-                            <h6 class="fw-bold mb-2">Use Template</h6>
-                            <p class="text-muted small mb-3">Quick start with pre-configured fields based on industry best practices</p>
-                            <div class="badge bg-success">Recommended</div>
+                            <h6 class="fw-semibold">Use Template</h6>
+                            <p class="text-muted">Quick start with pre-configured fields</p>
                         </div>
                     </div>
+                    
+                    <!-- Custom Option -->
                     <div class="col-md-6">
                         <div class="wizard-path-card" onclick="adminTools.selectWizardPath('custom')">
-                            <div class="wizard-path-icon">
+                            <div class="wizard-path-icon" style="background: #6B9BD1;">
                                 <i class="bi bi-pencil-square"></i>
                             </div>
-                            <h6 class="fw-bold mb-2">Custom Setup</h6>
-                            <p class="text-muted small mb-3">Build from scratch with complete control over every field</p>
-                            <div class="badge bg-primary">Advanced</div>
+                            <h6 class="fw-semibold">Custom Setup</h6>
+                            <p class="text-muted">Build from scratch with complete control</p>
                         </div>
                     </div>
                 </div>
+                
+                <!-- Simple hover effect -->
+                <style>
+                    .wizard-path-card:hover {
+                        border-color: #6B9BD1 !important;
+                    }
+                </style>
             </div>
             
             <!-- Step 2a: Template Selection -->
@@ -315,34 +392,34 @@
                 </div>
             </div>
             
-            <!-- Step 2b: Category Info -->
+            <!-- Step 2b: Category Info - CLEAN DESIGN -->
             <div class="wizard-content" data-step="2b" style="display:none;">
                 <div class="text-center mb-4">
-                    <h5 class="fw-bold">Category Information</h5>
-                    <p class="text-muted">Provide basic details about your category</p>
+                    <h6 class="fw-semibold mb-2" style="color: #1f2937; font-size: 1.1rem;">Category Information</h6>
+                    <p class="text-muted mb-0" style="font-size: 0.9rem;">Provide basic details about your category</p>
                 </div>
                 
-                <div class="row justify-content-center">
+                <div class="row justify-content-center mt-4">
                     <div class="col-md-8">
-                        <div class="mb-4">
-                            <label for="wizard-category-name" class="form-label fw-semibold">
+                        <div class="mb-3">
+                            <label for="wizard-category-name" class="form-label fw-medium" style="font-size: 0.9rem; color: #374151;">
                                 Category Name <span class="text-danger">*</span>
                             </label>
-                            <input type="text" class="form-control form-control-lg" id="wizard-category-name" 
-                                   maxlength="100" required placeholder="e.g., Laptops, Vehicles, Furniture">
-                            <div class="form-text">
-                                <i class="bi bi-info-circle me-1"></i>
+                            <input type="text" class="form-control" id="wizard-category-name" 
+                                   maxlength="100" required placeholder="e.g., Laptops, Vehicles, Furniture"
+                                   style="background: #f9fafb; border: 1px solid #e5e7eb; padding: 0.65rem 1rem; font-size: 0.9rem;">
+                            <small class="form-text text-muted" style="font-size: 0.8rem;">
                                 Choose a clear, descriptive name for this category
-                            </div>
+                            </small>
                         </div>
                         
-                        <div id="template-preview" class="alert alert-info" style="display:none;">
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-info-circle fs-4 me-3"></i>
-                                <div>
+                        <div id="template-preview" class="alert alert-info" style="display:none; border: 1px solid #bee5eb; background: #d1ecf1; border-radius: 8px; padding: 1rem;">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-info-circle me-2" style="font-size: 1.1rem;"></i>
+                                <div style="font-size: 0.85rem;">
                                     <strong>Template Selected:</strong> <span id="selected-template-name"></span>
                                     <br>
-                                    <small id="selected-template-desc"></small>
+                                    <small id="selected-template-desc" class="text-muted"></small>
                                 </div>
                             </div>
                         </div>
@@ -350,11 +427,11 @@
                 </div>
             </div>
             
-            <!-- Step 3: Add/Customize Fields -->
+            <!-- Step 3: Add/Customize Fields - CLEAN DESIGN -->
             <div class="wizard-content" data-step="3" style="display:none;">
                 <div class="text-center mb-4">
-                    <h5 class="fw-bold">Configure Dynamic Fields</h5>
-                    <p class="text-muted">Add custom fields to capture specific asset information</p>
+                    <h6 class="fw-semibold mb-2" style="color: #1f2937; font-size: 1.1rem;">Configure Dynamic Fields</h6>
+                    <p class="text-muted mb-0" style="font-size: 0.9rem;">Add custom fields to capture specific asset information</p>
                 </div>
                 
                 <div class="row">
@@ -385,11 +462,11 @@
                 </div>
             </div>
             
-            <!-- Step 4: Review & Confirm -->
+            <!-- Step 4: Review & Confirm - CLEAN DESIGN -->
             <div class="wizard-content" data-step="4" style="display:none;">
                 <div class="text-center mb-4">
-                    <h5 class="fw-bold">Review & Confirm</h5>
-                    <p class="text-muted">Check your configuration before creating the category</p>
+                    <h6 class="fw-semibold mb-2" style="color: #1f2937; font-size: 1.1rem;">Review & Confirm</h6>
+                    <p class="text-muted mb-0" style="font-size: 0.9rem;">Check your configuration before creating the category</p>
                 </div>
                 
                 <div class="row justify-content-center">
@@ -422,18 +499,19 @@
             </div>
         </div>
         
-        <div class="custom-modal-footer wizard-footer d-flex justify-content-between p-3">
-            <button type="button" class="btn btn-secondary" id="wizard-back-btn" onclick="adminTools.wizardPrevStep()" style="display:none;">
+        <!-- Clean Footer -->
+        <div class="custom-modal-footer wizard-footer d-flex justify-content-between align-items-center" style="padding: 0.875rem 1.5rem; background: #f8f9fa; border-top: 1px solid #e9ecef;">
+            <button type="button" class="btn btn-light" id="wizard-back-btn" onclick="adminTools.wizardPrevStep()" style="display:none; border: 1px solid #dee2e6;">
                 <i class="bi bi-arrow-left me-2"></i>Back
             </button>
             <div class="ms-auto d-flex gap-2">
-                <button type="button" class="btn btn-outline-secondary" onclick="adminTools.closeWizard()">
+                <button type="button" class="btn btn-light" onclick="adminTools.closeWizard()" style="border: 1px solid #dee2e6;">
                     Cancel
                 </button>
-                <button type="button" class="btn btn-primary" id="wizard-next-btn" onclick="adminTools.wizardNextStep()">
-                    Next Step<i class="bi bi-arrow-right ms-2"></i>
+                <button type="button" class="btn btn-primary" id="wizard-next-btn" onclick="adminTools.wizardNextStep()" style="background: #6B9BD1; border: none; padding: 0.5rem 1.5rem;">
+                    Next<i class="bi bi-arrow-right ms-2"></i>
                 </button>
-                <button type="button" class="btn btn-success" id="wizard-finish-btn" onclick="adminTools.wizardFinish()" style="display:none;">
+                <button type="button" class="btn btn-success" id="wizard-finish-btn" onclick="adminTools.wizardFinish()" style="display:none; border: none; padding: 0.5rem 1.5rem;">
                     <i class="bi bi-check-lg me-2"></i>Create Category
                 </button>
             </div>

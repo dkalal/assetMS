@@ -34,17 +34,17 @@ function toggleTheme() {
   setTheme(current === 'light' ? 'dark' : 'light');
 }
 
-// Icon and color mapping for KPIs
+// Icon and color mapping for KPIs (Blue Theme)
 const KPI_CONFIG = [
-  { key: 'total_assets', label: 'Total Assets', icon: '📦', color: '#00A6EB', filter: {} },
-  { key: 'active_assets', label: 'Active Assets', icon: '🟢', color: '#28a745', filter: { status: 'active' } },
-  { key: 'maintenance_assets', label: 'In Maintenance', icon: '🛠️', color: '#ffc107', filter: { status: 'maintenance' } },
-  { key: 'retired_assets', label: 'Retired Assets', icon: '🗑️', color: '#6c757d', filter: { status: 'retired' } },
-  { key: 'lost_assets', label: 'Lost Assets', icon: '❌', color: '#dc3545', filter: { status: 'lost' } },
-  { key: 'assigned_assets', label: 'Assigned', icon: '👤', color: '#007bff', filter: { assigned: 'yes' } },
-  { key: 'unassigned_assets', label: 'Unassigned', icon: '👥', color: '#adb5bd', filter: { assigned: 'no' } },
-  { key: 'warranty_expiring_soon', label: 'Warranty Expiring Soon', icon: '⏳', color: '#fd7e14', filter: { warranty: 'expiring' } },
-  { key: 'transferred_assets', label: 'Transferred', icon: '🔄', color: '#6610f2', filter: { status: 'transferred' } },
+  { key: 'total_assets', label: 'Total Assets', icon: '📦', color: '#6B9BD1', filter: {} },
+  { key: 'active_assets', label: 'Active Assets', icon: '🟢', color: '#10b981', filter: { status: 'active' } },
+  { key: 'maintenance_assets', label: 'In Maintenance', icon: '🛠️', color: '#f59e0b', filter: { status: 'maintenance' } },
+  { key: 'retired_assets', label: 'Retired Assets', icon: '🗑️', color: '#6b7280', filter: { status: 'retired' } },
+  { key: 'lost_assets', label: 'Lost Assets', icon: '❌', color: '#ef4444', filter: { status: 'lost' } },
+  { key: 'assigned_assets', label: 'Assigned', icon: '👤', color: '#7BA5F5', filter: { assigned: 'yes' } },
+  { key: 'unassigned_assets', label: 'Unassigned', icon: '👥', color: '#94a3b8', filter: { assigned: 'no' } },
+  { key: 'warranty_expiring_soon', label: 'Warranty Expiring Soon', icon: '⏳', color: '#f59e0b', filter: { warranty: 'expiring' } },
+  { key: 'transferred_assets', label: 'Transferred', icon: '🔄', color: '#A0E7E5', filter: { status: 'transferred' } },
 ];
 
 function kpiCardUrl(filter) {
@@ -389,11 +389,12 @@ function showErrorState(message, retryCallback) {
 // WORLD-CLASS: Chart.js integration with error handling and loading states
 function renderDashboardCharts() {
   const chartConfigs = [
-    { id: 'chart-category', type: 'doughnut', chart: 'category', label: 'Assets by Category' },
+    { id: 'chart-category', type: 'pie', chart: 'category', label: 'Assets by Category' },
     { id: 'chart-acquisition', type: 'line', chart: 'acquisition', label: 'Asset Acquisition Over Time' },
     { id: 'chart-department', type: 'pie', chart: 'department', label: 'Assets by Department' },
     { id: 'chart-location', type: 'pie', chart: 'location', label: 'Assets by Location' },
-    { id: 'chart-depreciation', type: 'line', chart: 'depreciation', label: 'Depreciation / Value Trend' },
+    // REMOVED: Depreciation chart - not needed for this system
+    // { id: 'chart-depreciation', type: 'line', chart: 'depreciation', label: 'Depreciation / Value Trend' },
   ];
   chartConfigs.forEach(cfg => {
     const url = `/dashboard_chart_data_api/?chart=${cfg.chart}`;
@@ -421,7 +422,7 @@ function renderDashboardCharts() {
       })
       .then(data => {
         const ctx = document.getElementById(cfg.id);
-        if (!ctx) return;
+        if (!ctx || !data) return;
         
         // WORLD-CLASS: Remove loading spinner and show canvas
         const loadingDiv = document.getElementById(`${cfg.id}-loading`);
@@ -432,7 +433,7 @@ function renderDashboardCharts() {
         if (ctx._chartInstance) {
           ctx._chartInstance.destroy();
         }
-        if (!data || !data.labels || !data.data || data.data.every(v => v === 0)) {
+        if (!data.labels || !data.data || data.data.every(v => v === 0)) {
           const heading = ctx.parentNode.querySelector('h6, h5');
           if (heading && !heading.textContent.includes('No data')) {
             heading.innerHTML += ' <span style="color:#888;font-size:0.85rem;">(No data)</span>';
@@ -447,7 +448,7 @@ function renderDashboardCharts() {
               label: cfg.label,
               data: data.data,
               backgroundColor: [
-                '#00A6EB','#28a745','#ffc107','#6c757d','#dc3545','#007bff','#adb5bd','#fd7e14','#6610f2','#17a2b8','#343a40'
+                '#6B9BD1','#7BA5F5','#A0C4FF','#A0E7E5','#4169E1','#10b981','#f59e0b','#ef4444','#6b7280','#94a3b8','#64748b'
               ],
               borderColor: '#fff',
               borderWidth: 1,
@@ -658,25 +659,10 @@ document.addEventListener('DOMContentLoaded', function() {
   // Dropdowns, tooltips, etc. (future)
   loadDashboardData();
   renderDashboardCharts();
-  // Show loading indicators before fetching
-  setLoading('recent-added-assets');
-  setLoading('recent-scans');
-  setLoading('recent-transfers');
-  setLoading('recent-maintenance');
-  setLoading('audit-log');
-  fetchAndRenderAllActivityFeeds();
-  fetchAndRenderActivityLogTable();
-  setupFeedPagination();
-  document.getElementById('activity-log-prev').addEventListener('click', function() {
-        if (window._activityLogCurrentPage > 1) {
-            fetchAndRenderActivityLogTable(window._activityLogCurrentPage - 1);
-        }
-    });
-    document.getElementById('activity-log-next').addEventListener('click', function() {
-        if (window._activityLogCurrentPage < window._activityLogNumPages) {
-            fetchAndRenderActivityLogTable(window._activityLogCurrentPage + 1);
-        }
-    });
+  
+  // LEGACY ACTIVITY FEEDS REMOVED
+  // Now using unified activity table handled by dashboard-activity-unified.js
+  // Old individual feeds (recent-added-assets, recent-scans, etc.) are deprecated
   // Visibility-aware periodic refresh for KPIs and charts
   let dashTimerId = null;
   const DASH_BASE_INTERVAL = 120000; // 120s base

@@ -44,14 +44,14 @@ def fix_transferred_assets(apps, schema_editor):
             fixed_count += 1
             
             if completed_transfer:
-                print(f"  ✅ Asset {asset.pk} restored to active (transfer completed)")
+                print(f"  [OK] Asset {asset.pk} restored to active (transfer completed)")
             else:
-                print(f"  ✅ Asset {asset.pk} restored to active (no active transfer)")
+                print(f"  [OK] Asset {asset.pk} restored to active (no active transfer)")
     
     if fixed_count > 0:
-        print(f"\n✅ Fixed {fixed_count} assets stuck in 'transferred' status")
+        print(f"\n[OK] Fixed {fixed_count} assets stuck in 'transferred' status")
     else:
-        print("\n✅ No assets needed fixing - all statuses are correct")
+        print("\n[OK] No assets needed fixing - all statuses are correct")
 
 
 def reverse_fix(apps, schema_editor):
@@ -59,7 +59,7 @@ def reverse_fix(apps, schema_editor):
     Reverse migration - not recommended as it would reintroduce the bug.
     This is a no-op to prevent accidental reversal.
     """
-    print("⚠️ Reverse migration skipped - status fix is required for system integrity")
+    print("[WARNING] Reverse migration skipped - status fix is required for system integrity")
 
 
 class Migration(migrations.Migration):

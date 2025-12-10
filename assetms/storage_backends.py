@@ -94,7 +94,10 @@ class CloudinaryStorage(Storage):
     def save(self, name, content):
         try:
             # Extract folder and filename from Django upload path
+            # Fix Windows path separators for Cloudinary (use forward slashes)
+            name = name.replace('\\', '/')
             folder = os.path.dirname(name) or "uploads"
+            folder = folder.replace('\\', '/')  # Ensure forward slashes
             filename = os.path.basename(name)
             public_id = os.path.splitext(filename)[0]
             

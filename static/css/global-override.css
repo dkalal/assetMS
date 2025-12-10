@@ -1,55 +1,94 @@
-/* Global Background Override - Ensures consistent background across all pages */
+/* Global Background Override - Theme-aware consistent background */
 
-/* Force consistent background on all pages */
+/* Theme-aware blue-tinted background on body only */
 body,
 body.authenticated,
 body[class*="dashboard"],
-body[class*="page"],
-html,
-.dashboard-container,
-.main-content,
-.container,
-.container-fluid {
-  background: linear-gradient(135deg, #eff6ff 0%, #f9fafb 100%) !important;
+body[class*="page"] {
+  background: var(--theme-bg-gradient) !important;
+  background-attachment: fixed !important;
+  min-height: 100vh;
 }
 
-/* Override any specific page backgrounds */
-.dashboard-content,
-.dashboard-sidebar,
-.dashboard-topbar,
-.content-wrapper,
-.enterprise-container {
+/* Main content areas should allow gradient to show through */
+.content-wrapper {
   background: transparent !important;
 }
 
-/* Ensure glass components maintain their transparency */
-.glass {
-  background: rgba(255, 255, 255, 0.95) !important;
+/* Dashboard content keeps normal background - theme-aware */
+.dashboard-content {
+  background: var(--theme-card-bg, rgba(255, 255, 255, 0.95));
+  color: var(--theme-text-primary, #212529);
+  border-radius: 12px;
+  margin: 1rem;
+  padding: 2rem;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--theme-glass-border, rgba(255, 255, 255, 0.2));
 }
 
-/* Override any conflicting styles from other CSS files */
-[style*="background"] {
-  background: linear-gradient(135deg, #eff6ff 0%, #f9fafb 100%) !important;
+/* Dark mode for dashboard content */
+[data-theme="dark"] .dashboard-content {
+  background: var(--theme-card-bg, rgba(30, 41, 59, 0.95)) !important;
+  color: var(--theme-text-primary, #f9fafb) !important;
+  border: 1px solid var(--theme-glass-border, rgba(255, 255, 255, 0.1)) !important;
 }
 
-/* Specific overrides for common conflicting selectors */
-.bg-light,
-.bg-primary,
-.bg-secondary,
-.bg-info,
-.bg-warning,
-.bg-danger,
-.bg-success {
-  background: transparent !important;
+/* Ensure glass components maintain their transparency - theme-aware */
+.glass {
+  background: var(--theme-glass-bg, rgba(255, 255, 255, 0.95)) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--theme-glass-border, rgba(255, 255, 255, 0.2));
 }
 
-/* Maintain card and component backgrounds */
+/* Dark mode for glass components */
+[data-theme="dark"] .glass {
+  background: var(--theme-glass-bg, rgba(30, 41, 59, 0.95)) !important;
+  border: 1px solid var(--theme-glass-border, rgba(255, 255, 255, 0.1)) !important;
+}
+
+/* Enterprise container with proper styling - theme-aware */
+.enterprise-container {
+  background: var(--theme-card-bg, rgba(255, 255, 255, 0.95));
+  color: var(--theme-text-primary, #212529);
+  border-radius: 12px;
+  margin: 1rem;
+  padding: 2rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--theme-glass-border, rgba(255, 255, 255, 0.2));
+}
+
+/* Dark mode for enterprise container */
+[data-theme="dark"] .enterprise-container {
+  background: var(--theme-card-bg, rgba(30, 41, 59, 0.95)) !important;
+  color: var(--theme-text-primary, #f9fafb) !important;
+  border: 1px solid var(--theme-glass-border, rgba(255, 255, 255, 0.1)) !important;
+}
+
+/* Main content wrapper styling - theme-aware */
+.main-content {
+  background: var(--theme-card-bg, rgba(255, 255, 255, 0.95));
+  color: var(--theme-text-primary, #212529);
+  border-radius: 12px;
+  margin: 1rem;
+  padding: 2rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--theme-glass-border, rgba(255, 255, 255, 0.2));
+}
+
+/* Dark mode for main content */
+[data-theme="dark"] .main-content {
+  background: var(--theme-card-bg, rgba(30, 41, 59, 0.95)) !important;
+  color: var(--theme-text-primary, #f9fafb) !important;
+  border: 1px solid var(--theme-glass-border, rgba(255, 255, 255, 0.1)) !important;
+}
+
+/* Maintain card and component backgrounds - theme-aware */
 .card,
 .modal-content,
 .dropdown-menu {
-  background: rgba(255, 255, 255, 0.95) !important;
+  background: var(--theme-card-bg, rgba(255, 255, 255, 0.95)) !important;
+  color: var(--theme-text-primary, #212529);
+  border-color: var(--theme-border-primary, #dee2e6);
 }
 
 /* Ensure navbar dropdowns sit above glass content and sidebars */
