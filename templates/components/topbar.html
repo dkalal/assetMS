@@ -1,0 +1,162 @@
+{% load static %}
+<header class="dashboard-topbar glass" role="banner">
+  <div class="d-flex align-items-center me-4">
+    <button id="sidebar-toggle" class="btn btn-glass btn-sm me-2 d-inline-flex d-md-none" type="button" aria-label="Toggle sidebar" title="Toggle sidebar">
+      <i class="bi bi-list"></i>
+    </button>
+    <img src="{% static 'img/logo.png' %}" alt="Logo" class="app-logo" />
+  </div>
+  {% url 'asset_list' as asset_list_url %}
+  {% url 'reports_dashboard' as reports_url %}
+  {% url 'audit_dashboard' as audit_url %}
+  <nav class="d-flex align-items-center gap-2 me-4" aria-label="Secondary">
+    <a href="{{ asset_list_url }}" class="btn btn-pill btn-sm {% if request.path|slice:":8" == "/assets/" %}btn-outline-primary active{% else %}btn-outline-secondary{% endif %}" {% if request.path|slice:":8" == "/assets/" %}aria-current="page"{% endif %}>Assets</a>
+    <a href="{{ reports_url }}" class="btn btn-pill btn-sm {% if request.path|slice:":9" == "/reports/" %}btn-outline-primary active{% else %}btn-outline-secondary{% endif %}" {% if request.path|slice:":9" == "/reports/" %}aria-current="page"{% endif %}>Reports</a>
+    <a href="{{ audit_url }}" class="btn btn-pill btn-sm {% if request.path|slice:":7" == "/audit/" %}btn-outline-primary active{% else %}btn-outline-secondary{% endif %}" {% if request.path|slice:":7" == "/audit/" %}aria-current="page"{% endif %}>Audit</a>
+  </nav>
+  <form class="flex-grow-1 d-flex align-items-center mx-4" role="search" aria-label="Asset search" method="get" action="{{ asset_list_url }}">
+    {# Preserve existing filters except search/page #}
+    {% for k, v in request.GET.items %}
+      {% if k != 'search' and k != 'page' %}
+        <input type="hidden" name="{{ k }}" value="{{ v }}">
+      {% endif %}
+    {% endfor %}
+    <label for="global-asset-search" class="visually-hidden">Search assets</label>
+    <div class="input-group">
+      <input id="global-asset-search" type="search" name="search" class="form-control glass search-input" placeholder="Search assets..." aria-label="Search assets" value="{{ request.GET.search|default:'' }}">
+      <button type="button" class="btn btn-outline-secondary search-clear d-none" aria-label="Clear search">
+        <!-- <i class="bi bi-x-circle"></i> -->
+      </button>
+    </div>
+  </form>
+  <div class="d-flex align-items-center gap-2">
+    {% if user.is_authenticated %}
+      {% if user.role == 'admin' or user.role == 'manager' %}
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'asset_bulk_import' %}">
+          <i class="bi bi-file-earmark-arrow-up me-1"></i>Import
+        </a>
+        <button data-export-preview 
+                data-report-type="assets" 
+                data-format="xlsx" 
+                class="btn btn-outline-secondary btn-sm" 
+                type="button"
+                title="Export assets with preview">
+          <i class="bi bi-file-earmark-arrow-down me-1"></i>Export
+        </button>
+        {% comment %} <a class="btn btn-primary btn-sm" href="{% url 'asset_register' %}">Add Asset</a> {% endcomment %}
+      {% else %}
+        <button data-export-preview 
+                data-report-type="assets" 
+                data-format="xlsx" 
+                class="btn btn-outline-secondary btn-sm" 
+                type="button"
+                title="Export assets with preview">
+          <i class="bi bi-file-earmark-arrow-down me-1"></i>Export
+        </button>
+      {% endif %}
+    {% else %}
+      <button data-export-preview 
+              data-report-type="assets" 
+              data-format="xlsx" 
+              class="btn btn-outline-secondary btn-sm" 
+              type="button"
+              title="Export assets with preview">
+        <i class="bi bi-file-earmark-arrow-down me-1"></i>Export
+      </button>
+    {% endif %}
+    {% comment %} <button id="theme-toggle-btn" class="btn btn-glass btn-sm d-flex align-items-center justify-content-center"
+      title="Toggle dark/light mode" aria-label="Toggle dark/light mode">
+      <svg id="theme-toggle-icon" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <defs>
+          <radialGradient id="sunGradient" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#FFD700"/>
+            <stop offset="100%" stop-color="#FFB300"/>
+          </radialGradient>
+          <radialGradient id="moonGradient" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#B4E9FC"/>
+            <stop offset="100%" stop-color="#176B87"/>
+          </radialGradient>
+        </defs>
+        <g id="sun-icon">
+          <circle cx="12" cy="12" r="5" fill="url(#sunGradient)" stroke="#FFC107" stroke-width="1.2"/>
+          <g stroke="#FFC107" stroke-width="1.2" stroke-linecap="round">
+            <line x1="12" y1="2" x2="12" y2="4"/>
+            <line x1="12" y1="20" x2="12" y2="22"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="2" y1="12" x2="4" y2="12"/>
+            <line x1="20" y1="12" x2="22" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </g>
+        </g>
+        <g id="moon-icon" style="display:none;">
+          <path d="M17 12.5A5.5 5.5 0 0 1 11.5 7c0-2.5 1.5-4.5 4-5a8 8 0 1 0 6.5 11c-2.5.5-4.5-1.5-5-4z"
+            fill="url(#moonGradient)" stroke="#176B87" stroke-width="1.2"/>
+        </g>
+      </svg>
+      <span class="visually-hidden">Toggle dark/light mode</span>
+    </button> {% endcomment %}
+    <!-- Notifications Bell (presentational only) -->
+    <div class="dropdown ms-2" aria-label="Notifications">
+      <button class="btn btn-glass btn-sm position-relative" type="button" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+        <i class="bi bi-bell"></i>
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.65rem;" id="notifBadge" aria-label="Unread notifications count">3</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="notifDropdown" style="min-width: 320px;">
+        <li class="dropdown-header d-flex align-items-center justify-content-between">
+          <span>Notifications</span>
+          <span class="badge bg-secondary-subtle text-secondary">Demo</span>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+          <a class="dropdown-item d-flex align-items-start gap-2" href="#" role="button">
+            <i class="bi bi-exclamation-circle text-warning mt-1"></i>
+            <div>
+              <div class="fw-semibold">3 assets require manager approval</div>
+              <small class="text-muted">Just now</small>
+            </div>
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item d-flex align-items-start gap-2" href="#" role="button">
+            <i class="bi bi-upc-scan text-primary mt-1"></i>
+            <div>
+              <div class="fw-semibold">QR code scanned 20 times today</div>
+              <small class="text-muted">10m ago</small>
+            </div>
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item d-flex align-items-start gap-2" href="#" role="button">
+            <i class="bi bi-shield-lock text-info mt-1"></i>
+            <div>
+              <div class="fw-semibold">Security policy updated</div>
+              <small class="text-muted">1h ago</small>
+            </div>
+          </a>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item text-center" href="#" role="button">View all</a></li>
+      </ul>
+    </div>
+    {% comment %} <div class="dropdown ms-3">
+      <button class="btn btn-avatar dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+        {% include "components/profile_avatar.html" %}
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+        <li><a class="dropdown-item" href="{% url 'users:profile' %}">Profile</a></li>
+        <li><a class="dropdown-item" href="{% url 'settings:settings_dashboard' %}">Settings</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+          <form action="{% url 'users:logout' %}" method="post" class="mb-0">
+            {% csrf_token %}
+            <button type="submit" class="dropdown-item text-danger">
+              <i class="bi bi-box-arrow-right me-2"></i>Sign Out
+            </button>
+          </form>
+        </li>
+      </ul>
+    </div> {% endcomment %}
+  </div>
+</header>

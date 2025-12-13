@@ -1,0 +1,450 @@
+/* ============================================
+   CATEGORY CREATION WIZARD - WORLD-CLASS STYLES
+   ============================================ */
+
+/* Wizard Modal */
+.wizard-modal {
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.wizard-body {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 400px;
+}
+
+/* Progress Indicator */
+.wizard-progress {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 2rem 1.5rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.wizard-steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.wizard-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.wizard-step-number {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #6c757d;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    z-index: 2;
+}
+
+.wizard-step-label {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #6c757d;
+    transition: color 0.3s ease;
+    white-space: nowrap;
+}
+
+.wizard-step.active .wizard-step-number {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    border-color: #0d6efd;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+    transform: scale(1.1);
+}
+
+.wizard-step.active .wizard-step-label {
+    color: #0d6efd;
+}
+
+.wizard-step.completed .wizard-step-number {
+    background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+    border-color: #198754;
+    color: #fff;
+}
+
+.wizard-step.completed .wizard-step-number::after {
+    content: "✓";
+    position: absolute;
+    font-size: 1.2rem;
+}
+
+.wizard-step.completed .wizard-step-label {
+    color: #198754;
+}
+
+.wizard-step-connector {
+    flex: 1;
+    height: 3px;
+    background: #dee2e6;
+    margin: 0 1rem;
+    position: relative;
+    top: -24px;
+    min-width: 60px;
+    transition: background 0.3s ease;
+}
+
+.wizard-step.completed + .wizard-step-connector {
+    background: linear-gradient(90deg, #198754 0%, #dee2e6 100%);
+}
+
+/* Wizard Content */
+.wizard-content {
+    animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Path Selection Cards */
+.wizard-path-card {
+    background: #fff;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.wizard-path-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.05) 0%, rgba(13, 110, 253, 0) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.wizard-path-card:hover {
+    border-color: #0d6efd;
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(13, 110, 253, 0.15);
+}
+
+.wizard-path-card:hover::before {
+    opacity: 1;
+}
+
+.wizard-path-card:active {
+    transform: translateY(-2px);
+}
+
+.wizard-path-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e7f1ff 0%, #cfe2ff 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.wizard-path-card:hover .wizard-path-icon {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    transform: scale(1.1) rotate(5deg);
+}
+
+.wizard-path-icon i {
+    font-size: 2.5rem;
+    color: #0d6efd;
+    transition: color 0.3s ease;
+}
+
+.wizard-path-card:hover .wizard-path-icon i {
+    color: #fff;
+}
+
+/* Template Cards */
+.template-card {
+    background: #fff;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 100%;
+    position: relative;
+}
+
+.template-card:hover {
+    border-color: #0d6efd;
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(13, 110, 253, 0.15);
+}
+
+.template-card.selected {
+    border-color: #0d6efd;
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.05) 0%, rgba(13, 110, 253, 0.02) 100%);
+    box-shadow: 0 4px 16px rgba(13, 110, 253, 0.2);
+}
+
+.template-card.selected::after {
+    content: "✓";
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 32px;
+    height: 32px;
+    background: #0d6efd;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.template-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    font-size: 2rem;
+    transition: all 0.3s ease;
+}
+
+.template-card:hover .template-icon {
+    transform: scale(1.1);
+}
+
+/* Field Configuration */
+.wizard-field-item {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.wizard-field-item:hover {
+    background: #fff;
+    border-color: #0d6efd;
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.1);
+}
+
+.wizard-field-item.editing {
+    background: #fff;
+    border-color: #0d6efd;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+}
+
+.field-drag-handle {
+    cursor: move;
+    color: #6c757d;
+    font-size: 1.2rem;
+    transition: color 0.3s ease;
+}
+
+.field-drag-handle:hover {
+    color: #0d6efd;
+}
+
+.wizard-field-item.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+}
+
+/* Review Section */
+.review-field-item {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.review-field-item:last-child {
+    border-bottom: none;
+}
+
+.field-type-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+/* Wizard Footer */
+.wizard-footer {
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    background: #f8f9fa;
+}
+
+.wizard-footer .btn {
+    min-width: 120px;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wizard-footer .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Loading States */
+.wizard-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+/* Animations */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.wizard-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .wizard-progress {
+        padding: 1.5rem 1rem;
+    }
+    
+    .wizard-step-label {
+        font-size: 0.75rem;
+    }
+    
+    .wizard-step-number {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    
+    .wizard-step-connector {
+        min-width: 30px;
+        margin: 0 0.5rem;
+    }
+    
+    .wizard-path-card {
+        padding: 1.5rem;
+    }
+    
+    .wizard-path-icon {
+        width: 64px;
+        height: 64px;
+    }
+    
+    .wizard-path-icon i {
+        font-size: 2rem;
+    }
+    
+    .template-icon {
+        width: 48px;
+        height: 48px;
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .wizard-step-label {
+        display: none;
+    }
+    
+    .wizard-footer {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .wizard-footer .btn {
+        width: 100%;
+    }
+}
+
+/* Accessibility */
+.wizard-step:focus-within .wizard-step-number {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+}
+
+.wizard-path-card:focus {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+}
+
+/* Dark Mode Support (Optional) */
+@media (prefers-color-scheme: dark) {
+    .wizard-progress {
+        background: linear-gradient(135deg, #212529 0%, #343a40 100%);
+    }
+    
+    .wizard-step-number {
+        background: #343a40;
+        border-color: #495057;
+    }
+    
+    .wizard-path-card,
+    .template-card {
+        background: #212529;
+        border-color: #495057;
+    }
+    
+    .wizard-field-item {
+        background: #212529;
+        border-color: #495057;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .wizard-progress,
+    .wizard-footer {
+        display: none;
+    }
+    
+    .wizard-content {
+        page-break-inside: avoid;
+    }
+}

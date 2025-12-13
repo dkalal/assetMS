@@ -1,0 +1,405 @@
+{% extends 'base_dashboard.html' %}
+{% load asset_extras %}
+{% block title %}Bulk Import Assets{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="row mb-4">
+    <div class="col-12">
+      <h2 class="mb-3">
+        <i class="bi bi-cloud-upload"></i> Bulk Import Assets
+      </h2>
+      <div class="alert alert-info d-flex align-items-start">
+        <i class="bi bi-info-circle-fill me-3 fs-4"></i>
+        <div>
+          <strong>Professional Import Process:</strong>
+          <ul class="mb-0 mt-2">
+            <li>Download the Excel template for your selected category</li>
+            <li>Fill in required fields (status, description, assigned_to, dynamic fields)</li>
+            <li>QR codes are automatically generated for each asset</li>
+            <li>All imports are logged and audited for security</li>
+            <li>Preview your data before final confirmation</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% if messages %}
+    <div class="row mb-3">
+      <div class="col-12">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            <i class="bi bi-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'warning' %}exclamation-triangle{% elif message.tags == 'error' %}x-circle{% else %}info-circle{% endif %}"></i>
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-lg border-0">
+        <div class="card-body p-4">
+          {% if step == '1' %}
+            <!-- Step 1: Category Selection -->
+            <div class="mb-4">
+              <h4 class="mb-3"><i class="bi bi-1-circle-fill text-primary"></i> Select Asset Category</h4>
+              <form method="get" action="" class="row g-3">
+                <div class="col-md-8">
+                  <label class="form-label fw-bold">Asset Category</label>
+                  <select name="category" class="form-select form-select-lg" required>
+                    <option value="">-- Choose a category --</option>
+                    {% for cat in categories %}
+                      <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:'s' %}selected{% endif %}>
+                        {{ cat.name }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                  <div class="form-text">Select the asset category for your bulk import</div>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                  <button type="submit" class="btn btn-primary btn-lg w-100">
+                    <i class="bi bi-arrow-right-circle"></i> Continue
+                  </button>
+                </div>
+              </form>
+            </div>
+            {% if selected_category %}
+              <hr class="my-4">
+              <div class="mb-4">
+                <h4 class="mb-3"><i class="bi bi-2-circle-fill text-success"></i> Download Template</h4>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <div class="card border-success h-100">
+                      <div class="card-body text-center">
+                        <i class="bi bi-file-earmark-spreadsheet text-success" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3">Excel Template</h5>
+                        <p class="text-muted">Blank template with correct column headers</p>
+                        <a href="{% url 'download_import_template' %}?category={{ selected_category }}" 
+                           class="btn btn-success btn-lg w-100">
+                          <i class="bi bi-download"></i> Download Template
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="card border-primary h-100">
+                      <div class="card-body text-center">
+                        <i class="bi bi-file-earmark-text text-primary" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3">Example File</h5>
+                        <p class="text-muted">Template with sample data for reference</p>
+                        <a href="{% url 'download_import_template' %}?category={{ selected_category }}&example=1" 
+                           class="btn btn-primary btn-lg w-100">
+                          <i class="bi bi-download"></i> Download Example
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <hr class="my-4">
+              <div class="mb-4">
+                <h4 class="mb-3"><i class="bi bi-3-circle-fill text-warning"></i> Upload Your File</h4>
+                <form method="post" enctype="multipart/form-data" id="uploadForm">
+                  {% csrf_token %}
+                  <input type="hidden" name="category" value="{{ selected_category }}">
+                  <input type="hidden" name="step" value="2">
+                  <div class="row g-3">
+                    <div class="col-md-9">
+                      <label class="form-label fw-bold">Select Excel File (.xlsx)</label>
+                      <input type="file" 
+                             name="import_file" 
+                             class="form-control form-control-lg" 
+                             accept=".xlsx,.xls" 
+                             required
+                             id="fileInput">
+                      <div class="form-text">
+                        <i class="bi bi-info-circle"></i> 
+                        Upload your completed Excel file. Maximum file size: 10MB
+                      </div>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                      <button type="submit" class="btn btn-warning btn-lg w-100" id="previewBtn">
+                        <i class="bi bi-eye"></i> Preview
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            {% endif %}
+          {% elif step == '2' %}
+            <!-- Step 2: Preview Data -->
+            <div class="mb-4">
+              <h4 class="mb-3">
+                <i class="bi bi-eye text-info"></i> Preview Import Data
+              </h4>
+              
+              {% if errors %}
+                <div class="alert alert-danger d-flex align-items-start">
+                  <i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i>
+                  <div>
+                    <strong>Validation Errors Found:</strong>
+                    <ul class="mb-0 mt-2">
+                      {% for error in errors %}
+                        <li>{{ error }}</li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                </div>
+              {% else %}
+                <div class="alert alert-success d-flex align-items-center">
+                  <i class="bi bi-check-circle-fill me-2"></i>
+                  <strong>Validation passed! Ready to import {{ preview_data|length }} asset(s)</strong>
+                </div>
+              {% endif %}
+              
+              <div class="d-flex gap-2 mb-3">
+                <form method="post" action="" class="d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="category" value="{{ selected_category }}">
+                  <input type="hidden" name="step" value="2">
+                  <input type="hidden" name="import_file" value="{{ import_file }}">
+                  <button type="submit" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back
+                  </button>
+                </form>
+                
+                <form method="post" action="" class="d-inline" id="confirmForm">
+                  {% csrf_token %}
+                  <input type="hidden" name="category" value="{{ selected_category }}">
+                  <input type="hidden" name="step" value="3">
+                  <input type="hidden" name="import_file" value="{{ import_file }}">
+                  <button type="submit" 
+                          class="btn btn-success btn-lg" 
+                          {% if errors %}disabled{% endif %}
+                          id="confirmBtn">
+                    <i class="bi bi-check-circle"></i> Confirm & Import with QR Codes
+                  </button>
+                </form>
+              </div>
+              
+              <div class="card">
+                <div class="card-header bg-light">
+                  <strong><i class="bi bi-table"></i> Data Preview ({{ preview_data|length }} rows)</strong>
+                </div>
+                <div class="card-body p-0">
+                  <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                    <table class="table table-striped table-hover mb-0">
+                      <thead class="table-dark sticky-top">
+                        <tr>
+                          <th>#</th>
+                          {% for col in columns %}
+                            <th>{{ col|title }}</th>
+                          {% endfor %}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for row in preview_data %}
+                          <tr>
+                            <td class="text-muted">{{ forloop.counter }}</td>
+                            {% for col in columns %}
+                              <td>{{ row|get_item:col }}</td>
+                            {% endfor %}
+                          </tr>
+                        {% empty %}
+                          <tr>
+                            <td colspan="{{ columns|length|add:1 }}" class="text-center text-muted py-4">
+                              <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                              <p class="mt-2">No data found in the uploaded file</p>
+                            </td>
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% elif step == 'done' %}
+            <!-- Step 3: Import Complete -->
+            <div class="text-center mb-4">
+              <i class="bi bi-check-circle-fill text-success" style="font-size: 5rem;"></i>
+              <h3 class="mt-3">Import Complete!</h3>
+            </div>
+            
+            <div class="row g-3 mb-4">
+              <div class="col-md-4">
+                <div class="card border-success">
+                  <div class="card-body text-center">
+                    <i class="bi bi-check-circle text-success" style="font-size: 2.5rem;"></i>
+                    <h2 class="mt-2 mb-0 text-success">{{ success_count }}</h2>
+                    <p class="text-muted mb-0">Assets Imported</p>
+                  </div>
+                </div>
+              </div>
+              {% if fail_count %}
+              <div class="col-md-4">
+                <div class="card border-danger">
+                  <div class="card-body text-center">
+                    <i class="bi bi-x-circle text-danger" style="font-size: 2.5rem;"></i>
+                    <h2 class="mt-2 mb-0 text-danger">{{ fail_count }}</h2>
+                    <p class="text-muted mb-0">Failed Rows</p>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+              {% if qr_failures %}
+              <div class="col-md-4">
+                <div class="card border-warning">
+                  <div class="card-body text-center">
+                    <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2.5rem;"></i>
+                    <h2 class="mt-2 mb-0 text-warning">{{ qr_failures|length }}</h2>
+                    <p class="text-muted mb-0">QR Code Failures</p>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+            
+            {% if fail_count %}
+              <div class="card border-danger mb-4">
+                <div class="card-header bg-danger text-white">
+                  <strong><i class="bi bi-exclamation-triangle"></i> Failed Imports</strong>
+                </div>
+                <div class="card-body">
+                  <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                      <thead>
+                        <tr>
+                          <th>Row #</th>
+                          <th>Error Details</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for fail in fail_rows %}
+                          <tr>
+                            <td><span class="badge bg-danger">{{ fail.row }}</span></td>
+                            <td><code>{{ fail.error }}</code></td>
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+            
+            {% if qr_failures %}
+              <div class="card border-warning mb-4">
+                <div class="card-header bg-warning">
+                  <strong><i class="bi bi-qr-code"></i> QR Code Generation Issues</strong>
+                </div>
+                <div class="card-body">
+                  <p class="mb-3">
+                    <i class="bi bi-info-circle"></i> 
+                    The following assets were imported successfully but QR codes failed to generate. 
+                    You can regenerate them from each asset's detail page.
+                  </p>
+                  <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                      <thead>
+                        <tr>
+                          <th>Row #</th>
+                          <th>Asset ID</th>
+                          <th>Error</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for qr_fail in qr_failures %}
+                          <tr>
+                            <td><span class="badge bg-warning text-dark">{{ qr_fail.row }}</span></td>
+                            <td><a href="{% url 'asset_list' %}" class="btn btn-sm btn-outline-primary">Asset #{{ qr_fail.asset_id }}</a></td>
+                            <td><small>{{ qr_fail.error }}</small></td>
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+            
+            {% if imported_assets %}
+              <div class="card border-success mb-4">
+                <div class="card-header bg-success text-white">
+                  <strong><i class="bi bi-list-check"></i> Successfully Imported Assets</strong>
+                </div>
+                <div class="card-body">
+                  <div class="row g-2">
+                    {% for asset in imported_assets|slice:":20" %}
+                      <div class="col-md-3">
+                        <a href="{% url 'asset_detail_by_uuid' uuid=asset.uuid %}" 
+                           class="btn btn-outline-success w-100 text-start">
+                          <i class="bi bi-box-seam"></i> Asset #{{ asset.pk }}
+                          {% if asset.qr_code %}
+                            <i class="bi bi-qr-code text-success float-end"></i>
+                          {% endif %}
+                        </a>
+                      </div>
+                    {% endfor %}
+                  </div>
+                  {% if imported_assets|length > 20 %}
+                    <p class="text-muted mt-3 mb-0">
+                      <i class="bi bi-info-circle"></i> 
+                      Showing first 20 of {{ imported_assets|length }} imported assets
+                    </p>
+                  {% endif %}
+                </div>
+              </div>
+            {% endif %}
+            
+            <div class="d-flex gap-2 justify-content-center">
+              <a href="{% url 'asset_bulk_import' %}" class="btn btn-primary btn-lg">
+                <i class="bi bi-plus-circle"></i> Start Another Import
+              </a>
+              <a href="{% url 'asset_list' %}" class="btn btn-outline-primary btn-lg">
+                <i class="bi bi-list"></i> View All Assets
+              </a>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// File upload validation and UX enhancement
+document.addEventListener('DOMContentLoaded', function() {
+  const fileInput = document.getElementById('fileInput');
+  const uploadForm = document.getElementById('uploadForm');
+  const confirmBtn = document.getElementById('confirmBtn');
+  const confirmForm = document.getElementById('confirmForm');
+  
+  if (fileInput) {
+    fileInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        // Validate file size (10MB max)
+        if (file.size > 10 * 1024 * 1024) {
+          alert('File size exceeds 10MB limit. Please upload a smaller file.');
+          fileInput.value = '';
+          return;
+        }
+        
+        // Validate file type
+        const validTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
+        if (!validTypes.includes(file.type)) {
+          alert('Please upload a valid Excel file (.xlsx or .xls)');
+          fileInput.value = '';
+          return;
+        }
+      }
+    });
+  }
+  
+  if (confirmForm && confirmBtn) {
+    confirmForm.addEventListener('submit', function(e) {
+      confirmBtn.disabled = true;
+      confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Importing with QR codes...';
+    });
+  }
+});
+</script>
+{% endblock %} 

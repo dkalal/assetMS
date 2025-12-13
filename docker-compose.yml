@@ -1,0 +1,77 @@
+services:
+  # PostgreSQL database service
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: assetms
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      # Persistent volume for database data
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      # Expose PostgreSQL port for local development (optional)
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Django web application service
+  web:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # Database connection
+      DATABASE_URL: postgres://postgres:postgres@db:5432/assetms
+      
+      # Django settings
+      SECRET_KEY: your-secret-key-change-this-in-production
+      DEBUG: "False"
+      ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0
+      
+      # Application settings
+      PORT: 8000
+      
+      # Optional: Create superuser on first run
+      # DJANGO_SUPERUSER_USERNAME: admin
+      # DJANGO_SUPERUSER_EMAIL: admin@example.com
+      # DJANGO_SUPERUSER_PASSWORD: admin123
+      
+      # Optional: Backblaze B2 settings for production
+      USE_B2: "True"
+      B2_APPLICATION_KEY_ID: 005f70d428c6d4d0000000002
+      B2_KEY_NAME: django-assetms
+      B2_APPLICATION_KEY: K005UuqiQj8+KkOOS57uiN5JQUAXTaI
+      B2_BUCKET_REGION: us-east-005
+      B2_BUCKET_NAME: assetms-media
+      # B2_CUSTOM_DOMAIN: media.yourdomain.com
+    
+    depends_on:
+      db:
+        condition: service_healthy
+    
+    volumes:
+      # Persist media files (uploaded images, documents)
+      - media_data:/app/media
+      # Optional: Mount source code for development
+      # - .:/app
+      # - /app/staticfiles  # Exclude staticfiles from volume mount
+    
+    # Override command for development (optional)
+    # command: python manage.py runserver 0.0.0.0:8000
+
+volumes:
+  # Named volume for PostgreSQL data persistence
+  postgres_data:
+  # Named volume for media files persistence
+  media_data:
+
+# Optional: Custom network for service isolation
+networks:
+  default:
+    name: assetms_network

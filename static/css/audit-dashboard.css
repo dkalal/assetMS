@@ -1,0 +1,204 @@
+/* ========================================
+   AUDIT DASHBOARD - WORLD-CLASS STYLES
+   Matching Main Dashboard Design System
+   ======================================== */
+
+/* Action Badges */
+.action-badge {
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.action-badge--create {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.action-badge--edit {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: var(--warning);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.action-badge--delete {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--error);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.action-badge--assign {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: var(--info);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.action-badge--maintenance {
+  background-color: rgba(107, 155, 209, 0.1);
+  color: var(--primary);
+  border: 1px solid rgba(107, 155, 209, 0.2);
+}
+
+.action-badge--login,
+.action-badge--logout {
+  background-color: rgba(107, 114, 128, 0.1);
+  color: var(--text-secondary);
+  border: 1px solid rgba(107, 114, 128, 0.2);
+}
+
+/* Avatar Circle */
+.avatar-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* Table Enhancements */
+#auditTable thead th {
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  border-bottom: 2px solid var(--border-color);
+  padding: 0.75rem 1rem;
+}
+
+#auditTable tbody td {
+  padding: 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border-light);
+}
+
+#auditTable tbody tr {
+  transition: background-color var(--transition-fast);
+}
+
+#auditTable tbody tr:hover {
+  background-color: var(--gray-50);
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.empty-state i {
+  display: block;
+  margin: 0 auto 1rem;
+  opacity: 0.5;
+}
+
+/* Filter Section Animation */
+#filterSection {
+  animation: slideDown 0.3s ease-out;
+  overflow: hidden;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+/* Metric Card Icons */
+.metric-card__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--primary-light-bg) 0%, var(--accent) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: var(--primary-dark);
+}
+
+/* Trend Indicators */
+.metric-card__trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+}
+
+.metric-card__trend--up {
+  color: var(--success);
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.metric-card__trend--down {
+  color: var(--error);
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .avatar-circle {
+    width: 28px;
+    height: 28px;
+    font-size: 0.7rem;
+  }
+  
+  #auditTable {
+    font-size: 0.875rem;
+  }
+  
+  #auditTable thead th,
+  #auditTable tbody td {
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .metric-card__menu,
+  .btn,
+  #filterSection,
+  .pagination {
+    display: none !important;
+  }
+  
+  .glass {
+    box-shadow: none !important;
+    border: 1px solid var(--border-color);
+  }
+  
+  #auditTable {
+    font-size: 0.75rem;
+  }
+}

@@ -1,0 +1,1305 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Staff Management{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+    --accent-primary: #176B87;
+    --accent-secondary: #64CCC5;
+    --accent-success: #10b981;
+    --accent-warning: #f59e0b;
+    --accent-danger: #ef4444;
+}
+
+/* Modal z-index handled by modal-zindex-fix.css in base.html */
+
+.staff-hero {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    border-radius: 20px;
+    padding: 2.5rem;
+    color: white;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 40px rgba(23, 107, 135, 0.3);
+}
+
+.metric-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.metric-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+}
+
+.metric-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.metric-icon.primary {
+    background: linear-gradient(135deg, #176B87 0%, #64CCC5 100%);
+    color: white;
+}
+
+.metric-icon.success {
+    background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+    color: white;
+}
+
+.metric-icon.warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+    color: white;
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+}
+
+.metric-label {
+    color: #6b7280;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.staff-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    margin-bottom: 1rem;
+}
+
+.staff-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    border-color: var(--accent-primary);
+}
+
+.staff-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-right: 1rem;
+}
+
+.staff-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 0.25rem;
+}
+
+.staff-role {
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.staff-stats {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.staff-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.staff-stat i {
+    color: var(--accent-primary);
+}
+
+.status-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.status-active {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--accent-success);
+}
+
+.status-inactive {
+    background: rgba(107, 114, 128, 0.1);
+    color: #6b7280;
+}
+
+.search-box {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+}
+
+.search-input {
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 0.75rem 1rem 0.75rem 3rem;
+    font-size: 1rem;
+    width: 100%;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(23, 107, 135, 0.1);
+}
+
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    font-size: 1.2rem;
+}
+
+.filter-chips {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.filter-chip {
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    border: 2px solid #e5e7eb;
+    background: white;
+    color: #6b7280;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.filter-chip:hover, .filter-chip.active {
+    border-color: var(--accent-primary);
+    background: var(--accent-primary);
+    color: white;
+}
+
+/* ============================================================================
+   WORLD-CLASS SCROLLABLE STAFF LIST
+   Fixed-height container with smooth scrolling and professional styling
+   Inspired by ServiceNow ITAM, SAP Fiori, IBM Maximo
+   ============================================================================ */
+
+.staff-list-scrollable {
+    position: relative;
+    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-radius: 16px;
+    background: #f9fafb;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    
+    /* Professional scrollbar styling (WebKit browsers) */
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-primary) #e5e7eb;
+}
+
+.staff-list-scrollable::-webkit-scrollbar {
+    width: 10px;
+}
+
+.staff-list-scrollable::-webkit-scrollbar-track {
+    background: #e5e7eb;
+    border-radius: 10px;
+}
+
+.staff-list-scrollable::-webkit-scrollbar-thumb {
+    background: var(--accent-primary);
+    border-radius: 10px;
+    transition: background 0.3s ease;
+}
+
+.staff-list-scrollable::-webkit-scrollbar-thumb:hover {
+    background: #0d4a5f;
+}
+
+/* Smooth scroll behavior */
+.staff-list-scrollable {
+    scroll-behavior: smooth;
+}
+
+/* Scroll indicator (appears when content is scrollable) */
+.scroll-indicator {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(249, 250, 251, 0.95) 0%, transparent 100%);
+    padding: 1.5rem 0 0.5rem;
+    text-align: center;
+    color: var(--accent-primary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 10;
+}
+
+.scroll-indicator i {
+    display: block;
+    font-size: 1.2rem;
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    60% {
+        transform: translateY(-5px);
+    }
+}
+
+/* Show scroll indicator when content is scrollable and not at bottom */
+.staff-list-scrollable.has-scroll:not(.at-bottom) .scroll-indicator {
+    opacity: 1;
+}
+
+/* Fade out cards at bottom for scroll hint */
+.staff-list-scrollable::after {
+    content: '';
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: linear-gradient(to top, rgba(249, 250, 251, 1) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* Adjust staff card margins in scrollable container */
+.staff-list-scrollable .staff-card {
+    margin-bottom: 1rem;
+}
+
+.staff-list-scrollable .staff-card:last-child {
+    margin-bottom: 0;
+}
+
+/* Responsive height adjustments */
+@media (max-width: 1400px) {
+    .staff-list-scrollable {
+        max-height: 500px;
+    }
+}
+
+@media (max-width: 992px) {
+    .staff-list-scrollable {
+        max-height: 450px;
+    }
+}
+
+@media (max-width: 768px) {
+    .staff-list-scrollable {
+        max-height: 400px;
+    }
+}
+
+/* Accessibility: Focus indicator for keyboard navigation */
+.staff-list-scrollable:focus-within {
+    outline: 3px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+/* Performance: GPU acceleration for smooth scrolling */
+.staff-list-scrollable {
+    transform: translateZ(0);
+    will-change: scroll-position;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumbs.html' with root_label='Dashboard' root_url='/dashboard/' parent_label='Settings' parent_url='/settings/' current_label='Staff Management' %}
+
+<!-- Hero Section -->
+<div class="staff-hero">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">
+                <i class="bi bi-people me-3"></i>Staff Management
+            </h1>
+            <p style="font-size: 1.1rem; opacity: 0.9; margin-bottom: 0;">
+                Manage your team members, track their assets, and monitor activities
+            </p>
+        </div>
+        <div class="col-md-4 mt-3 mt-md-0">
+            {% if user.role == 'admin' %}
+            <div class="d-flex flex-wrap gap-2 justify-content-md-end justify-content-start">
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal" style="border-radius: 12px; padding: 0.75rem 1.5rem;">
+                    <i class="bi bi-person-plus me-2"></i>Create New User
+                </button>
+                <button class="btn btn-light" onclick="document.getElementById('analyticsSection').scrollIntoView({behavior: 'smooth'})" style="border-radius: 12px; padding: 0.75rem 1.5rem;">
+                    <i class="bi bi-graph-up me-2"></i>Analytics
+                </button>
+                <button class="btn btn-outline-primary" onclick="document.getElementById('staffDirectorySection').scrollIntoView({behavior: 'smooth'})" style="border-radius: 12px; padding: 0.75rem 1.5rem;">
+                    <i class="bi bi-people me-2"></i>Staff Directory
+                </button>
+                <button class="btn btn-success" id="exportBtn" style="border-radius: 12px; padding: 0.75rem 1.5rem;">
+                    <i class="bi bi-download me-2"></i>Export Excel
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Metrics Row -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="metric-card">
+            <div class="metric-icon primary">
+                <i class="bi bi-people"></i>
+            </div>
+            <div class="metric-value">{{ total_staff }}</div>
+            <div class="metric-label">Total Staff</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="metric-card">
+            <div class="metric-icon success">
+                <i class="bi bi-person-check"></i>
+            </div>
+            <div class="metric-value">{{ active_staff }}</div>
+            <div class="metric-label">Active Staff</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="metric-card">
+            <div class="metric-icon warning">
+                <i class="bi bi-box-seam"></i>
+            </div>
+            <div class="metric-value">{{ total_assets_assigned }}</div>
+            <div class="metric-label">Assets Assigned</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="metric-card">
+            <div class="metric-icon primary">
+                <i class="bi bi-activity"></i>
+            </div>
+            <div class="metric-value">{{ recent_activities }}</div>
+            <div class="metric-label">Recent Activities</div>
+            <small class="text-muted">Last 30 days</small>
+        </div>
+    </div>
+</div>
+
+<!-- PRO-LEVEL ANALYTICS DASHBOARD -->
+<div id="analyticsSection" class="mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 style="color: var(--accent-primary); font-weight: 700;">
+            <i class="bi bi-graph-up me-2"></i>Analytics Dashboard
+        </h2>
+        <div class="d-flex gap-2">
+            <select id="timeRange" class="form-select" style="border-radius: 10px; width: 200px;">
+                <option value="7">Last 7 Days</option>
+                <option value="30" selected>Last 30 Days</option>
+                <option value="90">Last 90 Days</option>
+                <option value="180">Last 6 Months</option>
+            </select>
+            <button id="refreshAnalytics" class="btn btn-outline-primary" style="border-radius: 10px;">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="analyticsLoader" class="text-center py-5 d-none">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3 text-muted">Loading analytics...</p>
+    </div>
+
+    <!-- Analytics Grid -->
+    <div id="staffAnalytics">
+        <!-- Additional Metrics -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-icon success">
+                        <i class="bi bi-check2-circle"></i>
+                    </div>
+                    <div class="metric-value" id="allocationRate">--</div>
+                    <div class="metric-label">Asset Allocation Rate</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-icon warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    <div class="metric-value" id="inactiveStaffCount">--</div>
+                    <div class="metric-label">Inactive Staff Recently</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-icon primary">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div class="metric-value" id="totalStaffMetric">{{ total_staff }}</div>
+                    <div class="metric-label">Total Staff</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-icon success">
+                        <i class="bi bi-person-check"></i>
+                    </div>
+                    <div class="metric-value" id="activeStaffMetric">{{ active_staff }}</div>
+                    <div class="metric-label">Active Staff</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="row g-4 mb-4">
+            <!-- Activity Chart -->
+            <div class="col-lg-6">
+                <div class="info-card" style="height: 400px; padding: 1.5rem;">
+                    <canvas id="activityChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Asset Distribution Chart -->
+            <div class="col-lg-6">
+                <div class="info-card" style="height: 400px; padding: 1.5rem;">
+                    <canvas id="assetChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <!-- Daily Trend Chart -->
+            <div class="col-lg-8">
+                <div class="info-card" style="height: 350px; padding: 1.5rem;">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Role Distribution Chart -->
+            <div class="col-lg-4">
+                <div class="info-card" style="height: 350px; padding: 1.5rem;">
+                    <canvas id="roleChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Performers -->
+        <div class="row g-4">
+            <div class="col-12">
+                <div class="info-card" style="height: 350px; padding: 1.5rem;">
+                    <canvas id="performersChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================================
+     STAFF DIRECTORY SECTION
+     Positioned after analytics for progressive disclosure pattern
+     Follows ServiceNow ITAM, IBM Maximo best practices
+     ============================================================================ -->
+<div id="staffDirectorySection" class="mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 style="color: var(--accent-primary); font-weight: 700;">
+            <i class="bi bi-people me-2"></i>Staff Directory
+        </h2>
+        <button onclick="document.getElementById('analyticsSection').scrollIntoView({behavior: 'smooth'})" 
+                class="btn btn-outline-primary" 
+                style="border-radius: 10px;">
+            <i class="bi bi-graph-up me-2"></i>Back to Analytics
+        </button>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="search-box">
+        <div class="row align-items-center mb-3">
+            <div class="col-md-8">
+                <div class="position-relative">
+                    <i class="bi bi-search search-icon"></i>
+                    <input type="text" class="search-input" id="staffSearch" placeholder="Search staff by name, email, or role...">
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="d-flex align-items-center justify-content-end gap-2">
+                    <label for="pageSizeSelect" class="text-muted mb-0" style="font-size: 0.9rem; white-space: nowrap;">
+                        <i class="bi bi-list-ul me-1"></i>Show:
+                    </label>
+                    <select id="pageSizeSelect" class="form-select form-select-sm" style="width: auto; border-radius: 8px;" onchange="changePageSize(this.value)">
+                        <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                        <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+                    </select>
+                    <span class="text-muted" style="font-size: 0.9rem;">
+                        <strong>{{ start_index }}-{{ end_index }}</strong> of <strong>{{ total_staff }}</strong>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="filter-chips">
+            <button class="filter-chip active" data-filter="all">
+                <i class="bi bi-people me-1"></i>All Staff
+            </button>
+            <button class="filter-chip" data-filter="active">
+                <i class="bi bi-check-circle me-1"></i>Active
+            </button>
+            <button class="filter-chip" data-filter="inactive">
+                <i class="bi bi-x-circle me-1"></i>Inactive
+            </button>
+            <button class="filter-chip" data-filter="admin">
+                <i class="bi bi-shield me-1"></i>Admins
+            </button>
+            <button class="filter-chip" data-filter="manager">
+                <i class="bi bi-briefcase me-1"></i>Managers
+            </button>
+            <button class="filter-chip" data-filter="user">
+                <i class="bi bi-person me-1"></i>Users
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================================================
+         WORLD-CLASS SCROLLABLE STAFF LIST
+         Fixed-height scrollable container with professional styling
+         Inspired by ServiceNow ITAM, SAP Fiori, IBM Maximo
+         ============================================================================ -->
+    <div id="staffListContainer" class="staff-list-scrollable">
+        <div id="staffList">
+            {% for staff_member in users %}
+            <div class="staff-card" onclick="window.location.href='{% url 'settings:staff_detail' staff_member.id %}'" 
+                 data-status="{{ staff_member.is_active|yesno:'active,inactive' }}" 
+                 data-role="{{ staff_member.role }}"
+                 data-search="{{ staff_member.get_full_name|lower }} {{ staff_member.email|lower }} {{ staff_member.role|lower }}">
+                <div class="d-flex align-items-start">
+                    <div class="staff-avatar">
+                        {{ staff_member.first_name.0|upper }}{{ staff_member.last_name.0|upper }}
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="staff-name">{{ staff_member.get_full_name }}</div>
+                                <div class="staff-role">
+                                    <i class="bi bi-{% if staff_member.role == 'admin' %}shield{% elif staff_member.role == 'manager' %}briefcase{% else %}person{% endif %} me-1"></i>
+                                    {{ staff_member.get_role_display }}
+                                    {% if staff_member.company %}
+                                    <i class="bi bi-building ms-2 me-1"></i>{{ staff_member.company.name }}
+                                    {% endif %}
+                                    {% if staff_member.primary_branch_name %}
+                                    <i class="bi bi-diagram-3 ms-3 me-1" aria-hidden="true"></i><span aria-label="Primary branch">{{ staff_member.primary_branch_name }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <span class="status-badge status-{{ staff_member.is_active|yesno:'active,inactive' }}">
+                                <i class="bi bi-{{ staff_member.is_active|yesno:'check-circle,x-circle' }}"></i>
+                                {{ staff_member.is_active|yesno:'Active,Inactive' }}
+                            </span>
+                        </div>
+                        <div class="staff-stats">
+                            <div class="staff-stat">
+                                <i class="bi bi-box-seam"></i>
+                                <strong>{{ staff_member.total_assets }}</strong> Assets
+                            </div>
+                            <div class="staff-stat">
+                                <i class="bi bi-activity"></i>
+                                <strong>{{ staff_member.total_activities }}</strong> Activities
+                            </div>
+                            <div class="staff-stat">
+                                <i class="bi bi-envelope"></i>
+                                {{ staff_member.email }}
+                            </div>
+                        </div>
+                    </div>
+                    <i class="bi bi-chevron-right" style="color: #9ca3af; font-size: 1.5rem;"></i>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-5">
+                <i class="bi bi-people" style="font-size: 4rem; color: #e5e7eb;"></i>
+                <p class="text-muted mt-3">No staff members found</p>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Scroll Indicator (appears when scrollable) -->
+        <div id="scrollIndicator" class="scroll-indicator">
+            <i class="bi bi-chevron-down"></i>
+            <span>Scroll for more</span>
+        </div>
+    </div>
+
+    <!-- ============================================================================
+         WORLD-CLASS PAGINATION CONTROLS
+         Professional pagination UI matching ServiceNow, IBM Maximo, SAP EAM
+         ============================================================================ -->
+    {% if paginator.num_pages > 1 %}
+    <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+        <div class="text-muted" style="font-size: 0.95rem;">
+            Showing <strong>{{ start_index }}-{{ end_index }}</strong> of <strong>{{ total_staff }}</strong> staff members
+        </div>
+        
+        <nav aria-label="Staff pagination">
+            <ul class="pagination mb-0" style="gap: 0.25rem;">
+                <!-- First Page -->
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1&page_size={{ page_size }}" aria-label="First" style="border-radius: 8px;">
+                        <i class="bi bi-chevron-bar-left"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&page_size={{ page_size }}" aria-label="Previous" style="border-radius: 8px;">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link" style="border-radius: 8px;">
+                        <i class="bi bi-chevron-bar-left"></i>
+                    </span>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link" style="border-radius: 8px;">
+                        <i class="bi bi-chevron-left"></i>
+                    </span>
+                </li>
+                {% endif %}
+
+                <!-- Page Numbers with Elision -->
+                {% for page_num in page_range %}
+                    {% if page_num == page_obj.paginator.ELLIPSIS %}
+                    <li class="page-item disabled">
+                        <span class="page-link" style="border-radius: 8px;">...</span>
+                    </li>
+                    {% else %}
+                    <li class="page-item {% if page_num == page_obj.number %}active{% endif %}">
+                        <a class="page-link" href="?page={{ page_num }}&page_size={{ page_size }}" style="border-radius: 8px; min-width: 40px; text-align: center;">
+                            {{ page_num }}
+                        </a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Next & Last Page -->
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&page_size={{ page_size }}" aria-label="Next" style="border-radius: 8px;">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ paginator.num_pages }}&page_size={{ page_size }}" aria-label="Last" style="border-radius: 8px;">
+                        <i class="bi bi-chevron-bar-right"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link" style="border-radius: 8px;">
+                        <i class="bi bi-chevron-right"></i>
+                    </span>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link" style="border-radius: 8px;">
+                        <i class="bi bi-chevron-bar-right"></i>
+                    </span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+
+        <!-- Jump to Page -->
+        <div class="d-flex align-items-center gap-2">
+            <label for="jumpToPage" class="text-muted mb-0" style="font-size: 0.9rem; white-space: nowrap;">
+                <i class="bi bi-skip-forward me-1"></i>Go to:
+            </label>
+            <input type="number" id="jumpToPage" class="form-control form-control-sm" 
+                   min="1" max="{{ paginator.num_pages }}" 
+                   placeholder="Page" 
+                   style="width: 80px; border-radius: 8px;"
+                   onkeypress="if(event.key === 'Enter') jumpToPage(this.value)">
+            <button class="btn btn-sm btn-outline-primary" onclick="jumpToPage(document.getElementById('jumpToPage').value)" style="border-radius: 8px;">
+                <i class="bi bi-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block dashboard_modals %}
+<!-- ============================================================================
+     USER MANAGEMENT MODALS
+     Placed in dashboard_modals block to avoid stacking context issues
+     Modals MUST be outside content wrapper for proper z-index layering
+     ============================================================================ -->
+{% include 'settings/partials/create_user_modal.html' %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/staff-analytics.js' %}"></script>
+<script>
+// ============================================================================
+// WORLD-CLASS PAGINATION FUNCTIONS
+// ============================================================================
+
+/**
+ * Change page size and reload with new size
+ * Maintains current filters and search state
+ */
+function changePageSize(newSize) {
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('page_size', newSize);
+    urlParams.set('page', '1'); // Reset to first page when changing size
+    window.location.search = urlParams.toString();
+}
+
+/**
+ * Jump to specific page number
+ * Validates input and navigates to requested page
+ */
+function jumpToPage(pageNum) {
+    const maxPages = parseInt('{{ paginator.num_pages|default:"1" }}');
+    const page = parseInt(pageNum);
+    
+    // Validate page number
+    if (isNaN(page) || page < 1 || page > maxPages) {
+        alert('Please enter a valid page number between 1 and ' + maxPages);
+        return;
+    }
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('page', page);
+    window.location.search = urlParams.toString();
+}
+
+// ============================================================================
+// CLIENT-SIDE SEARCH & FILTER (within current page)
+// Note: This filters only the current page's results
+// For global search across all pages, implement server-side search API
+// ============================================================================
+
+// Search functionality
+document.getElementById('staffSearch').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    filterStaff();
+});
+
+// Filter chips
+document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', function() {
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        this.classList.add('active');
+        filterStaff();
+    });
+});
+
+function filterStaff() {
+    const searchTerm = document.getElementById('staffSearch').value.toLowerCase();
+    const activeFilter = document.querySelector('.filter-chip.active').dataset.filter;
+    const staffCards = document.querySelectorAll('.staff-card');
+    
+    let visibleCount = 0;
+    
+    staffCards.forEach(card => {
+        const searchData = card.dataset.search;
+        const status = card.dataset.status;
+        const role = card.dataset.role;
+        
+        let matchesSearch = searchData.includes(searchTerm);
+        let matchesFilter = activeFilter === 'all' || 
+                          status === activeFilter || 
+                          role === activeFilter;
+        
+        if (matchesSearch && matchesFilter) {
+            card.style.display = 'block';
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+    
+    // Show "no results" message if no cards visible
+    const noResultsMsg = document.getElementById('noResultsMessage');
+    if (visibleCount === 0 && !noResultsMsg) {
+        const msg = document.createElement('div');
+        msg.id = 'noResultsMessage';
+        msg.className = 'text-center py-5';
+        msg.innerHTML = `
+            <i class="bi bi-search" style="font-size: 3rem; color: #e5e7eb;"></i>
+            <p class="text-muted mt-3">No staff members match your search criteria</p>
+            <button class="btn btn-sm btn-outline-primary mt-2" onclick="clearFilters()">
+                <i class="bi bi-x-circle me-1"></i>Clear Filters
+            </button>
+        `;
+        document.getElementById('staffList').appendChild(msg);
+    } else if (visibleCount > 0 && noResultsMsg) {
+        noResultsMsg.remove();
+    }
+}
+
+/**
+ * Clear all filters and search
+ */
+function clearFilters() {
+    document.getElementById('staffSearch').value = '';
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    document.querySelector('.filter-chip[data-filter="all"]').classList.add('active');
+    filterStaff();
+}
+
+// ============================================================================
+// WORLD-CLASS SCROLLABLE LIST MANAGEMENT
+// Handles scroll indicator visibility and smooth scrolling behavior
+// ============================================================================
+
+/**
+ * Initialize scrollable staff list with scroll detection
+ */
+function initScrollableList() {
+    const container = document.getElementById('staffListContainer');
+    if (!container) return;
+    
+    // Check if content is scrollable
+    function updateScrollState() {
+        const isScrollable = container.scrollHeight > container.clientHeight;
+        const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 10;
+        
+        if (isScrollable) {
+            container.classList.add('has-scroll');
+        } else {
+            container.classList.remove('has-scroll');
+        }
+        
+        if (isAtBottom) {
+            container.classList.add('at-bottom');
+        } else {
+            container.classList.remove('at-bottom');
+        }
+    }
+    
+    // Update on scroll
+    container.addEventListener('scroll', updateScrollState);
+    
+    // Update on load and resize
+    updateScrollState();
+    window.addEventListener('resize', updateScrollState);
+    
+    // Update after filtering (with slight delay for DOM update)
+    const originalFilterStaff = window.filterStaff;
+    window.filterStaff = function() {
+        originalFilterStaff();
+        setTimeout(updateScrollState, 100);
+    };
+    
+    // Smooth scroll to top when page changes
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('page')) {
+        setTimeout(() => {
+            container.scrollTop = 0;
+        }, 100);
+    }
+}
+
+// Initialize on DOM ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initScrollableList);
+} else {
+    initScrollableList();
+}
+
+// ============================================================================
+// WORLD-CLASS USER CREATION FUNCTIONALITY
+// ============================================================================
+
+/**
+ * UserCreationManager - Enterprise-grade user creation with multi-tenancy
+ */
+class UserCreationManager {
+    constructor() {
+        // Check if Bootstrap is available
+        if (typeof bootstrap === 'undefined') {
+            console.error('Bootstrap is not loaded. Cannot initialize UserCreationManager.');
+            return;
+        }
+        
+        this.modal = document.getElementById('createUserModal');
+        this.form = document.getElementById('createUserForm');
+        this.submitBtn = document.getElementById('submitCreateUser');
+        this.alertDiv = document.getElementById('userCreateAlert');
+        this.branchSelect = document.getElementById('primaryBranch');
+        
+        // Check if all required elements exist
+        if (!this.modal || !this.form || !this.submitBtn || !this.alertDiv || !this.branchSelect) {
+            console.error('Required modal elements not found');
+            return;
+        }
+        
+        try {
+            this.passwordDisplayModal = new bootstrap.Modal(document.getElementById('passwordDisplayModal'));
+        } catch (error) {
+            console.error('Error initializing password display modal:', error);
+        }
+        
+        this.init();
+    }
+    
+    init() {
+        // Load branches when modal opens
+        this.modal.addEventListener('show.bs.modal', () => this.loadBranches());
+        
+        // Handle form submission
+        this.submitBtn.addEventListener('click', () => this.handleSubmit());
+        
+        // Password validation
+        document.getElementById('password1').addEventListener('input', () => this.validatePasswords());
+        document.getElementById('password2').addEventListener('input', () => this.validatePasswords());
+        
+        // Reset form when modal closes
+        this.modal.addEventListener('hidden.bs.modal', () => this.resetForm());
+    }
+    
+    async loadBranches() {
+        try {
+            const response = await fetch('/api/tenancy/branches/', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to load branches');
+            }
+            
+            const data = await response.json();
+            this.populateBranches(data.branches || []);
+        } catch (error) {
+            console.error('Error loading branches:', error);
+            this.showAlert('Failed to load branches. Please refresh the page.', 'danger');
+        }
+    }
+    
+    populateBranches(branches) {
+        this.branchSelect.innerHTML = '<option value="">Select branch...</option>';
+        
+        branches.forEach(branch => {
+            if (branch.is_active) {
+                const option = document.createElement('option');
+                option.value = branch.id;
+                option.textContent = `${branch.name} (${branch.code})`;
+                this.branchSelect.appendChild(option);
+            }
+        });
+    }
+    
+    validatePasswords() {
+        const password1 = document.getElementById('password1').value;
+        const password2 = document.getElementById('password2').value;
+        const password2Input = document.getElementById('password2');
+        
+        if (password1 && password2 && password1 !== password2) {
+            password2Input.setCustomValidity('Passwords do not match');
+            password2Input.classList.add('is-invalid');
+        } else {
+            password2Input.setCustomValidity('');
+            password2Input.classList.remove('is-invalid');
+        }
+    }
+    
+    async handleSubmit() {
+        // Validate form
+        if (!this.form.checkValidity()) {
+            this.form.reportValidity();
+            return;
+        }
+        
+        // Disable submit button
+        this.submitBtn.disabled = true;
+        this.submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating...';
+        
+        try {
+            // Collect form data
+            const formData = new FormData(this.form);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Convert checkbox values to boolean
+            data.send_invitation = document.getElementById('sendInvitation').checked;
+            data.force_password_change = document.getElementById('forcePasswordChange').checked;
+            
+            // Remove empty password fields
+            if (!data.password1) {
+                delete data.password1;
+                delete data.password2;
+            }
+            
+            // Get CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                             this.getCookie('csrftoken');
+            
+            // Send API request
+            const response = await fetch('/api/users/create/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Close create modal
+                const createModal = bootstrap.Modal.getInstance(this.modal);
+                createModal.hide();
+                
+                // Show success with password if generated
+                this.showSuccessModal(result);
+                
+                // Reload page after a delay
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            } else {
+                // Show validation errors
+                this.displayErrors(result.errors || {error: result.error});
+            }
+        } catch (error) {
+            console.error('Error creating user:', error);
+            this.showAlert('An error occurred while creating the user. Please try again.', 'danger');
+        } finally {
+            // Re-enable submit button
+            this.submitBtn.disabled = false;
+            this.submitBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Create User';
+        }
+    }
+    
+    showSuccessModal(result) {
+        const content = document.getElementById('passwordDisplayContent');
+        let html = `
+            <div class="mb-3">
+                <p class="fw-bold">User Details:</p>
+                <ul class="list-unstyled text-start">
+                    <li><strong>Username:</strong> ${result.user.username}</li>
+                    <li><strong>Email:</strong> ${result.user.email}</li>
+                    <li><strong>Name:</strong> ${result.user.full_name}</li>
+                    <li><strong>Role:</strong> ${result.user.role_display}</li>
+                    <li><strong>Branch:</strong> ${result.user.primary_branch_name}</li>
+                </ul>
+            </div>
+        `;
+        
+        if (result.temporary_password) {
+            html += `
+                <div class="alert alert-warning">
+                    <p class="fw-bold mb-2"><i class="bi bi-key-fill me-2"></i>Temporary Password:</p>
+                    <div class="input-group">
+                        <input type="text" class="form-control" value="${result.temporary_password}" id="tempPasswordField" readonly>
+                        <button class="btn btn-outline-secondary" type="button" onclick="copyPassword()">
+                            <i class="bi bi-clipboard"></i> Copy
+                        </button>
+                    </div>
+                    <small class="text-muted d-block mt-2">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Please save this password. It won't be shown again.
+                    </small>
+                </div>
+            `;
+        }
+        
+        content.innerHTML = html;
+        this.passwordDisplayModal.show();
+    }
+    
+    displayErrors(errors) {
+        let errorHtml = '<ul class="mb-0">';
+        
+        if (typeof errors === 'object') {
+            for (const [field, messages] of Object.entries(errors)) {
+                if (Array.isArray(messages)) {
+                    messages.forEach(msg => {
+                        errorHtml += `<li><strong>${field}:</strong> ${msg}</li>`;
+                    });
+                } else {
+                    errorHtml += `<li><strong>${field}:</strong> ${messages}</li>`;
+                }
+            }
+        } else {
+            errorHtml += `<li>${errors}</li>`;
+        }
+        
+        errorHtml += '</ul>';
+        this.showAlert(errorHtml, 'danger');
+    }
+    
+    showAlert(message, type = 'info') {
+        this.alertDiv.className = `alert alert-${type}`;
+        this.alertDiv.innerHTML = message;
+        this.alertDiv.classList.remove('d-none');
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            this.alertDiv.classList.add('d-none');
+        }, 5000);
+    }
+    
+    resetForm() {
+        this.form.reset();
+        this.alertDiv.classList.add('d-none');
+        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    }
+    
+    getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+}
+
+// Copy password to clipboard
+function copyPassword() {
+    const passwordField = document.getElementById('tempPasswordField');
+    passwordField.select();
+    document.execCommand('copy');
+    
+    // Show feedback
+    const btn = event.target.closest('button');
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+    btn.classList.add('btn-success');
+    btn.classList.remove('btn-outline-secondary');
+    
+    setTimeout(() => {
+        btn.innerHTML = originalHTML;
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline-secondary');
+    }, 2000);
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Initializing UserCreationManager on Staff Management page...');
+    
+    // Check if Bootstrap is loaded
+    if (typeof bootstrap === 'undefined') {
+        console.error('❌ Bootstrap is not loaded!');
+        return;
+    }
+    
+    // Check if modal exists
+    const modalElement = document.getElementById('createUserModal');
+    if (!modalElement) {
+        console.error('❌ Modal element #createUserModal not found!');
+        return;
+    }
+    
+    console.log('✅ Modal element found:', modalElement);
+    
+    // Initialize UserCreationManager
+    const manager = new UserCreationManager();
+    
+    // Add manual trigger as fallback
+    const createButton = document.querySelector('[data-bs-target="#createUserModal"]');
+    if (createButton) {
+        console.log('✅ Create button found:', createButton);
+        
+        // Add click event listener as fallback
+        createButton.addEventListener('click', function(e) {
+            console.log('🖱️ Create User button clicked');
+            
+            // Try Bootstrap modal
+            try {
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+                console.log('✅ Modal opened via Bootstrap');
+            } catch (error) {
+                console.error('❌ Error opening modal:', error);
+                
+                // Fallback: manual show
+                modalElement.classList.add('show');
+                modalElement.style.display = 'block';
+                modalElement.setAttribute('aria-modal', 'true');
+                modalElement.removeAttribute('aria-hidden');
+                
+                // Add backdrop
+                const backdrop = document.createElement('div');
+                backdrop.className = 'modal-backdrop fade show';
+                document.body.appendChild(backdrop);
+                document.body.classList.add('modal-open');
+                
+                console.log('✅ Modal opened manually (fallback)');
+            }
+        });
+    } else {
+        console.error('❌ Create User button not found!');
+    }
+    
+    console.log('✅ UserCreationManager initialized successfully');
+});
+</script>
+{% endblock %}

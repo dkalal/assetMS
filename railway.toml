@@ -1,0 +1,9 @@
+[build]
+builder = "DOCKERFILE" # use Dockerfile build instead of Nixpacks
+
+[deploy]
+# Railway replaces ${PORT} with the real port dynamically
+startCommand = "./entrypoint.sh"
+
+[variables]
+PYTHONUNBUFFERED = "1"

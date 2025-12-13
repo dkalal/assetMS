@@ -1,0 +1,140 @@
+{% load static %}
+
+<!-- Enhanced Admin Tools Section (Cards Only) -->
+<div class="glass p-4 mb-4 shadow-sm">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h4 class="mb-1 fw-bold">
+                <i class="bi bi-tools me-2 text-primary"></i>Admin Tools
+            </h4>
+            <p class="text-muted small mb-0">Professional asset management tools with multi-tenancy support</p>
+        </div>
+        <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 company-context-badge d-none">
+            <i class="bi bi-building me-1"></i>Loading...
+        </span>
+    </div>
+    
+    <div class="row g-4">
+        <!-- Enhanced Category Management -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 admin-tool-card">
+                <div class="card-body d-flex flex-column">
+                    <div class="mb-3">
+                        <div class="tool-icon-wrapper bg-primary bg-opacity-10 rounded-3 p-3 d-inline-flex">
+                            <i class="bi bi-folder-plus fs-2 text-primary"></i>
+                        </div>
+                    </div>
+                    <h5 class="card-title fw-bold mb-2">Category Management</h5>
+                    <p class="card-text text-muted flex-grow-1">
+                        Create and manage asset categories with guided wizard, templates, and analytics.
+                    </p>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" onclick="if(window.wizard) wizard.openWizard(); else console.error('Wizard not loaded');">
+                            <i class="bi bi-magic me-2"></i>Create Category (Wizard)
+                        </button>
+                        <button class="btn btn-primary" onclick="adminTools.openCategoryManagementModal()">
+                            <i class="bi bi-gear me-2"></i>Manage Categories
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tenant Setup Wizard -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 admin-tool-card">
+                <div class="card-body d-flex flex-column">
+                    <div class="mb-3">
+                        <div class="tool-icon-wrapper bg-info bg-opacity-10 rounded-3 p-3 d-inline-flex">
+                            <i class="bi bi-building-gear fs-2 text-info"></i>
+                        </div>
+                    </div>
+                    <h5 class="card-title fw-bold mb-2">Tenant Setup</h5>
+                    <p class="card-text text-muted flex-grow-1">
+                        Configure company details, branches, and organizational structure with guided workflow.
+                    </p>
+                    <div class="d-grid">
+                        <a class="btn btn-info" href="{% url 'tenant_setup_wizard' %}">
+                            <i class="bi bi-play-circle me-2"></i>Launch Wizard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- User Management -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 admin-tool-card">
+                <div class="card-body d-flex flex-column">
+                    <div class="mb-3">
+                        <div class="tool-icon-wrapper bg-warning bg-opacity-10 rounded-3 p-3 d-inline-flex">
+                            <i class="bi bi-people fs-2 text-warning"></i>
+                        </div>
+                    </div>
+                    <h5 class="card-title fw-bold mb-2">User Management</h5>
+                    <p class="card-text text-muted flex-grow-1">
+                        Create users, assign roles, manage permissions, and track user activities across branches.
+                    </p>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#createUserModal">
+                            <i class="bi bi-person-plus me-2"></i>Create User
+                        </button>
+                        <a class="btn btn-warning" href="/settings/users/">
+                            <i class="bi bi-people me-2"></i>Manage Users
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Branch Management -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 admin-tool-card">
+                <div class="card-body d-flex flex-column">
+                    <div class="mb-3">
+                        <div class="tool-icon-wrapper bg-secondary bg-opacity-10 rounded-3 p-3 d-inline-flex">
+                            <i class="bi bi-diagram-3 fs-2 text-secondary"></i>
+                        </div>
+                    </div>
+                    <h5 class="card-title fw-bold mb-2">Branch Management</h5>
+                    <p class="card-text text-muted flex-grow-1">
+                        Assign users to branches, manage branch managers, and configure branch-level permissions.
+                    </p>
+                    <div class="d-grid gap-2">
+                        <a class="btn btn-outline-secondary" href="{% url 'user_branch_management' %}">
+                            <i class="bi bi-diagram-3 me-2"></i>User Branches
+                        </a>
+                        <a class="btn btn-secondary" href="{% url 'branch_manager_management' %}">
+                            <i class="bi bi-person-badge me-2"></i>Branch Managers
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Backup & Restore -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 admin-tool-card">
+                <div class="card-body d-flex flex-column">
+                    <div class="mb-3">
+                        <div class="tool-icon-wrapper bg-danger bg-opacity-10 rounded-3 p-3 d-inline-flex">
+                            <i class="bi bi-database fs-2 text-danger"></i>
+                        </div>
+                    </div>
+                    <h5 class="card-title fw-bold mb-2">Backup & Restore</h5>
+                    <p class="card-text text-muted flex-grow-1">
+                        Protect your data with automated backups and restore capabilities. Ensure business continuity and disaster recovery.
+                    </p>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-danger" id="openBackupModal">
+                            <i class="bi bi-database-down me-2"></i>Create Backup
+                        </button>
+                        <button class="btn btn-danger" id="openRestoreModal">
+                            <i class="bi bi-database-up me-2"></i>Restore from Backup
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

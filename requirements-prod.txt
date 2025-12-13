@@ -1,0 +1,91 @@
+# Production-optimized requirements for Railway deployment
+# Core Django and web framework
+Django==5.1.5
+asgiref==3.9.1
+gunicorn==23.0.0
+whitenoise==6.9.0
+
+# Database and ORM
+psycopg2-binary==2.9.10
+dj-database-url==3.0.1
+
+# Forms and UI
+django-crispy-forms==2.4
+crispy-bootstrap5==2024.10
+django-widget-tweaks==1.5.0
+
+# API and REST
+djangorestframework==3.16.1
+
+# Import/Export functionality
+django-import-export==4.3.9
+openpyxl==3.1.5
+xlsxwriter==3.2.5
+tablib==3.8.0
+et_xmlfile==2.0.0
+
+# Data processing
+pandas==2.3.2
+numpy==2.3.2
+
+# Image processing and QR codes
+pillow==11.3.0
+qrcode==8.2
+
+# PDF generation
+weasyprint==66.0
+pydyf==0.11.0
+tinycss2==1.4.0
+tinyhtml5==2.0.0
+cssselect2==0.8.0
+webencodings==0.5.1
+fonttools==4.59.1
+pyphen==0.17.2
+
+# Compression
+Brotli==1.1.0
+zopfli==0.2.3.post1
+
+# Cloud storage
+django-storages==1.14.4
+boto3==1.35.0
+b2sdk==2.5.1
+imagekitio==3.2.0
+cloudinary==1.41.0
+
+# Security
+django-csp==3.8
+
+# Task processing
+celery[redis]==5.4.0
+redis==5.2.1
+kombu[sqlalchemy]>=5.6.0
+django-celery-beat==2.8.0
+django-celery-results==2.5.1
+
+# Utilities
+python-decouple==3.8
+python-dotenv==1.1.1
+python-dateutil==2.9.0.post0
+pytz==2025.2
+tzdata==2025.2
+six==1.17.0
+sqlparse==0.5.3
+packaging==25.0
+colorama==0.4.6
+rapidfuzz==3.10.1
+
+# HTTP and networking
+urllib3==1.26.20
+requests>=2.32.0
+certifi
+
+# Build dependencies
+cffi==1.17.1
+pycparser==2.22
+
+# Fake data generation (for initial setup only)
+Faker==37.6.0
+
+# Text processing
+diff-match-patch==20241021

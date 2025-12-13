@@ -1,0 +1,1455 @@
+{% extends "base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Category Management · Asset Management{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/category-wizard-worldclass.css' %}">
+<style>
+/* ============================================================================
+   CRITICAL Z-INDEX FIX FOR MODALS
+   ============================================================================ */
+/* Ensure modals always appear above sidebar (z-index: 1020-1030) */
+.custom-modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 10500 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.custom-modal-overlay .wizard-modal,
+.custom-modal-overlay .glass-modal,
+.custom-modal-overlay .custom-modal {
+  position: relative !important;
+  z-index: 10600 !important;
+}
+
+/* World-Class Category Page Styles */
+.category-page-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2.5rem 0;
+  margin: -1rem -1rem 2rem -1rem;
+  border-radius: 0 0 24px 24px;
+  box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
+}
+
+.category-page-header h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: white;
+}
+
+.category-page-header p {
+  font-size: 1.1rem;
+  opacity: 0.95;
+  margin-bottom: 0;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.category-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.category-metric-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.category-metric-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  text-decoration: none;
+}
+
+.category-metric-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  font-size: 1.75rem;
+}
+
+.category-metric-icon.primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.category-metric-icon.success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.category-metric-icon.info {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.category-metric-icon.warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+}
+
+.category-metric-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+}
+
+.category-metric-label {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.category-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.category-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15) !important;
+}
+
+.category-icon-wrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.category-icon-wrapper i {
+  font-size: 1.75rem;
+  color: white;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.empty-state-icon {
+  font-size: 5rem;
+  color: #e2e8f0;
+  margin-bottom: 1.5rem;
+}
+
+.empty-state h3 {
+  color: #475569;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.empty-state p {
+  color: #94a3b8;
+  font-size: 1.05rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  .category-page-header {
+    padding: 2rem 0;
+  }
+  
+  .category-page-header h1 {
+    font-size: 1.75rem;
+  }
+  
+  .category-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
+
+/* ============================================================================
+   WORLD-CLASS TAB NAVIGATION (ServiceNow ITAM / IBM Maximo Style)
+   ============================================================================ */
+.edit-tabs-container {
+  position: relative;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #dee2e6;
+  padding: 0;
+  margin: -1rem -1rem 1rem -1rem;
+}
+
+.edit-tabs-nav {
+  display: flex;
+  position: relative;
+  z-index: 2;
+}
+
+.edit-tab {
+  position: relative;
+  background: transparent;
+  border: none;
+  padding: 1rem 1.5rem;
+  font-weight: 500;
+  color: #6c757d;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 0.5rem 0.5rem 0 0;
+  margin: 0.5rem 0.25rem 0 0.25rem;
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.edit-tab:hover {
+  background: rgba(23, 107, 135, 0.08);
+  color: #176B87;
+  transform: translateY(-1px);
+}
+
+.edit-tab.active {
+  background: linear-gradient(135deg, #176B87 0%, #64CCC5 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(23, 107, 135, 0.3);
+  transform: translateY(-2px);
+}
+
+.edit-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #176B87, #64CCC5);
+  border-radius: 0 0 0.5rem 0.5rem;
+}
+
+.edit-tab i {
+  font-size: 1rem;
+  margin-right: 0.5rem;
+}
+
+.edit-tab:focus {
+  outline: 2px solid #64CCC5;
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+/* Tab Indicator Animation */
+.edit-tabs-indicator {
+  position: absolute;
+  bottom: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #176B87, #64CCC5);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 0 0 0.5rem 0.5rem;
+  opacity: 0;
+}
+
+/* ============================================================================
+   SCROLLABLE FIELDS CONTAINER (Enterprise-Grade Performance)
+   ============================================================================ */
+.fields-header-section {
+  position: sticky;
+  top: 0;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  z-index: 10;
+  padding: 1rem 0;
+  border-bottom: 1px solid #e9ecef;
+  backdrop-filter: blur(10px);
+}
+
+.fields-scrollable-container {
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid #e9ecef;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+  position: relative;
+}
+
+/* Custom scrollbar for webkit browsers */
+.fields-scrollable-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.fields-scrollable-container::-webkit-scrollbar-track {
+  background: #f1f3f4;
+  border-radius: 4px;
+}
+
+.fields-scrollable-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #176B87 0%, #64CCC5 100%);
+  border-radius: 4px;
+  border: 2px solid #f1f3f4;
+}
+
+.fields-scrollable-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #155a75 0%, #5ab8b1 100%);
+}
+
+/* Fields list content */
+.fields-list-content {
+  padding: 1rem;
+}
+
+/* Field list item enhancements for scrollable container */
+.field-list-item {
+  display: flex;
+  justify-content: between;
+  align-items: center;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border: 1px solid #e9ecef;
+  border-radius: 0.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.field-list-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(23, 107, 135, 0.15);
+  border-color: #64CCC5;
+}
+
+.field-list-item:last-child {
+  margin-bottom: 0;
+}
+
+.field-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.field-label {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.field-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.field-key {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  font-size: 0.75rem;
+  background: linear-gradient(135deg, #e9ecef 0%, #f1f3f4 100%);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  color: #495057;
+  border: 1px solid #dee2e6;
+}
+
+.field-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: 1rem;
+}
+
+.field-actions .btn {
+  min-width: auto;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.field-actions .btn:hover {
+  transform: translateY(-1px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .edit-tab {
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+  }
+  
+  .fields-scrollable-container {
+    max-height: 300px;
+  }
+  
+  .field-list-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .field-actions {
+    margin-left: 0;
+    margin-top: 0.75rem;
+    justify-content: flex-end;
+  }
+}
+
+/* Enhanced scrollable container for field forms */
+.field-form-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Sticky Field Form Footer (IBM Maximo Style) */
+.field-form-sticky-footer {
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-top: 2px solid #176B87;
+  padding: 1rem;
+  margin: 0 -1rem -1rem -1rem;
+  box-shadow: 0 -4px 12px rgba(23, 107, 135, 0.15);
+  backdrop-filter: blur(10px);
+  z-index: 5;
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.field-form-sticky-content {
+  max-width: 100%;
+}
+
+.field-form-compact {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  transition: all 0.2s ease;
+}
+
+.field-form-compact:hover {
+  border-color: #64CCC5;
+  box-shadow: 0 2px 8px rgba(23, 107, 135, 0.1);
+}
+
+/* Full Field Form (ServiceNow ITAM Style) */
+.field-form-full {
+  margin-top: 1rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 16px rgba(23, 107, 135, 0.12);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: fadeInScale 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.field-form-full:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(23, 107, 135, 0.18);
+}
+
+/* Form field enhancements */
+.field-form-compact .form-control,
+.field-form-compact .form-select {
+  border-radius: 0.375rem;
+  border: 1px solid #ced4da;
+  transition: all 0.2s ease;
+}
+
+.field-form-compact .form-control:focus,
+.field-form-compact .form-select:focus {
+  border-color: #176B87;
+  box-shadow: 0 0 0 0.2rem rgba(23, 107, 135, 0.25);
+}
+
+/* Switch enhancements */
+.field-form-compact .form-check-input,
+.field-form-full .form-check-input {
+  border-color: #ced4da;
+  transition: all 0.2s ease;
+}
+
+.field-form-compact .form-check-input:checked,
+.field-form-full .form-check-input:checked {
+  background-color: #176B87;
+  border-color: #176B87;
+}
+
+.field-form-compact .form-check-input:hover,
+.field-form-full .form-check-input:hover {
+  border-color: #64CCC5;
+}
+
+/* Button enhancements */
+.field-form-sticky-footer .btn {
+  border-radius: 0.375rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.field-form-sticky-footer .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Responsive adjustments for sticky form */
+@media (max-width: 768px) {
+  .field-form-sticky-footer {
+    padding: 0.75rem;
+  }
+  
+  .field-form-compact {
+    padding: 0.75rem;
+  }
+  
+  .field-form-compact .row {
+    gap: 0.5rem;
+  }
+  
+  .field-form-compact .col-md-4,
+  .field-form-compact .col-md-2 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+  
+  .field-form-compact .d-flex.gap-1 {
+    margin-top: 0.5rem;
+    justify-content: stretch;
+  }
+  
+  .field-form-compact .btn {
+    flex: 1;
+  }
+}
+
+/* Accessibility enhancements */
+@media (prefers-reduced-motion: reduce) {
+  .edit-tab,
+  .field-list-item,
+  .fields-scrollable-container {
+    transition: none;
+  }
+}
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+{% include "components/sidebar_enhanced.html" %}
+<div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
+
+<main class="dashboard-content" id="main-content" role="main">
+  <div class="container-fluid">
+    
+    <!-- Hero Header -->
+    <div class="category-page-header">
+      <div class="container-fluid px-4">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <h1>
+              <i class="bi bi-grid-3x3-gap me-3"></i>Category Management
+            </h1>
+            <p>
+              <i class="bi bi-info-circle me-2"></i>
+              Organize and manage asset categories with dynamic custom fields
+            </p>
+          </div>
+          <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <button class="btn btn-light btn-lg shadow-sm" onclick="categoryWizard.openWizard()">
+              <i class="bi bi-plus-circle me-2"></i>Create Category
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-4">
+      <!-- Breadcrumb Navigation -->
+      <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="{% url 'dashboard' %}">
+              <i class="bi bi-house-door me-1"></i>Dashboard
+            </a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            <i class="bi bi-grid-3x3-gap me-1"></i>Categories
+          </li>
+        </ol>
+      </nav>
+
+      <!-- Metrics Cards -->
+      <div class="category-metrics-grid" id="categoryMetrics">
+        <div class="category-metric-card">
+          <div class="category-metric-icon primary">
+            <i class="bi bi-folder-fill"></i>
+          </div>
+          <div class="category-metric-value" id="metric-total">—</div>
+          <div class="category-metric-label">Total Categories</div>
+        </div>
+
+        <div class="category-metric-card">
+          <div class="category-metric-icon success">
+            <i class="bi bi-box-seam"></i>
+          </div>
+          <div class="category-metric-value" id="metric-assets">—</div>
+          <div class="category-metric-label">Total Assets</div>
+        </div>
+
+        <div class="category-metric-card">
+          <div class="category-metric-icon info">
+            <i class="bi bi-sliders"></i>
+          </div>
+          <div class="category-metric-value" id="metric-fields">—</div>
+          <div class="category-metric-label">Custom Fields</div>
+        </div>
+
+        <div class="category-metric-card">
+          <div class="category-metric-icon warning">
+            <i class="bi bi-folder2-open"></i>
+          </div>
+          <div class="category-metric-value" id="metric-active">—</div>
+          <div class="category-metric-label">Active Categories</div>
+        </div>
+      </div>
+
+      <!-- Category List Container -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <div class="row align-items-center">
+            <div class="col-md-6">
+              <h5 class="mb-0 fw-bold">
+                <i class="bi bi-folder2-open me-2 text-primary"></i>All Categories
+              </h5>
+            </div>
+            <div class="col-md-6">
+              <div class="d-flex gap-2 justify-content-md-end mt-3 mt-md-0">
+                <div class="input-group input-group-sm" style="max-width: 300px;">
+                  <span class="input-group-text bg-light border-0">
+                    <i class="bi bi-search"></i>
+                  </span>
+                  <input type="text" 
+                         class="form-control border-0 bg-light" 
+                         placeholder="Search categories..." 
+                         id="categorySearchInput"
+                         aria-label="Search categories">
+                </div>
+                <button class="btn btn-sm btn-outline-secondary" onclick="loadCategories()" title="Refresh">
+                  <i class="bi bi-arrow-clockwise"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-body p-4">
+          <div id="categoryListContainer">
+            <div class="text-center py-5">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading categories...</span>
+              </div>
+              <p class="text-muted mt-3">Loading categories...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}
+
+{% block dashboard_modals %}
+  <!-- Category Creation Wizard Modal -->
+  <div id="categoryWizardModal" class="custom-modal-overlay" tabindex="-1" role="dialog" aria-labelledby="wizard-title" aria-describedby="wizard-description">
+    <div class="custom-modal glass-modal wizard-modal" role="document" aria-modal="true">
+      <!-- ARIA Live Region for Announcements -->
+      <div id="wizard-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+      <div class="custom-modal-header">
+        <h4 id="wizard-title" class="modal-title fw-bold mb-0">
+          <i class="bi bi-magic me-2"></i>Create Category Wizard
+        </h4>
+        <button type="button" class="custom-modal-close" onclick="categoryWizard.closeWizard()" aria-label="Close wizard">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <p id="wizard-description" class="sr-only">A 3-step wizard to create a new asset category with custom fields</p>
+      
+      <!-- Wizard Progress Indicator -->
+      <div class="wizard-progress" role="progressbar" aria-valuenow="33" aria-valuemin="0" aria-valuemax="100" aria-label="Wizard progress">
+        <div class="wizard-steps">
+          <div class="wizard-step active" data-step="1">
+            <div class="wizard-step-number">1</div>
+            <div class="wizard-step-label">Basic Info</div>
+          </div>
+          <div class="wizard-step-connector"></div>
+          <div class="wizard-step" data-step="2">
+            <div class="wizard-step-number">2</div>
+            <div class="wizard-step-label">Dynamic Fields</div>
+          </div>
+          <div class="wizard-step-connector"></div>
+          <div class="wizard-step" data-step="3">
+            <div class="wizard-step-number">3</div>
+            <div class="wizard-step-label">Review</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="custom-modal-body wizard-body">
+        <div id="wizard-feedback" class="mb-3"></div>
+        
+        <!-- Step 1: Basic Information -->
+        <div class="wizard-content active" data-step="1">
+          <div class="text-center mb-4">
+            <h5 class="fw-bold">Category Information</h5>
+            <p class="text-muted">Provide basic details about your category</p>
+          </div>
+          
+          <div class="row justify-content-center">
+            <div class="col-md-8">
+              <div class="mb-4">
+                <label for="wizard-category-name" class="form-label fw-semibold">
+                  Category Name <span class="text-danger">*</span>
+                </label>
+                <input type="text" class="form-control form-control-lg" id="wizard-category-name" 
+                       maxlength="100" required placeholder="e.g., Laptops, Vehicles, Furniture"
+                       oninput="categoryWizard.validateName(this)"
+                       aria-describedby="wizard-name-help wizard-name-counter wizard-name-validation"
+                       autocomplete="off">
+                <div class="d-flex justify-content-between align-items-center mt-1">
+                  <div class="form-text" id="wizard-name-help">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Choose a clear, descriptive name
+                  </div>
+                  <small class="text-muted" id="wizard-name-counter" aria-live="polite">0/100</small>
+                </div>
+                <div id="wizard-name-validation" class="invalid-feedback d-block"></div>
+              </div>
+              
+              <div class="mb-3">
+                <label for="wizard-category-description" class="form-label fw-semibold">
+                  Description <span class="text-muted small">(optional)</span>
+                </label>
+                <textarea class="form-control" id="wizard-category-description" 
+                          rows="3" maxlength="255" 
+                          placeholder="Describe this category and what types of assets it contains..."
+                          oninput="categoryWizard.updateCharCounter(this, 'wizard-desc-counter')"
+                          aria-describedby="wizard-desc-counter"></textarea>
+                <div class="d-flex justify-content-end mt-1">
+                  <small class="text-muted" id="wizard-desc-counter" aria-live="polite">0/255</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Step 2: Dynamic Fields -->
+        <div class="wizard-content" data-step="2" style="display:none;">
+          <div class="text-center mb-4">
+            <h5 class="fw-bold">Configure Dynamic Fields</h5>
+            <p class="text-muted">Add custom fields to capture specific asset information</p>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-8">
+              <div class="fields-scrollable-container field-form-container">
+                <div id="wizard-fields-list" class="fields-list-content">
+                  <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    No fields added yet. Click "Add Field" to create custom fields for this category.
+                  </div>
+                </div>
+
+                <!-- Unified World-Class Field Form (Hidden by default) -->
+                <div id="wizard-field-form" class="card border-primary field-form-full world-class-field-form" style="display:none;">
+                  <div class="card-header bg-primary bg-opacity-10">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div>
+                        <h6 class="mb-0 fw-bold text-primary">
+                          <i class="bi bi-gear-fill me-2"></i>
+                          <span id="field-form-title">Add New Field</span>
+                        </h6>
+                        <small class="text-muted">Configure custom field properties</small>
+                      </div>
+                      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="categoryWizard.hideFieldForm()" aria-label="Close field form">
+                        <i class="bi bi-x-lg"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <div id="field-form-feedback" class="mb-3" role="alert" aria-live="polite"></div>
+
+                    <div class="row g-4">
+                      <div class="col-12">
+                        <label for="field-label" class="form-label fw-semibold" id="label-field-label">
+                          <i class="bi bi-type me-2 text-primary"></i>
+                          Field Label <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                          <span class="input-group-text bg-light">
+                            <i class="bi bi-text-left text-muted"></i>
+                          </span>
+                          <input type="text" class="form-control form-control-lg" id="field-label" maxlength="100" required
+                                 placeholder="e.g., Serial Number, Purchase Date, Warranty Expiry"
+                                 oninput="categoryWizard.handleFieldLabelInput(this)"
+                                 aria-labelledby="label-field-label" aria-describedby="field-label-help field-key-preview">
+                        </div>
+                        <div id="field-label-help" class="form-text mt-2">
+                          <i class="bi bi-info-circle me-1"></i>
+                          Enter a descriptive name for this field. This is what users will see when entering data.
+                        </div>
+
+                        <div class="system-key-display mt-3 p-3 bg-light rounded border">
+                          <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                              <i class="bi bi-key-fill text-primary me-2"></i>
+                              <span class="fw-semibold">System Key:</span>
+                              <div class="ms-2">
+                                <span class="badge bg-secondary text-monospace" id="field-key-preview">auto_generated_key</span>
+                              </div>
+                            </div>
+                            <div class="key-status">
+                              <small class="text-muted" id="field-key-hint"><i class="bi bi-magic me-1"></i>Auto-generated from label</small>
+                            </div>
+                          </div>
+                          <div id="field-key-validation" class="invalid-feedback d-block mt-2"></div>
+                        </div>
+                      </div>
+
+                      <div class="col-md-6">
+                        <label for="field-type" class="form-label fw-semibold">
+                          <i class="bi bi-ui-checks-grid me-2 text-primary"></i>
+                          Field Type <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                          <span class="input-group-text bg-light">
+                            <i class="bi bi-box text-muted"></i>
+                          </span>
+                          <select class="form-select form-select-lg" id="field-type" required aria-describedby="field-type-help">
+                            <option value="text">📝 Text</option>
+                            <option value="number">🔢 Number</option>
+                            <option value="date">📅 Date</option>
+                            <option value="textarea">📄 Text Area</option>
+                          </select>
+                        </div>
+                        <div id="field-type-help" class="form-text mt-2">
+                          <i class="bi bi-info-circle me-1"></i>
+                          Choose the appropriate data type for this field.
+                        </div>
+                      </div>
+
+                      <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                          <i class="bi bi-toggle-on me-2 text-primary"></i>
+                          Field Options
+                        </label>
+                        <div class="field-options-container">
+                          <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="field-required">
+                            <label class="form-check-label fw-semibold" for="field-required">
+                              <i class="bi bi-asterisk text-danger me-1"></i>
+                              Required Field
+                            </label>
+                            <div class="form-text">
+                              Users must provide a value for this field
+                            </div>
+                          </div>
+
+                          <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="field-unique">
+                            <label class="form-check-label fw-semibold" for="field-unique">
+                              <i class="bi bi-shield-check text-primary me-1"></i>
+                              Unique Field
+                              <span class="badge bg-primary bg-opacity-10 text-primary ms-2">Duplicate Detection</span>
+                            </label>
+                            <div class="form-text">
+                              <i class="bi bi-info-circle me-1"></i>
+                              Prevent duplicate values across assets in this category.
+                              <strong>Examples:</strong> Serial numbers, VIN codes, asset tags
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="form-actions mt-4 pt-4 border-top">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <div class="form-text text-muted">
+                          <i class="bi bi-lightbulb me-1"></i>
+                          Configure field properties to capture specific asset information
+                        </div>
+                        <div class="d-flex gap-2">
+                          <button type="button" class="btn btn-outline-secondary" onclick="categoryWizard.hideFieldForm()">
+                            <i class="bi bi-x-lg me-2"></i>Cancel
+                          </button>
+                          <button type="button" class="btn btn-primary btn-lg" onclick="categoryWizard.saveField()">
+                            <i class="bi bi-check-lg me-2"></i>Save Field
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-3">
+                <button type="button" class="btn btn-outline-primary" onclick="categoryWizard.showFieldForm()" aria-label="Add new field">
+                  <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Add Field
+                </button>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card border-0 bg-light">
+                <div class="card-body">
+                  <h6 class="fw-bold mb-3">
+                    <i class="bi bi-lightbulb me-2"></i>Field Tips
+                  </h6>
+                  <ul class="small mb-0 ps-3">
+                    <li class="mb-2">Use clear, descriptive labels</li>
+                    <li class="mb-2">Mark essential fields as required</li>
+                    <li class="mb-2">Choose appropriate field types</li>
+                    <li class="mb-2">You can edit fields later</li>
+                    <li class="mb-2">Skip this step if no custom fields needed</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Step 3: Review & Confirm -->
+        <div class="wizard-content" data-step="3" style="display:none;">
+          <div class="text-center mb-4">
+            <h5 class="fw-bold">Review & Confirm</h5>
+            <p class="text-muted">Check your configuration before creating the category</p>
+          </div>
+          
+          <div class="row justify-content-center">
+            <div class="col-md-8">
+              <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                  <h6 class="fw-bold mb-3">
+                    <i class="bi bi-folder-fill me-2"></i>Category Details
+                  </h6>
+                  <div class="row mb-2">
+                    <div class="col-sm-4 text-muted">Name:</div>
+                    <div class="col-sm-8 fw-semibold" id="review-category-name"></div>
+                  </div>
+                  <div class="row">
+                    <div class="col-sm-4 text-muted">Description:</div>
+                    <div class="col-sm-8" id="review-category-description">None</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                  <h6 class="fw-bold mb-3">
+                    <i class="bi bi-list-check me-2"></i>Dynamic Fields
+                    <span class="badge bg-primary ms-2" id="review-field-count">0</span>
+                  </h6>
+                  <div id="review-fields-list">
+                    <p class="text-muted small mb-0">No custom fields configured</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="custom-modal-footer wizard-footer">
+        <button type="button" class="btn btn-secondary" id="wizard-back-btn" onclick="categoryWizard.prevStep()" style="display:none;" aria-label="Go to previous step">
+          <i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Back
+        </button>
+        <div class="ms-auto d-flex gap-2">
+          <button type="button" class="btn btn-outline-secondary" onclick="categoryWizard.closeWizard()" aria-label="Cancel and close wizard">
+            Cancel
+          </button>
+          <button type="button" class="btn btn-primary" id="wizard-next-btn" onclick="categoryWizard.nextStep()" aria-label="Go to next step">
+            Next Step<i class="bi bi-arrow-right ms-2" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="btn btn-success" id="wizard-finish-btn" onclick="categoryWizard.finish()" style="display:none;" aria-label="Create category">
+            <i class="bi bi-check-lg me-2" aria-hidden="true"></i>Create Category
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enhanced Edit Category Modal -->
+  <div id="editCategoryModal" class="custom-modal-overlay" tabindex="-1">
+    <div class="custom-modal glass-modal" role="dialog" aria-modal="true" style="max-width:900px;width:100%;">
+      <div class="custom-modal-header">
+        <h4 class="modal-title fw-bold mb-0">
+          <i class="bi bi-pencil-square me-2"></i>Edit Category
+        </h4>
+        <button type="button" class="custom-modal-close" onclick="categoryEditor.closeModal()">
+          <span>&times;</span>
+        </button>
+      </div>
+      
+      <!-- World-Class Tab Navigation -->
+      <div class="edit-tabs-container">
+        <div class="edit-tabs-nav">
+          <button class="edit-tab active" data-tab="info" onclick="categoryEditor.switchTab('info')" role="tab" aria-selected="true" aria-controls="info-tab">
+            <i class="bi bi-info-circle me-2"></i>Basic Info
+          </button>
+          <button class="edit-tab" data-tab="fields" onclick="categoryEditor.switchTab('fields')" role="tab" aria-selected="false" aria-controls="fields-tab">
+            <i class="bi bi-list-check me-2"></i>Dynamic Fields
+          </button>
+        </div>
+        <div class="edit-tabs-indicator"></div>
+      </div>
+      
+      <div class="custom-modal-body wizard-body">
+        <div id="edit-category-feedback" class="mb-3"></div>
+        
+        <!-- Category Info Banner -->
+        <div id="edit-category-info" class="alert alert-light border mb-4">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-folder-fill fs-3 text-primary me-3"></i>
+            <div>
+              <h6 class="mb-0 fw-bold" id="edit-category-display-name"></h6>
+              <small class="text-muted" id="edit-category-asset-count"></small>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Tab Content: Basic Info -->
+        <div class="edit-tab-content active" data-tab="info">
+          <form id="editCategoryForm">
+            <input type="hidden" id="editCategoryId">
+            
+            <div class="mb-4">
+              <label for="editCategoryName" class="form-label fw-semibold">
+                Category Name <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-control form-control-lg" id="editCategoryName" 
+                     name="name" maxlength="100" required
+                     oninput="categoryEditor.validateName(this)">
+              <div class="d-flex justify-content-between align-items-center mt-1">
+                <div class="form-text">
+                  <i class="bi bi-info-circle me-1"></i>
+                  Changes will affect all associated assets
+                </div>
+                <small class="text-muted" id="edit-name-counter">0/100</small>
+              </div>
+              <div id="edit-name-validation" class="invalid-feedback d-block"></div>
+            </div>
+            
+            <div class="mb-3">
+              <label for="editCategoryDescription" class="form-label fw-semibold">
+                Description <span class="text-muted small">(optional)</span>
+              </label>
+              <textarea class="form-control" id="editCategoryDescription" name="description" 
+                        rows="3" maxlength="255"
+                        oninput="categoryEditor.updateCharCounter(this, 'edit-desc-counter')"></textarea>
+              <div class="d-flex justify-content-end mt-1">
+                <small class="text-muted" id="edit-desc-counter">0/255</small>
+              </div>
+            </div>
+            
+            <div class="alert alert-warning small">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              <strong>Note:</strong> Changes will be applied immediately to this category and all associated assets.
+            </div>
+          </form>
+        </div>
+        
+        <!-- Tab Content: Dynamic Fields -->
+        <div class="edit-tab-content" data-tab="fields" style="display:none;">
+          <!-- Fixed Header Section -->
+          <div class="fields-header-section">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h6 class="mb-0 fw-bold">Dynamic Fields</h6>
+                <small class="text-muted">Configure custom fields for asset information capture</small>
+              </div>
+              <button class="btn btn-sm btn-primary" onclick="categoryEditor.showFieldForm()" aria-label="Add new field">
+                <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Add Field
+              </button>
+            </div>
+          </div>
+          
+          <!-- Scrollable Fields Container with Sticky Footer -->
+          <div class="fields-scrollable-container field-form-container">
+            <div id="edit-fields-list" class="fields-list-content">
+              <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Loading fields...</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Unified Full Field Form (inside scrollable area) -->
+            <div id="edit-field-form" class="card border-primary field-form-full world-class-field-form" style="display:none;">
+              <div class="card-header bg-primary bg-opacity-10">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h6 class="mb-0 fw-bold text-primary">
+                      <i class="bi bi-gear-fill me-2"></i>
+                      <span id="edit-field-form-title">Add New Field</span>
+                    </h6>
+                    <small class="text-muted" id="edit-field-form-subtitle">Configure custom field properties</small>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" onclick="categoryEditor.hideFieldForm()" aria-label="Close field form">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <!-- Form Feedback Area -->
+                <div id="edit-field-form-feedback" class="mb-3" role="alert" aria-live="polite"></div>
+
+                <!-- Hidden Fields -->
+                <input type="hidden" id="edit-field-id" value="">
+                <input type="hidden" id="edit-field-key" value="">
+
+                <div class="row g-4">
+                  <!-- Field Label Section -->
+                  <div class="col-12">
+                    <label for="edit-field-label" class="form-label fw-semibold" id="label-edit-field-label">
+                      <i class="bi bi-type me-2 text-primary"></i>
+                      Field Label <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group">
+                      <span class="input-group-text bg-light">
+                        <i class="bi bi-text-left text-muted"></i>
+                      </span>
+                      <input type="text" class="form-control form-control-lg" id="edit-field-label" maxlength="100" required
+                             placeholder="e.g., Serial Number, Purchase Date, Warranty Expiry"
+                             oninput="categoryEditor.handleFieldLabelInput(this)"
+                             aria-labelledby="label-edit-field-label" aria-describedby="edit-field-label-help edit-field-key-preview">
+                    </div>
+                    <div id="edit-field-label-help" class="form-text mt-2">
+                      <i class="bi bi-info-circle me-1"></i>
+                      Enter a descriptive name for this field. This is what users will see when entering data.
+                    </div>
+
+                    <!-- System Key Display -->
+                    <div class="system-key-display mt-3 p-3 bg-light rounded border">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                          <i class="bi bi-key-fill text-primary me-2"></i>
+                          <span class="fw-semibold">System Key:</span>
+                          <div class="ms-2">
+                            <span class="badge bg-secondary text-monospace" id="edit-field-key-preview">auto_generated_key</span>
+                          </div>
+                        </div>
+                        <div id="edit-field-key-status" class="key-status">
+                          <small class="text-muted" id="edit-field-key-hint"><i class="bi bi-magic me-1"></i>Auto-generated from label</small>
+                        </div>
+                      </div>
+                      <div id="edit-field-key-validation" class="invalid-feedback d-block mt-2"></div>
+                    </div>
+                  </div>
+
+                  <!-- Field Type and Required Options -->
+                  <div class="col-md-6">
+                    <label for="edit-field-type" class="form-label fw-semibold">
+                      <i class="bi bi-ui-checks-grid me-2 text-primary"></i>
+                      Field Type <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group">
+                      <span class="input-group-text bg-light">
+                        <i class="bi bi-box text-muted"></i>
+                      </span>
+                      <select class="form-select form-select-lg" id="edit-field-type" required aria-describedby="edit-field-type-help">
+                        <option value="">Select field type...</option>
+                        <option value="text">📝 Text</option>
+                        <option value="number">🔢 Number</option>
+                        <option value="date">📅 Date</option>
+                        <option value="textarea">📄 Text Area</option>
+                      </select>
+                    </div>
+                    <div id="edit-field-type-help" class="form-text mt-2">
+                      <i class="bi bi-info-circle me-1"></i>
+                      Choose the appropriate data type for this field.
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold">
+                      <i class="bi bi-toggle-on me-2 text-primary"></i>
+                      Field Options
+                    </label>
+                    <div class="field-options-container">
+                      <!-- Required Field Toggle -->
+                      <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="edit-field-required">
+                        <label class="form-check-label fw-semibold" for="edit-field-required">
+                          <i class="bi bi-asterisk text-danger me-1"></i>
+                          Required Field
+                        </label>
+                        <div class="form-text">
+                          Users must provide a value for this field
+                        </div>
+                      </div>
+
+                      <!-- Unique Field Toggle -->
+                      <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="edit-field-unique">
+                        <label class="form-check-label fw-semibold" for="edit-field-unique">
+                          <i class="bi bi-shield-check text-primary me-1"></i>
+                          Unique Field
+                          <span class="badge bg-primary bg-opacity-10 text-primary ms-2">Duplicate Detection</span>
+                        </label>
+                        <div class="form-text">
+                          <i class="bi bi-info-circle me-1"></i>
+                          Prevent duplicate values across assets in this category.
+                          <strong>Examples:</strong> Serial numbers, VIN codes, asset tags
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Field Validation Rules (placeholder for future rules) -->
+                  <div class="col-12" id="field-validation-rules" style="display:none;">
+                    <div class="form-section border-top pt-4">
+                      <h6 class="fw-semibold mb-3">
+                        <i class="bi bi-shield-exclamation me-2 text-warning"></i>
+                        Validation Rules
+                      </h6>
+                      <div class="row g-3" id="validation-rules-container"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="form-actions mt-4 pt-4 border-top">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div class="form-text text-muted">
+                      <i class="bi bi-lightbulb me-1"></i>
+                      <span id="field-form-tip">Configure field properties to capture specific asset information</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                      <button type="button" class="btn btn-outline-secondary" onclick="categoryEditor.hideFieldForm()">
+                        <i class="bi bi-x-lg me-2"></i>Cancel
+                      </button>
+                      <button type="button" class="btn btn-primary btn-lg" onclick="categoryEditor.saveField()">
+                        <i class="bi bi-check-lg me-2"></i>Save Field
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="custom-modal-footer d-flex justify-content-end gap-2 p-3">
+        <button type="button" class="btn btn-outline-secondary px-4" onclick="categoryEditor.closeModal()">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary px-4 fw-bold" onclick="categoryEditor.saveCategory()">
+          <i class="bi bi-check-lg me-2"></i>Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+  <script src="{% static 'js/category-wizard-simple.js' %}"></script>
+  <script src="{% static 'js/category-editor.js' %}"></script>
+  <script src="{% static 'js/category-list.js' %}"></script>
+  
+  <!-- World-Class Tab Enhancement Script -->
+  <script>
+  /**
+   * World-Class Tab Enhancement for Category Edit Modal
+   * Inspired by ServiceNow ITAM, IBM Maximo, and SAP EAM
+   * Features: Smooth animations, accessibility, performance optimization
+   */
+  document.addEventListener('DOMContentLoaded', function() {
+    // Enhanced tab switching with animation and accessibility
+    const originalSwitchTab = window.categoryEditor?.switchTab;
+    
+    if (window.categoryEditor && originalSwitchTab) {
+      window.categoryEditor.switchTab = function(tabName) {
+        const modal = document.getElementById('editCategoryModal');
+        if (!modal) return;
+
+        const tabs = modal.querySelectorAll('.edit-tab');
+        const contents = modal.querySelectorAll('.edit-tab-content');
+        const indicator = modal.querySelector('.edit-tabs-indicator');
+        
+        // Find the active tab and content
+        const activeTab = modal.querySelector(`.edit-tab[data-tab="${tabName}"]`);
+        const activeContent = modal.querySelector(`.edit-tab-content[data-tab="${tabName}"]`);
+        
+        if (!activeTab || !activeContent) return;
+
+        // Update ARIA attributes for accessibility
+        tabs.forEach(tab => {
+          tab.setAttribute('aria-selected', 'false');
+          tab.classList.remove('active');
+        });
+        
+        contents.forEach(content => {
+          content.style.display = 'none';
+          content.setAttribute('aria-hidden', 'true');
+        });
+
+        // Activate new tab with smooth animation
+        activeTab.setAttribute('aria-selected', 'true');
+        activeTab.classList.add('active');
+        
+        // Smooth content transition
+        activeContent.style.display = 'block';
+        activeContent.setAttribute('aria-hidden', 'false');
+        activeContent.style.opacity = '0';
+        activeContent.style.transform = 'translateY(10px)';
+        
+        requestAnimationFrame(() => {
+          activeContent.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+          activeContent.style.opacity = '1';
+          activeContent.style.transform = 'translateY(0)';
+        });
+
+        // Animate tab indicator
+        if (indicator) {
+          const tabRect = activeTab.getBoundingClientRect();
+          const containerRect = activeTab.parentElement.getBoundingClientRect();
+          
+          indicator.style.width = `${tabRect.width}px`;
+          indicator.style.left = `${tabRect.left - containerRect.left}px`;
+          indicator.style.opacity = '1';
+        }
+
+        // Focus management for accessibility
+        activeTab.focus();
+        
+        // Announce to screen readers
+        const announcement = document.createElement('div');
+        announcement.setAttribute('role', 'status');
+        announcement.setAttribute('aria-live', 'polite');
+        announcement.className = 'sr-only';
+        announcement.textContent = `Switched to ${tabName === 'info' ? 'Basic Info' : 'Dynamic Fields'} tab`;
+        document.body.appendChild(announcement);
+        setTimeout(() => announcement.remove(), 1000);
+
+        // Call original functionality if needed
+        if (originalSwitchTab) {
+          originalSwitchTab.call(this, tabName);
+        }
+      };
+    }
+
+    // Initialize scroll performance optimization
+    const scrollableContainer = document.querySelector('.fields-scrollable-container');
+    if (scrollableContainer) {
+      let scrollTimeout;
+      
+      // Optimize scroll performance
+      scrollableContainer.addEventListener('scroll', function() {
+        if (scrollTimeout) {
+          window.cancelAnimationFrame(scrollTimeout);
+        }
+        
+        scrollTimeout = window.requestAnimationFrame(function() {
+          // Add shadow effect when scrolling
+          if (scrollableContainer.scrollTop > 10) {
+            scrollableContainer.style.boxShadow = 'inset 0 2px 4px rgba(0, 0, 0, 0.06), 0 -2px 8px rgba(0, 0, 0, 0.1)';
+          } else {
+            scrollableContainer.style.boxShadow = 'inset 0 2px 4px rgba(0, 0, 0, 0.06)';
+          }
+        });
+      }, { passive: true });
+
+      // Keyboard navigation for scrollable container
+      scrollableContainer.addEventListener('keydown', function(e) {
+        const scrollAmount = 50;
+        switch(e.key) {
+          case 'ArrowDown':
+          case 'PageDown':
+            e.preventDefault();
+            scrollableContainer.scrollTop += scrollAmount;
+            break;
+          case 'ArrowUp':
+          case 'PageUp':
+            e.preventDefault();
+            scrollableContainer.scrollTop -= scrollAmount;
+            break;
+          case 'Home':
+            e.preventDefault();
+            scrollableContainer.scrollTop = 0;
+            break;
+          case 'End':
+            e.preventDefault();
+            scrollableContainer.scrollTop = scrollableContainer.scrollHeight;
+            break;
+        }
+      });
+    }
+
+    // Initialize tab indicator position
+    const activeTab = document.querySelector('.edit-tab.active');
+    const indicator = document.querySelector('.edit-tabs-indicator');
+    if (activeTab && indicator) {
+      const tabRect = activeTab.getBoundingClientRect();
+      const containerRect = activeTab.parentElement.getBoundingClientRect();
+      
+      indicator.style.width = `${tabRect.width}px`;
+      indicator.style.left = `${tabRect.left - containerRect.left}px`;
+      indicator.style.opacity = '1';
+    }
+
+    // Add resize observer for responsive tab indicator
+    if (window.ResizeObserver && indicator) {
+      const resizeObserver = new ResizeObserver(entries => {
+        const activeTab = document.querySelector('.edit-tab.active');
+        if (activeTab && indicator) {
+          const tabRect = activeTab.getBoundingClientRect();
+          const containerRect = activeTab.parentElement.getBoundingClientRect();
+          
+          indicator.style.width = `${tabRect.width}px`;
+          indicator.style.left = `${tabRect.left - containerRect.left}px`;
+        }
+      });
+      
+      resizeObserver.observe(document.querySelector('.edit-tabs-nav'));
+    }
+  });
+  
+  </script>
+{% endblock %}

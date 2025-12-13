@@ -1,0 +1,683 @@
+/**
+ * Intelligent Duplicate Detection System - Styles
+ * 
+ * World-class UI styling for duplicate detection components
+ * with glassmorphism, animations, and responsive design.
+ * 
+ * Author: World-Class Software Engineer
+ * Date: 2025-01-13
+ * Version: 1.0.0
+ */
+
+/* ========================================
+   Detection Panel Styles
+   ======================================== */
+
+.duplicate-detection-panel {
+    margin-bottom: 2rem;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.detection-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.detection-header h5 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+
+.detection-header .badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.detection-body {
+    padding: 1.25rem;
+}
+
+/* Status Indicator */
+.detection-status {
+    padding: 1rem;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.status-indicator .badge {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.status-indicator .spinner-border-sm {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+/* Confidence Meter */
+.confidence-meter {
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+}
+
+.confidence-meter .progress {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+    overflow: visible;
+}
+
+.confidence-meter .progress-bar {
+    border-radius: 10px;
+    position: relative;
+    transition: width 0.6s ease, background-color 0.3s ease;
+}
+
+.confidence-text {
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.confidence-labels {
+    font-size: 0.75rem;
+}
+
+/* Detection Results */
+.detection-results h6 {
+    color: #495057;
+    font-weight: 600;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.result-section {
+    margin-bottom: 1rem;
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.match-item {
+    padding: 0.75rem;
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.match-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.match-item .badge {
+    font-size: 0.75rem;
+}
+
+.match-list .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* Suggestions */
+.suggestion-item {
+    padding: 0.5rem;
+    border-left: 3px solid #ffc107;
+    background: linear-gradient(90deg, rgba(255, 193, 7, 0.05) 0%, transparent 100%);
+    transition: background 0.2s ease;
+}
+
+.suggestion-item:hover {
+    background: linear-gradient(90deg, rgba(255, 193, 7, 0.1) 0%, transparent 100%);
+}
+
+/* Actions */
+.detection-actions .btn {
+    font-weight: 500;
+    padding: 0.625rem 1.25rem;
+    transition: all 0.2s ease;
+}
+
+.detection-actions .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* ========================================
+   Resolution Modal Styles
+   ======================================== */
+
+#duplicateResolutionModal .modal-dialog {
+    max-width: 1200px;
+}
+
+#duplicateResolutionModal .modal-header {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    border-bottom: none;
+}
+
+.bg-gradient-warning {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%) !important;
+}
+
+/* Confidence Circle */
+.confidence-circle {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin: 0 auto;
+}
+
+.confidence-circle-inner {
+    position: relative;
+    width: 100px;
+    height: 100px;
+}
+
+.confidence-circle-inner svg circle {
+    transition: stroke-dasharray 0.6s ease;
+}
+
+.confidence-circle-inner .confidence-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.confidence-circle-inner .h4 {
+    font-weight: 700;
+    color: #495057;
+}
+
+/* Action Cards */
+.action-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+
+.action-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.action-card.selected {
+    border-color: var(--bs-primary);
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+}
+
+.action-card .action-icon {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-card .card-title {
+    font-weight: 600;
+    color: #495057;
+}
+
+.action-card .btn-sm {
+    padding: 0.375rem 1rem;
+    font-weight: 500;
+}
+
+/* Field Comparison Table */
+#fieldComparisonTable {
+    font-size: 0.875rem;
+}
+
+#fieldComparisonTable thead th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 500;
+    border: none;
+}
+
+#fieldComparisonTable tbody tr:hover {
+    background: rgba(102, 126, 234, 0.05);
+}
+
+#fieldComparisonTable .badge {
+    font-size: 0.75rem;
+}
+
+/* Merge Preview */
+.merge-preview {
+    animation: slideDown 0.3s ease;
+}
+
+/* ========================================
+   Bulk Scanner Dashboard
+   ======================================== */
+
+.bulk-scanner-dashboard {
+    padding: 2rem;
+}
+
+.scanner-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.stat-card .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #495057;
+    display: block;
+    margin: 0.5rem 0;
+}
+
+.stat-card .stat-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Data Quality Score */
+.quality-score-meter {
+    width: 200px;
+    height: 200px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.quality-score-meter svg {
+    transform: rotate(-90deg);
+}
+
+.quality-score-meter .score-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.quality-score-meter .score-value {
+    font-size: 3rem;
+    font-weight: 700;
+    display: block;
+}
+
+.quality-score-meter .score-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+/* Duplicate Groups */
+.duplicate-group {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+.duplicate-group:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: var(--bs-primary);
+}
+
+.duplicate-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.duplicate-group-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.duplicate-item-chip {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* ========================================
+   Responsive Design
+   ======================================== */
+
+@media (max-width: 768px) {
+    .duplicate-detection-panel {
+        border-radius: 0;
+        margin-left: -15px;
+        margin-right: -15px;
+    }
+    
+    .detection-header {
+        padding: 1rem;
+    }
+    
+    .detection-body {
+        padding: 1rem;
+    }
+    
+    .action-card {
+        margin-bottom: 1rem;
+    }
+    
+    #duplicateResolutionModal .modal-dialog {
+        margin: 0.5rem;
+    }
+    
+    .confidence-circle {
+        transform: scale(0.8);
+    }
+    
+    .scanner-stats {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ========================================
+   Dark Mode Support
+   ======================================== */
+
+@media (prefers-color-scheme: dark) {
+    .duplicate-detection-panel {
+        background: rgba(30, 30, 30, 0.95);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .detection-status {
+        background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+    }
+    
+    .match-item {
+        background: #1a1a1a;
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .action-card {
+        background: #1a1a1a;
+        color: #e9ecef;
+    }
+    
+    .action-card .card-title {
+        color: #e9ecef;
+    }
+    
+    #fieldComparisonTable tbody tr:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+}
+
+/* ========================================
+   Animations & Transitions
+   ======================================== */
+
+.detection-panel-enter {
+    animation: slideDown 0.3s ease-out;
+}
+
+.detection-panel-exit {
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease;
+}
+
+.shake {
+    animation: shake 0.5s ease;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+
+/* Loading States */
+.skeleton-loader {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ========================================
+   Field-Level Duplicate Detection Styles
+   ======================================== */
+
+/* Duplicate Check Field Indicator */
+.duplicate-check-field {
+    position: relative;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+/* Feedback Container */
+.duplicate-feedback {
+    display: block;
+    margin-top: 0.5rem;
+    min-height: 24px;
+    animation: fadeIn 0.3s ease;
+}
+
+/* Field States - Success (No Duplicates) */
+input.border-success,
+select.border-success,
+textarea.border-success {
+    border-color: #28a745 !important;
+    border-width: 3px !important;
+    border-style: solid !important;
+    box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25) !important;
+}
+
+/* Field States - Warning (Similar Assets) */
+input.border-warning,
+select.border-warning,
+textarea.border-warning {
+    border-color: #ffc107 !important;
+    border-width: 3px !important;
+    border-style: solid !important;
+    box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.25) !important;
+}
+
+/* Field States - Danger (Exact Duplicates) */
+input.is-invalid,
+input.border-danger,
+select.is-invalid,
+select.border-danger,
+textarea.is-invalid,
+textarea.border-danger {
+    border-color: #dc3545 !important;
+    border-width: 3px !important;
+    border-style: solid !important;
+    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
+}
+
+/* Field States - Checking (In Progress) */
+input.duplicate-checking,
+select.duplicate-checking,
+textarea.duplicate-checking {
+    border-color: #0d6efd !important;
+    border-width: 2px !important;
+    border-style: solid !important;
+}
+
+/* Alert Boxes */
+.duplicate-feedback .alert {
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    animation: fadeIn 0.3s ease;
+}
+
+.duplicate-feedback .alert-success {
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%);
+    color: #155724;
+    border-left: 4px solid #28a745;
+}
+
+.duplicate-feedback .alert-warning {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 159, 64, 0.05) 100%);
+    color: #856404;
+    border-left: 4px solid #ffc107;
+}
+
+.duplicate-feedback .alert-danger {
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
+    color: #721c24;
+    border-left: 4px solid #dc3545;
+}
+
+.duplicate-feedback .alert-info {
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+    color: #004085;
+    border-left: 4px solid #0d6efd;
+}
+
+/* Icons */
+.duplicate-feedback .bi {
+    font-size: 1rem;
+    vertical-align: middle;
+}
+
+/* Spinner */
+.duplicate-feedback .spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.15em;
+    vertical-align: middle;
+}
+
+/* Focus States */
+.duplicate-check-field:focus {
+    outline: none !important;
+}
+
+.duplicate-check-field:focus.border-success {
+    box-shadow: 0 0 0 0.35rem rgba(40, 167, 69, 0.3) !important;
+}
+
+.duplicate-check-field:focus.border-warning {
+    box-shadow: 0 0 0 0.35rem rgba(255, 193, 7, 0.3) !important;
+}
+
+.duplicate-check-field:focus.is-invalid,
+.duplicate-check-field:focus.border-danger {
+    box-shadow: 0 0 0 0.35rem rgba(220, 53, 69, 0.3) !important;
+}
+
+/* Accessibility - High Contrast Mode */
+@media (prefers-contrast: high) {
+    .duplicate-check-field.border-success {
+        border-width: 4px !important;
+    }
+    
+    .duplicate-check-field.border-warning {
+        border-width: 4px !important;
+    }
+    
+    .duplicate-check-field.is-invalid,
+    .duplicate-check-field.border-danger {
+        border-width: 4px !important;
+    }
+    
+    .duplicate-feedback .alert {
+        border-width: 2px;
+        border-style: solid;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    .duplicate-check-field,
+    .duplicate-feedback,
+    .duplicate-feedback .alert {
+        animation: none !important;
+        transition: none !important;
+    }
+}

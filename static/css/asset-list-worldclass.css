@@ -1,0 +1,1598 @@
+/**
+ * ASSET LIST PAGE - WORLD-CLASS STYLING
+ * =====================================
+ * Comprehensive styling for asset list page matching dashboard quality
+ * 
+ * Features:
+ * - Advanced filter panel
+ * - Data table with sorting & responsive design
+ * - Bulk action toolbar
+ * - Column management
+ * - Mobile card view
+ * - Loading states & skeletons
+ * - Empty states
+ * - Quick view modal
+ * - Export menu
+ * 
+ * Design System: Matches dashboard-blue-modern.css
+ * Color Palette: Primary #6B9BD1, consistent spacing, typography
+ * 
+ * @version 1.0.0
+ * @author Windsurf AI Agent
+ * @date 2025-01-25
+ */
+
+/* ===========================
+   1. CSS VARIABLES & TOKENS
+   =========================== */
+
+:root {
+  /* Colors - Match Dashboard */
+  --al-primary: #6B9BD1;
+  --al-primary-50: #EBF2FA;
+  --al-primary-100: #D5E4F5;
+  --al-primary-600: #5A8AB8;
+  --al-primary-700: #4A7599;
+  
+  /* Neutral Colors - Light Theme */
+  --al-card-bg: #ffffff;
+  --al-surface: #f9fafb;
+  --al-border: #e5e7eb;
+  --al-border-light: #f3f4f6;
+  
+  /* Text Colors - Light Theme */
+  --al-text-primary: #1f2937;
+  --al-text-secondary: #6b7280;
+  --al-text-muted: #9ca3af;
+  
+  /* Semantic Colors */
+  --al-success: #10b981;
+  --al-warning: #f59e0b;
+  --al-danger: #ef4444;
+  --al-info: #3b82f6;
+  
+  /* Transitions */
+  --al-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Spacing - 8px Grid */
+  --al-space-1: 0.25rem;  /* 4px */
+  --al-space-2: 0.5rem;   /* 8px */
+  --al-space-3: 0.75rem;  /* 12px */
+  --al-space-4: 1rem;     /* 16px */
+  --al-space-5: 1.25rem;  /* 20px */
+  --al-space-6: 1.5rem;   /* 24px */
+  --al-space-8: 2rem;     /* 32px */
+
+  /* Shadows */
+  --al-shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --al-shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+  --al-shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+
+  /* Border Radius */
+  --al-radius-sm: 6px;
+  --al-radius-md: 12px;
+  --al-radius-lg: 16px;
+}
+
+/* Light Theme Variables - Explicit override */
+[data-theme="light"],
+:root:not([data-theme="dark"]) {
+  --al-primary: #6B9BD1;
+  --al-primary-50: #EBF2FA;
+  --al-primary-100: #D5E4F5;
+  --al-primary-600: #5A8AB8;
+  --al-primary-700: #4A7599;
+  
+  /* Neutral Colors - Light Theme */
+  --al-card-bg: #ffffff;
+  --al-surface: #f9fafb;
+  --al-border: #e5e7eb;
+  --al-border-light: #f3f4f6;
+  
+  /* Text Colors - Light Theme */
+  --al-text-primary: #1f2937;
+  --al-text-secondary: #6b7280;
+  --al-text-muted: #9ca3af;
+}
+
+/* Dark Theme Variables */
+[data-theme="dark"] {
+  --al-primary: #6B9BD1;
+  --al-primary-50: #1e3a52;
+  --al-primary-100: #2d4d68;
+  --al-primary-600: #7aabdb;
+  --al-primary-700: #8ab8e3;
+  
+  /* Neutral Colors - Dark Theme */
+  --al-card-bg: #1f2937;
+  --al-surface: #111827;
+  --al-border: #374151;
+  --al-border-light: #2d3748;
+  
+  /* Text Colors - Dark Theme */
+  --al-text-primary: #f9fafb;
+  --al-text-secondary: #d1d5db;
+  --al-text-muted: #9ca3af;
+  
+  /* Keep semantic colors same */
+}
+
+/* ===========================
+   2. PAGE HEADER & HERO
+   =========================== */
+
+.asset-page-header {
+  background: linear-gradient(135deg, var(--al-primary) 0%, var(--al-primary-light) 100%);
+  border-radius: var(--al-radius-lg);
+  padding: var(--al-space-8);
+  color: white;
+  margin-bottom: var(--al-space-6);
+  box-shadow: 0 10px 40px rgba(107, 155, 209, 0.2);
+}
+
+.asset-page-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: var(--al-space-2);
+}
+
+.asset-page-header p {
+  font-size: 1.1rem;
+  opacity: 0.95;
+  margin-bottom: 0;
+}
+
+.asset-page-header .btn {
+  border-radius: var(--al-radius-md);
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  transition: all var(--al-transition);
+}
+
+.asset-page-header .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* ===========================
+   3. METRICS CARDS
+   =========================== */
+
+.asset-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--al-space-4);
+  margin-bottom: var(--al-space-6);
+}
+
+.asset-metric-card {
+  background: var(--al-card-bg);
+  border: 1px solid var(--al-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: var(--al-transition);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.asset-metric-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--al-shadow-lg);
+  border-color: var(--al-primary);
+}
+
+.asset-metric-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: var(--al-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: var(--al-space-4);
+}
+
+.asset-metric-icon.primary {
+  background: linear-gradient(135deg, var(--al-primary) 0%, var(--al-primary-light) 100%);
+  color: white;
+}
+
+.asset-metric-icon.success {
+  background: linear-gradient(135deg, var(--al-success) 0%, #34d399 100%);
+  color: white;
+}
+
+.asset-metric-icon.warning {
+  background: linear-gradient(135deg, var(--al-warning) 0%, #fbbf24 100%);
+  color: white;
+}
+
+.asset-metric-icon.danger {
+  background: linear-gradient(135deg, var(--al-danger) 0%, #f87171 100%);
+  color: white;
+}
+
+.asset-metric-icon.info {
+  background: linear-gradient(135deg, var(--al-info) 0%, #60a5fa 100%);
+  color: white;
+}
+
+.asset-metric-icon.secondary {
+  background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
+  color: white;
+}
+
+.asset-metric-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--al-primary);
+  margin-bottom: var(--al-space-1);
+}
+
+.asset-metric-label {
+  color: var(--al-text-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* ===========================
+   4. SEARCH & FILTER BAR
+   =========================== */
+
+.asset-search-bar {
+  background: var(--al-card-bg);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--al-border);
+}
+
+.asset-search-bar .form-label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--al-text-primary);
+  margin-bottom: var(--al-space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--al-space-1);
+}
+
+.asset-search-bar .form-control,
+.asset-search-bar .form-select {
+  border-radius: var(--al-radius-md);
+  border: 1px solid var(--al-border);
+  padding: 0.625rem 1rem;
+  font-size: 0.9375rem;
+  transition: all var(--al-transition);
+}
+
+.asset-search-bar .form-control:focus,
+.asset-search-bar .form-select:focus {
+  border-color: var(--al-primary);
+  box-shadow: 0 0 0 3px var(--al-primary-50);
+}
+
+.asset-search-bar .form-control-lg {
+  padding: 0.75rem 1rem;
+}
+
+.asset-search-bar .btn {
+  border-radius: var(--al-radius-md);
+  padding: 0.625rem 1.25rem;
+  font-weight: 600;
+  transition: all var(--al-transition);
+}
+
+.asset-search-bar .btn-primary {
+  background: var(--al-primary);
+  border-color: var(--al-primary);
+}
+
+.asset-search-bar .btn-primary:hover {
+  background: var(--al-primary-dark);
+  border-color: var(--al-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(107, 155, 209, 0.3);
+}
+
+/* ===========================
+   5. ADVANCED FILTERS
+   =========================== */
+
+.advanced-filters-toggle {
+  cursor: pointer;
+  user-select: none;
+  transition: all var(--al-transition);
+  display: flex;
+  align-items: center;
+  gap: var(--al-space-2);
+  padding: var(--al-space-3) 0;
+}
+
+.advanced-filters-toggle:hover {
+  color: var(--al-primary);
+}
+
+.advanced-filters-toggle i {
+  transition: transform var(--al-transition);
+}
+
+.advanced-filters-content {
+  /* Animation properties - MUST come first */
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  display: none; /* CRITICAL: Ensure hidden by default */
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              opacity 0.3s ease,
+              visibility 0s linear 0.4s; /* Delay hiding until animation completes */
+  
+  /* Visual properties */
+  background: var(--al-surface);
+  border: 1px solid var(--al-border);
+  border-top: none; /* Seamless connection to search bar */
+  padding: 0; /* No padding when hidden */
+  border-radius: 0 0 12px 12px;
+  margin-top: 0;
+}
+
+.advanced-filters-content.show {
+  /* Override animation properties */
+  max-height: 2000px !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important; /* CRITICAL: Ensure visible when shown */
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              opacity 0.3s ease,
+              visibility 0s linear 0s; /* Show immediately */
+  
+  /* Add padding when shown */
+  padding: 1.5rem !important;
+}
+
+.advanced-filter-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 50px;
+  background: var(--al-primary-50);
+  color: var(--al-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* ===========================
+   6. FILTER CHIPS
+   =========================== */
+
+.filter-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--al-space-2);
+  align-items: center;
+  margin-top: var(--al-space-4);
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--al-space-2);
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  background: var(--al-border-light);
+  color: var(--al-text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid var(--al-border);
+  transition: all var(--al-transition);
+}
+
+.filter-chip:hover {
+  background: var(--al-border);
+  border-color: #d1d5db;
+}
+
+.filter-chip i {
+  font-size: 0.875rem;
+}
+
+.filter-chip .remove-filter {
+  cursor: pointer;
+  color: var(--al-text-muted);
+  transition: color var(--al-transition);
+  margin-left: var(--al-space-1);
+}
+
+.filter-chip .remove-filter:hover {
+  color: var(--al-danger);
+}
+
+.filter-chip-label {
+  font-size: 0.75rem;
+  color: var(--al-text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ===========================
+   7. BULK ACTION TOOLBAR
+   =========================== */
+
+.bulk-action-toolbar {
+  background: var(--al-primary-50);
+  border: 1px solid var(--al-primary-100);
+  border-radius: var(--al-radius-md);
+  padding: var(--al-space-4);
+  margin-bottom: var(--al-space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--al-space-4);
+}
+
+.bulk-action-toolbar .selection-info {
+  display: flex;
+  align-items: center;
+  gap: var(--al-space-2);
+  font-weight: 600;
+  color: var(--al-primary);
+}
+
+.bulk-action-toolbar .bulk-actions {
+  display: flex;
+  gap: var(--al-space-2);
+}
+
+.bulk-action-toolbar .btn {
+  border-radius: var(--al-radius-sm);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* ===========================
+   8. DATA TABLE
+   =========================== */
+
+.asset-table-container {
+  background: var(--al-card-bg);
+  border-radius: var(--al-radius-lg);
+  box-shadow: var(--al-shadow-md);
+  border: 1px solid var(--al-border);
+  overflow: hidden;
+  margin-bottom: var(--al-space-6);
+}
+
+.asset-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.asset-table thead {
+  background: var(--al-surface);
+  border-bottom: 2px solid var(--al-border);
+}
+
+.asset-table th {
+  padding: var(--al-space-4);
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--al-text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.asset-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: all var(--al-transition);
+}
+
+.asset-table th.sortable:hover {
+  background: var(--al-border-light);
+  color: var(--al-primary);
+}
+
+.asset-table th .sort-icon {
+  margin-left: var(--al-space-1);
+  opacity: 0.3;
+  transition: opacity var(--al-transition);
+}
+
+.asset-table th.sorted .sort-icon {
+  opacity: 1;
+  color: var(--al-primary);
+}
+
+.asset-table tbody tr {
+  border-bottom: 1px solid var(--al-border);
+  transition: all var(--al-transition);
+}
+
+.asset-table tbody tr:hover {
+  background: var(--al-primary-50);
+}
+
+.asset-table tbody tr.selected {
+  background: var(--al-primary-100);
+}
+
+.asset-table td {
+  padding: var(--al-space-4);
+  font-size: 0.9375rem;
+  color: var(--al-text-primary);
+}
+
+.asset-table td.asset-name {
+  font-weight: 600;
+}
+
+.asset-table td.asset-tag {
+  font-family: 'Courier New', monospace;
+  background: var(--al-border-light);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  display: inline-block;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--al-space-1);
+  padding: 0.375rem 0.75rem;
+  border-radius: 50px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.status-badge.active {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--al-success);
+}
+
+.status-badge.maintenance {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--al-warning);
+}
+
+.status-badge.retired {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+}
+
+.status-badge.deleted {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--al-danger);
+}
+
+.status-badge i {
+  font-size: 0.75rem;
+}
+
+/* Category Badges */
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--al-space-1);
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--al-radius-sm);
+  background: var(--al-border-light);
+  color: var(--al-text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Action Buttons */
+.asset-table .action-buttons {
+  display: flex;
+  gap: var(--al-space-1);
+}
+
+.asset-table .btn-action {
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--al-radius-sm);
+  font-size: 0.875rem;
+  transition: all var(--al-transition);
+}
+
+.asset-table .btn-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* ===========================
+   9. LOADING STATES
+   =========================== */
+
+.asset-table-loading {
+  position: relative;
+}
+
+.asset-table-loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.8);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+/* Skeleton Loading */
+.skeleton {
+  background: linear-gradient(90deg, var(--al-border-light) 25%, var(--al-border) 50%, var(--al-border-light) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-row {
+  display: flex;
+  gap: var(--al-space-4);
+  padding: var(--al-space-4);
+  border-bottom: 1px solid var(--al-border);
+}
+
+.skeleton-cell {
+  height: 20px;
+  flex: 1;
+}
+
+/* ===========================
+   10. EMPTY STATES
+   =========================== */
+
+.asset-empty-state {
+  text-align: center;
+  padding: var(--al-space-8);
+  background: var(--al-surface);
+  border-radius: var(--al-radius-lg);
+}
+
+.asset-empty-state-icon {
+  font-size: 4rem;
+  margin-bottom: var(--al-space-4);
+  opacity: 0.5;
+}
+
+.asset-empty-state h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--al-text-primary);
+  margin-bottom: var(--al-space-2);
+}
+
+.asset-empty-state p {
+  color: var(--al-text-secondary);
+  margin-bottom: var(--al-space-6);
+  font-size: 1rem;
+}
+
+.asset-empty-state .btn-group {
+  display: flex;
+  gap: var(--al-space-2);
+  justify-content: center;
+}
+
+/* ===========================
+   11. PAGINATION
+   =========================== */
+
+.asset-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--al-space-4) 0;
+  flex-wrap: wrap;
+  gap: var(--al-space-4);
+}
+
+.pagination-info {
+  color: var(--al-text-secondary);
+  font-size: 0.875rem;
+}
+
+.pagination-info strong {
+  color: var(--al-text-primary);
+  font-weight: 600;
+}
+
+.pagination {
+  display: flex;
+  gap: var(--al-space-1);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.pagination .page-item {
+  display: inline-block;
+}
+
+.pagination .page-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--al-radius-sm);
+  border: 1px solid var(--al-border);
+  background: var(--al-card-bg);
+  color: var(--al-text-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all var(--al-transition);
+}
+
+.pagination .page-link:hover {
+  background: var(--al-primary-50);
+  border-color: var(--al-primary);
+  color: var(--al-primary);
+}
+
+.pagination .page-item.active .page-link {
+  background: var(--al-primary);
+  border-color: var(--al-primary);
+  color: white;
+}
+
+.pagination .page-item.disabled .page-link {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--al-space-2);
+}
+
+.page-size-selector label {
+  font-size: 0.875rem;
+  color: var(--al-text-secondary);
+  margin: 0;
+}
+
+.page-size-selector select {
+  border-radius: var(--al-radius-sm);
+  border: 1px solid var(--al-border);
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+/* ===========================
+   12. MOBILE RESPONSIVE
+   =========================== */
+
+@media (max-width: 991px) {
+  /* Hero Section */
+  .asset-page-header {
+    padding: var(--al-space-6);
+  }
+  
+  .asset-page-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .asset-page-header p {
+    font-size: 0.9375rem;
+  }
+  
+  /* Metrics Grid */
+  .asset-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  /* Search Bar */
+  .asset-search-bar {
+    padding: var(--al-space-4);
+  }
+  
+  /* Table to Cards */
+  .asset-table-container {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+  
+  .asset-table thead {
+    display: none;
+  }
+  
+  .asset-table tbody,
+  .asset-table tr {
+    display: block;
+  }
+  
+  .asset-table tr {
+    margin-bottom: var(--al-space-4);
+    background: var(--al-card-bg);
+    border-radius: var(--al-radius-lg);
+    box-shadow: var(--al-shadow-md);
+    border: 1px solid var(--al-border);
+    padding: var(--al-space-4);
+  }
+  
+  .asset-table td {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--al-space-2) 0;
+    border-bottom: 1px solid var(--al-border-light);
+  }
+  
+  .asset-table td:last-child {
+    border-bottom: none;
+    padding-top: var(--al-space-4);
+  }
+  
+  .asset-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--al-text-secondary);
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .asset-table td.action-buttons {
+    justify-content: flex-end;
+  }
+  
+  /* Pagination */
+  .asset-pagination {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  
+  .pagination {
+    justify-content: center;
+  }
+  
+  .page-size-selector {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 576px) {
+  /* Single Column Metrics */
+  .asset-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  /* Smaller Hero */
+  .asset-page-header h1 {
+    font-size: 1.25rem;
+  }
+  
+  /* Compact Buttons */
+  .asset-page-header .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  /* Smaller Pagination */
+  .pagination .page-link {
+    min-width: 36px;
+    height: 36px;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* ===========================
+   13. PRINT STYLES
+   =========================== */
+
+@media print {
+  .asset-page-header,
+  .asset-search-bar,
+  .bulk-action-toolbar,
+  .asset-pagination,
+  .asset-table .action-buttons {
+    display: none !important;
+  }
+  
+  .asset-table-container {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+  
+  .asset-table {
+    font-size: 10pt;
+  }
+}
+
+/* ===========================
+   14. DARK MODE SUPPORT
+   =========================== */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --al-card-bg: #1f2937;
+    --al-surface: #111827;
+    --al-text-primary: #f9fafb;
+    --al-text-secondary: #d1d5db;
+    --al-text-muted: #9ca3af;
+    --al-border: #374151;
+    --al-border-light: #2d3748;
+  }
+  
+  .asset-table tbody tr:hover {
+    background: rgba(107, 155, 209, 0.15);
+  }
+}
+
+/* ===========================
+   15. ACCESSIBILITY
+   =========================== */
+
+/* Focus Styles */
+.asset-search-bar .form-control:focus,
+.asset-search-bar .form-select:focus,
+.asset-table th.sortable:focus,
+.pagination .page-link:focus,
+.filter-chip .remove-filter:focus {
+  outline: 2px solid var(--al-primary);
+  outline-offset: 2px;
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Screen Reader Only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ===========================
+   16. PERFORMANCE OPTIMIZATIONS
+   =========================== */
+
+/* GPU Acceleration */
+.asset-metric-card,
+.filter-chip,
+.asset-table .btn-action,
+.pagination .page-link {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Smooth Scrolling */
+.asset-table-container {
+  overflow-x: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Custom Scrollbar */
+.asset-table-container::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.asset-table-container::-webkit-scrollbar-track {
+  background: var(--al-border-light);
+  border-radius: 4px;
+}
+
+.asset-table-container::-webkit-scrollbar-thumb {
+  background: var(--al-primary);
+  border-radius: 4px;
+}
+
+.asset-table-container::-webkit-scrollbar-thumb:hover {
+  background: var(--al-primary-dark);
+}
+
+/* ===========================
+   17. MOBILE SCAN FAB
+   =========================== */
+
+.mobile-scan-fab {
+  width: 56px;
+  height: 56px;
+  right: 1rem;
+  bottom: 1rem;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-scan-fab i {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+/* ===========================
+   18. LOADING OVERLAY
+   =========================== */
+
+#asset-table-loading-overlay {
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(2px);
+  background: rgba(255,255,255,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+/* ===========================
+   19. HIDE MODALS BY DEFAULT
+   =========================== */
+
+/* Custom Export Modal - Hidden by default */
+#exportModalCustom,
+.custom-modal-overlay {
+  display: none !important;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Show modal when active class is added */
+#exportModalCustom.active,
+.custom-modal-overlay.active {
+  display: flex !important;
+}
+
+/* Delete Modal - Hidden by default */
+#deleteModalCustom,
+.delete-modal-overlay {
+  display: none !important;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Show modal when active */
+#deleteModalCustom.active,
+.delete-modal-overlay.active {
+  display: flex !important;
+}
+
+/* Modal Content Styling */
+.glass-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 0;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.custom-modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  border-radius: 16px 16px 0 0;
+}
+
+.custom-modal-body {
+  padding: 1.5rem;
+}
+
+.custom-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.custom-modal-close:hover {
+  background: #e5e7eb;
+  color: #1f2937;
+}
+
+/* ===========================
+   20. THEME-AWARE COMPONENTS (DARK/LIGHT MODE SUPPORT)
+   =========================== */
+
+/* Theme-aware backgrounds - respects dark/light mode */
+.asset-page-content,
+.asset-list-container,
+.asset-table-wrapper {
+  background: var(--al-card-bg);
+  color: var(--al-text-primary);
+}
+
+/* Theme-aware table */
+.asset-table,
+.enterprise-table {
+  background: var(--al-card-bg);
+}
+
+.asset-table thead,
+.enterprise-table thead {
+  background: var(--al-surface);
+}
+
+.asset-table th,
+.enterprise-table th {
+  background: var(--al-surface);
+  color: var(--al-text-primary);
+  border-bottom: 2px solid var(--al-border);
+}
+
+.asset-table td,
+.enterprise-table td {
+  background: var(--al-card-bg);
+  color: var(--al-text-primary);
+  border-bottom: 1px solid var(--al-border);
+}
+
+.asset-table tbody tr:hover,
+.enterprise-table tbody tr:hover {
+  background: var(--al-surface);
+}
+
+/* Theme-aware filter chips */
+.filter-chip {
+  background: var(--al-border-light);
+  color: var(--al-text-primary);
+  border: 1px solid var(--al-border);
+}
+
+/* Advanced filters content - REMOVED DUPLICATE
+   This definition was conflicting with the main animation definition at line 319
+   All styling is now consolidated in the primary definition above */
+
+/* Form labels and inputs - theme aware */
+.asset-search-bar .form-label,
+.asset-search-bar label {
+  color: var(--al-text-primary);
+  font-weight: 600;
+}
+
+.asset-search-bar .form-control,
+.asset-search-bar .form-select {
+  background: var(--theme-input-bg, #ffffff);
+  color: var(--al-text-primary);
+  border: 1px solid var(--al-border);
+}
+
+.asset-search-bar .form-control:focus,
+.asset-search-bar .form-select:focus {
+  background: var(--theme-input-bg, #ffffff);
+  color: var(--al-text-primary);
+  border-color: var(--al-primary);
+  box-shadow: 0 0 0 0.2rem rgba(107, 155, 209, 0.25);
+}
+
+/* Advanced filters labels */
+.advanced-filters-content .form-label,
+.advanced-filters-content label {
+  color: var(--al-text-primary);
+  font-weight: 600;
+}
+
+.advanced-filters-content .form-control,
+.advanced-filters-content .form-select {
+  background: var(--theme-input-bg, #ffffff);
+  color: var(--al-text-primary);
+  border: 1px solid var(--al-border);
+}
+
+.advanced-filters-content .form-control::placeholder {
+  color: var(--al-text-muted);
+}
+
+/* Bulk toolbar - theme aware */
+.bulk-action-toolbar {
+  background: var(--al-surface);
+  border: 1px solid var(--al-border);
+}
+
+/* ===========================
+   21. LIGHT THEME SUPPORT FOR ASSET LIST
+   =========================== */
+
+/* Explicit light mode overrides - ensure components are white */
+[data-theme="light"] .asset-metric-card,
+:root:not([data-theme="dark"]) .asset-metric-card {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  border-color: #e5e7eb !important;
+}
+
+[data-theme="light"] .asset-search-bar,
+:root:not([data-theme="dark"]) .asset-search-bar {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  border-color: #e5e7eb !important;
+}
+
+[data-theme="light"] .asset-table,
+[data-theme="light"] .enterprise-table,
+:root:not([data-theme="dark"]) .asset-table,
+:root:not([data-theme="dark"]) .enterprise-table {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+}
+
+[data-theme="light"] .asset-table thead,
+[data-theme="light"] .enterprise-table thead,
+:root:not([data-theme="dark"]) .asset-table thead,
+:root:not([data-theme="dark"]) .enterprise-table thead {
+  background: #f9fafb !important;
+  color: #1f2937 !important;
+}
+
+[data-theme="light"] .asset-table th,
+[data-theme="light"] .asset-table td,
+[data-theme="light"] .enterprise-table th,
+[data-theme="light"] .enterprise-table td,
+:root:not([data-theme="dark"]) .asset-table th,
+:root:not([data-theme="dark"]) .asset-table td,
+:root:not([data-theme="dark"]) .enterprise-table th,
+:root:not([data-theme="dark"]) .enterprise-table td {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  border-color: #e5e7eb !important;
+}
+
+[data-theme="light"] .asset-table tbody tr:hover,
+[data-theme="light"] .enterprise-table tbody tr:hover,
+:root:not([data-theme="dark"]) .asset-table tbody tr:hover,
+:root:not([data-theme="dark"]) .enterprise-table tbody tr:hover {
+  background: #f9fafb !important;
+}
+
+[data-theme="light"] .advanced-filters-content,
+:root:not([data-theme="dark"]) .advanced-filters-content {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  border-color: #e5e7eb !important;
+}
+
+[data-theme="light"] .filter-chip,
+:root:not([data-theme="dark"]) .filter-chip {
+  background: #f3f4f6 !important;
+  color: #1f2937 !important;
+  border-color: #e5e7eb !important;
+}
+
+/* ===========================
+   22. DARK THEME SUPPORT FOR ASSET LIST
+   =========================== */
+
+/* Asset list specific dark theme overrides */
+[data-theme="dark"] .asset-list-page {
+  background: var(--theme-bg-primary);
+  color: var(--theme-text-primary);
+}
+
+/* Ensure table is dark in dark mode */
+[data-theme="dark"] .asset-table,
+[data-theme="dark"] .enterprise-table {
+  background: var(--al-card-bg);
+  color: var(--al-text-primary);
+}
+
+[data-theme="dark"] .asset-table thead,
+[data-theme="dark"] .enterprise-table thead {
+  background: var(--al-surface);
+  color: var(--al-text-primary);
+}
+
+[data-theme="dark"] .asset-table tbody tr,
+[data-theme="dark"] .enterprise-table tbody tr {
+  background: var(--al-card-bg);
+  color: var(--al-text-primary);
+  border-color: var(--al-border);
+}
+
+[data-theme="dark"] .asset-table tbody tr:hover,
+[data-theme="dark"] .enterprise-table tbody tr:hover {
+  background: var(--al-surface);
+}
+
+/* Filter chips dark mode */
+[data-theme="dark"] .filter-chip {
+  background: var(--al-surface);
+  color: var(--al-text-primary);
+  border-color: var(--al-border);
+}
+
+/* ===========================
+   23. ACTION BUTTON STYLING (WORLD-CLASS)
+   =========================== */
+
+/* Light mode button styles */
+[data-theme="light"] .btn-primary,
+:root:not([data-theme="dark"]) .btn-primary {
+  background: #6B9BD1 !important;
+  border-color: #6B9BD1 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .btn-primary:hover,
+:root:not([data-theme="dark"]) .btn-primary:hover {
+  background: #5A8AB8 !important;
+  border-color: #5A8AB8 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .btn-outline-secondary,
+:root:not([data-theme="dark"]) .btn-outline-secondary {
+  border-color: #6b7280 !important;
+  color: #6b7280 !important;
+  background: transparent !important;
+}
+
+[data-theme="light"] .btn-outline-secondary:hover,
+:root:not([data-theme="dark"]) .btn-outline-secondary:hover {
+  background: #6b7280 !important;
+  border-color: #6b7280 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .btn-outline-primary,
+:root:not([data-theme="dark"]) .btn-outline-primary {
+  border-color: #6B9BD1 !important;
+  color: #6B9BD1 !important;
+  background: transparent !important;
+}
+
+[data-theme="light"] .btn-outline-primary:hover,
+:root:not([data-theme="dark"]) .btn-outline-primary:hover {
+  background: #6B9BD1 !important;
+  border-color: #6B9BD1 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .btn-outline-success,
+:root:not([data-theme="dark"]) .btn-outline-success {
+  border-color: #10b981 !important;
+  color: #10b981 !important;
+  background: transparent !important;
+}
+
+[data-theme="light"] .btn-outline-success:hover,
+:root:not([data-theme="dark"]) .btn-outline-success:hover {
+  background: #10b981 !important;
+  border-color: #10b981 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .btn-outline-danger,
+:root:not([data-theme="dark"]) .btn-outline-danger {
+  border-color: #ef4444 !important;
+  color: #ef4444 !important;
+  background: transparent !important;
+}
+
+[data-theme="light"] .btn-outline-danger:hover,
+:root:not([data-theme="dark"]) .btn-outline-danger:hover {
+  background: #ef4444 !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+/* Dark mode button styles */
+[data-theme="dark"] .btn-primary {
+  background: #6B9BD1 !important;
+  border-color: #6B9BD1 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .btn-primary:hover {
+  background: #7aabdb !important;
+  border-color: #7aabdb !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .btn-outline-secondary {
+  border-color: #9ca3af !important;
+  color: #9ca3af !important;
+  background: transparent !important;
+}
+
+[data-theme="dark"] .btn-outline-secondary:hover {
+  background: #9ca3af !important;
+  border-color: #9ca3af !important;
+  color: #1f2937 !important;
+}
+
+[data-theme="dark"] .btn-outline-primary {
+  border-color: #6B9BD1 !important;
+  color: #6B9BD1 !important;
+  background: transparent !important;
+}
+
+[data-theme="dark"] .btn-outline-primary:hover {
+  background: #6B9BD1 !important;
+  border-color: #6B9BD1 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .btn-outline-success {
+  border-color: #10b981 !important;
+  color: #10b981 !important;
+  background: transparent !important;
+}
+
+[data-theme="dark"] .btn-outline-success:hover {
+  background: #10b981 !important;
+  border-color: #10b981 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .btn-outline-danger {
+  border-color: #ef4444 !important;
+  color: #ef4444 !important;
+  background: transparent !important;
+}
+
+[data-theme="dark"] .btn-outline-danger:hover {
+  background: #ef4444 !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+/* ===========================
+   24. COMPREHENSIVE TEXT COLOR FIXES
+   =========================== */
+
+/* Ensure all text is readable in both themes */
+.asset-search-bar label,
+.asset-search-bar .form-label,
+.advanced-filters-content label,
+.advanced-filters-content .form-label {
+  color: var(--al-text-primary) !important;
+}
+
+/* Table text colors */
+.asset-table th,
+.asset-table td,
+.enterprise-table th,
+.enterprise-table td {
+  color: var(--al-text-primary) !important;
+}
+
+/* Input fields */
+.asset-search-bar input,
+.asset-search-bar select,
+.advanced-filters-content input,
+.advanced-filters-content select {
+  color: var(--al-text-primary) !important;
+  background: var(--theme-input-bg, #ffffff) !important;
+}
+
+/* Placeholder text */
+.asset-search-bar input::placeholder,
+.advanced-filters-content input::placeholder {
+  color: var(--al-text-muted) !important;
+}
+
+/* Dark mode specific text overrides */
+[data-theme="dark"] .asset-search-bar label,
+[data-theme="dark"] .asset-search-bar .form-label,
+[data-theme="dark"] .advanced-filters-content label,
+[data-theme="dark"] .advanced-filters-content .form-label {
+  color: #f9fafb !important;
+}
+
+[data-theme="dark"] .asset-search-bar input,
+[data-theme="dark"] .asset-search-bar select,
+[data-theme="dark"] .advanced-filters-content input,
+[data-theme="dark"] .advanced-filters-content select {
+  color: #f9fafb !important;
+  background: #374151 !important;
+  border-color: #4b5563 !important;
+}
+
+[data-theme="dark"] .asset-search-bar input::placeholder,
+[data-theme="dark"] .advanced-filters-content input::placeholder {
+  color: #9ca3af !important;
+}
+
+/* Buttons in search bar */
+[data-theme="dark"] .asset-search-bar .btn {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .asset-search-bar .btn-primary {
+  background: #6B9BD1 !important;
+  border-color: #6B9BD1 !important;
+}
+
+/* Advanced filters toggle */
+[data-theme="dark"] .advanced-filters-toggle {
+  color: #6B9BD1 !important;
+}
+
+[data-theme="dark"] .advanced-filters-toggle span {
+  color: #6B9BD1 !important;
+}
+
+/* Metric cards text */
+[data-theme="dark"] .asset-metric-value {
+  color: #6B9BD1 !important;
+}
+
+[data-theme="dark"] .asset-metric-label {
+  color: #d1d5db !important;
+}
+
+/* Status badges - ensure they're visible in dark mode */
+[data-theme="dark"] .status-badge.active {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #10b981 !important;
+}
+
+[data-theme="dark"] .status-badge.maintenance {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #f59e0b !important;
+}
+
+[data-theme="dark"] .status-badge.retired {
+  background: rgba(156, 163, 175, 0.2) !important;
+  color: #9ca3af !important;
+}
+
+/* Category badges */
+[data-theme="dark"] .category-badge {
+  background: #374151 !important;
+  color: #d1d5db !important;
+}

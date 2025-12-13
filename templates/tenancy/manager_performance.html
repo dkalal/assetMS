@@ -1,0 +1,381 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Performance Report · AssetPro{% endblock %}
+
+{% block extra_styles %}
+  {{ block.super }}
+  <style>
+    .performance-hero {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 1.5rem;
+      padding: 3rem;
+      margin-bottom: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .performance-hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -10%;
+      width: 400px;
+      height: 400px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+    }
+    .grade-badge {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: white;
+      color: #667eea;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      font-weight: bold;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+    .score-circle {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: conic-gradient(
+        #10b981 0% calc(var(--score) * 1%),
+        rgba(255,255,255,0.2) calc(var(--score) * 1%) 100%
+      );
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .score-inner {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .metric-card {
+      background: white;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      border: 1px solid #e5e7eb;
+      transition: all 0.3s ease;
+    }
+    .metric-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+    }
+    .metric-value {
+      font-size: 2.5rem;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+    .metric-label {
+      color: #6b7280;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .trend-up {
+      color: #10b981;
+    }
+    .trend-down {
+      color: #ef4444;
+    }
+    .trend-stable {
+      color: #6b7280;
+    }
+    .recommendation-card {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 1rem 1.5rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .chart-container {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      border: 1px solid #e5e7eb;
+    }
+    .period-selector {
+      background: rgba(255,255,255,0.2);
+      border-radius: 2rem;
+      padding: 0.5rem;
+      display: inline-flex;
+      gap: 0.5rem;
+    }
+    .period-btn {
+      background: transparent;
+      border: none;
+      color: white;
+      padding: 0.5rem 1.5rem;
+      border-radius: 1.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .period-btn.active {
+      background: white;
+      color: #667eea;
+      font-weight: bold;
+    }
+  </style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-12 col-xl-11">
+      
+      <!-- Performance Hero -->
+      <div class="performance-hero shadow-lg">
+        <div class="row align-items-center position-relative">
+          <div class="col-md-8">
+            <h1 class="h2 mb-3 fw-bold">
+              <i class="bi bi-graph-up-arrow me-2"></i>Performance Report
+            </h1>
+            <p class="mb-3 opacity-90">
+              {{ report.manager.get_full_name|default:report.manager.username }} · 
+              {{ report.period.start|date:"M d" }} - {{ report.period.end|date:"M d, Y" }}
+            </p>
+            
+            <!-- Period Selector -->
+            <div class="period-selector">
+              {% for period in available_periods %}
+                <a href="?period={{ period }}" class="period-btn {% if period == period_days %}active{% endif %}">
+                  {{ period }} days
+                </a>
+              {% endfor %}
+            </div>
+          </div>
+          
+          <div class="col-md-4 text-center">
+            <div class="d-flex justify-content-center align-items-center gap-4">
+              <!-- Grade Badge -->
+              <div class="grade-badge">
+                {{ report.performance_grade }}
+              </div>
+              
+              <!-- Score Circle -->
+              <div class="score-circle" style="--score: {{ report.compliance_score }}">
+                <div class="score-inner">
+                  <div style="font-size: 2rem; font-weight: bold; color: #667eea;">
+                    {{ report.compliance_score|floatformat:0 }}%
+                  </div>
+                  <small style="color: #6b7280;">Compliance</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Key Metrics Grid -->
+      <div class="row g-4 mb-4">
+        <div class="col-md-3">
+          <div class="metric-card">
+            <div class="d-flex align-items-center mb-3">
+              <div class="rounded-circle bg-primary-subtle p-3 me-3">
+                <i class="bi bi-building fs-3 text-primary"></i>
+              </div>
+              <div>
+                <div class="metric-value text-primary">{{ report.branch_metrics.total_branches }}</div>
+                <div class="metric-label">Branches</div>
+              </div>
+            </div>
+            <small class="text-muted">
+              <i class="bi bi-arrow-up trend-stable"></i>
+              {{ report.trends.asset_growth|title }}
+            </small>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="metric-card">
+            <div class="d-flex align-items-center mb-3">
+              <div class="rounded-circle bg-success-subtle p-3 me-3">
+                <i class="bi bi-box-seam fs-3 text-success"></i>
+              </div>
+              <div>
+                <div class="metric-value text-success">{{ report.asset_metrics.total_assets }}</div>
+                <div class="metric-label">Total Assets</div>
+              </div>
+            </div>
+            <small class="text-muted">
+              {{ report.asset_metrics.assets_per_branch|floatformat:1 }} per branch
+            </small>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="metric-card">
+            <div class="d-flex align-items-center mb-3">
+              <div class="rounded-circle bg-info-subtle p-3 me-3">
+                <i class="bi bi-people fs-3 text-info"></i>
+              </div>
+              <div>
+                <div class="metric-value text-info">{{ report.staff_metrics.total_staff }}</div>
+                <div class="metric-label">Staff Members</div>
+              </div>
+            </div>
+            <small class="text-muted">
+              {{ report.staff_metrics.staff_per_branch|floatformat:1 }} per branch
+            </small>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="metric-card">
+            <div class="d-flex align-items-center mb-3">
+              <div class="rounded-circle bg-warning-subtle p-3 me-3">
+                <i class="bi bi-clock-history fs-3 text-warning"></i>
+              </div>
+              <div>
+                <div class="metric-value text-warning">{{ report.approval_metrics.average_response_time_hours|floatformat:1 }}h</div>
+                <div class="metric-label">Avg Response</div>
+              </div>
+            </div>
+            <small class="text-muted">
+              <i class="bi bi-arrow-{% if report.trends.approval_speed == 'improving' %}down trend-up{% else %}up trend-down{% endif %}"></i>
+              {{ report.trends.approval_speed|title }}
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Metrics -->
+      <div class="row g-4 mb-4">
+        <!-- Approval Metrics -->
+        <div class="col-md-6">
+          <div class="chart-container">
+            <h5 class="fw-bold mb-4">
+              <i class="bi bi-check-circle me-2 text-success"></i>Approval Performance
+            </h5>
+            <div class="row g-3">
+              <div class="col-6">
+                <div class="text-center p-3 bg-light rounded">
+                  <div class="h3 mb-1 fw-bold text-success">{{ report.approval_metrics.approved_count }}</div>
+                  <small class="text-muted">Approved</small>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="text-center p-3 bg-light rounded">
+                  <div class="h3 mb-1 fw-bold text-warning">{{ report.approval_metrics.pending_count }}</div>
+                  <small class="text-muted">Pending</small>
+                </div>
+              </div>
+              <div class="col-12">
+                <div class="progress" style="height: 30px;">
+                  <div class="progress-bar bg-success" role="progressbar" 
+                       style="width: {{ report.approval_metrics.approval_rate|default:0 }}%">
+                    {{ report.approval_metrics.approval_rate|floatformat:1|default:"0.0" }}% Approval Rate
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Maintenance Metrics -->
+        <div class="col-md-6">
+          <div class="chart-container">
+            <h5 class="fw-bold mb-4">
+              <i class="bi bi-wrench me-2 text-primary"></i>Maintenance Compliance
+            </h5>
+            <div class="row g-3">
+              <div class="col-6">
+                <div class="text-center p-3 bg-light rounded">
+                  <div class="h3 mb-1 fw-bold text-warning">{{ report.maintenance_metrics.maintenance_due_7_days }}</div>
+                  <small class="text-muted">Due (7 days)</small>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="text-center p-3 bg-light rounded">
+                  <div class="h3 mb-1 fw-bold text-danger">{{ report.maintenance_metrics.maintenance_overdue }}</div>
+                  <small class="text-muted">Overdue</small>
+                </div>
+              </div>
+              <div class="col-12">
+                <div class="progress" style="height: 30px;">
+                  <div class="progress-bar bg-primary" role="progressbar" 
+                       style="width: {{ report.maintenance_metrics.maintenance_compliance_rate|default:0 }}%">
+                    {{ report.maintenance_metrics.maintenance_compliance_rate|floatformat:1|default:"0.0" }}% Compliance
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Metrics -->
+      <div class="chart-container mb-4">
+        <h5 class="fw-bold mb-4">
+          <i class="bi bi-activity me-2 text-info"></i>Activity Overview
+        </h5>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="text-center p-4 bg-light rounded">
+              <div class="h2 mb-2 fw-bold text-info">{{ report.activity_metrics.total_activities }}</div>
+              <div class="text-muted">Total Activities</div>
+              <small class="text-muted">{{ report.activity_metrics.activities_per_day|floatformat:1 }} per day</small>
+            </div>
+          </div>
+          <div class="col-md-8">
+            <h6 class="fw-bold mb-3">Top Activities</h6>
+            <div class="list-group">
+              {% for activity in report.activity_metrics.top_activities %}
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                  <span>{{ activity.action|title }}</span>
+                  <span class="badge bg-primary rounded-pill">{{ activity.count }}</span>
+                </div>
+              {% empty %}
+                <div class="list-group-item text-muted text-center">No activities recorded</div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent py-3">
+          <h5 class="mb-0 fw-bold">
+            <i class="bi bi-lightbulb me-2 text-warning"></i>Recommendations
+          </h5>
+        </div>
+        <div class="card-body">
+          {% for recommendation in report.recommendations %}
+            <div class="recommendation-card">
+              <i class="bi bi-arrow-right-circle me-2"></i>
+              {{ recommendation }}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="row g-3 mt-4">
+        <div class="col-md-6">
+          <a href="{% url 'manager_dashboard' %}" class="btn btn-outline-primary btn-lg w-100">
+            <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+          </a>
+        </div>
+        <div class="col-md-6">
+          <button onclick="window.print()" class="btn btn-primary btn-lg w-100">
+            <i class="bi bi-printer me-2"></i>Print Report
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

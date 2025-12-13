@@ -1,0 +1,882 @@
+/* ========================================
+   DASHBOARD BLUE MODERN THEME
+   Phase 1: Color System Migration
+   World-Class UI/UX with Blue Palette
+   ======================================== */
+
+/* ===========================
+   1. COLOR SYSTEM (From Image)
+   =========================== */
+:root {
+  /* Primary Blue Palette */
+  --primary-light: #7BA5F5;      /* Periwinkle/Light blue */
+  --primary-sky: #A0C4FF;        /* Sky blue */
+  --primary-cyan: #A0E7E5;       /* Light cyan/aqua */
+  --primary-medium: #6B9BD1;     /* Medium periwinkle */
+  --primary-royal: #4169E1;      /* Royal/cobalt blue */
+  
+  /* Functional Colors */
+  --primary: #6B9BD1;            /* Main brand color */
+  --primary-dark: #4169E1;       /* Darker shade */
+  --primary-light-bg: #A0C4FF;   /* Light backgrounds */
+  --accent: #A0E7E5;             /* Accent/highlights */
+  
+  /* Neutral Palette (Solid, not translucent) */
+  --white: #ffffff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  
+  /* Semantic Colors */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #3b82f6;
+  
+  /* Background & Text */
+  --body-bg: #f9fafb;
+  --card-bg: #ffffff;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  
+  /* Borders & Shadows (Solid, clean) */
+  --border-color: #e5e7eb;
+  --border-light: #f3f4f6;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  
+  /* Spacing System */
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+  
+  /* Border Radius */
+  --radius-sm: 0.375rem;  /* 6px */
+  --radius-md: 0.5rem;    /* 8px */
+  --radius-lg: 0.75rem;   /* 12px */
+  --radius-xl: 1rem;      /* 16px */
+  --radius-2xl: 1.5rem;   /* 24px */
+  
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  
+  /* Transitions */
+  --transition-fast: 150ms ease-in-out;
+  --transition-base: 200ms ease-in-out;
+  --transition-slow: 300ms ease-in-out;
+}
+
+/* Dark Mode Support (Adjusted Blue Palette) */
+[data-theme="dark"] {
+  --body-bg: #0f172a;
+  --card-bg: #1e293b;
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --border-color: #334155;
+  --border-light: #1e293b;
+  
+  /* Adjusted Blue Palette for Dark Mode */
+  --primary: #7BA5F5;
+  --primary-dark: #6B9BD1;
+  --primary-light-bg: rgba(123, 165, 245, 0.1);
+  --accent: #A0E7E5;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+}
+
+/* ===========================
+   2. BASE STYLES (Clean, No Glassmorphism)
+   =========================== */
+
+body {
+  background: var(--body-bg) !important;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Override existing glassmorphism - use solid cards (NOT for wrappers) */
+/* This rule is for actual card components, NOT the wrapper divs */
+/* Wrapper divs are neutralized in Section 6 */
+
+/* ===========================
+   3. METRIC CARDS (Clean, Modern - Matches Mockup)
+   =========================== */
+
+.metric-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-height: 180px;
+  position: relative;
+  overflow: hidden;
+}
+
+.metric-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.metric-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.metric-card__title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.metric-card__menu {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.metric-card__menu:hover {
+  background: var(--gray-100);
+  color: var(--text-secondary);
+}
+
+.metric-card__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.metric-card__value {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+  margin: 0;
+}
+
+.metric-card__value small {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-left: var(--space-2);
+}
+
+.metric-card__subtitle {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.metric-card__trend {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.metric-card__trend--up {
+  color: var(--success);
+}
+
+.metric-card__trend--down {
+  color: var(--error);
+}
+
+.metric-card__footer {
+  margin-top: auto;
+  padding-top: var(--space-2);
+}
+
+.metric-card__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--primary);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.metric-card__link:hover {
+  background: var(--gray-50);
+  border-color: var(--primary);
+  color: var(--primary-dark);
+}
+
+/* Metric Card Grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
+}
+
+/* ===========================
+   4. CHART CONTAINERS (Clean White Backgrounds)
+   =========================== */
+
+.chart-container {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-6);
+}
+
+.chart-container__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.chart-container__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.chart-container__subtitle {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-top: var(--space-1);
+}
+
+.chart-container__body {
+  position: relative;
+  min-height: 300px;
+}
+
+/* Chart Grid Layout */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
+}
+
+/* ===========================
+   5. UNIFIED ACTIVITY TABLE (Scrollable with Filters)
+   =========================== */
+
+.activity-section {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  margin-bottom: var(--space-8);
+}
+
+.activity-section__header {
+  padding: var(--space-6);
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.activity-section__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Filter Tabs */
+.activity-filters {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.activity-filter-btn {
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.activity-filter-btn:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: var(--primary-light-bg);
+}
+
+.activity-filter-btn.active {
+  color: var(--white);
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+/* Scrollable Table Body */
+.activity-table-wrapper {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 500px;
+  position: relative;
+}
+
+.activity-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.activity-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--gray-50);
+}
+
+[data-theme="dark"] .activity-table thead {
+  background: var(--gray-800);
+}
+
+.activity-table thead th {
+  padding: var(--space-4) var(--space-5);
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--border-color);
+  background: inherit;
+}
+
+.activity-table tbody tr {
+  transition: background-color var(--transition-fast);
+}
+
+.activity-table tbody tr:hover {
+  background: var(--gray-50);
+}
+
+[data-theme="dark"] .activity-table tbody tr:hover {
+  background: var(--gray-800);
+}
+
+.activity-table tbody td {
+  padding: var(--space-4) var(--space-5);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.activity-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Status Badges in Table */
+.activity-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+.activity-badge--success {
+  color: var(--success);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.activity-badge--warning {
+  color: var(--warning);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.activity-badge--error {
+  color: var(--error);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.activity-badge--info {
+  color: var(--info);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+/* Empty State */
+.activity-empty {
+  text-align: center;
+  padding: var(--space-12);
+  color: var(--text-muted);
+}
+
+.activity-empty i {
+  font-size: 3rem;
+  color: var(--dark-text);
+}
+
+/* ===========================
+   5.1 COMPREHENSIVE DARK MODE FOR ACTIVITY SECTION
+   =========================== */
+
+/* Dark mode - Activity section container */
+[data-theme="dark"] .activity-section {
+  background: #1f2937 !important;
+  border-color: #374151 !important;
+}
+
+/* Dark mode - Activity section header */
+[data-theme="dark"] .activity-section__header {
+  border-bottom-color: #374151 !important;
+}
+
+/* Dark mode - Activity title */
+[data-theme="dark"] .activity-section__title {
+  color: #f9fafb !important;
+}
+
+/* Dark mode - Filter buttons */
+[data-theme="dark"] .activity-filter-btn {
+  color: #d1d5db !important;
+  background: transparent !important;
+  border-color: #374151 !important;
+}
+
+[data-theme="dark"] .activity-filter-btn:hover {
+  color: #6B9BD1 !important;
+  border-color: #6B9BD1 !important;
+  background: rgba(107, 155, 209, 0.1) !important;
+}
+
+[data-theme="dark"] .activity-filter-btn.active {
+  color: #ffffff !important;
+  background: #6B9BD1 !important;
+  border-color: #6B9BD1 !important;
+}
+
+/* Dark mode - Table wrapper */
+[data-theme="dark"] .activity-table-wrapper {
+  background: #1f2937 !important;
+}
+
+/* Dark mode - Table */
+[data-theme="dark"] .activity-table {
+  background: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+/* Dark mode - Table header - ALREADY EXISTS but ensuring it's comprehensive */
+[data-theme="dark"] .activity-table thead {
+  background: #111827 !important;
+}
+
+[data-theme="dark"] .activity-table thead th {
+  color: #d1d5db !important;
+  border-bottom-color: #374151 !important;
+}
+
+/* Dark mode - Table body */
+[data-theme="dark"] .activity-table tbody tr {
+  background: #1f2937 !important;
+  border-color: #374151 !important;
+}
+
+[data-theme="dark"] .activity-table tbody tr:hover {
+  background: #111827 !important;
+}
+
+[data-theme="dark"] .activity-table tbody td {
+  color: #f9fafb !important;
+  border-bottom-color: #374151 !important;
+}
+
+/* Dark mode - Activity badges */
+[data-theme="dark"] .activity-badge--success {
+  color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.2) !important;
+}
+
+[data-theme="dark"] .activity-badge--warning {
+  color: #f59e0b !important;
+  background: rgba(245, 158, 11, 0.2) !important;
+}
+
+[data-theme="dark"] .activity-badge--error {
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.2) !important;
+}
+
+[data-theme="dark"] .activity-badge--info {
+  color: #3b82f6 !important;
+  background: rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Dark mode - Empty state */
+[data-theme="dark"] .activity-empty {
+  color: #9ca3af !important;
+}
+
+[data-theme="dark"] .activity-empty i {
+  color: #6b7280 !important;
+}
+
+/* Dark mode - Pagination buttons */
+[data-theme="dark"] #activity-prev,
+[data-theme="dark"] #activity-next {
+  background: #1f2937 !important;
+  color: #d1d5db !important;
+  border-color: #374151 !important;
+}
+
+[data-theme="dark"] #activity-prev:hover,
+[data-theme="dark"] #activity-next:hover {
+  background: #111827 !important;
+  border-color: #6B9BD1 !important;
+  color: #6B9BD1 !important;
+}
+
+[data-theme="dark"] #activity-page-info {
+  color: #9ca3af !important;
+}
+
+/* ===========================
+   6. CLEAN DASHBOARD LAYOUT (No Wrapper Divs)
+   Critical: base_dashboard.html now has NO wrapper divs - clean architecture
+   =========================== */
+
+/* Dashboard pages use base_dashboard.html which has NO wrappers */
+/* This eliminates the need for complex CSS overrides */
+
+/* Body styling for dashboard pages */
+body.dashboard-page {
+  margin: 0;
+  padding: 0;
+  background: var(--body-bg) !important;
+  overflow-x: hidden;
+}
+
+/* SIDEBAR: Fixed positioning (260px width) - starts below navbar */
+.dashboard-sidebar,
+aside.dashboard-sidebar,
+.dashboard-sidebar.glass {
+  position: fixed !important;
+  display: flex !important;
+  flex-direction: column !important;
+  top: 72px !important;      /* Start below navbar (approx navbar height) */
+  left: 0 !important;
+  bottom: 0 !important;
+  width: 260px !important;
+  height: auto !important;
+  z-index: 1020 !important;
+  background: var(--card-bg) !important;
+  border-right: 1px solid var(--border-color) !important;
+  border-radius: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 1rem !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* NAVBAR: Ensure it stays on top */
+.enterprise-navbar,
+.navbar.enterprise-navbar {
+  position: sticky !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 1030 !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+/* DASHBOARD CONTENT: Proper offset for sidebar, full-width layout */
+.dashboard-content,
+main.dashboard-content {
+  display: block !important;
+  position: relative !important;
+  margin-left: 260px !important;  /* Match sidebar width */
+  margin-top: 72px !important;    /* Start below navbar */
+  margin-right: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 2rem !important;       /* Clean padding all around */
+  min-height: calc(100vh - 72px); /* Full height minus navbar */
+  width: calc(100% - 260px) !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+  background: var(--body-bg) !important;  /* Match body background */
+  overflow-x: hidden !important;
+}
+
+/* Remove unnecessary margins on children */
+.dashboard-content > * {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Preserve vertical spacing for sections */
+.dashboard-content > section,
+.dashboard-content > .mb-4,
+.dashboard-content > .mb-5 {
+  margin-bottom: var(--space-6) !important;
+}
+
+/* Mobile: Collapsible sidebar */
+@media (max-width: 900px) {
+  .dashboard-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  body.sidebar-open .dashboard-sidebar {
+    transform: translateX(0);
+  }
+  
+  .dashboard-content {
+    margin-left: 0 !important;
+    margin-top: 60px !important;
+    width: 100% !important;
+    padding: 1rem !important;
+  }
+}
+
+/* ===========================
+   7. NAVBAR (Clean, Modern)
+   =========================== */
+
+.enterprise-navbar {
+  background: var(--card-bg) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  box-shadow: var(--shadow-sm) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: var(--space-4) 0;
+}
+
+/* ===========================
+   8. UTILITIES
+   =========================== */
+
+/* Text Colors */
+.text-primary { color: var(--text-primary) !important; }
+.text-secondary { color: var(--text-secondary) !important; }
+.text-muted { color: var(--text-muted) !important; }
+.text-blue { color: var(--primary) !important; }
+.text-success { color: var(--success) !important; }
+.text-warning { color: var(--warning) !important; }
+.text-error { color: var(--error) !important; }
+
+/* Background Colors */
+.bg-blue { background-color: var(--primary) !important; }
+.bg-blue-light { background-color: var(--primary-light-bg) !important; }
+.bg-white { background-color: var(--card-bg) !important; }
+.bg-gray-50 { background-color: var(--gray-50) !important; }
+
+/* Borders */
+.border-blue { border-color: var(--primary) !important; }
+.border-gray { border-color: var(--border-color) !important; }
+
+/* Shadows */
+.shadow-sm { box-shadow: var(--shadow-sm) !important; }
+.shadow-md { box-shadow: var(--shadow-md) !important; }
+.shadow-lg { box-shadow: var(--shadow-lg) !important; }
+
+/* Border Radius */
+.rounded-sm { border-radius: var(--radius-sm) !important; }
+.rounded-md { border-radius: var(--radius-md) !important; }
+.rounded-lg { border-radius: var(--radius-lg) !important; }
+.rounded-xl { border-radius: var(--radius-xl) !important; }
+
+/* ===========================
+   9. RESPONSIVE DESIGN
+   =========================== */
+
+@media (max-width: 768px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+  
+  .charts-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+  
+  .activity-section__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .activity-filters {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: var(--space-2);
+  }
+  
+  .activity-table-wrapper {
+    max-height: 400px;
+  }
+  
+  /* Mobile: Zero left/right margins for edge-to-edge layout */
+  .dashboard-content,
+  main.dashboard-content {
+    padding-left: var(--space-4) !important;
+    padding-right: var(--space-4) !important;
+  }
+  
+  .dashboard-content > section,
+  .dashboard-content > .mb-4,
+  .dashboard-content > .mb-5 {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .metric-card {
+    padding: var(--space-4);
+  }
+  
+  .metric-card__value {
+    font-size: 1.5rem;
+  }
+  
+  .chart-container {
+    padding: var(--space-4);
+  }
+  
+  .activity-section__header {
+    padding: var(--space-4);
+  }
+  
+  .activity-table thead th,
+  .activity-table tbody td {
+    padding: var(--space-3);
+    font-size: 0.8125rem;
+  }
+  
+  /* Small Mobile: Even tighter edge-to-edge layout */
+  .dashboard-content,
+  main.dashboard-content {
+    padding-left: var(--space-3) !important;
+    padding-right: var(--space-3) !important;
+  }
+}
+
+/* ===========================
+   10. ACCESSIBILITY
+   =========================== */
+
+/* Focus Visible (WCAG 2.1 AA) */
+*:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  :root {
+    --border-color: #000000;
+    --text-secondary: #000000;
+  }
+  
+  [data-theme="dark"] {
+    --border-color: #ffffff;
+    --text-secondary: #ffffff;
+  }
+}
+
+/* ===========================
+   11. PRINT STYLES
+   =========================== */
+
+@media print {
+  .dashboard-sidebar,
+  .enterprise-navbar,
+  .activity-filters {
+    display: none !important;
+  }
+  
+  .metric-card,
+  .chart-container,
+  .activity-section {
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+  }
+  
+  .activity-table-wrapper {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+/* ===========================
+   END OF DASHBOARD BLUE MODERN THEME
+   =========================== */

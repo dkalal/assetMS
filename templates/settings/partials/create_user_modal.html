@@ -1,0 +1,548 @@
+{% load static %}
+<!-- ============================================================================
+     WORLD-CLASS CREATE USER MODAL
+     Multi-Tenancy Enabled | Enterprise-Grade | Professional UI
+     ============================================================================ -->
+
+<!-- Main Create User Modal -->
+<div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModalLabel" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius: 20px; border: none; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+            <!-- Modal Header -->
+            <div class="modal-header" style="background: linear-gradient(135deg, #176B87 0%, #64CCC5 100%); color: white; border-radius: 20px 20px 0 0; padding: 1.5rem 2rem;">
+                <h5 class="modal-title" id="createUserModalLabel" style="font-size: 1.5rem; font-weight: 700;">
+                    <i class="bi bi-person-plus-fill me-2"></i>Create New User
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="modal-body" style="padding: 2rem;">
+                <!-- Success/Error Alert -->
+                <div id="userCreateAlert" class="alert d-none" role="alert"></div>
+                
+                <form id="createUserForm">
+                    <!-- Personal Information Section -->
+                    <div class="mb-4">
+                        <h6 class="text-primary fw-bold mb-3">
+                            <i class="bi bi-person-circle me-2"></i>Personal Information
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="firstName" class="form-label fw-semibold">
+                                    First Name <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="firstName" name="first_name" required placeholder="Enter first name">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="lastName" class="form-label fw-semibold">
+                                    Last Name <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="lastName" name="last_name" required placeholder="Enter last name">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="email" class="form-label fw-semibold">
+                                    Email Address <span class="text-danger">*</span>
+                                </label>
+                                <input type="email" class="form-control" id="email" name="email" required placeholder="user@company.com">
+                                <small class="text-muted">Used for login and notifications</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="phoneNumber" class="form-label fw-semibold">
+                                    Phone Number
+                                </label>
+                                <input type="tel" class="form-control" id="phoneNumber" name="phone_number" placeholder="+1234567890">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Account Information Section -->
+                    <div class="mb-4">
+                        <h6 class="text-primary fw-bold mb-3">
+                            <i class="bi bi-shield-lock me-2"></i>Account Information
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label for="username" class="form-label fw-semibold">
+                                    Username <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="username" name="username" required placeholder="Enter username (min 3 characters)">
+                                <small class="text-muted">Unique identifier for login. No spaces allowed.</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="password1" class="form-label fw-semibold">
+                                    Password
+                                </label>
+                                <input type="password" class="form-control" id="password1" name="password1" placeholder="Leave blank to auto-generate">
+                                <small class="text-muted">Min 8 characters. Leave blank to auto-generate.</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="password2" class="form-label fw-semibold">
+                                    Confirm Password
+                                </label>
+                                <input type="password" class="form-control" id="password2" name="password2" placeholder="Re-enter password">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Role & Branch Assignment Section -->
+                    <div class="mb-4">
+                        <h6 class="text-primary fw-bold mb-3">
+                            <i class="bi bi-building me-2"></i>Role & Branch Assignment
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="role" class="form-label fw-semibold">
+                                    User Role <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="role" name="role" required>
+                                    <option value="">Select role...</option>
+                                    <option value="admin">Administrator</option>
+                                    <option value="manager">Manager</option>
+                                    <option value="user">User</option>
+                                </select>
+                                <small class="text-muted">Determines permissions and access level</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="primaryBranch" class="form-label fw-semibold">
+                                    Primary Branch <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="primaryBranch" name="primary_branch" required>
+                                    <option value="">Select branch...</option>
+                                    <!-- Branches will be loaded dynamically -->
+                                </select>
+                                <small class="text-muted">User's home branch</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Options Section -->
+                    <div class="mb-4">
+                        <h6 class="text-primary fw-bold mb-3">
+                            <i class="bi bi-gear me-2"></i>Additional Options
+                        </h6>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="sendInvitation" name="send_invitation" checked>
+                            <label class="form-check-label fw-semibold" for="sendInvitation">
+                                Send invitation email with login credentials
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="forcePasswordChange" name="force_password_change" checked>
+                            <label class="form-check-label fw-semibold" for="forcePasswordChange">
+                                Require password change on first login
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="modal-footer" style="padding: 1.5rem 2rem; background: #f8f9fa; border-radius: 0 0 20px 20px;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 10px; padding: 0.6rem 1.5rem;">
+                    <i class="bi bi-x-circle me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="submitCreateUser" style="border-radius: 10px; padding: 0.6rem 1.5rem;">
+                    <i class="bi bi-check-circle me-2"></i>Create User
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Password Display Modal -->
+<div class="modal fade" id="passwordDisplayModal" tabindex="-1" aria-labelledby="passwordDisplayModalLabel" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 20px; border: none; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+            <div class="modal-header" style="background: linear-gradient(135deg, #10b981 0%, #34d399 100%); color: white; border-radius: 20px 20px 0 0;">
+                <h5 class="modal-title" id="passwordDisplayModalLabel">
+                    <i class="bi bi-check-circle-fill me-2"></i>User Created Successfully
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center" style="padding: 2rem;">
+                <div class="alert alert-success mb-3">
+                    <i class="bi bi-person-check-fill" style="font-size: 3rem;"></i>
+                    <p class="mt-3 mb-0 fw-bold">User account created successfully!</p>
+                </div>
+                <div id="passwordDisplayContent"></div>
+            </div>
+            <div class="modal-footer justify-content-center" style="background: #f8f9fa; border-radius: 0 0 20px 20px;">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal" style="border-radius: 10px; padding: 0.6rem 2rem;">
+                    <i class="bi bi-check-lg me-2"></i>Done
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for User Creation -->
+<script>
+/**
+ * UserCreationManager - Enterprise-grade user creation with multi-tenancy
+ */
+if (typeof window.UserCreationManager === 'undefined') {
+window.UserCreationManager = class UserCreationManager {
+    constructor() {
+        // Check if Bootstrap is available
+        if (typeof bootstrap === 'undefined') {
+            console.error('Bootstrap is not loaded. Cannot initialize UserCreationManager.');
+            return;
+        }
+        
+        this.modal = document.getElementById('createUserModal');
+        this.form = document.getElementById('createUserForm');
+        this.submitBtn = document.getElementById('submitCreateUser');
+        this.alertDiv = document.getElementById('userCreateAlert');
+        this.branchSelect = document.getElementById('primaryBranch');
+        
+        // Check if all required elements exist
+        if (!this.modal || !this.form || !this.submitBtn || !this.alertDiv || !this.branchSelect) {
+            console.error('Required modal elements not found');
+            return;
+        }
+        
+        try {
+            this.passwordDisplayModal = new bootstrap.Modal(document.getElementById('passwordDisplayModal'));
+        } catch (error) {
+            console.error('Error initializing password display modal:', error);
+        }
+        
+        this.init();
+    }
+    
+    init() {
+        // Load branches when modal opens
+        this.modal.addEventListener('show.bs.modal', () => this.loadBranches());
+        
+        // Handle form submission
+        this.submitBtn.addEventListener('click', () => this.handleSubmit());
+        
+        // Password validation
+        const pass1 = document.getElementById('password1');
+        const pass2 = document.getElementById('password2');
+        if (pass1 && pass2) {
+            pass1.addEventListener('input', () => this.validatePasswords());
+            pass2.addEventListener('input', () => this.validatePasswords());
+        }
+        
+        // Reset form when modal closes
+        this.modal.addEventListener('hidden.bs.modal', () => this.resetForm());
+        
+        console.log('✅ UserCreationManager initialized');
+    }
+    
+    async loadBranches() {
+        try {
+            const response = await fetch('/api/tenancy/branches/', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to load branches');
+            }
+            
+            const data = await response.json();
+            this.populateBranches(data.branches || []);
+        } catch (error) {
+            console.error('Error loading branches:', error);
+            this.showAlert('Failed to load branches. Please refresh the page.', 'danger');
+        }
+    }
+    
+    populateBranches(branches) {
+        this.branchSelect.innerHTML = '<option value="">Select branch...</option>';
+        branches.forEach(branch => {
+            const option = document.createElement('option');
+            option.value = branch.id;
+            option.textContent = `${branch.name} (${branch.code})${branch.is_head_office ? ' - HQ' : ''}`;
+            if (!branch.is_active) {
+                option.textContent += ' [Inactive]';
+                option.disabled = true;
+            }
+            this.branchSelect.appendChild(option);
+        });
+    }
+    
+    validatePasswords() {
+        const pass1 = document.getElementById('password1');
+        const pass2 = document.getElementById('password2');
+        
+        if (pass1.value && pass2.value && pass1.value !== pass2.value) {
+            pass2.setCustomValidity('Passwords do not match');
+            pass2.classList.add('is-invalid');
+        } else {
+            pass2.setCustomValidity('');
+            pass2.classList.remove('is-invalid');
+        }
+    }
+    
+    async handleSubmit() {
+        // Validate form
+        if (!this.form.checkValidity()) {
+            this.form.reportValidity();
+            return;
+        }
+        
+        // Disable submit button
+        this.submitBtn.disabled = true;
+        this.submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating...';
+        
+        try {
+            const formData = new FormData(this.form);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Convert checkbox values to boolean
+            data.send_invitation = document.getElementById('sendInvitation').checked;
+            data.force_password_change = document.getElementById('forcePasswordChange').checked;
+            
+            // Remove empty password fields
+            if (!data.password1) {
+                delete data.password1;
+                delete data.password2;
+            }
+            
+            console.log('📤 Sending user creation request:', data);
+            
+            const response = await fetch('/api/users/create/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCookie('csrftoken')
+                },
+                body: JSON.stringify(data)
+            });
+            
+            console.log('📥 Response status:', response.status);
+            
+            let result;
+            try {
+                result = await response.json();
+                console.log('📥 Response data:', result);
+            } catch (e) {
+                console.error('Failed to parse JSON response:', e);
+                const text = await response.text();
+                console.error('Response text:', text);
+                throw new Error('Server returned invalid JSON');
+            }
+            
+            if (response.ok && result.success) {
+                // Hide create modal
+                bootstrap.Modal.getInstance(this.modal).hide();
+                
+                // Show success modal with password
+                this.showSuccessModal(result);
+                
+                // Reload page after 2 seconds
+                setTimeout(() => window.location.reload(), 2000);
+            } else {
+                console.error('❌ User creation failed:', result);
+                console.error('❌ Validation errors:', result.errors);
+                
+                // Log each field error for debugging
+                if (result.errors && typeof result.errors === 'object') {
+                    for (const [field, errors] of Object.entries(result.errors)) {
+                        console.error(`  ❌ ${field}:`, errors);
+                    }
+                }
+                
+                const errorMsg = result.details || result.error || 'Failed to create user';
+                this.displayErrors(result.errors || errorMsg);
+            }
+        } catch (error) {
+            console.error('💥 Error creating user:', error);
+            this.showAlert(`An error occurred: ${error.message}. Please try again.`, 'danger');
+        } finally {
+            // Re-enable submit button
+            this.submitBtn.disabled = false;
+            this.submitBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Create User';
+        }
+    }
+    
+    showSuccessModal(result) {
+        const content = document.getElementById('passwordDisplayContent');
+        let html = `
+            <div class="mb-3">
+                <p class="fw-bold">User Details:</p>
+                <ul class="list-unstyled text-start">
+                    <li><strong>Username:</strong> ${result.user.username}</li>
+                    <li><strong>Email:</strong> ${result.user.email}</li>
+                    <li><strong>Name:</strong> ${result.user.full_name}</li>
+                    <li><strong>Role:</strong> ${result.user.role_display}</li>
+                    <li><strong>Branch:</strong> ${result.user.primary_branch_name}</li>
+                </ul>
+            </div>
+        `;
+        
+        if (result.temporary_password) {
+            html += `
+                <div class="alert alert-warning">
+                    <p class="fw-bold mb-2"><i class="bi bi-key-fill me-2"></i>Temporary Password:</p>
+                    <div class="input-group">
+                        <input type="text" class="form-control" value="${result.temporary_password}" id="tempPasswordField" readonly>
+                        <button class="btn btn-outline-secondary" type="button" onclick="copyPassword()">
+                            <i class="bi bi-clipboard"></i> Copy
+                        </button>
+                    </div>
+                    <small class="text-muted d-block mt-2">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Please save this password. It won't be shown again.
+                    </small>
+                </div>
+            `;
+        }
+        
+        content.innerHTML = html;
+        this.passwordDisplayModal.show();
+    }
+    
+    displayErrors(errors) {
+        // Field label mapping for better UX
+        const fieldLabels = {
+            'username': 'Username',
+            'email': 'Email Address',
+            'first_name': 'First Name',
+            'last_name': 'Last Name',
+            'phone_number': 'Phone Number',
+            'password1': 'Password',
+            'password2': 'Confirm Password',
+            'role': 'User Role',
+            'primary_branch': 'Primary Branch',
+            'send_invitation': 'Send Invitation',
+            'force_password_change': 'Force Password Change'
+        };
+        
+        let errorHtml = '<div class="alert alert-danger alert-dismissible fade show" role="alert">';
+        errorHtml += '<h6 class="alert-heading mb-2"><i class="bi bi-exclamation-triangle-fill me-2"></i>Validation Errors</h6>';
+        errorHtml += '<ul class="mb-0 ps-3">';
+        
+        if (typeof errors === 'object' && errors !== null) {
+            // Highlight fields with errors
+            for (const [field, messages] of Object.entries(errors)) {
+                const fieldLabel = fieldLabels[field] || field;
+                const fieldElement = document.getElementById(field) || 
+                                   document.querySelector(`[name="${field}"]`);
+                
+                // Add visual feedback to the field
+                if (fieldElement) {
+                    fieldElement.classList.add('is-invalid');
+                    
+                    // Create or update invalid feedback
+                    let feedbackDiv = fieldElement.nextElementSibling;
+                    if (!feedbackDiv || !feedbackDiv.classList.contains('invalid-feedback')) {
+                        feedbackDiv = document.createElement('div');
+                        feedbackDiv.className = 'invalid-feedback';
+                        fieldElement.parentNode.insertBefore(feedbackDiv, fieldElement.nextSibling);
+                    }
+                    
+                    if (Array.isArray(messages)) {
+                        feedbackDiv.textContent = messages.join(', ');
+                    } else {
+                        feedbackDiv.textContent = messages;
+                    }
+                }
+                
+                // Add to error list
+                if (Array.isArray(messages)) {
+                    messages.forEach(msg => {
+                        errorHtml += `<li><strong>${fieldLabel}:</strong> ${msg}</li>`;
+                    });
+                } else {
+                    errorHtml += `<li><strong>${fieldLabel}:</strong> ${messages}</li>`;
+                }
+            }
+        } else {
+            errorHtml += `<li>${errors}</li>`;
+        }
+        
+        errorHtml += '</ul>';
+        errorHtml += '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>';
+        errorHtml += '</div>';
+        
+        // Display the error alert
+        this.alertDiv.innerHTML = errorHtml;
+        this.alertDiv.classList.remove('d-none');
+        
+        // Scroll to the alert
+        this.alertDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        
+        // Remove invalid class when user starts typing
+        document.querySelectorAll('.is-invalid').forEach(field => {
+            field.addEventListener('input', function() {
+                this.classList.remove('is-invalid');
+                const feedback = this.nextElementSibling;
+                if (feedback && feedback.classList.contains('invalid-feedback')) {
+                    feedback.remove();
+                }
+            }, { once: true });
+        });
+    }
+    
+    showAlert(message, type = 'info') {
+        this.alertDiv.className = `alert alert-${type}`;
+        this.alertDiv.innerHTML = message;
+        this.alertDiv.classList.remove('d-none');
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            this.alertDiv.classList.add('d-none');
+        }, 5000);
+    }
+    
+    resetForm() {
+        this.form.reset();
+        this.alertDiv.classList.add('d-none');
+        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    }
+    
+    getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+};
+} // End guard clause
+
+// Copy password to clipboard
+function copyPassword() {
+    const passwordField = document.getElementById('tempPasswordField');
+    if (passwordField) {
+        passwordField.select();
+        document.execCommand('copy');
+        
+        // Show feedback
+        const btn = event.target.closest('button');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+        btn.classList.add('btn-success');
+        btn.classList.remove('btn-outline-secondary');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-secondary');
+        }, 2000);
+    }
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    if (!window.userCreationManagerInstance && window.UserCreationManager) {
+        window.userCreationManagerInstance = new window.UserCreationManager();
+    }
+});
+</script>

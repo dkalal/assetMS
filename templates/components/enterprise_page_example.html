@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Enterprise Page Example{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-neutral-900 mb-2">Asset Management</h1>
+    <p class="text-muted">Manage your organization's assets efficiently</p>
+  </div>
+  <div class="flex gap-2">
+    <button class="btn btn-secondary btn-sm">
+      <i class="bi bi-download"></i>
+      <span class="hidden sm:inline">Export</span>
+    </button>
+    <button class="btn btn-primary" data-modal-target="addAssetModal">
+      <i class="bi bi-plus-lg"></i>
+      Add Asset
+    </button>
+  </div>
+</div>
+
+<!-- Stats Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+  <div class="card">
+    <div class="card-body">
+      <div class="flex items-center justify-between mb-4">
+        <div class="text-sm font-medium text-neutral-600">Total Assets</div>
+        <i class="bi bi-archive text-primary-600"></i>
+      </div>
+      <div class="text-3xl font-bold text-neutral-900 mb-2">1,247</div>
+      <div class="flex items-center text-sm">
+        <i class="bi bi-arrow-up text-success"></i>
+        <span class="text-success ml-1">12% increase</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="card">
+    <div class="card-body">
+      <div class="flex items-center justify-between mb-4">
+        <div class="text-sm font-medium text-neutral-600">Active</div>
+        <i class="bi bi-check-circle text-success"></i>
+      </div>
+      <div class="text-3xl font-bold text-neutral-900 mb-2">1,156</div>
+      <div class="flex items-center text-sm">
+        <i class="bi bi-arrow-up text-success"></i>
+        <span class="text-success ml-1">8% increase</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="card">
+    <div class="card-body">
+      <div class="flex items-center justify-between mb-4">
+        <div class="text-sm font-medium text-neutral-600">Maintenance</div>
+        <i class="bi bi-tools text-warning"></i>
+      </div>
+      <div class="text-3xl font-bold text-neutral-900 mb-2">43</div>
+      <div class="flex items-center text-sm">
+        <i class="bi bi-arrow-down text-error"></i>
+        <span class="text-error ml-1">15% decrease</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="card">
+    <div class="card-body">
+      <div class="flex items-center justify-between mb-4">
+        <div class="text-sm font-medium text-neutral-600">Total Value</div>
+        <i class="bi bi-currency-dollar text-info"></i>
+      </div>
+      <div class="text-3xl font-bold text-neutral-900 mb-2">$2.4M</div>
+      <div class="flex items-center text-sm">
+        <i class="bi bi-arrow-up text-success"></i>
+        <span class="text-success ml-1">5% increase</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Data Table -->
+<div class="card">
+  <div class="card-header">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-semibold">Recent Assets</h2>
+      <div class="flex items-center gap-2">
+        <input type="search" class="form-control" placeholder="Search assets..." style="width: 200px;">
+        <button class="btn btn-outline btn-sm">
+          <i class="bi bi-funnel"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-container">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>
+              <input type="checkbox" aria-label="Select all">
+            </th>
+            <th data-sort="name">Asset Name</th>
+            <th data-sort="category">Category</th>
+            <th data-sort="location">Location</th>
+            <th data-sort="status">Status</th>
+            <th data-sort="value">Value</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><input type="checkbox" aria-label="Select asset"></td>
+            <td>
+              <div class="font-medium">MacBook Pro 16"</div>
+              <div class="text-sm text-muted">AST-2024-001</div>
+            </td>
+            <td>IT Equipment</td>
+            <td>Office Floor 3</td>
+            <td><span class="status status-success">Active</span></td>
+            <td>$2,499</td>
+            <td>
+              <div class="flex gap-1">
+                <button class="btn btn-outline btn-sm" title="Edit">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-outline btn-sm" title="View">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" aria-label="Select asset"></td>
+            <td>
+              <div class="font-medium">Office Chair</div>
+              <div class="text-sm text-muted">AST-2024-002</div>
+            </td>
+            <td>Furniture</td>
+            <td>Office Floor 2</td>
+            <td><span class="status status-warning">Maintenance</span></td>
+            <td>$299</td>
+            <td>
+              <div class="flex gap-1">
+                <button class="btn btn-outline btn-sm" title="Edit">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-outline btn-sm" title="View">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card-footer">
+    <div class="flex items-center justify-between">
+      <div class="text-sm text-muted">Showing 1-10 of 247 results</div>
+      <div class="flex gap-1">
+        <button class="btn btn-outline btn-sm" disabled>Previous</button>
+        <button class="btn btn-primary btn-sm">1</button>
+        <button class="btn btn-outline btn-sm">2</button>
+        <button class="btn btn-outline btn-sm">3</button>
+        <button class="btn btn-outline btn-sm">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Example -->
+<div id="addAssetModal" class="card" style="display: none; width: 500px;" aria-hidden="true">
+  <div class="card-header">
+    <h3 class="text-lg font-semibold">Add New Asset</h3>
+    <button data-modal-close aria-label="Close modal">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+  <div class="card-body">
+    <form>
+      <div class="form-group">
+        <label class="form-label" for="assetName">Asset Name</label>
+        <input type="text" id="assetName" class="form-control" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="assetCategory">Category</label>
+        <select id="assetCategory" class="form-control form-select" required>
+          <option value="">Select category</option>
+          <option value="it">IT Equipment</option>
+          <option value="furniture">Furniture</option>
+          <option value="vehicle">Vehicle</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="assetValue">Value</label>
+        <input type="number" id="assetValue" class="form-control" step="0.01" required>
+      </div>
+    </form>
+  </div>
+  <div class="card-footer">
+    <div class="flex justify-between">
+      <button class="btn btn-secondary" data-modal-close>Cancel</button>
+      <button class="btn btn-primary" type="submit">Add Asset</button>
+    </div>
+  </div>
+</div>
+{% endblock %}

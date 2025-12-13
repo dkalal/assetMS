@@ -1,0 +1,501 @@
+{% extends 'settings/security_privacy_unified.html' %}
+{% load static %}
+
+{% block title %}Security & Privacy Settings - Enterprise Asset Management{% endblock %}
+
+{% block header_left %}
+  <h1 class="h2 font-bold mb-2">
+    <i class="bi bi-shield-check text-primary me-2"></i>
+    Security & Privacy Settings
+  </h1>
+  <p class="text-muted">Configure enterprise security policies and privacy controls</p>
+{% endblock %}
+
+{% block header_actions %}
+  <button class="btn btn-outline-secondary btn-sm" id="exportSecurityConfig">
+    <i class="bi bi-download me-1"></i>Export Config
+  </button>
+  <button class="btn btn-outline-info btn-sm" id="securityAudit">
+    <i class="bi bi-search me-1"></i>Security Audit
+  </button>
+  <button class="btn btn-primary" id="saveAllSettings">
+    <i class="bi bi-check-lg me-1"></i>Save All Changes
+  </button>
+{% endblock %}
+
+{% block metrics_panel %}
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0">
+        <i class="bi bi-shield-fill-check me-2"></i>Security Status Overview
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="row" id="securityMetrics">
+        <div class="col-md-3 text-center">
+          <div class="mb-2">
+            <i class="bi bi-people display-4 text-success"></i>
+          </div>
+          <h6>Active Users</h6>
+          <p class="text-success mb-0" id="activeUsers">Loading...</p>
+        </div>
+        <div class="col-md-3 text-center">
+          <div class="mb-2">
+            <i class="bi bi-exclamation-triangle display-4 text-warning"></i>
+          </div>
+          <h6>Failed Logins (24h)</h6>
+          <p class="text-warning mb-0" id="failedLogins">Loading...</p>
+        </div>
+        <div class="col-md-3 text-center">
+          <div class="mb-2">
+            <i class="bi bi-clock display-4 text-info"></i>
+          </div>
+          <h6>Active Sessions</h6>
+          <p class="text-info mb-0" id="activeSessions">Loading...</p>
+        </div>
+        <div class="col-md-3 text-center">
+          <div class="mb-2">
+            <i class="bi bi-bell display-4 text-danger"></i>
+          </div>
+          <h6>Security Alerts</h6>
+          <p class="text-danger mb-0" id="securityAlerts">Loading...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block settings_body %}
+  <div class="row">
+    <div class="col-lg-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="nav flex-column nav-pills" id="security-tabs" role="tablist">
+            <button class="nav-link active" id="authentication-tab" data-bs-toggle="pill" data-bs-target="#authentication" type="button" role="tab">
+              <i class="bi bi-key me-2"></i>Authentication
+            </button>
+            <button class="nav-link" id="access-control-tab" data-bs-toggle="pill" data-bs-target="#access-control" type="button" role="tab">
+              <i class="bi bi-lock me-2"></i>Access Control
+            </button>
+            <button class="nav-link" id="data-protection-tab" data-bs-toggle="pill" data-bs-target="#data-protection" type="button" role="tab">
+              <i class="bi bi-shield-lock me-2"></i>Data Protection
+            </button>
+            <button class="nav-link" id="audit-logging-tab" data-bs-toggle="pill" data-bs-target="#audit-logging" type="button" role="tab">
+              <i class="bi bi-journal-text me-2"></i>Audit & Logging
+            </button>
+            <button class="nav-link" id="privacy-tab" data-bs-toggle="pill" data-bs-target="#privacy" type="button" role="tab">
+              <i class="bi bi-eye-slash me-2"></i>Privacy
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-9">
+      <div class="tab-content" id="security-tabContent">
+          <!-- Authentication Settings -->
+          <div class="tab-pane fade show active" id="authentication" role="tabpanel">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="mb-0">Authentication & Password Policies</h5>
+              </div>
+              <div class="card-body">
+                <form id="authenticationForm">
+                  <div class="row">
+                    <div class="col-md-6">
+                      <div class="mb-4">
+                        <label class="form-label font-medium">Password Requirements</label>
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" id="passwordComplexity" checked>
+                          <label class="form-check-label" for="passwordComplexity">
+                            Enforce complex passwords (8+ chars, mixed case, numbers, symbols)
+                          </label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" id="passwordHistory">
+                          <label class="form-check-label" for="passwordHistory">
+                            Prevent reuse of last 5 passwords
+                          </label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" id="passwordExpiry">
+                          <label class="form-check-label" for="passwordExpiry">
+                            Force password change every 90 days
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="mb-4">
+                        <label class="form-label font-medium">Two-Factor Authentication</label>
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" id="require2FA" checked>
+                          <label class="form-check-label" for="require2FA">
+                            Require 2FA for all admin users
+                          </label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" id="optional2FA">
+                          <label class="form-check-label" for="optional2FA">
+                            Allow 2FA for regular users
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-md-4">
+                      <div class="mb-3">
+                        <label class="form-label font-medium">Session Timeout (minutes)</label>
+                        <select class="form-select" id="sessionTimeout">
+                          <option value="15">15 minutes</option>
+                          <option value="30">30 minutes</option>
+                          <option value="60" selected>1 hour</option>
+                          <option value="120">2 hours</option>
+                          <option value="480">8 hours</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="mb-3">
+                        <label class="form-label font-medium">Max Login Attempts</label>
+                        <select class="form-select" id="maxLoginAttempts">
+                          <option value="3">3 attempts</option>
+                          <option value="5" selected>5 attempts</option>
+                          <option value="10">10 attempts</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="mb-3">
+                        <label class="form-label font-medium">Account Lockout Duration</label>
+                        <select class="form-select" id="lockoutDuration">
+                          <option value="15">15 minutes</option>
+                          <option value="30" selected>30 minutes</option>
+                          <option value="60">1 hour</option>
+                          <option value="1440">24 hours</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Access Control Settings -->
+          <div class="tab-pane fade" id="access-control" role="tabpanel">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="mb-0">Access Control & IP Restrictions</h5>
+              </div>
+              <div class="card-body">
+                <form id="accessControlForm">
+                  <div class="mb-4">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="ipWhitelist">
+                      <label class="form-check-label font-medium" for="ipWhitelist">
+                        Enable IP Address Whitelist
+                      </label>
+                    </div>
+                    <small class="text-muted">Only allow access from specified IP addresses</small>
+                  </div>
+
+                  <div class="mb-4" id="ipWhitelistConfig" style="display: none;">
+                    <label class="form-label font-medium">Allowed IP Addresses</label>
+                    <textarea class="form-control" id="allowedIPs" rows="4" placeholder="Enter IP addresses or ranges, one per line:\n192.168.1.0/24\n10.0.0.1\n203.0.113.0/24"></textarea>
+                    <small class="text-muted">Supports individual IPs (192.168.1.1) and CIDR notation (192.168.1.0/24)</small>
+                  </div>
+
+                  <div class="mb-4">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="geoBlocking">
+                      <label class="form-check-label font-medium" for="geoBlocking">
+                        Enable Geographic Restrictions
+                      </label>
+                    </div>
+                    <small class="text-muted">Block access from specific countries or regions</small>
+                  </div>
+
+                  <div class="mb-4">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="deviceTracking" checked>
+                      <label class="form-check-label font-medium" for="deviceTracking">
+                        Track Device Information
+                      </label>
+                    </div>
+                    <small class="text-muted">Log device fingerprints and browser information</small>
+                  </div>
+
+                  <div class="mb-4">
+                    <label class="form-label font-medium">Concurrent Session Limit</label>
+                    <select class="form-select" id="concurrentSessions">
+                      <option value="1">1 session per user</option>
+                      <option value="3" selected>3 sessions per user</option>
+                      <option value="5">5 sessions per user</option>
+                      <option value="0">Unlimited sessions</option>
+                    </select>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Data Protection Settings -->
+          <div class="tab-pane fade" id="data-protection" role="tabpanel">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="mb-0">Data Protection & Encryption</h5>
+              </div>
+              <div class="card-body">
+                <form id="dataProtectionForm">
+                  <div class="mb-4">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="dataEncryption" checked disabled>
+                      <label class="form-check-label font-medium" for="dataEncryption">
+                        Database Encryption at Rest
+                      </label>
+                    </div>
+                    <small class="text-success">✓ Currently enabled and cannot be disabled</small>
+                  </div>
+
+                  <div class="mb-4">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="sslEnforcement" checked disabled>
+                      <label class="form-check-label font-medium" for="sslEnforcement">
+                        Enforce HTTPS/SSL
+                      </label>
+                    </div>
+                    <small class="text-success">✓ SSL/TLS encryption enforced for all connections</small>
+                  </div>
+
+                  <div class="mb-4">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="dataBackup" checked>
+                      <label class="form-check-label font-medium" for="dataBackup">
+                        Automated Data Backups
+                      </label>
+                    </div>
+                    <small class="text-muted">Daily encrypted backups with 30-day retention</small>
+                  </div>
+
+                  <div class="mb-4">
+                    <label class="form-label font-medium">Data Retention Period (days)</label>
+                    <select class="form-select" id="dataRetention">
+                      <option value="30">30 days</option>
+                      <option value="90" selected>90 days</option>
+                      <option value="365">1 year</option>
+                      <option value="1095">3 years</option>
+                      <option value="2555">7 years</option>
+                    </select>
+                    <small class="text-muted">How long to retain audit logs and deleted records</small>
+                  </div>
+
+                  <div class="mb-4">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="piiProtection" checked>
+                      <label class="form-check-label font-medium" for="piiProtection">
+                        PII Data Protection
+                      </label>
+                    </div>
+                    <small class="text-muted">Automatically detect and protect personally identifiable information</small>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Audit & Logging Settings -->
+          <div class="tab-pane fade" id="audit-logging" role="tabpanel">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="mb-0">Audit Logging & Monitoring</h5>
+              </div>
+              <div class="card-body">
+                <form id="auditLoggingForm">
+                  <div class="mb-4">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="auditLogging" checked disabled>
+                      <label class="form-check-label font-medium" for="auditLogging">
+                        Enable Comprehensive Audit Logging
+                      </label>
+                    </div>
+                    <small class="text-success">✓ All user actions are logged for compliance</small>
+                  </div>
+
+                  <div class="mb-4">
+                    <label class="form-label font-medium">Log Level</label>
+                    <select class="form-select" id="logLevel">
+                      <option value="basic">Basic (Login/Logout only)</option>
+                      <option value="standard" selected>Standard (All user actions)</option>
+                      <option value="detailed">Detailed (Include system events)</option>
+                      <option value="debug">Debug (All events + technical details)</option>
+                    </select>
+                  </div>
+
+                  <div class="mb-4">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="realTimeAlerts" checked>
+                      <label class="form-check-label font-medium" for="realTimeAlerts">
+                        Real-time Security Alerts
+                      </label>
+                    </div>
+                    <small class="text-muted">Immediate notifications for suspicious activities</small>
+                  </div>
+
+                  <div class="mb-4">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="failedLoginAlerts" checked>
+                      <label class="form-check-label font-medium" for="failedLoginAlerts">
+                        Failed Login Attempt Alerts
+                      </label>
+                    </div>
+                    <small class="text-muted">Alert after multiple failed login attempts</small>
+                  </div>
+
+                  <div class="mb-4">
+                    <label class="form-label font-medium">Alert Threshold (failed attempts)</label>
+                    <select class="form-select" id="alertThreshold">
+                      <option value="3">3 attempts</option>
+                      <option value="5" selected>5 attempts</option>
+                      <option value="10">10 attempts</option>
+                    </select>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Privacy Settings -->
+          <div class="tab-pane fade" id="privacy" role="tabpanel">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="mb-0">Privacy & Compliance</h5>
+              </div>
+              <div class="card-body">
+                <form id="privacyForm">
+                  <div class="mb-4">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="gdprCompliance" checked>
+                      <label class="form-check-label font-medium" for="gdprCompliance">
+                        GDPR Compliance Mode
+                      </label>
+                    </div>
+                    <small class="text-muted">Enable data protection features required by GDPR</small>
+                  </div>
+
+                  <div class="mb-4">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="anonymousAnalytics">
+                      <label class="form-check-label font-medium" for="anonymousAnalytics">
+                        Anonymous Usage Analytics
+                      </label>
+                    </div>
+                    <small class="text-muted">Collect anonymized usage statistics for system improvement</small>
+                  </div>
+
+                  <div class="mb-4">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="cookieConsent" checked>
+                      <label class="form-check-label font-medium" for="cookieConsent">
+                        Cookie Consent Banner
+                      </label>
+                    </div>
+                    <small class="text-muted">Show cookie consent notice to users</small>
+                  </div>
+
+                  <div class="mb-4">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="dataExportRights" checked>
+                      <label class="form-check-label font-medium" for="dataExportRights">
+                        User Data Export Rights
+                      </label>
+                    </div>
+                    <small class="text-muted">Allow users to export their personal data</small>
+                  </div>
+
+                  <div class="mb-4">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="rightToBeForgotten" checked>
+                      <label class="form-check-label font-medium" for="rightToBeForgotten">
+                        Right to be Forgotten
+                      </label>
+                    </div>
+                    <small class="text-muted">Allow users to request complete data deletion</small>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block activity_feed %}
+  <div class="card mt-4">
+    <div class="card-header">
+      <h5 class="mb-0">
+        <i class="bi bi-activity me-2"></i>Recent Security Activities
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="enterprise-table-container">
+        <div class="enterprise-table-wrapper" style="max-height: 300px;">
+          <table class="enterprise-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>IP Address</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="securityActivities">
+              <tr>
+                <td colspan="5" class="text-center text-muted">Loading recent activities...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block modals %}
+  <div class="modal fade" id="securityAuditModal" tabindex="-1" aria-labelledby="securityAuditModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="securityAuditModalLabel">
+            <i class="bi bi-search me-2"></i>Security Audit Report
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="auditResults">
+            <div class="text-center">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Running security audit...</span>
+              </div>
+              <p class="mt-2">Running comprehensive security audit...</p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" id="downloadAuditReport">
+            <i class="bi bi-download me-1"></i>Download Report
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script src="{% static 'js/security-privacy-enterprise.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,116 @@
+# ASGI compatibility library for Python web apps
+asgiref==3.9.1
+# High performance Brotli compression library
+Brotli==1.1.0
+# Foreign Function Interface for Python calling C code
+cffi==1.17.1
+# Cross-platform colored terminal text
+colorama==0.4.6
+# Bootstrap v5 theme for django-crispy-forms
+crispy-bootstrap5==2024.10
+# CSS selector parser for Python
+cssselect2==0.8.0
+# For comparing sequences of characters and computing differences between them
+diff-match-patch==20241021
+# URL-style database configuration for Django
+dj-database-url==3.0.1 
+# High-level Python web framework
+Django==5.1.5
+# Forms styling using Bootstrap for Django
+django-crispy-forms==2.4
+# Debug toolbar for Django development
+django-debug-toolbar==6.0.0
+# Additional management commands and utilities for Django
+django-extensions==4.1
+# Import/export data in various formats (CSV, Excel, etc) for Django
+django-import-export==4.3.9
+# Template filter for tweaking form field HTML
+django-widget-tweaks==1.5.0
+# REST API framework for Django
+djangorestframework==3.16.1
+# Library for reading/writing Excel 2010 xlsx/xlsm files
+et_xmlfile==2.0.0
+# Package for generating fake data
+Faker==37.6.0
+# Tools for manipulating fonts
+fonttools==4.59.1
+# Python WSGI HTTP Server for UNIX
+gunicorn==23.0.0
+# Package for scientific computing with Python
+numpy==2.3.2
+# Python library for reading/writing Excel files
+openpyxl==3.1.5
+# Core utilities for Python packages
+packaging==25.0
+# Data analysis and manipulation library
+pandas==2.3.2
+# Python Imaging Library
+pillow==11.3.0
+# PostgreSQL database adapter for Python
+psycopg2-binary==2.9.10
+# C parser in Python
+pycparser==2.22
+# PDF generation library
+pydyf==0.11.0
+# Hyphenation library
+pyphen==0.17.2
+# Extensions to the standard datetime module
+python-dateutil==2.9.0.post0
+# Strict separation of settings from code
+python-decouple==3.8
+# Loads environment variables from .env file
+python-dotenv==1.1.1
+# World timezone definitions
+pytz==2025.2
+# QR Code image generator
+qrcode==8.2
+# Python 2 and 3 compatibility utilities
+six==1.17.0
+# SQL parsing and formatting
+sqlparse==0.5.3
+# Format-agnostic tabular dataset library
+tablib==3.8.0
+# CSS parser
+tinycss2==1.4.0
+# HTML5 parser and serializer
+tinyhtml5==2.0.0
+# Timezone database
+tzdata==2025.2
+# HTML/CSS to PDF converter
+weasyprint==66.0
+# Character encoding aliases
+webencodings==0.5.1
+# Static file serving for Python web apps
+whitenoise==6.9.0
+# Excel XLSX file writer
+xlsxwriter==3.2.5
+# Zopfli compression algorithm implementation
+zopfli==0.2.3.post1
+# Backblaze B2 storage
+django-storages==1.14.4
+# AWS SDK for Python
+boto3==1.35.0
+# Backblaze B2 Python SDK
+b2sdk==2.5.1
+# ImageKit Python SDK
+imagekitio==3.2.0
+# Cloudinary Python SDK
+cloudinary==1.41.0
+# Content Security Policy
+django-csp==3.8
+# CRITICAL: urllib3 must be <2.0 for imagekitio compatibility
+urllib3==1.26.20
+# Celery for async task processing
+celery[redis]==5.4.0
+# Redis client for Celery broker (optional, using Django DB for development)
+redis==5.2.1
+# Kombu with SQLAlchemy for Django DB broker
+kombu[sqlalchemy]>=5.6.0
+# Database-backed periodic tasks
+django-celery-beat==2.8.0
+# Store task results in Django DB
+django-celery-results==2.5.1
+# Celery monitoring UI (optional)
+flower==2.0.1
+# Fuzzy string matching for intelligent duplicate detection (world-class performance)
+rapidfuzz==3.10.1

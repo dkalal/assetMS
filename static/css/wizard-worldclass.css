@@ -1,0 +1,634 @@
+/**
+ * World-Class Wizard Component Styles
+ * Inspired by: ServiceNow ITAM, Stripe Checkout, Salesforce Setup
+ * 
+ * Features:
+ * - Progress indicator with step numbers
+ * - Step transitions
+ * - Navigation buttons
+ * - Step validation states
+ * - Mobile-responsive
+ * - Accessibility (WCAG 2.1 AA)
+ */
+
+/* ===========================
+   1. CSS VARIABLES
+   =========================== */
+:root {
+  --wizard-primary: #6B9BD1;
+  --wizard-success: #10b981;
+  --wizard-muted: #9ca3af;
+  --wizard-bg: #ffffff;
+  --wizard-border: #e5e7eb;
+  --wizard-text: #1f2937;
+  --wizard-text-secondary: #4b5563;
+}
+
+[data-theme="dark"] {
+  --wizard-bg: #1f2937;
+  --wizard-border: #374151;
+  --wizard-text: #f9fafb;
+  --wizard-text-secondary: #e5e7eb;
+}
+
+/* ===========================
+   2. WIZARD CONTAINER
+   =========================== */
+.wizard-container {
+  background: var(--wizard-bg);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--wizard-border);
+  margin-bottom: 2rem;
+}
+
+/* ===========================
+   3. PROGRESS INDICATOR
+   =========================== */
+.wizard-progress {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3rem;
+  position: relative;
+  padding: 0 1rem;
+}
+
+/* Progress Line */
+.wizard-progress::before {
+  content: '';
+  position: absolute;
+  top: 1.5rem;
+  left: 2rem;
+  right: 2rem;
+  height: 2px;
+  background: var(--wizard-border);
+  z-index: 0;
+}
+
+.wizard-progress-line {
+  position: absolute;
+  top: 1.5rem;
+  left: 2rem;
+  height: 2px;
+  background: var(--wizard-primary);
+  z-index: 1;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Progress Steps */
+.wizard-progress-step {
+  flex: 1;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.wizard-progress-step.disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Step Circle */
+.wizard-step-circle {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--wizard-bg);
+  border: 3px solid var(--wizard-border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--wizard-muted);
+  margin-bottom: 0.5rem;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+/* Step States */
+.wizard-progress-step.completed .wizard-step-circle {
+  background: var(--wizard-success);
+  border-color: var(--wizard-success);
+  color: white;
+}
+
+.wizard-progress-step.completed .wizard-step-circle::before {
+  content: '✓';
+  font-size: 1.25rem;
+}
+
+.wizard-progress-step.completed .wizard-step-circle .step-number {
+  display: none;
+}
+
+.wizard-progress-step.active .wizard-step-circle {
+  background: var(--wizard-primary);
+  border-color: var(--wizard-primary);
+  color: white;
+  box-shadow: 0 0 0 4px rgba(107, 155, 209, 0.2);
+  transform: scale(1.1);
+}
+
+.wizard-progress-step.error .wizard-step-circle {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: white;
+  animation: shake 0.5s;
+}
+
+/* Step Label */
+.wizard-step-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--wizard-text-secondary);
+  margin-top: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.wizard-progress-step.active .wizard-step-label {
+  color: var(--wizard-primary);
+  font-weight: 600;
+}
+
+.wizard-progress-step.completed .wizard-step-label {
+  color: var(--wizard-success);
+}
+
+/* Step Description */
+.wizard-step-description {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--wizard-muted);
+  margin-top: 0.25rem;
+}
+
+/* ===========================
+   4. WIZARD STEPS
+   =========================== */
+.wizard-steps {
+  position: relative;
+  min-height: 400px;
+}
+
+.wizard-step {
+  display: none;
+  opacity: 0;
+  transform: translateX(20px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wizard-step.active {
+  display: block;
+  opacity: 1;
+  transform: translateX(0);
+  animation: slideIn 0.3s ease;
+}
+
+.wizard-step.prev {
+  animation: slideOut 0.3s ease;
+}
+
+/* Step Header */
+.wizard-step-header {
+  margin-bottom: 2rem;
+}
+
+.wizard-step-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--wizard-text);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.wizard-step-title i {
+  color: var(--wizard-primary);
+}
+
+.wizard-step-subtitle {
+  font-size: 0.9375rem;
+  color: var(--wizard-text-secondary);
+  margin: 0;
+}
+
+/* Step Content */
+.wizard-step-content {
+  padding: 1rem 0;
+}
+
+/* ===========================
+   5. WIZARD NAVIGATION
+   =========================== */
+.wizard-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--wizard-border);
+}
+
+.wizard-nav-buttons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.wizard-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.wizard-btn-primary {
+  background: linear-gradient(135deg, var(--wizard-primary) 0%, #4a90c8 100%);
+  color: white;
+}
+
+.wizard-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(107, 155, 209, 0.3);
+}
+
+.wizard-btn-secondary {
+  background: transparent;
+  color: var(--wizard-text);
+  border: 2px solid var(--wizard-border);
+}
+
+.wizard-btn-secondary:hover {
+  background: rgba(107, 155, 209, 0.1);
+  border-color: var(--wizard-primary);
+}
+
+.wizard-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Step Info */
+.wizard-step-info {
+  font-size: 0.875rem;
+  color: var(--wizard-text-secondary);
+}
+
+/* ===========================
+   6. REVIEW STEP
+   =========================== */
+.wizard-review {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+[data-theme="dark"] .wizard-review {
+  background: #111827;
+}
+
+.wizard-review-section {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--wizard-border);
+}
+
+.wizard-review-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.wizard-review-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.wizard-review-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--wizard-text);
+  margin: 0;
+}
+
+.wizard-review-edit {
+  font-size: 0.875rem;
+  color: var(--wizard-primary);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+}
+
+.wizard-review-edit:hover {
+  text-decoration: underline;
+}
+
+.wizard-review-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+}
+
+.wizard-review-label {
+  font-weight: 500;
+  color: var(--wizard-text-secondary);
+}
+
+.wizard-review-value {
+  font-weight: 600;
+  color: var(--wizard-text);
+  text-align: right;
+}
+
+/* ===========================
+   7. VALIDATION MESSAGES
+   =========================== */
+.wizard-validation-summary {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+[data-theme="dark"] .wizard-validation-summary {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.wizard-validation-summary h4 {
+  color: #dc2626;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.wizard-validation-summary ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: #991b1b;
+}
+
+.wizard-validation-summary li {
+  margin-bottom: 0.25rem;
+}
+
+/* ===========================
+   8. LOADING STATE
+   =========================== */
+.wizard-loading {
+  text-align: center;
+  padding: 3rem 0;
+}
+
+.wizard-spinner {
+  width: 3rem;
+  height: 3rem;
+  border: 4px solid var(--wizard-border);
+  border-top-color: var(--wizard-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+.wizard-loading-text {
+  color: var(--wizard-text-secondary);
+  font-size: 0.9375rem;
+}
+
+/* ===========================
+   9. SUCCESS STATE
+   =========================== */
+.wizard-success {
+  text-align: center;
+  padding: 3rem 0;
+}
+
+.wizard-success-icon {
+  width: 5rem;
+  height: 5rem;
+  background: var(--wizard-success);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  animation: scaleIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.wizard-success-icon i {
+  font-size: 2.5rem;
+  color: white;
+}
+
+.wizard-success-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--wizard-text);
+  margin-bottom: 0.5rem;
+}
+
+.wizard-success-message {
+  font-size: 0.9375rem;
+  color: var(--wizard-text-secondary);
+  margin-bottom: 2rem;
+}
+
+/* ===========================
+   10. ANIMATIONS
+   =========================== */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ===========================
+   11. RESPONSIVE DESIGN
+   =========================== */
+@media (max-width: 768px) {
+  .wizard-container {
+    padding: 1.5rem;
+  }
+  
+  .wizard-progress {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0;
+  }
+  
+  .wizard-progress::before,
+  .wizard-progress-line {
+    display: none;
+  }
+  
+  .wizard-progress-step {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    text-align: left;
+    gap: 1rem;
+  }
+  
+  .wizard-step-circle {
+    flex-shrink: 0;
+    margin-bottom: 0;
+  }
+  
+  .wizard-step-label {
+    margin-top: 0;
+    text-align: left;
+  }
+  
+  .wizard-navigation {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .wizard-nav-buttons {
+    width: 100%;
+    flex-direction: column;
+  }
+  
+  .wizard-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .wizard-step-info {
+    text-align: center;
+    width: 100%;
+  }
+  
+  .wizard-review-item {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .wizard-review-value {
+    text-align: left;
+  }
+}
+
+@media (max-width: 576px) {
+  .wizard-step-title {
+    font-size: 1.25rem;
+  }
+  
+  .wizard-step-description {
+    display: none;
+  }
+}
+
+/* ===========================
+   12. ACCESSIBILITY
+   =========================== */
+.wizard-progress-step:focus-visible .wizard-step-circle {
+  outline: 2px solid var(--wizard-primary);
+  outline-offset: 4px;
+}
+
+.wizard-btn:focus-visible {
+  outline: 2px solid var(--wizard-primary);
+  outline-offset: 2px;
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .wizard-step,
+  .wizard-step-circle,
+  .wizard-btn,
+  .wizard-progress-line {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* High Contrast */
+@media (prefers-contrast: high) {
+  .wizard-step-circle {
+    border-width: 4px;
+  }
+  
+  .wizard-btn {
+    border-width: 3px;
+  }
+}
+
+/* ===========================
+   13. PRINT STYLES
+   =========================== */
+@media print {
+  .wizard-navigation {
+    display: none;
+  }
+  
+  .wizard-progress {
+    margin-bottom: 1rem;
+  }
+  
+  .wizard-step {
+    display: block !important;
+    opacity: 1 !important;
+    transform: none !important;
+    page-break-inside: avoid;
+  }
+}

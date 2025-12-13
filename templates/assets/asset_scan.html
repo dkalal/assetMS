@@ -1,0 +1,71 @@
+{% extends 'base_dashboard.html' %}
+{% block title %}Scan Asset QR Code{% endblock %}
+{% block content %}
+<h2 class="mb-4">Scan Asset QR Code</h2>
+<div class="row">
+    <div class="col-md-7">
+        <div id="qr-reader" class="mb-3" style="width:100%; max-width:560px;"></div>
+        <button id="start-scan" class="btn btn-primary mb-2">Start Scanning</button>
+        <button id="stop-scan" class="btn btn-outline-secondary mb-2 ms-2" disabled>Stop</button>
+        <div class="mb-2">Or enter code manually:</div>
+        <form id="manual-form" class="d-flex gap-2 mb-3">
+            <input type="text" id="manual-code" class="form-control" placeholder="Enter Asset Code or ID">
+            <button type="submit" class="btn btn-outline-secondary">Lookup</button>
+        </form>
+    </div>
+    <div class="col-md-5">
+        <div id="scan-result" class="glass p-3 d-none">
+            <h5>Asset Details</h5>
+            <div id="asset-details"></div>
+        </div>
+        <div id="scan-error" class="alert alert-danger d-none"></div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+// Load camera diagnostics first
+(function() {
+  const diagnosticsScript = document.createElement('script');
+  diagnosticsScript.src = '{% static "js/camera-diagnostics.js" %}';
+  diagnosticsScript.onload = function() {
+    // Load UI enhancements
+    const uiScript = document.createElement('script');
+    uiScript.src = '{% static "js/qr-scanner-ui.js" %}';
+    uiScript.onload = function() {
+      // Load enhanced scanner
+      const enhancedScript = document.createElement('script');
+      enhancedScript.src = '{% static "js/qr-scanner-enhanced.js" %}';
+      enhancedScript.onload = function() {
+        // Load Html5Qrcode with fallback
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js';
+        script.onload = function() {
+          // Load main script after library is loaded
+          const mainScript = document.createElement('script');
+          mainScript.src = '{% static "js/asset_scan.js" %}';
+          document.head.appendChild(mainScript);
+        };
+        script.onerror = function() {
+          // Load fallback if CDN fails
+          const fallbackScript = document.createElement('script');
+          fallbackScript.src = '{% static "js/qr-fallback.js" %}';
+          fallbackScript.onload = function() {
+            console.log('QR Scanner fallback loaded - manual input available');
+            // Load main script after fallback
+            const mainScript = document.createElement('script');
+            mainScript.src = '{% static "js/asset_scan.js" %}';
+            document.head.appendChild(mainScript);
+          };
+          document.head.appendChild(fallbackScript);
+        };
+        document.head.appendChild(script);
+      };
+      document.head.appendChild(enhancedScript);
+    };
+    document.head.appendChild(uiScript);
+  };
+  document.head.appendChild(diagnosticsScript);
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,311 @@
+/* ========================================
+   REPORTS DASHBOARD - WORLD-CLASS STYLES
+   Matching Main Dashboard Design System
+   ======================================== */
+
+/* Quick Action Buttons */
+.quick-action-btn {
+  width: 100%;
+  padding: 1.5rem 1rem;
+  background: white;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  text-align: center;
+}
+
+.quick-action-btn:hover {
+  border-color: var(--primary);
+  background: var(--gray-50);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.quick-action-btn i {
+  font-size: 2rem;
+  color: var(--primary);
+}
+
+.quick-action-btn span {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+/* Reports Grid */
+.reports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Report Card */
+.report-card {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all var(--transition-base);
+}
+
+.report-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.report-card__header {
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.report-card__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: var(--gray-50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.report-card__meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.report-card__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.report-card__subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.report-card__body {
+  padding: 1rem 1.25rem;
+}
+
+.report-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.info-item i {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  width: 16px;
+  text-align: center;
+}
+
+.report-card__footer {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.report-card__footer .btn {
+  flex-shrink: 0;
+}
+
+.report-card__footer .btn:first-child {
+  flex: 1;
+}
+
+/* Metric Card Icons (Reports specific) */
+.metric-card__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--primary-light-bg) 0%, var(--accent) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: var(--primary-dark);
+}
+
+/* Trend Indicators */
+.metric-card__trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+}
+
+.metric-card__trend--up {
+  color: var(--success);
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.metric-card__trend--down {
+  color: var(--error);
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.empty-state i {
+  display: block;
+  margin: 0 auto 1rem;
+  opacity: 0.5;
+}
+
+/* Modal Enhancements */
+#generateReportModal .modal-header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  border-bottom: none;
+}
+
+#generateReportModal .modal-header .btn-close {
+  filter: brightness(0) invert(1);
+}
+
+#generateReportModal .form-label.fw-medium {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+#generateReportModal .form-text {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+/* Loading States */
+.report-card.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.report-card.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 992px) {
+  .reports-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .reports-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .quick-action-btn {
+    padding: 1rem 0.75rem;
+  }
+  
+  .quick-action-btn i {
+    font-size: 1.5rem;
+  }
+  
+  .report-card__footer {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 576px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .quick-action-btn,
+  .btn,
+  .dropdown,
+  .modal {
+    display: none !important;
+  }
+  
+  .report-card {
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid var(--border-color);
+  }
+  
+  .reports-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
+
+/* Accessibility Enhancements */
+.quick-action-btn:focus,
+.report-card:focus-within {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Dark Mode Support (if implemented) */
+[data-theme="dark"] .report-card {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .quick-action-btn {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .quick-action-btn:hover {
+  background: var(--gray-800);
+}

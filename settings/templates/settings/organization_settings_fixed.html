@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% load static %}
+{% csrf_token %}
+
+{% block title %}Organization Settings{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-building text-primary"></i> Organization Settings</h2>
+            <p class="text-muted">Manage your organization profile and system preferences</p>
+        </div>
+        <button class="btn btn-primary" id="saveButton">
+            <i class="fas fa-save"></i> Save Changes
+        </button>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Organization Profile</h5>
+                </div>
+                <div class="card-body">
+                    <form id="organizationForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Organization Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Email *</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Phone</label>
+                                <input type="tel" class="form-control" id="phone" name="phone">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Website</label>
+                                <input type="url" class="form-control" id="website" name="website">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const saveButton = document.getElementById('saveButton');
+    
+    // Load organization data
+    loadOrganizationData();
+    
+    // Save button event
+    saveButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        saveOrganizationData();
+    });
+    
+    async function loadOrganizationData() {
+        try {
+            const response = await fetch('/settings/api/organization/');
+            const data = await response.json();
+            
+            if (data.success) {
+                document.getElementById('name').value = data.organization.name || '';
+                document.getElementById('email').value = data.organization.email || '';
+                document.getElementById('phone').value = data.organization.phone || '';
+                document.getElementById('website').value = data.organization.website || '';
+            }
+        } catch (error) {
+            console.error('Error loading data:', error);
+        }
+    }
+    
+    async function saveOrganizationData() {
+        const originalText = saveButton.innerHTML;
+        
+        try {
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            
+            const formData = new FormData();
+            formData.append('name', document.getElementById('name').value);
+            formData.append('email', document.getElementById('email').value);
+            formData.append('phone', document.getElementById('phone').value);
+            formData.append('website', document.getElementById('website').value);
+            formData.append('csrfmiddlewaretoken', getCSRFToken());
+            
+            const response = await fetch('/settings/api/organization/update/', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showAlert('Settings saved successfully!', 'success');
+            } else {
+                showAlert(data.error || 'Failed to save', 'danger');
+            }
+            
+        } catch (error) {
+            console.error('Error saving:', error);
+            showAlert('Network error occurred', 'danger');
+        } finally {
+            saveButton.disabled = false;
+            saveButton.innerHTML = originalText;
+        }
+    }
+    
+    function getCSRFToken() {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            const [name, value] = cookie.trim().split('=');
+            if (name === 'csrftoken') {
+                return value;
+            }
+        }
+        return '';
+    }
+    
+    function showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alertDiv);
+        
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}

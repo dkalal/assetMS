@@ -1,0 +1,135 @@
+﻿python : Using existing test database for alias 'default'...
+At line:1 char:1
++ python manage.py test tests.test_phase3_company_branch --keepdb --fai ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Using existing ...as 'default'...:String) [], Remot 
+   eException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+Found 18 test(s).
+Traceback (most recent call last):
+  File "C:\Users\JSSD\Documents\Othman_projects\JS-ASSET-MANAGEMENT-SYSTEM--main 
+(3)\JS-ASSET-MANAGEMENT-SYSTEM--main\manage.py", line 22, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\JSSD\Documents\Othman_projects\JS-ASSET-MANAGEMENT-SYSTEM--main 
+(3)\JS-ASSET-MANAGEMENT-SYSTEM--main\manage.py", line 18, in main
+    execute_from_command_line(sys.argv)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\JSSD\AppData\Roaming\Python\Python313\site-packages\django\core\management\__ini
+t__.py", line 442, in execute_from_command_line
+    utility.execute()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\JSSD\AppData\Roaming\Python\Python313\site-packages\django\core\management\__ini
+t__.py", line 436, in execute
+    self.fetch_command(subcommand).run_from_argv(self.argv)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Users\JSSD\AppData\Roaming\Python\Python313\site-packages\django\core\management\comma
+nds\test.py", line 24, in run_from_argv
+    super().run_from_argv(argv)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File 
+"C:\Users\JSSD\AppData\Roaming\Python\Python313\site-packages\django\core\management\base.py", 
+line 416, in run_from_argv
+    self.execute(*args, **cmd_options)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File 
+"C:\Users\JSSD\AppData\Roaming\Python\Python313\site-packages\django\core\management\base.py", 
+line 460, in execute
+    output = self.handle(*args, **options)
+  File "C:\Users\JSSD\AppData\Roaming\Python\Python313\site-packages\django\core\management\comma
+nds\test.py", line 63, in handle
+    failures = test_runner.run_tests(test_labels)
+  File "C:\Users\JSSD\AppData\Roaming\Python\Python313\site-packages\django\test\runner.py", 
+line 1092, in run_tests
+    old_config = self.setup_databases(
+        aliases=databases,
+        serialized_aliases=suite.serialized_aliases,
+    )
+  File "C:\Users\JSSD\AppData\Roaming\Python\Python313\site-packages\django\test\runner.py", 
+line 990, in setup_databases
+    return _setup_databases(
+        self.verbosity,
+    ...<5 lines>...
+        **kwargs,
+    )
+  File "C:\Users\JSSD\AppData\Roaming\Python\Python313\site-packages\django\test\utils.py", line 
+204, in setup_databases
+    connection.creation.create_test_db(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        verbosity=verbosity,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        serialize=False,
+        ^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\JSSD\AppData\Roaming\Python\Python313\site-packages\django\db\backends\base\crea
+tion.py", line 78, in create_test_db
+    call_command(
+    ~~~~~~~~~~~~^
+        "migrate",
+        ^^^^^^^^^^
+    ...<3 lines>...
+        run_syncdb=True,
+        ^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\JSSD\AppData\Roaming\Python\Python313\site-packages\django\core\management\__ini
+t__.py", line 194, in call_command
+    return command.execute(*args, **defaults)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File 
+"C:\Users\JSSD\AppData\Roaming\Python\Python313\site-packages\django\core\management\base.py", 
+line 460, in execute
+    output = self.handle(*args, **options)
+  File 
+"C:\Users\JSSD\AppData\Roaming\Python\Python313\site-packages\django\core\management\base.py", 
+line 107, in wrapper
+    res = handle_func(*args, **kwargs)
+  File "C:\Users\JSSD\AppData\Roaming\Python\Python313\site-packages\django\core\management\comma
+nds\migrate.py", line 353, in handle
+    post_migrate_state = executor.migrate(
+        targets,
+    ...<3 lines>...
+        fake_initial=fake_initial,
+    )
+  File 
+"C:\Users\JSSD\AppData\Roaming\Python\Python313\site-packages\django\db\migrations\executor.py", 
+line 135, in migrate
+    state = self._migrate_all_forwards(
+        state, plan, full_plan, fake=fake, fake_initial=fake_initial
+    )
+  File 
+"C:\Users\JSSD\AppData\Roaming\Python\Python313\site-packages\django\db\migrations\executor.py", 
+line 167, in _migrate_all_forwards
+    state = self.apply_migration(
+        state, migration, fake=fake, fake_initial=fake_initial
+    )
+  File 
+"C:\Users\JSSD\AppData\Roaming\Python\Python313\site-packages\django\db\migrations\executor.py", 
+line 255, in apply_migration
+    state = migration.apply(state, schema_editor)
+  File "C:\Users\JSSD\AppData\Roaming\Python\Python313\site-packages\django\db\migrations\migrati
+on.py", line 132, in apply
+    operation.database_forwards(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self.app_label, schema_editor, old_state, project_state
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\JSSD\AppData\Roaming\Python\Python313\site-packages\django\db\migrations\operati
+ons\special.py", line 196, in database_forwards
+    self.code(from_state.apps, schema_editor)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\JSSD\Documents\Othman_projects\JS-ASSET-MANAGEMENT-SYSTEM--main 
+(3)\JS-ASSET-MANAGEMENT-SYSTEM--main\assets\migrations\0016_normalize_asset_status.py", line 48, 
+in normalize_asset_statuses
+    print(f"\u2705 Normalized {fixed_count} asset status values to lowercase")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2705' in position 0: character 
+maps to <undefined>

@@ -1,0 +1,73 @@
+# Testing Requirements for Asset Management System
+# World-class testing tools and frameworks
+# ROBUST VERSION: Uses pre-built wheels and compatible versions
+
+# Core Testing Framework
+pytest>=7.4.3,<8.0
+pytest-django>=4.7.0,<5.0
+pytest-cov>=4.1.0,<5.0
+pytest-xdist>=3.5.0,<4.0  # Parallel test execution
+pytest-timeout>=2.2.0,<3.0  # Test timeouts
+pytest-mock>=3.12.0,<4.0  # Mocking utilities
+
+# Code Coverage
+coverage>=7.3.4,<8.0
+
+# HTML Parsing for Integration Tests
+beautifulsoup4>=4.12.2,<5.0
+lxml>=4.9.4,<5.0
+
+# Performance Testing
+locust>=2.20.0,<3.0  # Load testing
+memory-profiler>=0.61.0,<1.0  # Memory profiling
+
+# Accessibility Testing
+axe-selenium-python>=2.1.6,<3.0  # Accessibility testing
+# CRITICAL: selenium requires urllib3>=2.5, but imagekitio requires urllib3<2.0
+# For testing, we'll skip selenium to avoid conflicts
+# selenium>=4.16.0,<5.0  # Browser automation (DISABLED due to urllib3 conflict)
+
+# Image Testing (for QR codes, uploads)
+# FIXED: Using pre-built wheel version to avoid build issues
+Pillow>=10.1.0,<11.0
+
+# Faker for Test Data
+Faker>=22.0.0,<23.0
+
+# Time Mocking
+freezegun>=1.4.0,<2.0
+
+# Django Testing Utilities
+factory-boy>=3.3.0,<4.0  # Test fixtures
+django-webtest>=1.9.11,<2.0  # Enhanced testing
+
+# API Testing
+requests>=2.31.0,<3.0
+requests-mock>=1.11.0,<2.0
+
+# Database Testing
+pytest-postgresql>=5.0.0,<6.0  # PostgreSQL testing
+
+# Reporting
+pytest-html>=4.1.1,<5.0  # HTML test reports
+pytest-json-report>=1.5.0,<2.0  # JSON test reports
+
+# Code Quality
+flake8>=7.0.0,<8.0
+flake8-django>=1.4,<2.0
+black>=23.12.1,<24.0
+isort>=5.13.2,<6.0
+pylint>=3.0.3,<4.0
+pylint-django>=2.5.5,<3.0
+
+# Type Checking
+mypy>=1.8.0,<2.0
+django-stubs>=4.2.7,<5.0
+
+# Security Testing
+bandit>=1.7.6,<2.0  # Security linting
+safety>=3.0.1,<4.0  # Dependency vulnerability checking
+
+# Documentation Testing
+doc8>=1.1.1,<2.0
+sphinx>=7.2.6,<8.0

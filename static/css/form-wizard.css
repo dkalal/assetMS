@@ -1,0 +1,535 @@
+/**
+ * Form Wizard Styles - World-Class Design
+ * 
+ * Professional, accessible, and mobile-friendly wizard UI
+ * Inspired by: ServiceNow, Salesforce, Stripe, Material Design
+ */
+
+/* ============================================================================
+   WIZARD CONTAINER
+   ============================================================================ */
+
+.form-wizard {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ============================================================================
+   PROGRESS INDICATOR
+   ============================================================================ */
+
+.wizard-progress {
+  margin-bottom: 3rem;
+  padding: 1.5rem 0;
+}
+
+.progress-steps {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.progress-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.step-number {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.125rem;
+  margin-bottom: 0.5rem;
+  transition: all 0.3s ease;
+  border: 3px solid #e5e7eb;
+}
+
+.step-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-align: center;
+  transition: color 0.3s ease;
+}
+
+.step-connector {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  width: 100%;
+  height: 3px;
+  background: #e5e7eb;
+  z-index: -1;
+  transition: background-color 0.3s ease;
+}
+
+/* Active Step */
+.progress-step.active .step-number {
+  background: linear-gradient(135deg, #176B87 0%, #64CCC5 100%);
+  color: white;
+  border-color: #176B87;
+  box-shadow: 0 4px 12px rgba(23, 107, 135, 0.3);
+  transform: scale(1.1);
+}
+
+.progress-step.active .step-title {
+  color: #176B87;
+  font-weight: 700;
+}
+
+/* Completed Step */
+.progress-step.completed .step-number {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+}
+
+.progress-step.completed .step-number::before {
+  content: '\f26b'; /* Bootstrap icon check */
+  font-family: 'bootstrap-icons';
+  font-size: 1.25rem;
+}
+
+.progress-step.completed .step-title {
+  color: #10b981;
+}
+
+.progress-step.completed ~ .progress-step .step-connector {
+  background: #e5e7eb;
+}
+
+.progress-step.completed .step-connector {
+  background: #10b981;
+}
+
+/* Clickable Steps (if allowed) */
+.progress-step[style*="cursor: pointer"]:hover .step-number {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Progress Bar */
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #176B87 0%, #64CCC5 100%);
+  border-radius: 10px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 10px rgba(23, 107, 135, 0.5);
+}
+
+/* ============================================================================
+   WIZARD STEPS CONTAINER
+   ============================================================================ */
+
+.wizard-steps {
+  background: white;
+  border-radius: 16px;
+  padding: 2.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+  min-height: 400px;
+}
+
+.wizard-step {
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.wizard-step-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.wizard-step-header .step-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.wizard-step-header .step-description {
+  font-size: 1rem;
+  color: #6b7280;
+  margin-bottom: 0;
+}
+
+.wizard-step-content {
+  padding: 1rem 0;
+}
+
+/* ============================================================================
+   REVIEW STEP
+   ============================================================================ */
+
+.review-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.review-section {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.review-section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.review-section-title .btn-link {
+  font-size: 0.875rem;
+  text-decoration: none;
+  color: #176B87;
+  padding: 0.25rem 0.5rem;
+}
+
+.review-section-title .btn-link:hover {
+  background: rgba(23, 107, 135, 0.1);
+  border-radius: 6px;
+}
+
+.review-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.review-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.review-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.review-value {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #1f2937;
+  padding: 0.5rem;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+/* ============================================================================
+   WIZARD NAVIGATION
+   ============================================================================ */
+
+.wizard-navigation {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 1.5rem;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.wizard-navigation .btn {
+  border-radius: 10px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.wizard-btn-prev {
+  background: white;
+  border: 2px solid #e5e7eb;
+  color: #6b7280;
+}
+
+.wizard-btn-prev:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  transform: translateX(-2px);
+}
+
+.wizard-btn-next {
+  background: linear-gradient(135deg, #176B87 0%, #64CCC5 100%);
+  border: none;
+  color: white;
+  box-shadow: 0 4px 12px rgba(23, 107, 135, 0.3);
+}
+
+.wizard-btn-next:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(23, 107, 135, 0.4);
+}
+
+.wizard-btn-submit {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: none;
+  color: white;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.wizard-btn-submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+/* Tablet */
+@media (max-width: 768px) {
+  .wizard-progress {
+    margin-bottom: 2rem;
+    padding: 1rem 0;
+  }
+
+  .progress-steps {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .progress-step {
+    flex-direction: row;
+    justify-content: flex-start;
+    width: 100%;
+    gap: 1rem;
+  }
+
+  .step-number {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+    margin-bottom: 0;
+  }
+
+  .step-title {
+    text-align: left;
+    font-size: 0.875rem;
+  }
+
+  .step-connector {
+    display: none; /* Hide connectors on mobile */
+  }
+
+  .wizard-steps {
+    padding: 1.5rem;
+  }
+
+  .wizard-step-header .step-title {
+    font-size: 1.5rem;
+  }
+
+  .review-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mobile */
+@media (max-width: 576px) {
+  .wizard-steps {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .wizard-step-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+  }
+
+  .wizard-step-header .step-title {
+    font-size: 1.25rem;
+  }
+
+  .wizard-navigation {
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+
+  .wizard-navigation .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .wizard-btn-prev {
+    order: 2;
+  }
+
+  .wizard-btn-next,
+  .wizard-btn-submit {
+    order: 1;
+  }
+
+  .flex-grow-1 {
+    display: none; /* Hide spacer on mobile */
+  }
+
+  .review-section {
+    padding: 1rem;
+  }
+
+  .review-section-title {
+    font-size: 1.125rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+/* ============================================================================
+   DARK MODE SUPPORT
+   ============================================================================ */
+
+[data-theme="dark"] .wizard-steps {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+[data-theme="dark"] .wizard-step-header {
+  border-color: #374151;
+}
+
+[data-theme="dark"] .wizard-step-header .step-title {
+  color: #f9fafb;
+}
+
+[data-theme="dark"] .wizard-step-header .step-description {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .review-section {
+  background: #111827;
+  border-color: #374151;
+}
+
+[data-theme="dark"] .review-label {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .review-value {
+  background: #1f2937;
+  border-color: #374151;
+  color: #f9fafb;
+}
+
+[data-theme="dark"] .wizard-navigation {
+  background: #111827;
+  border-color: #374151;
+}
+
+[data-theme="dark"] .wizard-btn-prev {
+  background: #1f2937;
+  border-color: #374151;
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .wizard-btn-prev:hover {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+/* ============================================================================
+   ACCESSIBILITY
+   ============================================================================ */
+
+/* Focus states */
+.wizard-btn-prev:focus,
+.wizard-btn-next:focus,
+.wizard-btn-submit:focus {
+  outline: 3px solid rgba(23, 107, 135, 0.5);
+  outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .wizard-step,
+  .progress-fill,
+  .step-number,
+  .wizard-navigation .btn {
+    transition: none;
+  }
+
+  .wizard-btn-next:hover,
+  .wizard-btn-submit:hover,
+  .wizard-btn-prev:hover {
+    transform: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .step-number {
+    border-width: 4px;
+  }
+
+  .wizard-steps {
+    border-width: 2px;
+  }
+
+  .review-value {
+    border-width: 2px;
+  }
+}
+
+/* ============================================================================
+   PRINT STYLES
+   ============================================================================ */
+
+@media print {
+  .wizard-progress,
+  .wizard-navigation {
+    display: none;
+  }
+
+  .wizard-steps {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+
+  .wizard-step {
+    display: block !important;
+    page-break-after: always;
+  }
+
+  .wizard-step:last-child {
+    page-break-after: auto;
+  }
+}

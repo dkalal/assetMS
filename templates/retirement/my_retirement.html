@@ -1,0 +1,211 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}My Retirement Request - {{ company.name }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<link rel="stylesheet" href="{% static 'css/retirement-worldclass.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">My Retirement Request</li>
+        </ol>
+    </nav>
+
+    <!-- Status Card (shown if user has active request) -->
+    <div id="statusCard" style="display: none;">
+        <!-- Hero Section -->
+        <div class="retirement-hero">
+            <div class="d-flex align-items-start justify-content-between flex-wrap">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="retirement-icon-large">
+                        <i class="bi bi-person-badge"></i>
+                    </div>
+                    <div>
+                        <h2 class="mb-2">My Retirement Request</h2>
+                        <p class="mb-0" style="opacity: 0.9;">Track your retirement request status and progress</p>
+                    </div>
+                </div>
+                <div id="statusBadgeContainer"></div>
+            </div>
+        </div>
+
+        <!-- Metrics Row -->
+        <div class="row g-3 mb-4" id="metricsRow"></div>
+
+        <!-- Main Content Row -->
+        <div class="row g-4">
+            <!-- Left Column: Request Details & Timeline -->
+            <div class="col-lg-8">
+                <!-- Request Details Card -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="bi bi-info-circle"></i>
+                        Request Details
+                    </div>
+                    <div id="requestDetails"></div>
+                </div>
+
+                <!-- Timeline Card -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="bi bi-clock-history"></i>
+                        Request Timeline
+                    </div>
+                    <div class="timeline-scrollable">
+                        <div id="timelineContainer" class="timeline"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Assets & Actions -->
+            <div class="col-lg-4">
+                <!-- Assets Card -->
+                <div class="info-card" id="assetsCard" style="display: none;">
+                    <div class="info-card-header">
+                        <i class="bi bi-box-seam"></i>
+                        Your Assigned Assets
+                    </div>
+                    <div id="assetsList"></div>
+                </div>
+
+                <!-- Actions Card -->
+                <div class="info-card" id="actionsCard" style="display: none;">
+                    <div class="info-card-header">
+                        <i class="bi bi-gear"></i>
+                        Actions
+                    </div>
+                    <button type="button" class="action-btn action-btn-danger w-100" id="cancelRequestBtn">
+                        <i class="bi bi-x-circle"></i> Cancel Request
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Request Form Card (shown if no active request) -->
+    <div id="requestFormCard">
+        <!-- Hero Section -->
+        <div class="retirement-hero">
+            <div class="d-flex align-items-center gap-3">
+                <div class="retirement-icon-large">
+                    <i class="bi bi-person-badge"></i>
+                </div>
+                <div>
+                    <h2 class="mb-2">Submit Retirement Request</h2>
+                    <p class="mb-0" style="opacity: 0.9;">Request your account retirement with proper notice</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Card -->
+        <div class="info-card">
+            <div class="alert-modern alert-info">
+                <i class="bi bi-info-circle fs-4"></i>
+                <div>
+                    <strong>Important Information:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Minimum 2 weeks notice required</li>
+                        <li>Your manager will review your request</li>
+                        <li>All assigned assets must be returned before completion</li>
+                        <li>You can cancel your request before it's approved</li>
+                    </ul>
+                </div>
+            </div>
+
+            <form id="retirementRequestForm">
+                {% csrf_token %}
+                
+                <div class="form-group-modern">
+                    <label for="effectiveDate">Effective Date (Last Working Day) *</label>
+                    <input type="date" id="effectiveDate" class="form-control" required min="{{ min_date }}">
+                    <div class="form-help-text">
+                        <i class="bi bi-calendar"></i>
+                        <span>Select your desired last working day (minimum 2 weeks from today)</span>
+                    </div>
+                </div>
+
+                <div class="form-group-modern">
+                    <label for="reasonCategory">Reason Category *</label>
+                    <select id="reasonCategory" class="form-select" required>
+                        <option value="">Select a category...</option>
+                        <option value="resignation">Resignation</option>
+                        <option value="retirement">Retirement</option>
+                        <option value="career_change">Career Change</option>
+                        <option value="relocation">Relocation</option>
+                        <option value="personal">Personal Reasons</option>
+                        <option value="contract_end">Contract End</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group-modern">
+                    <label for="reason">Detailed Reason *</label>
+                    <textarea id="reason" class="form-control" required placeholder="Please provide a detailed reason for your retirement request..." minlength="10"></textarea>
+                    <div class="form-help-text">
+                        <i class="bi bi-chat-left-text"></i>
+                        <span id="reasonCharCount">0 / 10 characters minimum</span>
+                    </div>
+                </div>
+
+                <div class="form-group-modern">
+                    <label for="notes">Additional Notes (Optional)</label>
+                    <textarea id="notes" class="form-control" placeholder="Any additional information you'd like to share..."></textarea>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="action-btn action-btn-primary" id="submitBtn">
+                        <i class="bi bi-send"></i> Submit Retirement Request
+                    </button>
+                    <a href="{% url 'dashboard' %}" class="action-btn action-btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Confirmation Modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 16px; border: none;">
+            <div class="modal-header" style="border-bottom: 2px solid #e5e7eb;">
+                <h5 class="modal-title" id="cancelModalLabel">
+                    <i class="bi bi-exclamation-triangle text-warning"></i> Cancel Retirement Request
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">Are you sure you want to cancel your retirement request? This action cannot be undone.</p>
+                <div class="form-group-modern">
+                    <label for="cancelReason">Cancellation Reason *</label>
+                    <textarea id="cancelReason" class="form-control" required placeholder="Please provide a reason for cancellation..." minlength="10"></textarea>
+                    <div class="form-help-text">
+                        <i class="bi bi-info-circle"></i>
+                        <span>Minimum 10 characters required</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 2px solid #e5e7eb;">
+                <button type="button" class="action-btn action-btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x"></i> No, Keep It
+                </button>
+                <button type="button" class="action-btn action-btn-danger" id="confirmCancelBtn">
+                    <i class="bi bi-x-circle"></i> Yes, Cancel Request
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/retirement-employee.js' %}"></script>
+{% endblock %}

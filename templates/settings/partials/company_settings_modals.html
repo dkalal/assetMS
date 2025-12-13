@@ -1,0 +1,228 @@
+<!-- ============================================================================
+     COMPANY & BRANCHES MODALS
+     Extracted from company_settings.html to fix backdrop stacking issues
+     These modals MUST be in dashboard_modals block for proper z-index layering
+     ============================================================================ -->
+
+<!-- Add Branch Modal -->
+<div class="modal fade" id="addBranchModal" tabindex="-1" aria-labelledby="addBranchModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="addBranchModalLabel">
+          <i class="bi bi-plus-circle me-2"></i>Add New Branch
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addBranchForm">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="branchName" class="form-label fw-semibold">
+              Branch Name <span class="text-danger">*</span>
+            </label>
+            <input type="text" 
+                   class="form-control" 
+                   id="branchName" 
+                   placeholder="e.g., Main Office, Downtown Branch"
+                   required>
+            <div class="invalid-feedback">
+              Please provide a branch name.
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="branchLocation" class="form-label fw-semibold">Location</label>
+            <input type="text" 
+                   class="form-control" 
+                   id="branchLocation"
+                   placeholder="e.g., 123 Main St, New York, NY">
+            <small class="text-muted">Full address or city name</small>
+          </div>
+          <div class="mb-3">
+            <label for="branchManager" class="form-label fw-semibold">Branch Manager</label>
+            <select class="form-select" id="branchManager">
+              <option value="">Select Manager (Optional)</option>
+              {% for manager in managers %}
+              <option value="{{ manager.id }}">
+                {{ manager.get_full_name }} ({{ manager.username }})
+              </option>
+              {% endfor %}
+            </select>
+            <small class="text-muted">Assign a manager to oversee this branch</small>
+          </div>
+          <div class="mb-3">
+            <div class="form-check form-switch">
+              <input class="form-check-input" 
+                     type="checkbox" 
+                     id="branchIsActive" 
+                     checked>
+              <label class="form-check-label fw-semibold" for="branchIsActive">
+                Active
+              </label>
+              <small class="d-block text-muted">Inactive branches are hidden from most operations</small>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-lg me-1"></i>Cancel
+        </button>
+        <button type="button" class="btn btn-success" onclick="saveBranch()">
+          <i class="bi bi-check-lg me-1"></i>Add Branch
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Branch Modal -->
+<div class="modal fade" id="editBranchModal" tabindex="-1" aria-labelledby="editBranchModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="editBranchModalLabel">
+          <i class="bi bi-pencil me-2"></i>Edit Branch
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editBranchForm">
+          {% csrf_token %}
+          <input type="hidden" id="editBranchId">
+          <input type="hidden" id="editBranchOriginalStatus">
+          <div class="mb-3">
+            <label for="editBranchName" class="form-label fw-semibold">
+              Branch Name <span class="text-danger">*</span>
+            </label>
+            <input type="text" 
+                   class="form-control" 
+                   id="editBranchName" 
+                   required>
+            <div class="invalid-feedback">
+              Please provide a branch name.
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="editBranchLocation" class="form-label fw-semibold">Location</label>
+            <input type="text" 
+                   class="form-control" 
+                   id="editBranchLocation">
+          </div>
+          <div class="mb-3">
+            <label for="editBranchManager" class="form-label fw-semibold">Branch Manager</label>
+            <select class="form-select" id="editBranchManager">
+              <option value="">Select Manager (Optional)</option>
+              {% for manager in managers %}
+              <option value="{{ manager.id }}">
+                {{ manager.get_full_name }} ({{ manager.username }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <div class="form-check form-switch">
+              <input class="form-check-input" 
+                     type="checkbox" 
+                     id="editBranchIsActive">
+              <label class="form-check-label fw-semibold" for="editBranchIsActive">
+                Active
+              </label>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-lg me-1"></i>Cancel
+        </button>
+        <button type="button" class="btn btn-primary" onclick="updateBranch()">
+          <i class="bi bi-check-lg me-1"></i>Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Branch Confirmation Modal -->
+<div class="modal fade" id="deleteBranchModal" tabindex="-1" aria-labelledby="deleteBranchModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="deleteBranchModalLabel">
+          <i class="bi bi-exclamation-triangle me-2"></i>Delete Branch
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="deleteBranchId">
+        <div class="alert alert-warning mb-3">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          <strong>Warning:</strong> This action cannot be undone!
+        </div>
+        <p>Are you sure you want to delete <strong id="deleteBranchName"></strong>?</p>
+        <p class="text-muted mb-0">
+          <small>
+            <i class="bi bi-info-circle me-1"></i>
+            All assets and users assigned to this branch will need to be reassigned.
+          </small>
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-lg me-1"></i>Cancel
+        </button>
+        <button type="button" class="btn btn-danger" onclick="confirmDeleteBranch()">
+          <i class="bi bi-trash me-1"></i>Delete Branch
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Company Logo Upload Modal -->
+<div class="modal fade" id="companyLogoModal" tabindex="-1" aria-labelledby="companyLogoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="companyLogoModalLabel">
+          <i class="bi bi-image me-2"></i>Update Company Logo
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="companyLogoForm" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="companyLogoFile" class="form-label fw-semibold">
+              Select Logo Image <span class="text-danger">*</span>
+            </label>
+            <input type="file" 
+                   class="form-control" 
+                   id="companyLogoFile" 
+                   accept="image/png,image/jpeg,image/jpg,image/webp"
+                   required>
+            <small class="text-muted">
+              Recommended: 200x200px, PNG or JPG, max 2MB
+            </small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Preview</label>
+            <div id="logoPreview" class="border rounded p-3 text-center bg-light">
+              <i class="bi bi-image fs-1 text-muted"></i>
+              <p class="text-muted mb-0 mt-2">No image selected</p>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-lg me-1"></i>Cancel
+        </button>
+        <button type="button" class="btn btn-primary" onclick="uploadCompanyLogo()">
+          <i class="bi bi-upload me-1"></i>Upload Logo
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

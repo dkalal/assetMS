@@ -1,0 +1,2697 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ staff.get_full_name }} - Staff Detail{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<style>
+:root {
+    --accent-primary: #176B87;
+    --accent-secondary: #64CCC5;
+    --accent-success: #10b981;
+    --accent-warning: #f59e0b;
+    --accent-danger: #ef4444;
+}
+
+.staff-hero {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    border-radius: 20px;
+    padding: 2.5rem;
+    color: white;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 40px rgba(23, 107, 135, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.staff-hero::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+.staff-avatar-large {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+}
+
+.metric-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.metric-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+}
+
+.metric-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.metric-icon.primary {
+    background: linear-gradient(135deg, #176B87 0%, #64CCC5 100%);
+    color: white;
+}
+
+.metric-icon.success {
+    background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+    color: white;
+}
+
+.metric-icon.warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+    color: white;
+}
+
+.metric-icon.danger {
+    background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+    color: white;
+}
+
+.metric-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+}
+
+.metric-label {
+    color: #6b7280;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.nav-tabs-modern {
+    border-bottom: 2px solid #e5e7eb;
+    margin-bottom: 2rem;
+}
+
+.nav-tabs-modern .nav-link {
+    border: none;
+    padding: 1rem 1.5rem;
+    color: #6b7280;
+    font-weight: 600;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nav-tabs-modern .nav-link:hover {
+    color: var(--accent-primary);
+    background: rgba(23, 107, 135, 0.05);
+    border-radius: 8px 8px 0 0;
+}
+
+.nav-tabs-modern .nav-link.active {
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
+}
+
+.info-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+    margin-bottom: 1.5rem;
+}
+
+.info-card-header {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.info-value {
+    color: #111827;
+    font-weight: 600;
+    text-align: right;
+}
+
+.asset-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+    margin-bottom: 1rem;
+    cursor: pointer;
+}
+
+.asset-card:hover {
+    border-color: var(--accent-primary);
+    box-shadow: 0 4px 12px rgba(23, 107, 135, 0.1);
+    transform: translateX(4px);
+}
+
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.5rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 2rem;
+}
+
+.timeline-dot {
+    position: absolute;
+    left: -1.5rem;
+    top: 0.5rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    box-shadow: 0 0 0 4px rgba(23, 107, 135, 0.2);
+}
+
+.timeline-content {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border: 1px solid #e5e7eb;
+}
+
+/* WORLD-CLASS: Status Badge Styling (matching asset detail page) */
+.status-badge {
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.status-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Status-specific gradient colors */
+.status-active {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.status-inactive {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    color: white;
+}
+
+/* Asset status-specific gradient colors */
+.status-in-maintenance {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+}
+
+.status-transferred {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+}
+
+.status-retired {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    color: white;
+}
+
+.status-lost {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+}
+
+.status-deleted {
+    background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%);
+    color: white;
+}
+
+.action-btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+/* WORLD-CLASS: Optgroup Styling (Prevent White Background) */
+select.form-select optgroup {
+    background-color: #f8f9fa !important;
+    color: #495057 !important;
+    font-weight: 700 !important;
+    font-size: 0.9rem !important;
+    padding: 0.5rem 0.75rem !important;
+}
+
+select.form-select option {
+    background-color: #ffffff !important;
+    color: #212529 !important;
+    padding: 0.5rem 0.75rem !important;
+}
+
+select.form-select option:hover,
+select.form-select option:focus {
+    background-color: #e9ecef !important;
+}
+
+/* WORLD-CLASS: Scrollable Timeline Container (matching asset detail) */
+.timeline-scrollable {
+    max-height: 500px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+    scroll-behavior: smooth;
+    padding-right: 0.5rem;
+}
+
+.timeline-scrollable::-webkit-scrollbar {
+    width: 8px;
+}
+
+.timeline-scrollable::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+    margin: 4px 0;
+}
+
+.timeline-scrollable::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
+    border-radius: 10px;
+    border: 2px solid #f1f5f9;
+    transition: background 0.3s ease;
+}
+
+.timeline-scrollable::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #1a7a9a, #75d9d1);
+}
+
+.timeline-scrollable {
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-primary) #f1f5f9;
+}
+
+.timeline-wrapper {
+    position: relative;
+}
+
+.timeline-wrapper::before,
+.timeline-wrapper::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 30px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 10;
+}
+
+.timeline-wrapper::before {
+    top: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 100%);
+}
+
+.timeline-wrapper::after {
+    bottom: 0;
+    background: linear-gradient(0deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 100%);
+}
+
+.timeline-wrapper.has-scroll-top::before {
+    opacity: 1;
+}
+
+.timeline-wrapper.has-scroll-bottom::after {
+    opacity: 1;
+}
+
+.scroll-to-top {
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(23, 107, 135, 0.3);
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.scroll-to-top.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.scroll-to-top:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(23, 107, 135, 0.4);
+}
+
+.scroll-to-top:active {
+    transform: translateY(0);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumbs.html' with root_label='Dashboard' root_url='/dashboard/' parent_label='Staff Management' parent_url='/settings/users/' current_label=staff.get_full_name %}
+
+<!-- Hero Section -->
+<div class="staff-hero">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <div class="staff-avatar-large">
+                {{ staff.first_name.0|upper }}{{ staff.last_name.0|upper }}
+            </div>
+            <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">
+                {{ staff.get_full_name }}
+            </h1>
+            <p style="font-size: 1.1rem; opacity: 0.9; margin-bottom: 0;">
+                <i class="bi bi-{% if staff.role == 'admin' %}shield{% elif staff.role == 'manager' %}briefcase{% else %}person{% endif %} me-2"></i>{{ staff.get_role_display }}
+                {% if staff.company %}
+                <i class="bi bi-building ms-3 me-2"></i>{{ staff.company.name }}
+                {% endif %}
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <span class="status-badge status-{{ staff.is_active|yesno:'active,inactive' }}">
+                <i class="bi bi-{{ staff.is_active|yesno:'check-circle-fill,x-circle-fill' }}"></i>
+                {{ staff.is_active|yesno:'Active,Inactive' }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Action Bar -->
+<div class="mb-4 no-print" style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+    {% if user.role == 'admin' %}
+    <button class="action-btn btn btn-primary" onclick="openEditProfileModal()">
+        <i class="bi bi-pencil-square"></i>Edit Profile
+    </button>
+    <button class="action-btn btn btn-warning" onclick="openBulkTransferModal()">
+        <i class="bi bi-box-arrow-right"></i>Transfer Assets
+    </button>
+    {% if staff.is_active %}
+    <button class="action-btn btn btn-danger" onclick="openRetirementWizard()">
+        <i class="bi bi-person-x"></i>Retire User
+    </button>
+    {% endif %}
+    {% endif %}
+    <button class="action-btn btn btn-info" onclick="window.print()">
+        <i class="bi bi-printer"></i>Print
+    </button>
+    <a href="{% url 'settings:user_management' %}" class="action-btn btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>Back to List
+    </a>
+</div>
+
+<!-- Metrics Row -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="metric-card">
+            <div class="metric-icon primary">
+                <i class="bi bi-box-seam"></i>
+            </div>
+            <div class="metric-value">{{ total_assets }}</div>
+            <div class="metric-label">Total Assets</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="metric-card">
+            <div class="metric-icon success">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <div class="metric-value">{{ active_assets }}</div>
+            <div class="metric-label">Active Assets</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="metric-card">
+            <div class="metric-icon warning">
+                <i class="bi bi-currency-dollar"></i>
+            </div>
+            <div class="metric-value">${{ total_value|floatformat:0 }}</div>
+            <div class="metric-label">Total Value</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="metric-card">
+            <div class="metric-icon primary">
+                <i class="bi bi-activity"></i>
+            </div>
+            <div class="metric-value">{{ recent_activity_count }}</div>
+            <div class="metric-label">Recent Activities</div>
+            <small class="text-muted">Last 30 days</small>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs-modern no-print" id="staffTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button">
+            <i class="bi bi-grid"></i>Overview
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="assets-tab" data-bs-toggle="tab" data-bs-target="#assets" type="button">
+            <i class="bi bi-box-seam"></i>Assets ({{ total_assets }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity" type="button">
+            <i class="bi bi-clock-history"></i>Activity
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="transfers-tab" data-bs-toggle="tab" data-bs-target="#transfers" type="button">
+            <i class="bi bi-arrow-left-right"></i>Transfers
+        </button>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content" id="staffTabsContent">
+    <!-- Overview Tab -->
+    <div class="tab-pane fade show active" id="overview" role="tabpanel">
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <!-- Personal Information -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="bi bi-person"></i>Personal Information
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Full Name</span>
+                        <span class="info-value">{{ staff.get_full_name }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email</span>
+                        <span class="info-value">{{ staff.email }}</span>
+                    </div>
+                    {% if staff.phone_number %}
+                    <div class="info-row">
+                        <span class="info-label">Phone</span>
+                        <span class="info-value">{{ staff.phone_number }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="info-row">
+                        <span class="info-label">Role</span>
+                        <span class="info-value">{{ staff.get_role_display }}</span>
+                    </div>
+                    {% if staff.company %}
+                    <div class="info-row">
+                        <span class="info-label">Company</span>
+                        <span class="info-value">{{ staff.company.name }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="info-row">
+                        <span class="info-label">Date Joined</span>
+                        <span class="info-value">{{ staff.date_joined|date:'F d, Y' }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Account Age</span>
+                        <span class="info-value">{{ account_age_days }} days</span>
+                    </div>
+                </div>
+
+                <!-- Asset Summary -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="bi bi-box-seam"></i>Asset Summary
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Total Assets</span>
+                        <span class="info-value">{{ total_assets }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Active</span>
+                        <span class="info-value text-success">{{ active_assets }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">In Maintenance</span>
+                        <span class="info-value text-warning">{{ maintenance_assets }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Total Value</span>
+                        <span class="info-value">${{ total_value }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Quick Stats -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="bi bi-graph-up"></i>Quick Stats
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Status</span>
+                        <span class="info-value">
+                            <span class="status-badge status-{{ staff.is_active|yesno:'active,inactive' }}" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+                                <i class="bi bi-{{ staff.is_active|yesno:'check-circle-fill,x-circle-fill' }}"></i>
+                                {{ staff.is_active|yesno:'Active,Inactive' }}
+                            </span>
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Last Activity</span>
+                        <span class="info-value small">
+                            {% if last_activity %}
+                                {{ last_activity.timestamp|date:'M d, H:i' }}
+                            {% else %}
+                                No activity
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Activities (30d)</span>
+                        <span class="info-value">{{ recent_activity_count }}</span>
+                    </div>
+                </div>
+
+                <!-- Recent Assets -->
+                {% if assigned_assets %}
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="bi bi-clock"></i>Recent Assets
+                    </div>
+                    {% for asset in assigned_assets|slice:":3" %}
+                    <div class="asset-card" onclick="window.location.href='/assets/{{ asset.uuid }}/'">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-box-seam me-2" style="font-size: 1.5rem; color: var(--accent-primary);"></i>
+                            <div class="flex-grow-1">
+                                <div style="font-weight: 600; color: #111827;">{{ asset.category.name }}</div>
+                                <small class="text-muted">{{ asset.created_at|date:'M d, Y' }}</small>
+                            </div>
+                            <span class="badge bg-{{ asset.status|default:'secondary' }}">{{ asset.get_status_display }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Assets Tab -->
+    <div class="tab-pane fade" id="assets" role="tabpanel">
+        <div class="info-card">
+            <div class="info-card-header">
+                <i class="bi bi-box-seam"></i>Assigned Assets
+                <span class="badge bg-primary ms-2" id="staffAssetsTotalBadge">{{ assigned_assets|length }}</span>
+                <div class="ms-auto d-flex align-items-center gap-2">
+                    <label for="staffAssetsLimitSelect" class="mb-0 text-muted" style="font-size: 0.875rem; font-weight: 400;">
+                        <i class="bi bi-funnel me-1"></i>Show:
+                    </label>
+                    <select id="staffAssetsLimitSelect" class="form-select form-select-sm" style="width: auto; min-width: 80px;" onchange="updateStaffAssetsLimit()" aria-label="Items per page">
+                        <option value="10">10</option>
+                        <option value="25" selected>25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="all">All</option>
+                    </select>
+                    <span class="text-muted" style="font-size: 0.875rem;" id="staffAssetsCountDisplay">Showing 1-{{ assigned_assets|length|slice:":25"|length }} of {{ assigned_assets|length }}</span>
+                </div>
+            </div>
+            <div class="timeline-wrapper" id="staffAssetsWrapper">
+                <div class="timeline-scrollable" id="staffAssetsContainer" style="max-height: 600px; overflow-y: auto; padding: 1rem;">
+            {% for asset in assigned_assets %}
+            <div class="asset-card asset-item" onclick="window.location.href='/assets/{{ asset.uuid }}/'">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-box-seam me-3" style="font-size: 2rem; color: var(--accent-primary);"></i>
+                            <div>
+                                <div style="font-weight: 700; color: #111827; font-size: 1.05rem;">{{ asset.category.name }}</div>
+                                <small class="text-muted">
+                                    <i class="bi bi-calendar me-1"></i>{{ asset.created_at|date:'M d, Y' }}
+                                    {% if asset.branch %}<i class="bi bi-building ms-2 me-1"></i>{{ asset.branch.name }}{% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        {% if asset.purchase_value %}
+                        <div style="font-weight: 700; color: var(--accent-primary);">${{ asset.purchase_value }}</div>
+                        <small class="text-muted">Value</small>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3 text-end">
+                        {% if asset.status == 'active' %}
+                        <span class="status-badge status-active" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+                            <i class="bi bi-check-circle-fill"></i>
+                            {{ asset.get_status_display }}
+                        </span>
+                        {% elif asset.status == 'in_maintenance' %}
+                        <span class="status-badge status-in-maintenance" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+                            <i class="bi bi-tools"></i>
+                            {{ asset.get_status_display }}
+                        </span>
+                        {% elif asset.status == 'retired' %}
+                        <span class="status-badge status-retired" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+                            <i class="bi bi-archive-fill"></i>
+                            {{ asset.get_status_display }}
+                        </span>
+                        {% elif asset.status == 'lost' %}
+                        <span class="status-badge status-lost" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            {{ asset.get_status_display }}
+                        </span>
+                        {% else %}
+                        <span class="status-badge status-inactive" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+                            <i class="bi bi-dash-circle-fill"></i>
+                            {{ asset.get_status_display }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-5">
+                <i class="bi bi-box-seam" style="font-size: 4rem; color: #e5e7eb;"></i>
+                <p class="text-muted mt-3">No assets assigned</p>
+            </div>
+            {% endfor %}
+                </div>
+                <button class="scroll-to-top" id="staffAssetsScrollToTopBtn" onclick="scrollStaffAssetsToTop()" aria-label="Scroll to top">
+                    <i class="bi bi-arrow-up"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Tab -->
+    <div class="tab-pane fade" id="activity" role="tabpanel">
+        <div class="info-card">
+            <div class="info-card-header">
+                <i class="bi bi-clock-history"></i>Activity Timeline
+                <span class="badge bg-primary ms-2" id="staffActivityTotalBadge">{{ activities|length }}</span>
+                <div class="ms-auto d-flex align-items-center gap-2">
+                    <label for="staffActivityLimitSelect" class="mb-0 text-muted" style="font-size: 0.875rem; font-weight: 400;">
+                        <i class="bi bi-funnel me-1"></i>Show:
+                    </label>
+                    <select id="staffActivityLimitSelect" class="form-select form-select-sm" style="width: auto; min-width: 80px;" onchange="updateStaffActivityLimit()" aria-label="Items per page">
+                        <option value="10">10</option>
+                        <option value="25" selected>25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="all">All</option>
+                    </select>
+                    <span class="text-muted" style="font-size: 0.875rem;" id="staffActivityCountDisplay">Showing 1-{{ activities|length|slice:":25"|length }} of {{ activities|length }}</span>
+                </div>
+            </div>
+            <div class="timeline-wrapper" id="staffActivityTimelineWrapper">
+                <div class="timeline timeline-scrollable" id="staffActivityTimeline" role="log" aria-live="polite" aria-label="Activity timeline">
+                {% for activity in activities %}
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="d-flex justify-content-between mb-2">
+                            <strong style="color: var(--accent-primary);">{{ activity.get_action_display }}</strong>
+                            <small class="text-muted">{{ activity.timestamp|date:'M d, Y H:i' }}</small>
+                        </div>
+                        <p class="mb-1 small text-muted">{{ activity.details|default:'' }}</p>
+                        {% if activity.asset %}
+                        <small class="text-muted">
+                            <i class="bi bi-box-seam me-1"></i>{{ activity.asset.category.name }}
+                        </small>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-5">
+                    <i class="bi bi-clock-history" style="font-size: 4rem; color: #e5e7eb;"></i>
+                    <p class="text-muted mt-3">No activities recorded</p>
+                </div>
+                {% endfor %}
+                </div>
+                <button class="scroll-to-top" id="staffScrollToTopBtn" onclick="scrollStaffActivityToTop()" aria-label="Scroll to top">
+                    <i class="bi bi-arrow-up"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transfers Tab -->
+    <div class="tab-pane fade" id="transfers" role="tabpanel">
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="bi bi-arrow-down-circle"></i>Assets Received
+                        <span class="badge bg-primary ms-2" id="staffTransfersReceivedTotalBadge">{{ transfers_received|length }}</span>
+                        <div class="ms-auto d-flex align-items-center gap-2">
+                            <label for="staffTransfersReceivedLimitSelect" class="mb-0 text-muted" style="font-size: 0.875rem; font-weight: 400;">
+                                <i class="bi bi-funnel me-1"></i>Show:
+                            </label>
+                            <select id="staffTransfersReceivedLimitSelect" class="form-select form-select-sm" style="width: auto; min-width: 80px;" onchange="updateStaffTransfersReceivedLimit()" aria-label="Items per page">
+                                <option value="10">10</option>
+                                <option value="25" selected>25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="all">All</option>
+                            </select>
+                            <span class="text-muted" style="font-size: 0.875rem;" id="staffTransfersReceivedCountDisplay">Showing 1-{{ transfers_received|length|slice:":25"|length }} of {{ transfers_received|length }}</span>
+                        </div>
+                    </div>
+                    <div class="timeline-wrapper" id="staffTransfersReceivedWrapper">
+                        <div class="timeline-scrollable" id="staffTransfersReceivedContainer" style="max-height: 600px; overflow-y: auto; padding: 1rem;">
+                    {% for transfer in transfers_received %}
+                    <div class="transfer-item" style="padding: 1rem; border-bottom: 1px solid #f3f4f6;">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <strong>{{ transfer.asset.category.name }}</strong>
+                                <small class="d-block text-muted mt-1">
+                                    <i class="bi bi-building me-1"></i>
+                                    {% if transfer.from_branch %}
+                                        {{ transfer.from_branch.name }}
+                                    {% else %}
+                                        <span class="text-warning">No Branch</span>
+                                    {% endif %}
+                                </small>
+                                <small class="d-block text-muted">
+                                    <i class="bi bi-person me-1"></i>
+                                    {% if transfer.from_user %}
+                                        {{ transfer.from_user.get_full_name }}
+                                    {% else %}
+                                        <span class="text-warning">Unknown User</span>
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <span class="badge bg-{{ transfer.state|default:'secondary' }}">{{ transfer.get_state_display }}</span>
+                        </div>
+                        <small class="text-muted">
+                            <i class="bi bi-calendar me-1"></i>{{ transfer.created_at|date:'M d, Y' }}
+                        </small>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center py-4">No assets received</p>
+                    {% endfor %}
+                        </div>
+                        <button class="scroll-to-top" id="staffTransfersReceivedScrollToTopBtn" onclick="scrollStaffTransfersReceivedToTop()" aria-label="Scroll to top">
+                            <i class="bi bi-arrow-up"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="bi bi-arrow-up-circle"></i>Assets Sent
+                        <span class="badge bg-primary ms-2" id="staffTransfersSentTotalBadge">{{ transfers_sent|length }}</span>
+                        <div class="ms-auto d-flex align-items-center gap-2">
+                            <label for="staffTransfersSentLimitSelect" class="mb-0 text-muted" style="font-size: 0.875rem; font-weight: 400;">
+                                <i class="bi bi-funnel me-1"></i>Show:
+                            </label>
+                            <select id="staffTransfersSentLimitSelect" class="form-select form-select-sm" style="width: auto; min-width: 80px;" onchange="updateStaffTransfersSentLimit()" aria-label="Items per page">
+                                <option value="10">10</option>
+                                <option value="25" selected>25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="all">All</option>
+                            </select>
+                            <span class="text-muted" style="font-size: 0.875rem;" id="staffTransfersSentCountDisplay">Showing 1-{{ transfers_sent|length|slice:":25"|length }} of {{ transfers_sent|length }}</span>
+                        </div>
+                    </div>
+                    <div class="timeline-wrapper" id="staffTransfersSentWrapper">
+                        <div class="timeline-scrollable" id="staffTransfersSentContainer" style="max-height: 600px; overflow-y: auto; padding: 1rem;">
+                    {% for transfer in transfers_sent %}
+                    <div class="transfer-item" style="padding: 1rem; border-bottom: 1px solid #f3f4f6;">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <strong>{{ transfer.asset.category.name }}</strong>
+                                <small class="d-block text-muted mt-1">
+                                    <i class="bi bi-building me-1"></i>
+                                    {% if transfer.to_branch %}
+                                        {{ transfer.to_branch.name }}
+                                    {% else %}
+                                        <span class="text-warning">No Branch</span>
+                                    {% endif %}
+                                </small>
+                                <small class="d-block text-muted">
+                                    <i class="bi bi-person me-1"></i>
+                                    {% if transfer.to_user %}
+                                        {{ transfer.to_user.get_full_name %}
+                                    {% else %}
+                                        <span class="text-warning">Unknown User</span>
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <span class="badge bg-{{ transfer.state|default:'secondary' }}">{{ transfer.get_state_display }}</span>
+                        </div>
+                        <small class="text-muted">
+                            <i class="bi bi-calendar me-1"></i>{{ transfer.created_at|date:'M d, Y' }}
+                        </small>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center py-4">No assets sent</p>
+                    {% endfor %}
+                        </div>
+                        <button class="scroll-to-top" id="staffTransfersSentScrollToTopBtn" onclick="scrollStaffTransfersSentToTop()" aria-label="Scroll to top">
+                            <i class="bi bi-arrow-up"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block dashboard_modals %}
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProfileModalLabel">
+                    <i class="bi bi-pencil-square me-2"></i>Edit Profile - {{ staff.get_full_name }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editProfileForm">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editFirstName" class="form-label fw-semibold">
+                                First Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="editFirstName" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="editLastName" class="form-label fw-semibold">
+                                Last Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="editLastName" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editEmail" class="form-label fw-semibold">
+                            Email <span class="text-danger">*</span>
+                        </label>
+                        <input type="email" class="form-control" id="editEmail" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPhone" class="form-label fw-semibold">Phone Number</label>
+                        <input type="tel" class="form-control" id="editPhone">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editRole" class="form-label fw-semibold">
+                            Role <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="editRole" required>
+                            <option value="user">User</option>
+                            <option value="manager">Manager</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="editIsActive">
+                            <label class="form-check-label fw-semibold" for="editIsActive">
+                                Active Account
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveProfileChanges()">
+                    <i class="bi bi-check-circle me-1"></i>Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Transfer Assets Modal -->
+<div class="modal fade" id="bulkTransferModal" tabindex="-1" aria-labelledby="bulkTransferModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkTransferModalLabel">
+                    <i class="bi bi-box-arrow-right me-2"></i>Transfer Assets - {{ staff.get_full_name }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- WORLD-CLASS: Explain approval workflow -->
+                <div class="alert alert-warning border-warning">
+                    <div class="d-flex align-items-start">
+                        <i class="bi bi-exclamation-triangle-fill me-2 mt-1"></i>
+                        <div>
+                            <strong>Transfer Approval Workflow</strong>
+                            <p class="mb-2 mt-1">Asset transfers require a multi-stage approval process:</p>
+                            <ol class="mb-0 ps-3">
+                                <li><strong>Initiation:</strong> You create the transfer request</li>
+                                <li><strong>Receiver Approval:</strong> The recipient must accept the assets</li>
+                                <li><strong>Admin Review:</strong> An administrator must approve the final transfer</li>
+                                <li><strong>Completion:</strong> Assets are transferred to the new owner</li>
+                            </ol>
+                            <p class="mb-0 mt-2 text-muted small">
+                                <i class="bi bi-info-circle me-1"></i>
+                                This workflow ensures accountability and prevents unauthorized asset movements.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="bi bi-box-arrow-right me-2"></i>
+                    <strong>Bulk Transfer:</strong> Initiate transfer for all {{ total_assets }} asset(s) from {{ staff.get_full_name }} to another user.
+                </div>
+                <form id="bulkTransferForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="transferToUser" class="form-label fw-semibold">
+                            Transfer To <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="transferToUser" required>
+                            <option value="">Select a user...</option>
+                            <!-- Will be populated dynamically -->
+                        </select>
+                        <small class="text-muted">Select the user who will receive all assets</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="transferReason" class="form-label fw-semibold">
+                            Reason <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" id="transferReason" rows="3" required placeholder="Enter reason for transfer..."></textarea>
+                        <small class="text-muted">Provide a clear reason for this bulk transfer</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Assets to Transfer</label>
+                        <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                            <div id="assetsToTransferList">
+                                <!-- Will be populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="executeBulkTransfer()">
+                    <i class="bi bi-box-arrow-right me-1"></i>Transfer All Assets
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- WORLD-CLASS: User Retirement Wizard Modal -->
+<div class="modal fade" id="retirementWizardModal" tabindex="-1" aria-labelledby="retirementWizardLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="retirementWizardLabel">
+                    <i class="bi bi-person-x me-2"></i>Retire User - {{ staff.get_full_name }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Progress Indicator -->
+                <div class="retirement-progress mb-4">
+                    <div class="progress-steps">
+                        <div class="progress-step active" data-step="1">
+                            <div class="step-circle">1</div>
+                            <div class="step-label">Confirm Retirement</div>
+                        </div>
+                        <div class="progress-connector"></div>
+                        <div class="progress-step" data-step="2">
+                            <div class="step-circle">2</div>
+                            <div class="step-label">Reassign Assets</div>
+                        </div>
+                        <div class="progress-connector"></div>
+                        <div class="progress-step" data-step="3">
+                            <div class="step-circle">3</div>
+                            <div class="step-label">Review & Complete</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 1: Confirm Retirement -->
+                <div class="wizard-step" id="retirementStep1">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>Important:</strong> Retiring a user will deactivate their account and prevent them from logging in. This action requires all their assets to be reassigned first.
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6 class="card-title"><i class="bi bi-person-badge me-2"></i>User Information</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Name:</strong> {{ staff.get_full_name }}</p>
+                                    <p><strong>Email:</strong> {{ staff.email }}</p>
+                                    <p><strong>Role:</strong> <span class="badge bg-primary">{{ staff.get_role_display }}</span></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Branch:</strong> {{ staff.primary_branch.name|default:"Unassigned" }}</p>
+                                    <p><strong>Joined:</strong> {{ staff.date_joined|date:"M d, Y" }}</p>
+                                    <p><strong>Last Login:</strong> {{ staff.last_login|date:"M d, Y"|default:"Never" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="retirementReasonForm">
+                        <div class="mb-3">
+                            <label for="retirementReason" class="form-label">
+                                <i class="bi bi-chat-left-text me-1"></i>Retirement Reason <span class="text-danger">*</span>
+                            </label>
+                            <textarea 
+                                class="form-control" 
+                                id="retirementReason" 
+                                rows="3" 
+                                required
+                                minlength="10"
+                                maxlength="500"
+                                placeholder="e.g., Employee resignation - effective date 2025-01-31"
+                            ></textarea>
+                            <div class="form-text">
+                                <span id="reasonCharCount">0/500</span> characters (minimum 10 required)
+                            </div>
+                            <div class="invalid-feedback">
+                                Retirement reason must be at least 10 characters.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="retirementNotes" class="form-label">
+                                <i class="bi bi-sticky me-1"></i>Additional Notes (Optional)
+                            </label>
+                            <textarea 
+                                class="form-control" 
+                                id="retirementNotes" 
+                                rows="2"
+                                maxlength="500"
+                                placeholder="Any additional information about the retirement..."
+                            ></textarea>
+                            <div class="form-text">
+                                <span id="notesCharCount">0/500</span> characters
+                            </div>
+                        </div>
+                    </form>
+
+                    <div id="step1LoadingAssets" class="text-center py-4" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading assets...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Checking user's assets...</p>
+                    </div>
+                </div>
+
+                <!-- Step 2: Reassign Assets -->
+                <div class="wizard-step" id="retirementStep2" style="display: none;">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <strong>Asset Reassignment:</strong> Assign a successor for each asset. All assets must be reassigned before completing retirement.
+                    </div>
+
+                    <div id="assetsToReassign">
+                        <!-- Assets will be loaded here dynamically -->
+                    </div>
+
+                    <div id="noAssetsMessage" style="display: none;">
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle-fill me-2"></i>
+                            <strong>No Assets:</strong> This user has no active assets assigned. You can proceed to complete the retirement.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Review & Complete -->
+                <div class="wizard-step" id="retirementStep3" style="display: none;">
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        <strong>Ready to Complete:</strong> Review the retirement details below and click "Complete Retirement" to finalize.
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6 class="card-title"><i class="bi bi-clipboard-check me-2"></i>Retirement Summary</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>User:</strong> <span id="reviewUserName"></span></p>
+                                    <p><strong>Reason:</strong> <span id="reviewReason"></span></p>
+                                    <p><strong>Notes:</strong> <span id="reviewNotes" class="text-muted"></span></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Assets to Reassign:</strong> <span id="reviewAssetCount" class="badge bg-primary"></span></p>
+                                    <p><strong>Initiated By:</strong> {{ user.get_full_name }}</p>
+                                    <p><strong>Date:</strong> <span id="reviewDate"></span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="reviewAssignments" class="card">
+                        <div class="card-body">
+                            <h6 class="card-title"><i class="bi bi-arrow-left-right me-2"></i>Asset Assignments</h6>
+                            <div id="reviewAssignmentsList">
+                                <!-- Assignment review will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning mt-3">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>Final Warning:</strong> Once completed, the user account will be deactivated immediately and the user will no longer be able to log in.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-outline-secondary" id="retirementPrevBtn" onclick="retirementPrevStep()" style="display: none;">
+                    <i class="bi bi-arrow-left me-1"></i>Previous
+                </button>
+                <button type="button" class="btn btn-danger" id="retirementNextBtn" onclick="retirementNextStep()">
+                    Next <i class="bi bi-arrow-right ms-1"></i>
+                </button>
+                <button type="button" class="btn btn-success" id="retirementCompleteBtn" onclick="completeRetirement()" style="display: none;">
+                    <i class="bi bi-check-circle me-1"></i>Complete Retirement
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Retirement Wizard CSS -->
+<style>
+.retirement-progress {
+    padding: 2rem 0;
+}
+
+.progress-steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.progress-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+}
+
+.step-circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #e9ecef;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.25rem;
+    border: 3px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.progress-step.active .step-circle {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border-color: #ef4444;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+.progress-step.completed .step-circle {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border-color: #10b981;
+}
+
+.step-label {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6c757d;
+    text-align: center;
+}
+
+.progress-step.active .step-label {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+.progress-step.completed .step-label {
+    color: #10b981;
+}
+
+.progress-connector {
+    width: 150px;
+    height: 3px;
+    background: #e9ecef;
+    position: relative;
+    z-index: 1;
+}
+
+.progress-step.completed + .progress-connector {
+    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+}
+
+.wizard-step {
+    min-height: 400px;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.asset-reassignment-card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: all 0.2s ease;
+}
+
+.asset-reassignment-card:hover {
+    border-color: #176B87;
+    box-shadow: 0 2px 8px rgba(23, 107, 135, 0.1);
+}
+
+.asset-reassignment-card.assigned {
+    border-color: #10b981;
+    background: #f0fdf4;
+}
+
+@media (max-width: 768px) {
+    .progress-connector {
+        width: 80px;
+    }
+    
+    .step-circle {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    
+    .step-label {
+        font-size: 0.75rem;
+    }
+}
+</style>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// World-class staff detail page JavaScript
+const STAFF_ID = {{ staff.id }};
+const STAFF_DEBUG = true;
+
+// ============================================================================
+// EDIT PROFILE FUNCTIONALITY
+// ============================================================================
+
+function openEditProfileModal() {
+    if (STAFF_DEBUG) console.log('Opening edit profile modal for staff:', STAFF_ID);
+    
+    // Populate form with current data
+    document.getElementById('editFirstName').value = '{{ staff.first_name|escapejs }}';
+    document.getElementById('editLastName').value = '{{ staff.last_name|escapejs }}';
+    document.getElementById('editEmail').value = '{{ staff.email|escapejs }}';
+    document.getElementById('editPhone').value = '{{ staff.phone_number|default:""|escapejs }}';
+    document.getElementById('editRole').value = '{{ staff.role|escapejs }}';
+    document.getElementById('editIsActive').checked = {% if staff.is_active %}true{% else %}false{% endif %};
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('editProfileModal'));
+    modal.show();
+}
+
+async function saveProfileChanges() {
+    const form = document.getElementById('editProfileForm');
+    
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const profileData = {
+        first_name: document.getElementById('editFirstName').value.trim(),
+        last_name: document.getElementById('editLastName').value.trim(),
+        email: document.getElementById('editEmail').value.trim(),
+        phone_number: document.getElementById('editPhone').value.trim(),
+        role: document.getElementById('editRole').value,
+        is_active: document.getElementById('editIsActive').checked
+    };
+    
+    // WORLD-CLASS: Check if status is changing and prompt for reason
+    const originalStatus = {% if staff.is_active %}true{% else %}false{% endif %};
+    if (profileData.is_active !== originalStatus) {
+        const statusText = profileData.is_active ? 'activate' : 'deactivate';
+        const reason = prompt(`Please provide a reason for ${statusText}ing this account:\n\n(Minimum 10 characters required)`);
+        
+        if (reason === null) {
+            // User cancelled
+            return;
+        }
+        
+        if (!reason || reason.trim().length < 10) {
+            showToast('Reason must be at least 10 characters', 'error');
+            return;
+        }
+        
+        profileData.status_change_reason = reason.trim();
+    }
+    
+    if (STAFF_DEBUG) console.log('Saving profile changes:', profileData);
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    
+    // Show loading state
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+    
+    // Call API
+    fetch(`/api/users/${STAFF_ID}/update/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify(profileData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Profile updated successfully!', 'success');
+            
+            if (STAFF_DEBUG) console.log('✅ Profile updated:', data);
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editProfileModal'));
+            if (modal) modal.hide();
+            
+            // Reload page to show updated data
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            throw new Error(data.error || 'Failed to update profile');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating profile:', error);
+        showToast('Failed to update profile: ' + error.message, 'error');
+        
+        // Re-enable button
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    });
+}
+
+// ============================================================================
+// BULK TRANSFER FUNCTIONALITY
+// ============================================================================
+
+function openBulkTransferModal() {
+    if (STAFF_DEBUG) console.log('Opening bulk transfer modal for staff:', STAFF_ID);
+    
+    // Load available users
+    loadAvailableUsers();
+    
+    // Load assets to transfer
+    loadAssetsToTransfer();
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('bulkTransferModal'));
+    modal.show();
+}
+
+async function loadAvailableUsers() {
+    const select = document.getElementById('transferToUser');
+    select.innerHTML = '<option value="">Loading users...</option>';
+    select.disabled = true;
+    
+    try {
+        // WORLD-CLASS: Correct API endpoint with proper error handling
+        const response = await fetch('/settings/api/users/', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            credentials: 'same-origin'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.users) {
+            select.innerHTML = '<option value="">Select a user...</option>';
+            
+            // WORLD-CLASS: Filter out current staff and inactive users
+            const users = data.users.filter(u => 
+                u.id !== STAFF_ID && u.is_active
+            );
+            
+            if (users.length === 0) {
+                select.innerHTML = '<option value="">No available users</option>';
+                showToast('No active users available for transfer', 'warning');
+                return;
+            }
+            
+            // WORLD-CLASS: Group users by role for better UX
+            const admins = users.filter(u => u.role === 'admin');
+            const managers = users.filter(u => u.role === 'manager');
+            const regularUsers = users.filter(u => u.role === 'user');
+            
+            if (admins.length > 0) {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = 'Administrators';
+                admins.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = user.full_name;
+                    optgroup.appendChild(option);
+                });
+                select.appendChild(optgroup);
+            }
+            
+            if (managers.length > 0) {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = 'Managers';
+                managers.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = user.full_name;
+                    optgroup.appendChild(option);
+                });
+                select.appendChild(optgroup);
+            }
+            
+            if (regularUsers.length > 0) {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = 'Users';
+                regularUsers.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = user.full_name;
+                    optgroup.appendChild(option);
+                });
+                select.appendChild(optgroup);
+            }
+            
+            select.disabled = false;
+            if (STAFF_DEBUG) console.log('✅ Loaded', users.length, 'active users');
+        } else {
+            throw new Error('Invalid response format');
+        }
+    } catch (error) {
+        console.error('❌ Error loading users:', error);
+        select.innerHTML = '<option value="">Error loading users - Please refresh</option>';
+        showToast('Failed to load users: ' + error.message, 'error');
+    }
+}
+
+function loadAssetsToTransfer() {
+    const container = document.getElementById('assetsToTransferList');
+    container.innerHTML = '<div class="text-center"><span class="spinner-border spinner-border-sm me-2"></span>Loading assets...</div>';
+    
+    // WORLD-CLASS: Show detailed asset list with categories and status
+    const assets = [
+        {% for asset in assigned_assets %}
+        {
+            id: {{ asset.id }},
+            name: '{{ asset.category.name|escapejs }}',
+            category: '{{ asset.category.name|escapejs }}',
+            status: '{{ asset.status|escapejs }}',
+            branch: '{{ asset.branch.name|escapejs }}'
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    if (assets.length === 0) {
+        container.innerHTML = `
+            <div class="alert alert-warning mb-0">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <strong>No assets to transfer</strong>
+                <p class="mb-0 mt-2 small">This user has no assets assigned.</p>
+            </div>
+        `;
+        // Disable transfer button
+        document.querySelector('#bulkTransferModal .btn-warning').disabled = true;
+        return;
+    }
+    
+    // WORLD-CLASS: Display detailed asset list with visual hierarchy
+    let html = `
+        <div class="alert alert-info mb-3">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>${assets.length}</strong> asset(s) will be transferred
+        </div>
+        <div class="list-group list-group-flush">
+    `;
+    
+    assets.forEach((asset, index) => {
+        const statusBadge = asset.status === 'active' ? 'success' : 
+                           asset.status === 'in_maintenance' ? 'warning' : 'secondary';
+        html += `
+            <div class="list-group-item px-0 py-2" data-asset-id="${asset.id}">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-primary me-2">${index + 1}</span>
+                            <strong>${asset.name}</strong>
+                        </div>
+                        <small class="text-muted d-block mt-1">
+                            <i class="bi bi-building me-1"></i>${asset.branch}
+                        </small>
+                    </div>
+                    <span class="badge bg-${statusBadge}">${asset.status}</span>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+    
+    if (STAFF_DEBUG) console.log('✅ Loaded', assets.length, 'assets for transfer');
+}
+
+async function executeBulkTransfer() {
+    const form = document.getElementById('bulkTransferForm');
+    
+    // WORLD-CLASS: Comprehensive validation
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const toUserId = document.getElementById('transferToUser').value;
+    const reason = document.getElementById('transferReason').value.trim();
+    
+    if (!toUserId) {
+        showToast('Please select a user to transfer to', 'error');
+        document.getElementById('transferToUser').focus();
+        return;
+    }
+    
+    if (!reason || reason.length < 10) {
+        showToast('Please provide a detailed reason (minimum 10 characters)', 'error');
+        document.getElementById('transferReason').focus();
+        return;
+    }
+    
+    // Get all assets for this user
+    const assetIds = [
+        {% for asset in assigned_assets %}
+        {{ asset.id }}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    if (assetIds.length === 0) {
+        showToast('No assets to transfer', 'warning');
+        return;
+    }
+    
+    // WORLD-CLASS: Confirmation dialog
+    const selectedUserName = document.getElementById('transferToUser').selectedOptions[0]?.textContent;
+    if (!confirm(`Are you sure you want to transfer ${assetIds.length} asset(s) to ${selectedUserName}?\n\nThis will initiate the transfer approval workflow.`)) {
+        return;
+    }
+    
+    if (STAFF_DEBUG) console.log('🚀 Executing bulk transfer:', { toUserId, reason, assetCount: assetIds.length });
+    
+    // WORLD-CLASS: Get button reference properly (not from event)
+    const btn = document.querySelector('#bulkTransferModal .btn-warning');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Transferring...';
+    
+    // WORLD-CLASS: Show progress in modal
+    const progressContainer = document.createElement('div');
+    progressContainer.id = 'transferProgress';
+    progressContainer.className = 'alert alert-info mt-3';
+    progressContainer.innerHTML = `
+        <div class="d-flex align-items-center">
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            <div class="flex-grow-1">
+                <strong>Transfer in progress...</strong>
+                <div class="progress mt-2" style="height: 20px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" 
+                         style="width: 0%" 
+                         aria-valuenow="0" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                        0/${assetIds.length}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.getElementById('bulkTransferForm').appendChild(progressContainer);
+    
+    // WORLD-CLASS: Transfer assets with progress tracking
+    let successCount = 0;
+    let errorCount = 0;
+    const totalAssets = assetIds.length;
+    const errors = [];
+    
+    try {
+        // Transfer assets sequentially for better error tracking
+        for (let i = 0; i < assetIds.length; i++) {
+            const assetId = assetIds[i];
+            
+            try {
+                const response = await fetch('/assets/api/transfers/initiate/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        asset_id: assetId,
+                        to_user_id: parseInt(toUserId),
+                        initiator_comment: reason
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    successCount++;
+                    // WORLD-CLASS: Update progress bar
+                    const progress = Math.round(((i + 1) / totalAssets) * 100);
+                    const progressBar = progressContainer.querySelector('.progress-bar');
+                    progressBar.style.width = progress + '%';
+                    progressBar.setAttribute('aria-valuenow', progress);
+                    progressBar.textContent = `${successCount}/${totalAssets}`;
+                    
+                    // WORLD-CLASS: Visual feedback on asset item
+                    const assetItem = document.querySelector(`[data-asset-id="${assetId}"]`);
+                    if (assetItem) {
+                        assetItem.classList.add('bg-success', 'bg-opacity-10');
+                        assetItem.querySelector('.badge:last-child').className = 'badge bg-success';
+                        assetItem.querySelector('.badge:last-child').textContent = 'Transferred';
+                    }
+                } else {
+                    errorCount++;
+                    errors.push({ assetId, error: data.errors || data.error || 'Unknown error' });
+                    
+                    // WORLD-CLASS: Visual feedback on failed asset
+                    const assetItem = document.querySelector(`[data-asset-id="${assetId}"]`);
+                    if (assetItem) {
+                        assetItem.classList.add('bg-danger', 'bg-opacity-10');
+                        assetItem.querySelector('.badge:last-child').className = 'badge bg-danger';
+                        assetItem.querySelector('.badge:last-child').textContent = 'Failed';
+                    }
+                }
+            } catch (error) {
+                errorCount++;
+                errors.push({ assetId, error: error.message });
+                console.error(`❌ Error transferring asset ${assetId}:`, error);
+            }
+            
+            // WORLD-CLASS: Small delay between requests to avoid overwhelming server
+            if (i < assetIds.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        }
+        
+        // WORLD-CLASS: Comprehensive result messaging
+        progressContainer.remove();
+        
+        if (successCount > 0) {
+            const message = successCount === totalAssets 
+                ? `✅ Successfully initiated transfer for all ${successCount} asset(s)!` 
+                : `✅ Initiated transfer for ${successCount} out of ${totalAssets} asset(s).`;
+            
+            showToast(message, 'success');
+            
+            if (STAFF_DEBUG) {
+                console.log(`✅ Transfer Summary:`);
+                console.log(`   - Success: ${successCount}/${totalAssets}`);
+                console.log(`   - Failed: ${errorCount}/${totalAssets}`);
+            }
+            
+            // WORLD-CLASS: Show workflow reminder
+            if (successCount > 0) {
+                const reminderHtml = `
+                    <div class="alert alert-info mt-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Next Steps:</strong>
+                        <ol class="mb-0 mt-2 ps-3">
+                            <li>The recipient will receive a notification</li>
+                            <li>They must approve the transfer</li>
+                            <li>An administrator will then review and approve</li>
+                            <li>Assets will be transferred upon final approval</li>
+                        </ol>
+                    </div>
+                `;
+                document.getElementById('bulkTransferForm').insertAdjacentHTML('beforeend', reminderHtml);
+            }
+            
+            // Close modal and reload after delay
+            setTimeout(() => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('bulkTransferModal'));
+                if (modal) modal.hide();
+                location.reload();
+            }, 3000);
+        } else {
+            throw new Error('Failed to initiate transfer for any assets');
+        }
+        
+        // WORLD-CLASS: Show detailed error information
+        if (errorCount > 0) {
+            let errorMessage = `⚠️ ${errorCount} asset(s) failed to transfer:`;
+            errors.slice(0, 3).forEach(err => {
+                errorMessage += `\n- Asset ID ${err.assetId}: ${err.error}`;
+            });
+            if (errors.length > 3) {
+                errorMessage += `\n... and ${errors.length - 3} more`;
+            }
+            showToast(errorMessage, 'warning');
+            console.error('❌ Transfer errors:', errors);
+        }
+        
+    } catch (error) {
+        console.error('❌ Critical error during bulk transfer:', error);
+        showToast('Failed to initiate transfer: ' + error.message, 'error');
+        progressContainer.remove();
+    } finally {
+        // WORLD-CLASS: Always re-enable button
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+// WORLD-CLASS: Enhanced toast with accessibility and multi-line support
+function showToast(message, type = 'info') {
+    // Create toast container if it doesn't exist
+    let toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toastContainer';
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        toastContainer.style.zIndex = '9999';
+        toastContainer.setAttribute('aria-live', 'polite');
+        toastContainer.setAttribute('aria-atomic', 'true');
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Create toast
+    const toastId = 'toast-' + Date.now();
+    const bgClass = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : type === 'warning' ? 'bg-warning' : 'bg-info';
+    const icon = type === 'success' ? 'check-circle-fill' : type === 'error' ? 'x-circle-fill' : type === 'warning' ? 'exclamation-triangle-fill' : 'info-circle-fill';
+    const delay = type === 'error' ? 5000 : type === 'warning' ? 4000 : 3000;
+    
+    // WORLD-CLASS: Support multi-line messages
+    const messageHtml = message.split('\n').map(line => 
+        line.trim() ? `<div>${line}</div>` : ''
+    ).join('');
+    
+    const toastHtml = `
+        <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi bi-${icon} me-2"></i>
+                    <span>${messageHtml}</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, { delay: delay, autohide: true });
+    toast.show();
+    
+    // Remove toast after it's hidden
+    toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+    });
+}
+
+// WORLD-CLASS: Utility function to get CSRF token
+function getCsrfToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+           document.querySelector('meta[name="csrf-token"]')?.content || 
+           '';
+}
+
+// WORLD-CLASS: Staff Activity Pagination Management
+function updateStaffActivityLimit() {
+    const select = document.getElementById('staffActivityLimitSelect');
+    const limit = select.value;
+    const timeline = document.getElementById('staffActivityTimeline');
+    const countDisplay = document.getElementById('staffActivityCountDisplay');
+    
+    if (!timeline) return;
+    
+    // Save preference to localStorage
+    localStorage.setItem('staffActivityLimit', limit);
+    
+    // Get all timeline items
+    const items = timeline.querySelectorAll('.timeline-item');
+    const totalItems = items.length;
+    
+    // Show/hide items based on limit
+    if (limit === 'all') {
+        items.forEach(item => {
+            item.style.display = '';
+        });
+        countDisplay.textContent = `Showing all ${totalItems}`;
+    } else {
+        const limitNum = parseInt(limit);
+        items.forEach((item, index) => {
+            if (index < limitNum) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        const showing = Math.min(limitNum, totalItems);
+        countDisplay.textContent = `Showing 1-${showing} of ${totalItems}`;
+    }
+    
+    // Scroll to top after filter change
+    timeline.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Update scroll indicators
+    setTimeout(updateStaffScrollIndicators, 100);
+}
+
+function loadStaffActivityLimitPreference() {
+    const savedLimit = localStorage.getItem('staffActivityLimit') || '25';
+    const select = document.getElementById('staffActivityLimitSelect');
+    
+    if (select) {
+        select.value = savedLimit;
+        updateStaffActivityLimit();
+    }
+}
+
+function scrollStaffActivityToTop() {
+    const timeline = document.getElementById('staffActivityTimeline');
+    if (timeline) {
+        timeline.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
+}
+
+// ============================================================================
+// WORLD-CLASS: Staff Assets Pagination Management
+// ============================================================================
+
+function updateStaffAssetsLimit() {
+    const select = document.getElementById('staffAssetsLimitSelect');
+    const limit = select.value;
+    const container = document.getElementById('staffAssetsContainer');
+    const countDisplay = document.getElementById('staffAssetsCountDisplay');
+    
+    if (!container) return;
+    
+    // Save preference to localStorage
+    localStorage.setItem('staffAssetsLimit', limit);
+    
+    // Get all asset items
+    const items = container.querySelectorAll('.asset-item');
+    const totalItems = items.length;
+    
+    // Show/hide items based on limit
+    if (limit === 'all') {
+        items.forEach(item => {
+            item.style.display = '';
+        });
+        countDisplay.textContent = `Showing all ${totalItems}`;
+    } else {
+        const limitNum = parseInt(limit);
+        items.forEach((item, index) => {
+            if (index < limitNum) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        const showing = Math.min(limitNum, totalItems);
+        countDisplay.textContent = `Showing 1-${showing} of ${totalItems}`;
+    }
+    
+    // Scroll to top after filter change
+    container.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function loadStaffAssetsLimitPreference() {
+    const savedLimit = localStorage.getItem('staffAssetsLimit') || '25';
+    const select = document.getElementById('staffAssetsLimitSelect');
+    
+    if (select) {
+        select.value = savedLimit;
+        updateStaffAssetsLimit();
+    }
+}
+
+function scrollStaffAssetsToTop() {
+    const container = document.getElementById('staffAssetsContainer');
+    if (container) {
+        container.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+// ============================================================================
+// WORLD-CLASS: Staff Transfers Received Pagination Management
+// ============================================================================
+
+function updateStaffTransfersReceivedLimit() {
+    const select = document.getElementById('staffTransfersReceivedLimitSelect');
+    const limit = select.value;
+    const container = document.getElementById('staffTransfersReceivedContainer');
+    const countDisplay = document.getElementById('staffTransfersReceivedCountDisplay');
+    
+    if (!container) return;
+    
+    // Save preference to localStorage
+    localStorage.setItem('staffTransfersReceivedLimit', limit);
+    
+    // Get all transfer items
+    const items = container.querySelectorAll('.transfer-item');
+    const totalItems = items.length;
+    
+    // Show/hide items based on limit
+    if (limit === 'all') {
+        items.forEach(item => {
+            item.style.display = '';
+        });
+        countDisplay.textContent = `Showing all ${totalItems}`;
+    } else {
+        const limitNum = parseInt(limit);
+        items.forEach((item, index) => {
+            if (index < limitNum) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        const showing = Math.min(limitNum, totalItems);
+        countDisplay.textContent = `Showing 1-${showing} of ${totalItems}`;
+    }
+    
+    // Scroll to top after filter change
+    container.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function loadStaffTransfersReceivedLimitPreference() {
+    const savedLimit = localStorage.getItem('staffTransfersReceivedLimit') || '25';
+    const select = document.getElementById('staffTransfersReceivedLimitSelect');
+    
+    if (select) {
+        select.value = savedLimit;
+        updateStaffTransfersReceivedLimit();
+    }
+}
+
+function scrollStaffTransfersReceivedToTop() {
+    const container = document.getElementById('staffTransfersReceivedContainer');
+    if (container) {
+        container.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+// ============================================================================
+// WORLD-CLASS: Staff Transfers Sent Pagination Management
+// ============================================================================
+
+function updateStaffTransfersSentLimit() {
+    const select = document.getElementById('staffTransfersSentLimitSelect');
+    const limit = select.value;
+    const container = document.getElementById('staffTransfersSentContainer');
+    const countDisplay = document.getElementById('staffTransfersSentCountDisplay');
+    
+    if (!container) return;
+    
+    // Save preference to localStorage
+    localStorage.setItem('staffTransfersSentLimit', limit);
+    
+    // Get all transfer items
+    const items = container.querySelectorAll('.transfer-item');
+    const totalItems = items.length;
+    
+    // Show/hide items based on limit
+    if (limit === 'all') {
+        items.forEach(item => {
+            item.style.display = '';
+        });
+        countDisplay.textContent = `Showing all ${totalItems}`;
+    } else {
+        const limitNum = parseInt(limit);
+        items.forEach((item, index) => {
+            if (index < limitNum) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        const showing = Math.min(limitNum, totalItems);
+        countDisplay.textContent = `Showing 1-${showing} of ${totalItems}`;
+    }
+    
+    // Scroll to top after filter change
+    container.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function loadStaffTransfersSentLimitPreference() {
+    const savedLimit = localStorage.getItem('staffTransfersSentLimit') || '25';
+    const select = document.getElementById('staffTransfersSentLimitSelect');
+    
+    if (select) {
+        select.value = savedLimit;
+        updateStaffTransfersSentLimit();
+    }
+}
+
+function scrollStaffTransfersSentToTop() {
+    const container = document.getElementById('staffTransfersSentContainer');
+    if (container) {
+        container.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+function updateStaffScrollIndicators() {
+    const timeline = document.getElementById('staffActivityTimeline');
+    const wrapper = document.getElementById('staffActivityTimelineWrapper');
+    const scrollBtn = document.getElementById('staffScrollToTopBtn');
+    
+    if (!timeline || !wrapper) return;
+    
+    const scrollTop = timeline.scrollTop;
+    const scrollHeight = timeline.scrollHeight;
+    const clientHeight = timeline.clientHeight;
+    const scrollBottom = scrollHeight - scrollTop - clientHeight;
+    
+    // Update gradient indicators
+    if (scrollTop > 20) {
+        wrapper.classList.add('has-scroll-top');
+    } else {
+        wrapper.classList.remove('has-scroll-top');
+    }
+    
+    if (scrollBottom > 20) {
+        wrapper.classList.add('has-scroll-bottom');
+    } else {
+        wrapper.classList.remove('has-scroll-bottom');
+    }
+    
+    // Show/hide scroll-to-top button
+    if (scrollBtn) {
+        if (scrollTop > 200) {
+            scrollBtn.classList.add('show');
+        } else {
+            scrollBtn.classList.remove('show');
+        }
+    }
+}
+
+// Initialize staff activity timeline on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const staffActivityTimeline = document.getElementById('staffActivityTimeline');
+    if (staffActivityTimeline) {
+        // Add scroll event listener
+        staffActivityTimeline.addEventListener('scroll', updateStaffScrollIndicators);
+        
+        // Initial check
+        updateStaffScrollIndicators();
+        
+        // Re-check after images load
+        setTimeout(updateStaffScrollIndicators, 500);
+    }
+    
+    // Update indicators when Activity tab is shown
+    const activityTab = document.querySelector('[data-bs-target="#activity"]');
+    if (activityTab) {
+        activityTab.addEventListener('shown.bs.tab', function() {
+            setTimeout(updateStaffScrollIndicators, 100);
+            // Restore saved limit preference
+            loadStaffActivityLimitPreference();
+        });
+    }
+    
+    // Load preferences when Assets tab is shown
+    const assetsTab = document.querySelector('[data-bs-target="#assets"]');
+    if (assetsTab) {
+        assetsTab.addEventListener('shown.bs.tab', function() {
+            loadStaffAssetsLimitPreference();
+        });
+    }
+    
+    // Load preferences when Transfers tab is shown
+    const transfersTab = document.querySelector('[data-bs-target="#transfers"]');
+    if (transfersTab) {
+        transfersTab.addEventListener('shown.bs.tab', function() {
+            loadStaffTransfersReceivedLimitPreference();
+            loadStaffTransfersSentLimitPreference();
+        });
+    }
+    
+    // Load saved limit preferences on page load
+    loadStaffActivityLimitPreference();
+    loadStaffAssetsLimitPreference();
+    loadStaffTransfersReceivedLimitPreference();
+    loadStaffTransfersSentLimitPreference();
+});
+
+// ============================================================================
+// WORLD-CLASS: USER RETIREMENT WIZARD
+// ============================================================================
+
+let retirementData = {
+    currentStep: 1,
+    retirementId: null,
+    reason: '',
+    notes: '',
+    assets: [],
+    assignments: []
+};
+
+function openRetirementWizard() {
+    console.log('🚀 Opening retirement wizard for staff:', STAFF_ID);
+    
+    // Reset wizard state
+    retirementData = {
+        currentStep: 1,
+        retirementId: null,
+        reason: '',
+        notes: '',
+        assets: [],
+        assignments: []
+    };
+    
+    // Reset UI
+    document.getElementById('retirementReason').value = '';
+    document.getElementById('retirementNotes').value = '';
+    document.getElementById('reasonCharCount').textContent = '0/500';
+    document.getElementById('notesCharCount').textContent = '0/500';
+    
+    // Show step 1
+    showRetirementStep(1);
+    
+    // Open modal
+    const modal = new bootstrap.Modal(document.getElementById('retirementWizardModal'));
+    modal.show();
+    
+    // Setup character counters
+    setupRetirementCharCounters();
+}
+
+function setupRetirementCharCounters() {
+    const reasonInput = document.getElementById('retirementReason');
+    const notesInput = document.getElementById('retirementNotes');
+    
+    reasonInput.addEventListener('input', function() {
+        const count = this.value.length;
+        document.getElementById('reasonCharCount').textContent = `${count}/500`;
+        
+        // Validation feedback
+        if (count >= 10) {
+            this.classList.remove('is-invalid');
+            this.classList.add('is-valid');
+        } else if (count > 0) {
+            this.classList.add('is-invalid');
+            this.classList.remove('is-valid');
+        } else {
+            this.classList.remove('is-invalid', 'is-valid');
+        }
+    });
+    
+    notesInput.addEventListener('input', function() {
+        const count = this.value.length;
+        document.getElementById('notesCharCount').textContent = `${count}/500`;
+    });
+}
+
+function showRetirementStep(step) {
+    // Hide all steps
+    document.querySelectorAll('.wizard-step').forEach(el => el.style.display = 'none');
+    
+    // Show current step
+    document.getElementById(`retirementStep${step}`).style.display = 'block';
+    
+    // Update progress indicator
+    document.querySelectorAll('.progress-step').forEach((el, index) => {
+        const stepNum = index + 1;
+        el.classList.remove('active', 'completed');
+        
+        if (stepNum < step) {
+            el.classList.add('completed');
+        } else if (stepNum === step) {
+            el.classList.add('active');
+        }
+    });
+    
+    // Update buttons
+    const prevBtn = document.getElementById('retirementPrevBtn');
+    const nextBtn = document.getElementById('retirementNextBtn');
+    const completeBtn = document.getElementById('retirementCompleteBtn');
+    
+    if (step === 1) {
+        prevBtn.style.display = 'none';
+        nextBtn.style.display = 'inline-block';
+        completeBtn.style.display = 'none';
+    } else if (step === 2) {
+        prevBtn.style.display = 'inline-block';
+        nextBtn.style.display = 'inline-block';
+        completeBtn.style.display = 'none';
+    } else if (step === 3) {
+        prevBtn.style.display = 'inline-block';
+        nextBtn.style.display = 'none';
+        completeBtn.style.display = 'inline-block';
+    }
+    
+    retirementData.currentStep = step;
+}
+
+async function retirementNextStep() {
+    const currentStep = retirementData.currentStep;
+    
+    if (currentStep === 1) {
+        // Validate and initiate retirement
+        const reason = document.getElementById('retirementReason').value.trim();
+        const notes = document.getElementById('retirementNotes').value.trim();
+        
+        if (reason.length < 10) {
+            document.getElementById('retirementReason').classList.add('is-invalid');
+            showToast('Please provide a retirement reason (minimum 10 characters)', 'warning');
+            return;
+        }
+        
+        // Show loading
+        document.getElementById('step1LoadingAssets').style.display = 'block';
+        document.getElementById('retirementNextBtn').disabled = true;
+        
+        try {
+            // Initiate retirement via API
+            const response = await fetch('/api/retirement/initiate/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    user_id: STAFF_ID,
+                    reason: reason,
+                    notes: notes
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                retirementData.retirementId = data.retirement_id;
+                retirementData.reason = reason;
+                retirementData.notes = notes;
+                retirementData.assets = data.assets || [];
+                
+                // Load assets for reassignment
+                loadAssetsForReassignment(data.assets);
+                
+                // Move to step 2
+                showRetirementStep(2);
+                showToast('Retirement initiated successfully', 'success');
+            } else {
+                showToast(data.error || 'Failed to initiate retirement', 'danger');
+            }
+        } catch (error) {
+            console.error('Retirement initiation error:', error);
+            showToast('An error occurred. Please try again.', 'danger');
+        } finally {
+            document.getElementById('step1LoadingAssets').style.display = 'none';
+            document.getElementById('retirementNextBtn').disabled = false;
+        }
+        
+    } else if (currentStep === 2) {
+        // Validate all assets are assigned
+        const assignments = retirementData.assignments;
+        const assetCount = retirementData.assets.length;
+        
+        if (assetCount > 0 && assignments.length !== assetCount) {
+            showToast('Please assign a successor for all assets', 'warning');
+            return;
+        }
+        
+        // Reassign assets
+        if (assignments.length > 0) {
+            document.getElementById('retirementNextBtn').disabled = true;
+            document.getElementById('retirementNextBtn').innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Reassigning...';
+            
+            try {
+                const response = await fetch(`/api/retirement/${retirementData.retirementId}/reassign/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        assignments: assignments
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Load review step
+                    loadReviewStep();
+                    showRetirementStep(3);
+                    showToast('Assets reassigned successfully', 'success');
+                } else {
+                    showToast(data.error || 'Failed to reassign assets', 'danger');
+                }
+            } catch (error) {
+                console.error('Asset reassignment error:', error);
+                showToast('An error occurred. Please try again.', 'danger');
+            } finally {
+                document.getElementById('retirementNextBtn').disabled = false;
+                document.getElementById('retirementNextBtn').innerHTML = 'Next <i class="bi bi-arrow-right ms-1"></i>';
+            }
+        } else {
+            // No assets to reassign, move to review
+            loadReviewStep();
+            showRetirementStep(3);
+        }
+    }
+}
+
+function retirementPrevStep() {
+    const currentStep = retirementData.currentStep;
+    if (currentStep > 1) {
+        showRetirementStep(currentStep - 1);
+    }
+}
+
+function loadAssetsForReassignment(assets) {
+    const container = document.getElementById('assetsToReassign');
+    const noAssetsMsg = document.getElementById('noAssetsMessage');
+    
+    if (!assets || assets.length === 0) {
+        container.innerHTML = '';
+        noAssetsMsg.style.display = 'block';
+        return;
+    }
+    
+    noAssetsMsg.style.display = 'none';
+    
+    // Load active users for selection
+    loadActiveUsersForRetirement().then(users => {
+        let html = '';
+        
+        assets.forEach((asset, index) => {
+            html += `
+                <div class="asset-reassignment-card" id="assetCard${asset.id}">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h6 class="mb-1">
+                                <i class="bi bi-box-seam text-primary me-2"></i>${escapeHtml(asset.name)}
+                            </h6>
+                            <p class="mb-0 text-muted small">
+                                <span class="badge bg-secondary me-2">${escapeHtml(asset.category)}</span>
+                                <span>${escapeHtml(asset.branch)}</span>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small mb-1">Assign to:</label>
+                            <select class="form-select" id="successor${asset.id}" onchange="assignSuccessor(${asset.id}, this.value)">
+                                <option value="">Select successor...</option>
+                                ${users.map(u => `<option value="${u.id}">${escapeHtml(u.name)} (${escapeHtml(u.role)})</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    });
+}
+
+async function loadActiveUsersForRetirement() {
+    try {
+        const response = await fetch('/api/users/users/?per_page=100');
+        const data = await response.json();
+        
+        if (data.success) {
+            // Filter out the retiring user and inactive users
+            return data.users.filter(u => u.id !== STAFF_ID && u.is_active).map(u => ({
+                id: u.id,
+                name: u.full_name,
+                role: u.role
+            }));
+        }
+        return [];
+    } catch (error) {
+        console.error('Error loading users:', error);
+        return [];
+    }
+}
+
+function assignSuccessor(assetId, successorId) {
+    if (!successorId) {
+        // Remove assignment
+        retirementData.assignments = retirementData.assignments.filter(a => a.asset_id !== assetId);
+        document.getElementById(`assetCard${assetId}`).classList.remove('assigned');
+    } else {
+        // Add or update assignment
+        const existingIndex = retirementData.assignments.findIndex(a => a.asset_id === assetId);
+        const assignment = {
+            asset_id: assetId,
+            successor_id: parseInt(successorId),
+            reason: `User retirement - asset reassignment from {{ staff.get_full_name }}`
+        };
+        
+        if (existingIndex >= 0) {
+            retirementData.assignments[existingIndex] = assignment;
+        } else {
+            retirementData.assignments.push(assignment);
+        }
+        
+        document.getElementById(`assetCard${assetId}`).classList.add('assigned');
+    }
+    
+    console.log('Assignments updated:', retirementData.assignments);
+}
+
+function loadReviewStep() {
+    // Populate review summary
+    document.getElementById('reviewUserName').textContent = '{{ staff.get_full_name }}';
+    document.getElementById('reviewReason').textContent = retirementData.reason;
+    document.getElementById('reviewNotes').textContent = retirementData.notes || 'None';
+    document.getElementById('reviewAssetCount').textContent = retirementData.assets.length;
+    document.getElementById('reviewDate').textContent = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    
+    // Populate assignments list
+    const assignmentsList = document.getElementById('reviewAssignmentsList');
+    
+    if (retirementData.assignments.length === 0) {
+        assignmentsList.innerHTML = '<p class="text-muted">No assets to reassign</p>';
+    } else {
+        let html = '<div class="list-group">';
+        
+        retirementData.assignments.forEach(assignment => {
+            const asset = retirementData.assets.find(a => a.id === assignment.asset_id);
+            const successorSelect = document.getElementById(`successor${assignment.asset_id}`);
+            const successorName = successorSelect ? successorSelect.options[successorSelect.selectedIndex].text : 'Unknown';
+            
+            html += `
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>${escapeHtml(asset.name)}</strong>
+                            <br>
+                            <small class="text-muted">${escapeHtml(asset.category)}</small>
+                        </div>
+                        <div class="text-end">
+                            <i class="bi bi-arrow-right text-primary mx-2"></i>
+                            <strong class="text-success">${escapeHtml(successorName)}</strong>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        assignmentsList.innerHTML = html;
+    }
+}
+
+async function completeRetirement() {
+    const btn = document.getElementById('retirementCompleteBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Completing...';
+    
+    try {
+        const response = await fetch(`/api/retirement/${retirementData.retirementId}/complete/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast('User retirement completed successfully', 'success');
+            
+            // Close modal and reload page after 2 seconds
+            setTimeout(() => {
+                bootstrap.Modal.getInstance(document.getElementById('retirementWizardModal')).hide();
+                location.reload();
+            }, 2000);
+        } else {
+            showToast(data.error || 'Failed to complete retirement', 'danger');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Complete Retirement';
+        }
+    } catch (error) {
+        console.error('Retirement completion error:', error);
+        showToast('An error occurred. Please try again.', 'danger');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Complete Retirement';
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+
+{% endblock %}

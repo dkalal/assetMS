@@ -1,0 +1,380 @@
+{% extends "base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Help Center{% endblock %}
+
+{% block extra_head %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/help-center-worldclass.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <!-- Breadcrumbs -->
+  {% include 'components/breadcrumbs.html' with root_label='Dashboard' root_url='/dashboard/' current_label='Help Center' %}
+
+  <!-- Hero Section -->
+  <section class="help-hero" aria-labelledby="help-hero-title">
+    <i class="bi bi-question-circle fs-1 mb-3 d-block"></i>
+    <h1 id="help-hero-title">Help & Documentation Center</h1>
+    <p>Get help, learn best practices, and master the asset management system</p>
+  </section>
+
+  <!-- Search Bar -->
+  <div class="help-search-container">
+    <i class="bi bi-search help-search-icon"></i>
+    <input type="search" class="help-search-input" placeholder="Search for help topics, guides, and tutorials..." aria-label="Search help center">
+  </div>
+
+  <!-- Quick Help Categories -->
+  <section class="row g-4 mb-5" aria-label="Help categories">
+    <div class="col-md-6 col-lg-4">
+      <div class="help-category-card">
+        <div class="category-icon icon-started">
+          <i class="bi bi-rocket-takeoff"></i>
+        </div>
+        <h3 class="h5 mb-2">Getting Started</h3>
+        <p class="text-muted small mb-3">Learn the basics and get up to speed quickly</p>
+        <ul class="list-unstyled small">
+          <li class="mb-2"><a href="#getting-started" class="text-decoration-none"><i class="bi bi-arrow-right me-2"></i>System Overview</a></li>
+          <li class="mb-2"><a href="#user-roles" class="text-decoration-none"><i class="bi bi-arrow-right me-2"></i>User Roles & Permissions</a></li>
+          <li class="mb-2"><a href="#first-steps" class="text-decoration-none"><i class="bi bi-arrow-right me-2"></i>Your First Steps</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+      <div class="help-category-card">
+        <div class="category-icon icon-assets">
+          <i class="bi bi-archive"></i>
+        </div>
+        <h3 class="h5 mb-2">Asset Management</h3>
+        <p class="text-muted small mb-3">Master asset tracking and lifecycle management</p>
+        <ul class="list-unstyled small">
+          <li class="mb-2"><a href="#adding-assets" class="text-decoration-none"><i class="bi bi-arrow-right me-2"></i>Adding Assets</a></li>
+          <li class="mb-2"><a href="#categories" class="text-decoration-none"><i class="bi bi-arrow-right me-2"></i>Asset Categories</a></li>
+          <li class="mb-2"><a href="#bulk-import" class="text-decoration-none"><i class="bi bi-arrow-right me-2"></i>Bulk Import</a></li>
+          <li class="mb-2"><a href="#transfers" class="text-decoration-none"><i class="bi bi-arrow-right me-2"></i>Asset Transfers</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+      <div class="help-category-card">
+        <div class="category-icon icon-scan">
+          <i class="bi bi-upc-scan"></i>
+        </div>
+        <h3 class="h5 mb-2">QR Code Scanning</h3>
+        <p class="text-muted small mb-3">Track assets with QR codes efficiently</p>
+        <ul class="list-unstyled small">
+          <li class="mb-2"><a href="#qr-scanning" class="text-decoration-none"><i class="bi bi-arrow-right me-2"></i>QR Code Scanning</a></li>
+          <li class="mb-2"><a href="#mobile-app" class="text-decoration-none"><i class="bi bi-arrow-right me-2"></i>Mobile Scanning</a></li>
+          <li class="mb-2"><a href="#qr-generation" class="text-decoration-none"><i class="bi bi-arrow-right me-2"></i>Generating QR Codes</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+      <div class="help-category-card">
+        <div class="category-icon icon-reports">
+          <i class="bi bi-file-earmark-bar-graph"></i>
+        </div>
+        <h3 class="h5 mb-2">Reports & Analytics</h3>
+        <p class="text-muted small mb-3">Generate insights and comprehensive reports</p>
+        <ul class="list-unstyled small">
+          <li class="mb-2"><a href="#reports" class="text-decoration-none"><i class="bi bi-arrow-right me-2"></i>Creating Reports</a></li>
+          <li class="mb-2"><a href="#analytics" class="text-decoration-none"><i class="bi bi-arrow-right me-2"></i>Analytics Dashboard</a></li>
+          <li class="mb-2"><a href="#exports" class="text-decoration-none"><i class="bi bi-arrow-right me-2"></i>Exporting Data</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+      <div class="help-category-card">
+        <div class="category-icon icon-settings">
+          <i class="bi bi-gear"></i>
+        </div>
+        <h3 class="h5 mb-2">Settings & Configuration</h3>
+        <p class="text-muted small mb-3">Configure system settings and preferences</p>
+        <ul class="list-unstyled small">
+          <li class="mb-2"><a href="#company-setup" class="text-decoration-none"><i class="bi bi-arrow-right me-2"></i>Company Setup</a></li>
+          <li class="mb-2"><a href="#branch-management" class="text-decoration-none"><i class="bi bi-arrow-right me-2"></i>Branch Management</a></li>
+          <li class="mb-2"><a href="#user-management" class="text-decoration-none"><i class="bi bi-arrow-right me-2"></i>User Management</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+      <div class="help-category-card">
+        <div class="category-icon icon-api">
+          <i class="bi bi-code-slash"></i>
+        </div>
+        <h3 class="h5 mb-2">Approvals & Workflows</h3>
+        <p class="text-muted small mb-3">Understand approval processes and workflows</p>
+        <ul class="list-unstyled small">
+          <li class="mb-2"><a href="#approval-system" class="text-decoration-none"><i class="bi bi-arrow-right me-2"></i>Approval System</a></li>
+          <li class="mb-2"><a href="#creating-requests" class="text-decoration-none"><i class="bi bi-arrow-right me-2"></i>Creating Requests</a></li>
+          <li class="mb-2"><a href="#approving-requests" class="text-decoration-none"><i class="bi bi-arrow-right me-2"></i>Approving Requests</a></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Help Content -->
+  <div class="row">
+    <div class="col-lg-8">
+      <!-- Getting Started -->
+      <article class="help-article" id="getting-started">
+        <h2><i class="bi bi-rocket-takeoff"></i>Getting Started</h2>
+        
+        <h3>System Overview</h3>
+        <p>The Enterprise Asset Management System is a comprehensive platform designed to help organizations track, manage, and maintain their assets throughout their lifecycle. Built with multi-tenancy support, it allows multiple companies and branches to operate independently while maintaining centralized oversight.</p>
+        
+        <h4>Key Features</h4>
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <div class="feature-item">
+              <div class="feature-icon">
+                <i class="bi bi-archive"></i>
+              </div>
+              <div class="feature-content">
+                <h5>Complete Asset Tracking</h5>
+                <p>Track assets from acquisition to disposal with full lifecycle management.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="feature-item">
+              <div class="feature-icon">
+                <i class="bi bi-upc-scan"></i>
+              </div>
+              <div class="feature-content">
+                <h5>QR Code Integration</h5>
+                <p>Quick asset identification and tracking using QR codes.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="feature-item">
+              <div class="feature-icon">
+                <i class="bi bi-graph-up"></i>
+              </div>
+              <div class="feature-content">
+                <h5>Advanced Analytics</h5>
+                <p>Comprehensive reports and real-time analytics dashboards.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="feature-item">
+              <div class="feature-icon">
+                <i class="bi bi-shield-check"></i>
+              </div>
+              <div class="feature-content">
+                <h5>Role-Based Access</h5>
+                <p>Granular permissions based on user roles and responsibilities.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h3 id="user-roles">User Roles & Permissions</h3>
+        <p>The system supports three main user roles, each with specific permissions and capabilities:</p>
+        
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <div class="role-card role-admin">
+              <i class="bi bi-person-badge fs-3 mb-2 d-block"></i>
+              <h6>Administrator</h6>
+              <ul class="small mb-0 ps-3">
+                <li>Full system access</li>
+                <li>User management</li>
+                <li>Company & branch setup</li>
+                <li>System configuration</li>
+                <li>All asset operations</li>
+              </ul>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="role-card role-manager">
+              <i class="bi bi-person-gear fs-3 mb-2 d-block"></i>
+              <h6>Manager</h6>
+              <ul class="small mb-0 ps-3">
+                <li>Branch-level access</li>
+                <li>Approve requests</li>
+                <li>Asset management</li>
+                <li>Reports & analytics</li>
+                <li>Team oversight</li>
+              </ul>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="role-card role-user">
+              <i class="bi bi-person fs-3 mb-2 d-block"></i>
+              <h6>User</h6>
+              <ul class="small mb-0 ps-3">
+                <li>View assets</li>
+                <li>Submit requests</li>
+                <li>Scan QR codes</li>
+                <li>Basic reports</li>
+                <li>Profile management</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <h3 id="first-steps">Your First Steps</h3>
+        <ol class="mb-4">
+          <li class="mb-2"><strong>Complete Your Profile:</strong> Update your profile information and preferences</li>
+          <li class="mb-2"><strong>Explore the Dashboard:</strong> Familiarize yourself with the main dashboard and navigation</li>
+          <li class="mb-2"><strong>View Assets:</strong> Browse the asset list to see what's already in the system</li>
+          <li class="mb-2"><strong>Try Scanning:</strong> Use the QR scanner to identify an asset</li>
+          <li class="mb-2"><strong>Check Help Resources:</strong> Review relevant documentation for your role</li>
+        </ol>
+      </article>
+
+      <!-- Asset Management -->
+      <article class="help-article" id="adding-assets">
+        <h2><i class="bi bi-archive"></i>Asset Management</h2>
+        
+        <h3>Adding Assets</h3>
+        <p>There are multiple ways to add assets to the system:</p>
+        
+        <h4>1. Single Asset Registration</h4>
+        <p>Use the asset registration wizard for adding individual assets with complete details:</p>
+        <ol>
+          <li>Navigate to Assets → Register New Asset</li>
+          <li>Select the asset category</li>
+          <li>Fill in required fields (name, serial number, etc.)</li>
+          <li>Upload asset images (optional)</li>
+          <li>Assign to user or branch</li>
+          <li>Save the asset</li>
+        </ol>
+
+        <h4>2. Bulk Import</h4>
+        <p>For importing multiple assets at once:</p>
+        <ol>
+          <li>Download the import template</li>
+          <li>Fill in asset data in Excel/CSV</li>
+          <li>Upload the file</li>
+          <li>Review and validate</li>
+          <li>Complete the import</li>
+        </ol>
+
+        <h4>3. QR Scanner Registration</h4>
+        <p>Quickly register assets while scanning:</p>
+        <ol>
+          <li>Use the QR scanner</li>
+          <li>If asset not found, select "Register New"</li>
+          <li>Fill in quick registration form</li>
+          <li>Asset is created and linked to QR code</li>
+        </ol>
+      </article>
+
+      <!-- Approval System -->
+      <article class="help-article" id="approval-system">
+        <h2><i class="bi bi-check2-circle"></i>Approval System</h2>
+        
+        <h3>Understanding Approvals</h3>
+        <p>The approval system ensures proper oversight and control over critical asset operations. It supports various approval workflows:</p>
+        
+        <h4>When Approvals Are Required</h4>
+        <ul>
+          <li><strong>Asset Creation:</strong> Regular users must submit requests for manager approval</li>
+          <li><strong>Asset Disposal:</strong> Requests to retire or delete assets require approval</li>
+          <li><strong>Asset Transfers:</strong> Some transfer operations may require approval</li>
+          <li><strong>Custom Workflows:</strong> Organization-specific approval processes</li>
+        </ul>
+
+        <h4>Approval Roles</h4>
+        <ul>
+          <li><strong>Requester (User):</strong> Submits approval requests</li>
+          <li><strong>Approver (Manager):</strong> Reviews and approves/rejects branch requests</li>
+          <li><strong>Admin:</strong> Can approve any request company-wide</li>
+        </ul>
+
+        <h3 id="creating-requests">Creating Approval Requests</h3>
+        <p>To create an approval request:</p>
+        <ol>
+          <li>Navigate to Approval Center</li>
+          <li>Click "Create New Request"</li>
+          <li>Select request type</li>
+          <li>Fill in details and justification</li>
+          <li>Set priority and deadline</li>
+          <li>Submit for review</li>
+        </ol>
+
+        <h3 id="approving-requests">Approving Requests (Managers & Admins)</h3>
+        <p>To review and approve requests:</p>
+        <ol>
+          <li>Go to Approval Center</li>
+          <li>View "Pending Approvals" tab</li>
+          <li>Click "Review Details" on any request</li>
+          <li>Review the request information</li>
+          <li>Add comments (optional)</li>
+          <li>Click "Approve" or "Reject"</li>
+        </ol>
+
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-2"></i>
+          <strong>Pro Tip:</strong> Use the priority badges to identify urgent requests that need immediate attention.
+        </div>
+      </article>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+      <!-- Table of Contents -->
+      <div class="help-toc">
+        <h3>On This Page</h3>
+        <ul>
+          <li><a href="#getting-started">Getting Started</a></li>
+          <li><a href="#user-roles">User Roles</a></li>
+          <li><a href="#first-steps">First Steps</a></li>
+          <li><a href="#adding-assets">Adding Assets</a></li>
+          <li><a href="#approval-system">Approval System</a></li>
+          <li><a href="#creating-requests">Creating Requests</a></li>
+          <li><a href="#approving-requests">Approving Requests</a></li>
+        </ul>
+      </div>
+
+      <!-- Quick Links -->
+      <div class="glass p-4 rounded-4 mt-4">
+        <h4 class="mb-3">Quick Links</h4>
+        <div class="d-flex flex-column gap-2">
+          <a href="{% url 'dashboard' %}" class="quick-link">
+            <i class="bi bi-speedometer2"></i>
+            Dashboard
+          </a>
+          <a href="{% url 'assets:list' %}" class="quick-link">
+            <i class="bi bi-archive"></i>
+            Assets
+          </a>
+          <a href="{% url 'approval_dashboard' %}" class="quick-link">
+            <i class="bi bi-check2-circle"></i>
+            Approvals
+          </a>
+          <a href="{% url 'reports_dashboard' %}" class="quick-link">
+            <i class="bi bi-file-earmark-bar-graph"></i>
+            Reports
+          </a>
+          <a href="{% url 'settings:settings_dashboard' %}" class="quick-link">
+            <i class="bi bi-gear"></i>
+            Settings
+          </a>
+        </div>
+      </div>
+
+      <!-- Contact Support -->
+      <div class="glass p-4 rounded-4 mt-4">
+        <h4 class="mb-3">Need More Help?</h4>
+        <p class="text-muted small">Can't find what you're looking for? Contact our support team.</p>
+        <a href="mailto:support@assetms.com" class="btn btn-primary w-100">
+          <i class="bi bi-envelope me-2"></i>
+          Contact Support
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

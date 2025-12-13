@@ -1,0 +1,107 @@
+/* Global Background Override - Theme-aware consistent background */
+
+/* Theme-aware blue-tinted background on body only */
+body,
+body.authenticated,
+body[class*="dashboard"],
+body[class*="page"] {
+  background: var(--theme-bg-gradient) !important;
+  background-attachment: fixed !important;
+  min-height: 100vh;
+}
+
+/* Main content areas should allow gradient to show through */
+.content-wrapper {
+  background: transparent !important;
+}
+
+/* Dashboard content keeps normal background - theme-aware */
+.dashboard-content {
+  background: var(--theme-card-bg, rgba(255, 255, 255, 0.95));
+  color: var(--theme-text-primary, #212529);
+  border-radius: 12px;
+  margin: 1rem;
+  padding: 2rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--theme-glass-border, rgba(255, 255, 255, 0.2));
+}
+
+/* Dark mode for dashboard content */
+[data-theme="dark"] .dashboard-content {
+  background: var(--theme-card-bg, rgba(30, 41, 59, 0.95)) !important;
+  color: var(--theme-text-primary, #f9fafb) !important;
+  border: 1px solid var(--theme-glass-border, rgba(255, 255, 255, 0.1)) !important;
+}
+
+/* Ensure glass components maintain their transparency - theme-aware */
+.glass {
+  background: var(--theme-glass-bg, rgba(255, 255, 255, 0.95)) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--theme-glass-border, rgba(255, 255, 255, 0.2));
+}
+
+/* Dark mode for glass components */
+[data-theme="dark"] .glass {
+  background: var(--theme-glass-bg, rgba(30, 41, 59, 0.95)) !important;
+  border: 1px solid var(--theme-glass-border, rgba(255, 255, 255, 0.1)) !important;
+}
+
+/* Enterprise container with proper styling - theme-aware */
+.enterprise-container {
+  background: var(--theme-card-bg, rgba(255, 255, 255, 0.95));
+  color: var(--theme-text-primary, #212529);
+  border-radius: 12px;
+  margin: 1rem;
+  padding: 2rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--theme-glass-border, rgba(255, 255, 255, 0.2));
+}
+
+/* Dark mode for enterprise container */
+[data-theme="dark"] .enterprise-container {
+  background: var(--theme-card-bg, rgba(30, 41, 59, 0.95)) !important;
+  color: var(--theme-text-primary, #f9fafb) !important;
+  border: 1px solid var(--theme-glass-border, rgba(255, 255, 255, 0.1)) !important;
+}
+
+/* Main content wrapper styling - theme-aware */
+.main-content {
+  background: var(--theme-card-bg, rgba(255, 255, 255, 0.95));
+  color: var(--theme-text-primary, #212529);
+  border-radius: 12px;
+  margin: 1rem;
+  padding: 2rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--theme-glass-border, rgba(255, 255, 255, 0.2));
+}
+
+/* Dark mode for main content */
+[data-theme="dark"] .main-content {
+  background: var(--theme-card-bg, rgba(30, 41, 59, 0.95)) !important;
+  color: var(--theme-text-primary, #f9fafb) !important;
+  border: 1px solid var(--theme-glass-border, rgba(255, 255, 255, 0.1)) !important;
+}
+
+/* Maintain card and component backgrounds - theme-aware */
+.card,
+.modal-content,
+.dropdown-menu {
+  background: var(--theme-card-bg, rgba(255, 255, 255, 0.95)) !important;
+  color: var(--theme-text-primary, #212529);
+  border-color: var(--theme-border-primary, #dee2e6);
+}
+
+/* Ensure navbar dropdowns sit above glass content and sidebars */
+.enterprise-navbar .dropdown-menu,
+.enterprise-navbar .dropdown-menu.show {
+  z-index: 11050 !important;
+  position: absolute;
+}
+
+/* ============================================================================
+   MODAL Z-INDEX FIX - DEPRECATED
+   Modal z-index is now handled by modal-zindex-fix.css (loaded last in base.html)
+   This section kept for reference only
+   ============================================================================ */
+
+/* All modal z-index rules moved to static/css/modal-zindex-fix.css */

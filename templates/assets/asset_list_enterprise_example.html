@@ -1,0 +1,323 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Assets - Enterprise Asset Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h2 font-bold mb-2">
+      <i class="bi bi-archive text-primary me-2"></i>
+      Asset Management
+    </h1>
+    <p class="text-muted">Manage and track your organization's assets</p>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-secondary btn-sm" id="exportAssets">
+      <i class="bi bi-download me-1"></i>Export
+    </button>
+    <button class="btn btn-outline-info btn-sm" id="bulkActions">
+      <i class="bi bi-list-check me-1"></i>Bulk Actions
+    </button>
+    <a href="{% url 'asset_register' %}" class="btn btn-primary">
+      <i class="bi bi-plus-lg me-1"></i>Add Asset
+    </a>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">Category</label>
+        <select class="form-select" id="categoryFilter">
+          <option value="">All Categories</option>
+          <option value="1">IT Equipment</option>
+          <option value="2">Furniture</option>
+          <option value="3">Vehicles</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Status</label>
+        <select class="form-select" id="statusFilter">
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="maintenance">Maintenance</option>
+          <option value="retired">Retired</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Location</label>
+        <input type="text" class="form-control" id="locationFilter" placeholder="Filter by location">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Search</label>
+        <input type="text" class="form-control" id="searchFilter" placeholder="Search assets...">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Enterprise Assets Table -->
+<div class="card">
+  <div class="card-header">
+    <div class="d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">
+        <i class="bi bi-table me-2"></i>Assets Database
+      </h5>
+      <div class="d-flex gap-2">
+        <span class="badge bg-primary" id="totalAssets">1,247 Assets</span>
+        <span class="badge bg-success" id="selectedCount" style="display: none;">0 Selected</span>
+      </div>
+    </div>
+  </div>
+  
+  <!-- This table will be automatically enhanced by the TableEnhancer -->
+  <div class="card-body p-0">
+    <table class="table mb-0" id="assetsTable">
+      <thead>
+        <tr>
+          <th style="width: 40px;">
+            <input type="checkbox" class="table-checkbox" id="selectAll" aria-label="Select all assets">
+          </th>
+          <th>Asset Name</th>
+          <th>Category</th>
+          <th>Serial Number</th>
+          <th>Location</th>
+          <th>Assigned To</th>
+          <th>Status</th>
+          <th>Value</th>
+          <th>Last Updated</th>
+          <th style="width: 120px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Sample data - in real implementation this would come from Django -->
+        <tr data-id="1">
+          <td>
+            <input type="checkbox" class="table-checkbox" aria-label="Select asset">
+          </td>
+          <td>
+            <div class="d-flex align-items-center">
+              <i class="bi bi-laptop text-primary me-2"></i>
+              <div>
+                <div class="font-medium">MacBook Pro 16"</div>
+                <small class="text-muted">AST-2024-001</small>
+              </div>
+            </div>
+          </td>
+          <td>IT Equipment</td>
+          <td>MBP16-2024-001</td>
+          <td>Office Floor 3</td>
+          <td>
+            <div class="d-flex align-items-center">
+              <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px;">
+                <span class="text-white" style="font-size: 0.7rem;">JD</span>
+              </div>
+              <span>John Doe</span>
+            </div>
+          </td>
+          <td>active</td>
+          <td>$2,499.00</td>
+          <td>2024-01-15</td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary" title="Edit">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-info" title="View">
+              <i class="bi bi-eye"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" title="QR Code">
+              <i class="bi bi-qr-code"></i>
+            </button>
+          </td>
+        </tr>
+        <tr data-id="2">
+          <td>
+            <input type="checkbox" class="table-checkbox" aria-label="Select asset">
+          </td>
+          <td>
+            <div class="d-flex align-items-center">
+              <i class="bi bi-chair text-success me-2"></i>
+              <div>
+                <div class="font-medium">Ergonomic Office Chair</div>
+                <small class="text-muted">AST-2024-002</small>
+              </div>
+            </div>
+          </td>
+          <td>Furniture</td>
+          <td>CHR-ERG-001</td>
+          <td>Office Floor 2</td>
+          <td>
+            <div class="d-flex align-items-center">
+              <div class="bg-success rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px;">
+                <span class="text-white" style="font-size: 0.7rem;">JS</span>
+              </div>
+              <span>Jane Smith</span>
+            </div>
+          </td>
+          <td>maintenance</td>
+          <td>$299.00</td>
+          <td>2024-01-14</td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary" title="Edit">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-info" title="View">
+              <i class="bi bi-eye"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" title="QR Code">
+              <i class="bi bi-qr-code"></i>
+            </button>
+          </td>
+        </tr>
+        <tr data-id="3">
+          <td>
+            <input type="checkbox" class="table-checkbox" aria-label="Select asset">
+          </td>
+          <td>
+            <div class="d-flex align-items-center">
+              <i class="bi bi-printer text-info me-2"></i>
+              <div>
+                <div class="font-medium">HP LaserJet Pro</div>
+                <small class="text-muted">AST-2024-003</small>
+              </div>
+            </div>
+          </td>
+          <td>IT Equipment</td>
+          <td>HP-LJ-PRO-001</td>
+          <td>Print Room</td>
+          <td>
+            <span class="text-muted">Unassigned</span>
+          </td>
+          <td>active</td>
+          <td>$450.00</td>
+          <td>2024-01-13</td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary" title="Edit">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-info" title="View">
+              <i class="bi bi-eye"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" title="QR Code">
+              <i class="bi bi-qr-code"></i>
+            </button>
+          </td>
+        </tr>
+        <!-- Add more sample rows to demonstrate scrolling -->
+        {% for i in "123456789012345678901234567890" %}
+        <tr data-id="{{ forloop.counter|add:3 }}">
+          <td>
+            <input type="checkbox" class="table-checkbox" aria-label="Select asset">
+          </td>
+          <td>
+            <div class="d-flex align-items-center">
+              <i class="bi bi-device-hdd text-warning me-2"></i>
+              <div>
+                <div class="font-medium">Sample Asset {{ forloop.counter }}</div>
+                <small class="text-muted">AST-2024-{{ forloop.counter|add:3|stringformat:"03d" }}</small>
+              </div>
+            </div>
+          </td>
+          <td>IT Equipment</td>
+          <td>SAMPLE-{{ forloop.counter|stringformat:"03d" }}</td>
+          <td>Office Floor {{ forloop.counter|divisibleby:3|yesno:"1,2" }}</td>
+          <td>
+            <span class="text-muted">Unassigned</span>
+          </td>
+          <td>{% cycle 'active' 'maintenance' 'retired' %}</td>
+          <td>${{ forloop.counter|add:100 }}.00</td>
+          <td>2024-01-{{ forloop.counter|add:10 }}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary" title="Edit">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-info" title="View">
+              <i class="bi bi-eye"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" title="QR Code">
+              <i class="bi bi-qr-code"></i>
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Bulk Actions Modal -->
+<div class="modal fade" id="bulkActionsModal" tabindex="-1" aria-labelledby="bulkActionsModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="bulkActionsModalLabel">
+          <i class="bi bi-list-check me-2"></i>Bulk Actions
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Perform actions on <span id="selectedAssetsCount">0</span> selected assets:</p>
+        <div class="d-grid gap-2">
+          <button class="btn btn-outline-primary" id="bulkEdit">
+            <i class="bi bi-pencil me-2"></i>Edit Selected
+          </button>
+          <button class="btn btn-outline-info" id="bulkExport">
+            <i class="bi bi-download me-2"></i>Export Selected
+          </button>
+          <button class="btn btn-outline-warning" id="bulkAssign">
+            <i class="bi bi-person-plus me-2"></i>Assign to User
+          </button>
+          <button class="btn btn-outline-danger" id="bulkDelete">
+            <i class="bi bi-trash me-2"></i>Delete Selected
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // The table will be automatically enhanced by TableEnhancer
+  const assetsTable = document.getElementById('assetsTable');
+  
+  // Listen for selection changes
+  assetsTable.addEventListener('selectionChange', function(e) {
+    const selectedCount = e.detail.selectedRows.length;
+    const selectedCountBadge = document.getElementById('selectedCount');
+    
+    if (selectedCount > 0) {
+      selectedCountBadge.textContent = `${selectedCount} Selected`;
+      selectedCountBadge.style.display = 'inline';
+    } else {
+      selectedCountBadge.style.display = 'none';
+    }
+  });
+  
+  // Bulk actions
+  document.getElementById('bulkActions').addEventListener('click', function() {
+    const selectedRows = window.TableUtils.getSelectedRows('assetsTable');
+    if (selectedRows.length === 0) {
+      alert('Please select assets first');
+      return;
+    }
+    
+    document.getElementById('selectedAssetsCount').textContent = selectedRows.length;
+    const modal = new bootstrap.Modal(document.getElementById('bulkActionsModal'));
+    modal.show();
+  });
+  
+  // Filter functionality
+  document.getElementById('searchFilter').addEventListener('input', function(e) {
+    // The search functionality is handled by the EnterpriseTable class
+    // This is just for demonstration
+    console.log('Searching for:', e.target.value);
+  });
+});
+</script>
+{% endblock %}

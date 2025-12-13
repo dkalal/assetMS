@@ -1,0 +1,2 @@
+# This file ensures the media directory is tracked by git
+# Media files are ignored but the directory structure is preserved

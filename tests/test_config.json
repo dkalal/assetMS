@@ -1,0 +1,248 @@
+{
+  "testSuite": {
+    "name": "Asset Management System Test Suite",
+    "version": "1.0.0",
+    "description": "Professional testing framework for comprehensive system validation"
+  },
+  "execution": {
+    "modes": {
+      "comprehensive": {
+        "timeout": 600000,
+        "includePerformance": true,
+        "includeSecurity": true,
+        "includeIntegration": true,
+        "parallelExecution": false
+      },
+      "critical": {
+        "timeout": 180000,
+        "includePerformance": false,
+        "includeSecurity": true,
+        "includeIntegration": false,
+        "parallelExecution": true
+      },
+      "quick": {
+        "timeout": 60000,
+        "includePerformance": false,
+        "includeSecurity": false,
+        "includeIntegration": false,
+        "parallelExecution": true
+      }
+    },
+    "retryPolicy": {
+      "maxRetries": 3,
+      "retryDelay": 1000,
+      "exponentialBackoff": true
+    }
+  },
+  "benchmarks": {
+    "performance": {
+      "pageLoad": 2000,
+      "apiResponse": 1000,
+      "imageLoad": 3000,
+      "qrScanInit": 5000,
+      "memoryUsage": 80
+    },
+    "security": {
+      "minSecurityScore": 80,
+      "maxCriticalVulns": 0,
+      "maxMediumVulns": 2,
+      "maxLowVulns": 5
+    },
+    "reliability": {
+      "minSuccessRate": 95,
+      "maxErrorRate": 5,
+      "uptime": 99.9
+    }
+  },
+  "testCategories": {
+    "storage": {
+      "enabled": true,
+      "priority": "high",
+      "tests": [
+        "cloudinary-connection",
+        "imagekit-fallback",
+        "b2-fallback",
+        "local-storage",
+        "image-upload",
+        "image-versioning"
+      ]
+    },
+    "security": {
+      "enabled": true,
+      "priority": "critical",
+      "tests": [
+        "csp-middleware",
+        "cloud-domain-whitelist",
+        "image-csp-validation",
+        "xss-protection",
+        "csrf-protection",
+        "input-sanitization"
+      ]
+    },
+    "qrScanner": {
+      "enabled": true,
+      "priority": "high",
+      "tests": [
+        "camera-access",
+        "qr-detection",
+        "scanner-ui",
+        "format-validation",
+        "duplicate-prevention"
+      ]
+    },
+    "assets": {
+      "enabled": true,
+      "priority": "medium",
+      "tests": [
+        "asset-crud",
+        "asset-search",
+        "asset-filtering",
+        "asset-export"
+      ]
+    },
+    "database": {
+      "enabled": true,
+      "priority": "high",
+      "tests": [
+        "db-connection",
+        "query-performance",
+        "data-integrity"
+      ]
+    },
+    "ui": {
+      "enabled": true,
+      "priority": "low",
+      "tests": [
+        "responsive-design",
+        "accessibility",
+        "user-feedback"
+      ]
+    }
+  },
+  "environments": {
+    "development": {
+      "baseUrl": "http://localhost:8000",
+      "apiUrl": "http://localhost:8000/api",
+      "skipSslVerification": true,
+      "debugMode": true
+    },
+    "staging": {
+      "baseUrl": "https://staging.assetms.com",
+      "apiUrl": "https://staging.assetms.com/api",
+      "skipSslVerification": false,
+      "debugMode": false
+    },
+    "production": {
+      "baseUrl": "https://assetms.com",
+      "apiUrl": "https://assetms.com/api",
+      "skipSslVerification": false,
+      "debugMode": false
+    }
+  },
+  "reporting": {
+    "formats": ["json", "html", "console"],
+    "outputDirectory": "./test-reports",
+    "includeScreenshots": true,
+    "includePerformanceMetrics": true,
+    "includeSecurityScan": true,
+    "exportToFile": true,
+    "realTimeUpdates": true
+  },
+  "notifications": {
+    "onFailure": {
+      "enabled": true,
+      "methods": ["console", "file"],
+      "threshold": "critical"
+    },
+    "onCompletion": {
+      "enabled": true,
+      "methods": ["console"],
+      "includeSummary": true
+    }
+  },
+  "cloudServices": {
+    "cloudinary": {
+      "testEndpoint": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+      "timeout": 10000,
+      "retries": 3
+    },
+    "imagekit": {
+      "testEndpoint": "https://ik.imagekit.io/demo/sample.jpg",
+      "timeout": 10000,
+      "retries": 3
+    },
+    "b2": {
+      "testEndpoint": "https://f000.backblazeb2.com/file/bucket/sample.jpg",
+      "timeout": 15000,
+      "retries": 2
+    }
+  },
+  "qrScanner": {
+    "testCodes": [
+      {
+        "type": "uuid",
+        "value": "550e8400-e29b-41d4-a716-446655440000",
+        "description": "Standard UUID format"
+      },
+      {
+        "type": "numeric",
+        "value": "123456789",
+        "description": "Numeric asset ID"
+      },
+      {
+        "type": "alphanumeric",
+        "value": "ABC123XYZ",
+        "description": "Alphanumeric code"
+      },
+      {
+        "type": "url",
+        "value": "https://example.com/asset/123",
+        "description": "URL format"
+      }
+    ],
+    "cameraSettings": {
+      "preferredCamera": "environment",
+      "fps": 15,
+      "qrBoxSize": 250,
+      "aspectRatio": 1.0
+    }
+  },
+  "security": {
+    "cspDomains": [
+      "cloudinary.com",
+      "res.cloudinary.com",
+      "imagekit.io",
+      "ik.imagekit.io",
+      "backblazeb2.com",
+      "f000.backblazeb2.com"
+    ],
+    "trustedCdns": [
+      "cdn.jsdelivr.net",
+      "cdnjs.cloudflare.com",
+      "unpkg.com"
+    ],
+    "xssPayloads": [
+      "<script>alert('xss')</script>",
+      "javascript:alert('xss')",
+      "<img src=\"x\" onerror=\"alert('xss')\">",
+      "\"><script>alert('xss')</script>",
+      "';alert('xss');//"
+    ]
+  },
+  "performance": {
+    "concurrentUsers": 10,
+    "loadTestDuration": 30000,
+    "memoryLeakThreshold": 10,
+    "responseTimePercentiles": [50, 90, 95, 99]
+  },
+  "database": {
+    "connectionTimeout": 5000,
+    "queryTimeout": 10000,
+    "maxConnections": 100,
+    "testQueries": [
+      "SELECT 1",
+      "SELECT COUNT(*) FROM auth_user",
+      "SELECT COUNT(*) FROM django_session"
+    ]
+  }
+}

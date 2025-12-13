@@ -1,0 +1,434 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}My Transfer Requests - Asset Management System{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ============================================================================
+       WORLD-CLASS MY TRANSFER REQUESTS PAGE
+       Modern, accessible, responsive design
+       Inspired by ServiceNow ITAM, IBM Maximo, SAP Fiori, Snipe-IT
+       ============================================================================ */
+    
+    /* Statistics Cards */
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        padding: 1.5rem;
+        color: white;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border: none;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .stats-card.total {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .stats-card.pending {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    
+    .stats-card.completed {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    
+    .stats-card.rejected {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+    
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    .stats-label {
+        font-size: 0.875rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Request Cards */
+    .request-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        border: 1px solid #e0e0e0;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .request-card:hover {
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        border-color: #667eea;
+    }
+    
+    .request-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 1rem;
+    }
+    
+    .request-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #2d3748;
+        margin: 0;
+    }
+    
+    .request-id {
+        font-size: 0.875rem;
+        color: #718096;
+        margin-top: 0.25rem;
+    }
+    
+    /* Status Badges */
+    .status-badge {
+        padding: 0.375rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+    }
+    
+    .status-badge.pending-manager-approval {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    
+    .status-badge.pending-user-selection {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+    
+    .status-badge.pending-approval {
+        background: #fce7f3;
+        color: #9f1239;
+    }
+    
+    .status-badge.approved {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    
+    .status-badge.completed {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    
+    .status-badge.rejected {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+    
+    .status-badge.cancelled {
+        background: #f3f4f6;
+        color: #4b5563;
+    }
+    
+    /* Request Details */
+    .request-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e5e7eb;
+    }
+    
+    .detail-item {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .detail-label {
+        font-size: 0.75rem;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.25rem;
+    }
+    
+    .detail-value {
+        font-size: 0.875rem;
+        color: #1f2937;
+        font-weight: 500;
+    }
+    
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+    
+    .btn-action {
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 12px;
+        border: 2px dashed #e0e0e0;
+    }
+    
+    .empty-state-icon {
+        font-size: 4rem;
+        color: #cbd5e0;
+        margin-bottom: 1rem;
+    }
+    
+    .empty-state-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
+    
+    .empty-state-text {
+        color: #718096;
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Loading State */
+    .loading-spinner {
+        text-align: center;
+        padding: 3rem;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .stats-number {
+            font-size: 2rem;
+        }
+        
+        .request-header {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .request-details {
+            grid-template-columns: 1fr;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">
+                <i class="bi bi-arrow-left-right me-2"></i>
+                My Transfer Requests
+            </h1>
+            <p class="text-muted mb-0">Track your branch transfer requests and their status</p>
+        </div>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#userTransferRequestModal">
+            <i class="bi bi-plus-circle me-2"></i>
+            Request Transfer
+        </button>
+    </div>
+    
+    <!-- Statistics Cards -->
+    <div class="row g-3 mb-4" id="statsCards">
+        <div class="col-md-3 col-sm-6">
+            <div class="stats-card total">
+                <div class="stats-icon mb-2">
+                    <i class="bi bi-list-ul" style="font-size: 2rem;"></i>
+                </div>
+                <h2 class="stats-number" id="totalCount">0</h2>
+                <p class="stats-label mb-0">Total Requests</p>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stats-card pending">
+                <div class="stats-icon mb-2">
+                    <i class="bi bi-clock-history" style="font-size: 2rem;"></i>
+                </div>
+                <h2 class="stats-number" id="pendingCount">0</h2>
+                <p class="stats-label mb-0">Pending</p>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stats-card completed">
+                <div class="stats-icon mb-2">
+                    <i class="bi bi-check-circle" style="font-size: 2rem;"></i>
+                </div>
+                <h2 class="stats-number" id="completedCount">0</h2>
+                <p class="stats-label mb-0">Completed</p>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stats-card rejected">
+                <div class="stats-icon mb-2">
+                    <i class="bi bi-x-circle" style="font-size: 2rem;"></i>
+                </div>
+                <h2 class="stats-number" id="rejectedCount">0</h2>
+                <p class="stats-label mb-0">Rejected</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Requests List -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <!-- Loading State -->
+            <div id="loadingState" class="loading-spinner">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="text-muted mt-2">Loading your transfer requests...</p>
+            </div>
+            
+            <!-- Requests Container -->
+            <div id="requestsContainer" style="display: none;">
+                <!-- Requests will be inserted here by JavaScript -->
+            </div>
+            
+            <!-- Empty State -->
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <div class="empty-state-icon">
+                    <i class="bi bi-inbox"></i>
+                </div>
+                <h3 class="empty-state-title">No Transfer Requests</h3>
+                <p class="empty-state-text">
+                    You haven't submitted any branch transfer requests yet.
+                </p>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#userTransferRequestModal">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Request Your First Transfer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transfer Request Modal -->
+<div class="modal fade" id="userTransferRequestModal" tabindex="-1" aria-labelledby="userTransferRequestModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="userTransferRequestModalLabel">
+                    <i class="bi bi-arrow-left-right me-2"></i>
+                    Request Branch Transfer
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="userTransferRequestForm">
+                    <!-- Current Branch Info -->
+                    <div class="alert alert-info mb-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Current Branch:</strong> {{ request.user.primary_branch.name|default:"Not Assigned" }}
+                    </div>
+                    
+                    <!-- Destination Branch -->
+                    <div class="mb-3">
+                        <label for="transferToBranch" class="form-label">
+                            Destination Branch <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="transferToBranch" required>
+                            <option value="">Select destination branch...</option>
+                            {% for branch in available_branches %}
+                            <option value="{{ branch.id }}">{{ branch.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">
+                            Please select a destination branch.
+                        </div>
+                    </div>
+                    
+                    <!-- Reason -->
+                    <div class="mb-3">
+                        <label for="transferReason" class="form-label">
+                            Reason for Transfer <span class="text-danger">*</span>
+                        </label>
+                        <textarea 
+                            class="form-control" 
+                            id="transferReason" 
+                            rows="4" 
+                            maxlength="500"
+                            placeholder="Please provide a detailed reason for your transfer request..."
+                            required
+                        ></textarea>
+                        <div class="d-flex justify-content-between">
+                            <div class="invalid-feedback">
+                                Reason must be at least 10 characters.
+                            </div>
+                            <small id="reasonCharCount" class="form-text text-muted">0/500</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Effective Date (Optional) -->
+                    <div class="mb-3">
+                        <label for="transferEffectiveDate" class="form-label">
+                            Preferred Effective Date <span class="text-muted">(Optional)</span>
+                        </label>
+                        <input 
+                            type="date" 
+                            class="form-control" 
+                            id="transferEffectiveDate"
+                        >
+                        <small class="form-text text-muted">
+                            Leave blank for immediate transfer upon approval
+                        </small>
+                    </div>
+                    
+                    <!-- Workflow Info -->
+                    <div class="alert alert-light border">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-diagram-3 me-2"></i>
+                            Transfer Workflow
+                        </h6>
+                        <ol class="mb-0 ps-3">
+                            <li>Manager reviews your request</li>
+                            <li>You select which assets to transfer</li>
+                            <li>Admin approves final selections</li>
+                            <li>Transfer executes automatically</li>
+                        </ol>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-2"></i>Cancel
+                </button>
+                <button type="submit" form="userTransferRequestForm" class="btn btn-primary" id="submitTransferRequest">
+                    <i class="bi bi-send me-2"></i>Submit Request
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/user-transfer-request.js' %}"></script>
+<script src="{% static 'js/my-transfer-requests.js' %}"></script>
+{% endblock %}

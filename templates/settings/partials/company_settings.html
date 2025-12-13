@@ -1,0 +1,184 @@
+<!-- Company & Branches Settings -->
+<div class="row g-4">
+  <!-- Company Information -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-building me-2"></i>Company Information</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="companyName" class="form-label fw-semibold">Company Name</label>
+            <input type="text" class="form-control" id="companyName" value="{{ user.company.name }}" readonly>
+          </div>
+          <div class="col-md-6">
+            <label for="companyEmail" class="form-label fw-semibold">Company Email</label>
+            <input type="email" class="form-control" id="companyEmail" value="{{ user.company.email|default:'' }}">
+          </div>
+          <div class="col-md-6">
+            <label for="companyPhone" class="form-label fw-semibold">Phone Number</label>
+            <input type="tel" class="form-control" id="companyPhone" value="{{ user.company.phone|default:'' }}">
+          </div>
+          <div class="col-md-6">
+            <label for="companyWebsite" class="form-label fw-semibold">Website</label>
+            <input type="url" class="form-control" id="companyWebsite" value="{{ user.company.website|default:'' }}">
+          </div>
+          <div class="col-12">
+            <label for="companyAddress" class="form-label fw-semibold">Address</label>
+            <textarea class="form-control" id="companyAddress" rows="2">{{ user.company.address|default:'' }}</textarea>
+          </div>
+          <div class="col-12">
+            <label for="companyLogo" class="form-label fw-semibold">Company Logo</label>
+            <div class="d-flex align-items-center gap-3">
+              {% if user.company.logo %}
+              <img src="{{ user.company.logo.url }}" alt="Company Logo" class="rounded" style="max-height: 80px;">
+              {% else %}
+              <div class="bg-light rounded p-3">
+                <i class="bi bi-building fs-1 text-muted"></i>
+              </div>
+              {% endif %}
+              <input type="file" class="form-control" id="companyLogo" accept="image/*">
+            </div>
+            <small class="text-muted">Recommended: 200x200px, PNG or JPG</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Branch Management -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>Branch Management</h5>
+        <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addBranchModal">
+          <i class="bi bi-plus-lg me-1"></i>Add Branch
+        </button>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Branch Name</th>
+                <th>Location</th>
+                <th>Manager</th>
+                <th>Assets</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for branch in user.company.branches.all %}
+              <tr>
+                <td>
+                  <strong>{{ branch.name }}</strong>
+                  {% if branch.is_head_office %}
+                  <span class="badge bg-primary ms-2">Head Office</span>
+                  {% endif %}
+                </td>
+                <td>{{ branch.address|default:"—" }}</td>
+                <td>
+                  {% if branch.manager %}
+                  {{ branch.manager.get_full_name }}
+                  {% else %}
+                  <span class="text-muted">Not assigned</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="badge bg-info">{{ branch.assets.count }}</span>
+                </td>
+                <td>
+                  {% if branch.is_active %}
+                  <span class="badge bg-success">Active</span>
+                  {% else %}
+                  <span class="badge bg-secondary">Inactive</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" 
+                            onclick="editBranch({{ branch.id }})"
+                            title="Edit branch">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    {% if not branch.is_head_office %}
+                    <button class="btn btn-outline-danger" 
+                            onclick="deleteBranch({{ branch.id }}, '{{ branch.name|escapejs }}')"
+                            title="Delete branch">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center text-muted py-4">
+                  <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                  No branches found. Add your first branch to get started.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Multi-Tenancy Settings -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="bi bi-shield-check me-2"></i>Multi-Tenancy Settings</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="enforceDataIsolation" checked disabled>
+              <label class="form-check-label fw-semibold" for="enforceDataIsolation">
+                Enforce Data Isolation
+              </label>
+              <small class="d-block text-muted">Ensures complete data separation between companies (Always enabled)</small>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="branchLevelAccess">
+              <label class="form-check-label fw-semibold" for="branchLevelAccess">
+                Branch-Level Access Control
+              </label>
+              <small class="d-block text-muted">Restrict managers and users to their assigned branches only. Admins always have company-wide access.</small>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="crossBranchTransfers">
+              <label class="form-check-label fw-semibold" for="crossBranchTransfers">
+                Allow Cross-Branch Transfers
+              </label>
+              <small class="d-block text-muted">Enable asset transfers between different branches. When disabled, assets can only be transferred within the same branch.</small>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="requireTransferApproval">
+              <label class="form-check-label fw-semibold" for="requireTransferApproval">
+                Require Admin Approval for Transfers
+              </label>
+              <small class="d-block text-muted">All asset transfers must go through approval workflow (Receiver → Admin). When disabled, transfers complete immediately.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================================
+     MODALS MOVED TO: templates/settings/partials/company_settings_modals.html
+     Modals are now in dashboard_modals block to fix backdrop stacking issues
+     ============================================================================ -->

@@ -1,0 +1,874 @@
+/**
+ * ============================================================================
+ * PHASE 3: SIDEBAR & NAVBAR WORLD-CLASS REFINEMENTS
+ * ============================================================================
+ * Clean, modern, accessible navigation matching top AMS systems
+ * Follows: ServiceNow, Maximo, SAP EAM design patterns
+ * ============================================================================
+ */
+
+/* ===========================
+   1. SIDEBAR CORE STYLES
+   =========================== */
+
+/* Sidebar Container - Fixed, Vertical, Below Navbar */
+.dashboard-sidebar,
+aside.dashboard-sidebar {
+  position: fixed !important;
+  top: 72px !important;        /* Below navbar */
+  left: 0 !important;
+  bottom: 0 !important;
+  width: 260px !important;
+  height: calc(100vh - 72px) !important;
+  
+  /* Layout */
+  display: flex !important;
+  flex-direction: column !important;
+  
+  /* Visual Styling - Semi-transparent with subtle blue tint */
+  background: rgba(240, 249, 255, 0.7) !important;
+  backdrop-filter: blur(12px) !important;
+  border-right: 1px solid rgba(224, 242, 254, 0.8) !important;
+  box-shadow: 2px 0 16px rgba(0, 166, 235, 0.06) !important;
+  overflow-x: hidden !important;
+  
+  /* Smooth scrolling for better UX */
+  scroll-behavior: smooth;
+  
+  /* Custom scrollbar (WebKit browsers) */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.1) transparent;
+  
+  /* Z-index */
+  z-index: 1020 !important;
+  
+  /* Transitions */
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Layout resets */
+  border-radius: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Custom Scrollbar (WebKit) */
+.dashboard-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.1);
+  border-radius: 3px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,0,0,0.15);
+}
+
+/* Sidebar Sections */
+.sidebar-section {
+  padding: 0.5rem 0;
+}
+
+/* Section Labels - Uppercase, Muted */
+.sidebar-label {
+  padding: 0.75rem 1rem;
+  font-size: 0.6875rem;  /* 11px */
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted, #9ca3af);
+  user-select: none;
+}
+
+/* Dividers - Subtle */
+.sidebar-divider {
+  margin: 0.5rem 0;
+  border: none;
+  border-top: 1px solid var(--border-color, rgba(0,0,0,0.08));
+  opacity: 1;
+}
+
+/* ===========================
+   2. NAVIGATION LINKS
+   =========================== */
+
+/* Nav Link Base Styles */
+.dashboard-sidebar .nav-link,
+.dashboard-sidebar .rail-item {
+  /* Layout */
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 0.625rem 1rem !important;  /* 10px 16px */
+  margin: 0 0.5rem !important;         /* 8px horizontal margin */
+  
+  /* Typography */
+  font-size: 0.875rem !important;      /* 14px */
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
+  color: var(--text-secondary, #4b5563) !important;
+  text-decoration: none !important;
+  
+  /* Visual */
+  border-radius: 8px !important;
+  background: transparent !important;
+  border: none !important;
+  
+  /* Transitions */
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  
+  /* Cursor */
+  cursor: pointer !important;
+  
+  /* Remove any inherited styles */
+  box-shadow: none !important;
+}
+
+/* Icon Styling */
+.dashboard-sidebar .nav-link i,
+.dashboard-sidebar .rail-item i {
+  font-size: 1.25rem !important;       /* 20px */
+  width: 24px !important;
+  text-align: center !important;
+  color: inherit !important;
+  flex-shrink: 0 !important;
+}
+
+/* Text Span */
+.dashboard-sidebar .nav-link span:not(.badge),
+.dashboard-sidebar .rail-item span:not(.badge) {
+  flex: 1 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Badge Styling */
+.dashboard-sidebar .nav-link .badge,
+.dashboard-sidebar .rail-item .badge {
+  margin-left: auto !important;
+  font-size: 0.6875rem !important;     /* 11px */
+  font-weight: 600 !important;
+  padding: 0.125rem 0.5rem !important; /* 2px 8px */
+  border-radius: 10px !important;
+  flex-shrink: 0 !important;
+}
+
+/* ===========================
+   3. NAVIGATION STATES
+   =========================== */
+
+/* Hover State */
+.dashboard-sidebar .nav-link:hover,
+.dashboard-sidebar .rail-item:hover {
+  background: var(--primary-50, rgba(107, 155, 209, 0.08)) !important;
+  color: var(--text-primary, #1f2937) !important;
+  transform: translateX(2px);
+}
+
+/* Active State */
+.dashboard-sidebar .nav-link.active,
+.dashboard-sidebar .rail-item.active {
+  background: var(--primary-100, rgba(107, 155, 209, 0.12)) !important;
+  color: var(--primary, #6B9BD1) !important;
+  font-weight: 600 !important;
+  position: relative;
+}
+
+/* Active State - Left Border Indicator */
+.dashboard-sidebar .nav-link.active::before,
+.dashboard-sidebar .rail-item.active::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 24px;
+  background: var(--primary, #6B9BD1);
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 8px rgba(107, 155, 209, 0.3);
+}
+
+/* Active State - Icon Color */
+.dashboard-sidebar .nav-link.active i,
+.dashboard-sidebar .rail-item.active i {
+  color: var(--primary, #6B9BD1) !important;
+}
+
+/* Focus State (Keyboard Navigation) */
+.dashboard-sidebar .nav-link:focus-visible,
+.dashboard-sidebar .rail-item:focus-visible {
+  outline: 2px solid var(--primary, #6B9BD1) !important;
+  outline-offset: 2px !important;
+  box-shadow: none !important;
+}
+
+/* Disabled State */
+.dashboard-sidebar .nav-link.disabled,
+.dashboard-sidebar .rail-item.disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+/* ===========================
+   4. NAVBAR CORE STYLES
+   =========================== */
+
+/* Navbar Container - Sticky at Top */
+.enterprise-navbar,
+.navbar.enterprise-navbar {
+  /* Positioning */
+  position: sticky !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 1030 !important;
+  
+  /* Visual */
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(12px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+  border-bottom: 1px solid var(--border-color, rgba(0,0,0,0.08)) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+  
+  /* Layout */
+  padding: 0.75rem 0 !important;
+  min-height: 72px !important;
+  
+  /* Transitions */
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Navbar on Scroll - Enhanced Shadow */
+.enterprise-navbar.scrolled {
+  background: rgba(255, 255, 255, 0.98) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+}
+
+/* ===========================
+   5. NAVBAR BRAND & LOGO
+   =========================== */
+
+.navbar-brand {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 0 !important;
+  margin: 0 1rem 0 0 !important;
+  text-decoration: none !important;
+  transition: opacity 0.2s ease !important;
+}
+
+.navbar-brand:hover {
+  opacity: 0.85;
+}
+
+.navbar-brand img {
+  height: 40px !important;
+  width: auto !important;
+  max-width: 50px !important;
+  object-fit: contain !important;
+  border-radius: 6px !important;
+}
+
+.navbar-brand .fw-bold {
+  color: var(--primary, #0066cc) !important;
+  font-size: 0.95rem !important;
+  line-height: 1.2 !important;
+  font-weight: 700 !important;
+}
+
+.navbar-brand .text-muted {
+  color: var(--text-muted, #6b7280) !important;
+  font-size: 0.7rem !important;
+  line-height: 1 !important;
+}
+
+/* ===========================
+   6. GLOBAL SEARCH BAR
+   =========================== */
+
+.enterprise-navbar .input-group {
+  max-width: 500px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  transition: box-shadow 0.2s ease;
+}
+
+.enterprise-navbar .input-group:focus-within {
+  box-shadow: 0 0 0 3px rgba(107, 155, 209, 0.1);
+}
+
+.enterprise-navbar .input-group-text {
+  background: var(--card-bg, #ffffff) !important;
+  border: 1px solid var(--border-color, #e5e7eb) !important;
+  border-right: none !important;
+  padding: 0.5rem 0.75rem !important;
+}
+
+.enterprise-navbar .form-control {
+  background: var(--card-bg, #ffffff) !important;
+  border: 1px solid var(--border-color, #e5e7eb) !important;
+  border-left: none !important;
+  padding: 0.5rem 0.75rem !important;
+  font-size: 0.875rem !important;
+}
+
+.enterprise-navbar .form-control:focus {
+  border-color: var(--border-color, #e5e7eb) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.enterprise-navbar .form-control::placeholder {
+  color: var(--text-muted, #9ca3af) !important;
+  font-size: 0.875rem !important;
+}
+
+/* ===========================
+   7. BRANCH SELECTOR
+   =========================== */
+
+.enterprise-navbar #branch-select-topbar {
+  background: var(--card-bg, #ffffff) !important;
+  border: 1px solid var(--border-color, #e5e7eb) !important;
+  border-left: none !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  color: var(--text-primary, #1f2937) !important;
+  padding: 0.5rem 2rem 0.5rem 0.5rem !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.enterprise-navbar #branch-select-topbar:focus {
+  border-color: var(--primary, #6B9BD1) !important;
+  box-shadow: 0 0 0 3px rgba(107, 155, 209, 0.1) !important;
+  outline: none !important;
+}
+
+.enterprise-navbar #branch-select-topbar:hover {
+  background: var(--primary-50, rgba(107, 155, 209, 0.05)) !important;
+}
+
+/* ===========================
+   8. QUICK ACTION BUTTONS
+   =========================== */
+
+.enterprise-navbar .btn-group .btn {
+  font-size: 0.875rem !important;
+  padding: 0.5rem 0.75rem !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+  border-radius: 6px !important;
+}
+
+.enterprise-navbar .btn-outline-primary {
+  color: var(--primary, #6B9BD1) !important;
+  border-color: var(--primary, #6B9BD1) !important;
+}
+
+.enterprise-navbar .btn-outline-primary:hover {
+  background: var(--primary, #6B9BD1) !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(107, 155, 209, 0.2);
+}
+
+.enterprise-navbar .btn-outline-secondary {
+  color: var(--text-secondary, #6b7280) !important;
+  border-color: var(--border-color, #e5e7eb) !important;
+}
+
+.enterprise-navbar .btn-outline-secondary:hover {
+  background: var(--surface, #f9fafb) !important;
+  color: var(--text-primary, #1f2937) !important;
+  border-color: var(--border-color, #d1d5db) !important;
+}
+
+/* ===========================
+   9. NOTIFICATIONS & ALERTS
+   =========================== */
+
+.enterprise-navbar .dropdown .btn {
+  position: relative;
+  padding: 0.5rem !important;
+  border-radius: 6px !important;
+  transition: all 0.2s ease !important;
+}
+
+.enterprise-navbar .dropdown .btn:hover {
+  background: var(--primary-50, rgba(107, 155, 209, 0.08)) !important;
+  border-color: var(--primary-200, rgba(107, 155, 209, 0.3)) !important;
+}
+
+/* Notification Badge */
+.enterprise-navbar .badge.rounded-pill {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(25%, -25%);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem !important;
+  font-weight: 700 !important;
+  border-radius: 9px !important;
+  border: 2px solid var(--card-bg, #ffffff);
+}
+
+/* Dropdown Menu */
+.enterprise-navbar .dropdown-menu {
+  border: 1px solid var(--border-color, #e5e7eb) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+  padding: 0.5rem !important;
+  margin-top: 0.5rem !important;
+}
+
+.enterprise-navbar .dropdown-header {
+  padding: 0.75rem 1rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  color: var(--text-primary, #1f2937) !important;
+  border-bottom: 1px solid var(--border-color, #e5e7eb) !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.enterprise-navbar .dropdown-item {
+  padding: 0.625rem 1rem !important;
+  font-size: 0.875rem !important;
+  color: var(--text-secondary, #4b5563) !important;
+  border-radius: 6px !important;
+  transition: all 0.15s ease !important;
+}
+
+.enterprise-navbar .dropdown-item:hover {
+  background: var(--primary-50, rgba(107, 155, 209, 0.08)) !important;
+  color: var(--text-primary, #1f2937) !important;
+}
+
+.enterprise-navbar .dropdown-item i {
+  width: 20px;
+  text-align: center;
+  color: var(--text-muted, #9ca3af);
+}
+
+.enterprise-navbar .dropdown-item:hover i {
+  color: var(--primary, #6B9BD1);
+}
+
+.enterprise-navbar .dropdown-divider {
+  margin: 0.5rem 0 !important;
+  border-top: 1px solid var(--border-color, #e5e7eb) !important;
+}
+
+/* ===========================
+   10. USER PROFILE MENU
+   =========================== */
+
+.enterprise-navbar #userDropdown {
+  padding: 0.375rem 0.75rem !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+
+.enterprise-navbar #userDropdown:hover {
+  background: var(--primary-50, rgba(107, 155, 209, 0.08)) !important;
+  border-color: var(--primary, #6B9BD1) !important;
+  transform: translateY(-1px);
+}
+
+.enterprise-navbar #userDropdown .user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===========================
+   11. MOBILE RESPONSIVE
+   =========================== */
+
+/* Tablet and Below (≤ 991px) */
+@media (max-width: 991px) {
+  /* Navbar Adjustments */
+  .navbar-collapse {
+    background: var(--card-bg, #ffffff);
+    border-radius: 12px;
+    margin-top: 1rem;
+    padding: 1rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  
+  /* Search Bar Full Width */
+  .enterprise-navbar form[role="search"] {
+    max-width: 100% !important;
+    margin: 1rem 0 !important;
+  }
+  
+  /* Action Buttons Stack */
+  .enterprise-navbar .d-flex.gap-2 {
+    flex-direction: column !important;
+    width: 100%;
+  }
+  
+  .enterprise-navbar .btn-group {
+    width: 100%;
+  }
+  
+  .enterprise-navbar .dropdown .btn {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Sidebar: Hidden by Default on Mobile/Tablet - WORLD-CLASS OVERLAY */
+  .dashboard-sidebar,
+  aside.dashboard-sidebar {
+    transform: translateX(-100%) !important;
+    box-shadow: none !important;
+    z-index: 1026 !important; /* Above backdrop (1025), below navbar (1030) */
+    position: fixed !important;
+    top: 72px !important;     /* Below navbar */
+    left: 0 !important;
+    bottom: 0 !important;
+    width: 260px !important;
+  }
+  
+  /* Sidebar: Open State - Slides Over Content */
+  body.sidebar-open .dashboard-sidebar,
+  body.sidebar-open aside.dashboard-sidebar {
+    transform: translateX(0) !important;
+    box-shadow: 4px 0 16px rgba(0,0,0,0.3) !important;
+  }
+  
+  /* Dashboard Content: Full Width on Mobile - Zero Left Margin/Padding */
+  .dashboard-content,
+  main.dashboard-content {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    margin-top: 72px !important;
+    width: 100% !important;
+    padding: 1rem !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
+  /* Remove ALL left/right margins from dashboard children on mobile */
+  .dashboard-content > *,
+  main.dashboard-content > * {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  
+  /* Restore internal padding for cards/sections */
+  .dashboard-content .metric-card,
+  .dashboard-content .glass,
+  .dashboard-content .chart-container,
+  .dashboard-content .activity-section {
+    padding: 1rem !important;
+  }
+  
+  /* Sidebar Backdrop - WORLD-CLASS: Below Navbar, Above Content */
+  .sidebar-backdrop {
+    position: fixed !important;
+    top: 72px !important;        /* Start below navbar (navbar height) */
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: rgba(0,0,0,0.5) !important;
+    backdrop-filter: blur(2px) !important;
+    z-index: 1025 !important;    /* CRITICAL: Below navbar (1030), above content (1) */
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 0.3s ease !important;
+  }
+  
+  body.sidebar-open .sidebar-backdrop {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  /* KPI Cards: Stack Vertically */
+  .metrics-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  /* Charts: Full Width */
+  .charts-grid,
+  .charts-container,
+  .chart-wrapper {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+  
+  /* Activity Section: Mobile Optimization */
+  .activity-section__header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 1rem !important;
+  }
+  
+  /* Activity Filters: Horizontal Scroll */
+  .activity-filters {
+    width: 100% !important;
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+  }
+  
+  /* Activity Table: Compact */
+  .activity-table-wrapper {
+    overflow-x: auto !important;
+  }
+  
+  .activity-table {
+    font-size: 0.875rem !important;
+  }
+  
+  .activity-table th,
+  .activity-table td {
+    padding: 0.5rem !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* Small Mobile (≤ 576px) */
+@media (max-width: 576px) {
+  /* Navbar: Compact */
+  .enterprise-navbar {
+    padding: 0.5rem 0 !important;
+    min-height: 60px !important;
+  }
+
+  /* Brand: Smaller */
+  .navbar-brand img {
+    height: 32px !important;
+    max-width: 40px !important;
+  }
+
+  /* Dashboard Content: Extra Padding Reduction - FULL WIDTH */
+  .dashboard-content,
+  main.dashboard-content {
+    padding: 0.75rem !important;
+    margin-top: 60px !important;
+    margin-left: 0 !important;     /* CRITICAL: No left margin (full width) */
+    width: 100% !important;         /* Full viewport width */
+  }
+
+  /* Sidebar: Adjust Width for Small Screens - OVERLAY PATTERN */
+  .dashboard-sidebar,
+  aside.dashboard-sidebar {
+    width: 240px !important;
+    position: fixed !important;     /* Overlay, not inline */
+    z-index: 1026 !important;       /* Above backdrop, below navbar */
+  }
+
+  /* Activity Table: Responsive */
+  .activity-table {
+    font-size: 0.8125rem !important;
+  }
+
+  .activity-table th,
+  .activity-table td {
+    padding: 0.5rem !important;
+  }
+}
+
+/* Desktop (≥ 992px) - WORLD-CLASS: Sidebar Always Visible, Content Offset */
+@media (min-width: 992px) {
+  /* Sidebar: Always Visible, Normal Stacking */
+  .dashboard-sidebar,
+  aside.dashboard-sidebar {
+    transform: translateX(0) !important;
+    z-index: 1 !important;          /* Normal stacking (no overlay needed) */
+    position: fixed !important;
+    top: 72px !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: 260px !important;
+  }
+
+  /* Dashboard Content: Offset for Sidebar */
+  .dashboard-content,
+  main.dashboard-content {
+    margin-left: 260px !important;  /* Offset by sidebar width */
+    margin-right: 0 !important;
+    margin-top: 72px !important;
+    width: calc(100% - 260px) !important;
+    padding: 2rem !important;
+  }
+
+  /* Backdrop: Hidden on Desktop */
+  .sidebar-backdrop {
+    display: none !important;
+  }
+
+  /* Mobile Toggle: Hidden on Desktop */
+  #mobile-sidebar-toggle {
+    display: none !important;
+  }
+}
+
+/* ===========================
+   12. DARK MODE SUPPORT
+   =========================== */
+
+/* Dark Mode - prefers-color-scheme */
+@media (prefers-color-scheme: dark) {
+  .dashboard-sidebar {
+    background: rgba(15, 20, 25, 0.7) !important;
+    backdrop-filter: blur(12px) !important;
+    border-right-color: rgba(26, 35, 50, 0.8) !important;
+    box-shadow: 2px 0 16px rgba(0, 166, 235, 0.1) !important;
+  }
+  
+  .dashboard-sidebar .nav-link,
+  .dashboard-sidebar .rail-item {
+    color: var(--dark-text-secondary, #d1d5db) !important;
+  }
+  
+  .dashboard-sidebar .nav-link:hover,
+  .dashboard-sidebar .rail-item:hover {
+    background: rgba(107, 155, 209, 0.15) !important;
+    color: var(--dark-text-primary, #f9fafb) !important;
+  }
+  
+  .dashboard-sidebar .nav-link.active,
+  .dashboard-sidebar .rail-item.active {
+    background: rgba(107, 155, 209, 0.2) !important;
+    color: var(--primary-light, #93c5fd) !important;
+  }
+  
+  .enterprise-navbar {
+    background: rgba(31, 41, 55, 0.95) !important;
+    border-bottom-color: rgba(255,255,255,0.1) !important;
+  }
+}
+
+/* Dark Mode - data-theme attribute (theme toggle) */
+[data-theme="dark"] .dashboard-sidebar {
+  background: rgba(15, 20, 25, 0.7) !important;
+  backdrop-filter: blur(12px) !important;
+  border-right-color: rgba(26, 35, 50, 0.8) !important;
+  box-shadow: 2px 0 16px rgba(0, 166, 235, 0.1) !important;
+}
+
+[data-theme="dark"] .dashboard-sidebar .nav-link,
+[data-theme="dark"] .dashboard-sidebar .rail-item {
+  color: #d1d5db !important;
+}
+
+[data-theme="dark"] .dashboard-sidebar .nav-link:hover,
+[data-theme="dark"] .dashboard-sidebar .rail-item:hover {
+  background: rgba(107, 155, 209, 0.15) !important;
+  color: #f9fafb !important;
+}
+
+[data-theme="dark"] .dashboard-sidebar .nav-link.active,
+[data-theme="dark"] .dashboard-sidebar .rail-item.active {
+  background: rgba(107, 155, 209, 0.2) !important;
+  color: #93c5fd !important;
+}
+
+[data-theme="dark"] .enterprise-navbar {
+  background: rgba(31, 41, 55, 0.95) !important;
+  border-bottom-color: rgba(255,255,255,0.1) !important;
+}
+
+/* ===========================
+   13. ACCESSIBILITY ENHANCEMENTS
+   =========================== */
+
+/* Focus Visible (Keyboard Navigation) */
+*:focus-visible {
+  outline: 2px solid var(--primary, #6B9BD1) !important;
+  outline-offset: 2px !important;
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Skip to Main Content Link */
+.skip-to-main {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  background: var(--primary, #6B9BD1);
+  color: #ffffff;
+  padding: 1rem 2rem;
+  text-decoration: none;
+  border-radius: 0 0 8px 0;
+  font-weight: 600;
+  z-index: 10000;
+  transition: top 0.3s ease;
+}
+
+.skip-to-main:focus {
+  top: 0;
+}
+
+/* ===========================
+   14. PRINT STYLES
+   =========================== */
+
+@media print {
+  .dashboard-sidebar,
+  .enterprise-navbar,
+  .sidebar-backdrop {
+    display: none !important;
+  }
+  
+  .dashboard-content {
+    margin-left: 0 !important;
+    margin-top: 0 !important;
+    width: 100% !important;
+  }
+}
+
+/* ===========================
+   15. PERFORMANCE OPTIMIZATIONS
+   =========================== */
+
+/* GPU Acceleration for Transforms */
+.dashboard-sidebar,
+.enterprise-navbar,
+.dropdown-menu {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Smooth Scrolling Container */
+.dashboard-sidebar {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ===========================
+   END OF SIDEBAR & NAVBAR REFINEMENTS
+   =========================== */

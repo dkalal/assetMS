@@ -1,0 +1,321 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Request Asset Creation · Asset Management{% endblock %}
+
+{% block extra_head %}
+<style>
+  .request-form-container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  
+  .form-section {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  
+  .form-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary-700);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--primary-100);
+  }
+  
+  .required-indicator {
+    color: #dc3545;
+    font-weight: bold;
+  }
+  
+  .field-help-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+  }
+  
+  .priority-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  
+  .priority-low { background: #e3f2fd; color: #1976d2; }
+  .priority-medium { background: #fff3e0; color: #f57c00; }
+  .priority-high { background: #fce4ec; color: #c2185b; }
+  .priority-urgent { background: #ffebee; color: #d32f2f; }
+  
+  .dynamic-fields-container {
+    display: none;
+  }
+  
+  .dynamic-fields-container.active {
+    display: block;
+  }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="request-form-container">
+  <!-- Header -->
+  <div class="mb-4">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'asset_list' %}">Assets</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Request Asset Creation</li>
+      </ol>
+    </nav>
+    
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div>
+        <h2 class="mb-1"><i class="bi bi-file-earmark-plus me-2 text-primary"></i>Request Asset Creation</h2>
+        <p class="text-muted mb-0">Submit a request for admin approval to add a new asset to inventory</p>
+      </div>
+    </div>
+    
+    <div class="alert alert-info d-flex align-items-start">
+      <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+      <div>
+        <strong>Approval Required:</strong> As a manager, asset creation requests require admin approval. 
+        Your request will be reviewed and you'll be notified once it's processed.
+      </div>
+    </div>
+  </div>
+
+  <!-- Request Form -->
+  <form method="post" id="asset-creation-request-form">
+    {% csrf_token %}
+    
+    <!-- Basic Information -->
+    <div class="form-section">
+      <h3 class="form-section-title">
+        <i class="bi bi-info-circle me-2"></i>Request Information
+      </h3>
+      
+      <div class="row g-3">
+        <div class="col-md-8">
+          <label for="title" class="form-label">Request Title <span class="required-indicator">*</span></label>
+          <input type="text" class="form-control" id="title" name="title" required 
+                 placeholder="e.g., New Laptop for Development Team">
+          <div class="field-help-text">Brief, descriptive title for this asset request</div>
+        </div>
+        
+        <div class="col-md-4">
+          <label for="priority" class="form-label">Priority <span class="required-indicator">*</span></label>
+          <select class="form-select" id="priority" name="priority" required>
+            {% for value, label in priority_choices %}
+            <option value="{{ value }}" {% if value == 'medium' %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div class="col-12">
+          <label for="justification" class="form-label">Business Justification <span class="required-indicator">*</span></label>
+          <textarea class="form-control" id="justification" name="justification" rows="3" required
+                    placeholder="Explain why this asset is needed and how it will be used..."></textarea>
+          <div class="field-help-text">Provide clear business justification for this asset request</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Asset Details -->
+    <div class="form-section">
+      <h3 class="form-section-title">
+        <i class="bi bi-box-seam me-2"></i>Asset Details
+      </h3>
+      
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label for="category_id" class="form-label">Category <span class="required-indicator">*</span></label>
+          <select class="form-select" id="category_id" name="category_id" required>
+            <option value="">-- Select Category --</option>
+            {% for category in categories %}
+            <option value="{{ category.id }}">{{ category.name }}</option>
+            {% endfor %}
+          </select>
+          <div class="field-help-text">Select the asset category</div>
+        </div>
+        
+        <div class="col-md-6">
+          <label for="branch_id" class="form-label">Branch <span class="required-indicator">*</span></label>
+          <select class="form-select" id="branch_id" name="branch_id" required>
+            <option value="">-- Select Branch --</option>
+            {% for branch in branches %}
+            <option value="{{ branch.id }}" {% if user_branch and branch.id == user_branch.id %}selected{% endif %}>
+              {{ branch.name }}
+            </option>
+            {% endfor %}
+          </select>
+          <div class="field-help-text">Branch where asset will be located</div>
+        </div>
+        
+        <div class="col-md-6">
+          <label for="status" class="form-label">Initial Status</label>
+          <select class="form-select" id="status" name="status">
+            <option value="active" selected>Active</option>
+            <option value="in_maintenance">In Maintenance</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+        
+        <div class="col-12">
+          <label for="description" class="form-label">Description</label>
+          <textarea class="form-control" id="description" name="description" rows="2"
+                    placeholder="Additional description or notes about this asset..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dynamic Fields (Category-Specific) -->
+    <div class="form-section dynamic-fields-container" id="dynamic-fields-section">
+      <h3 class="form-section-title">
+        <i class="bi bi-sliders me-2"></i>Category-Specific Fields
+      </h3>
+      
+      <div id="dynamic-fields-container" class="row g-3">
+        <!-- Dynamic fields will be loaded here via JavaScript -->
+      </div>
+      
+      <div id="dynamic-fields-loading" class="text-center py-3 d-none">
+        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+        <span class="text-muted">Loading category fields...</span>
+      </div>
+      
+      <div id="dynamic-fields-empty" class="text-center text-muted py-3 d-none">
+        No additional fields required for this category.
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="form-section">
+      <div class="d-flex justify-content-between align-items-center">
+        <a href="{% url 'asset_list' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-x-circle me-2"></i>Cancel
+        </a>
+        
+        <button type="submit" class="btn btn-primary btn-lg px-5" id="submit-request-btn">
+          <i class="bi bi-send me-2"></i>Submit Request
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const categorySelect = document.getElementById('category_id');
+  const dynamicFieldsSection = document.getElementById('dynamic-fields-section');
+  const dynamicFieldsContainer = document.getElementById('dynamic-fields-container');
+  const dynamicFieldsLoading = document.getElementById('dynamic-fields-loading');
+  const dynamicFieldsEmpty = document.getElementById('dynamic-fields-empty');
+  const form = document.getElementById('asset-creation-request-form');
+  
+  // Load dynamic fields when category changes
+  categorySelect.addEventListener('change', async function() {
+    const categoryId = this.value;
+    
+    if (!categoryId) {
+      dynamicFieldsSection.classList.remove('active');
+      return;
+    }
+    
+    // Show loading
+    dynamicFieldsContainer.innerHTML = '';
+    dynamicFieldsLoading.classList.remove('d-none');
+    dynamicFieldsEmpty.classList.add('d-none');
+    dynamicFieldsSection.classList.add('active');
+    
+    try {
+      const response = await fetch(`/api/dynamic-fields/?category_id=${categoryId}`);
+      const data = await response.json();
+      
+      dynamicFieldsLoading.classList.add('d-none');
+      
+      if (data.success && data.fields && Object.keys(data.fields).length > 0) {
+        renderDynamicFields(data.fields);
+      } else {
+        dynamicFieldsEmpty.classList.remove('d-none');
+      }
+    } catch (error) {
+      console.error('Failed to load dynamic fields:', error);
+      dynamicFieldsLoading.classList.add('d-none');
+      dynamicFieldsContainer.innerHTML = `
+        <div class="col-12">
+          <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Failed to load category fields. Please try again.
+          </div>
+        </div>
+      `;
+    }
+  });
+  
+  function renderDynamicFields(fields) {
+    dynamicFieldsContainer.innerHTML = '';
+    
+    for (const [key, field] of Object.entries(fields)) {
+      const colDiv = document.createElement('div');
+      colDiv.className = 'col-md-6';
+      
+      const label = document.createElement('label');
+      label.className = 'form-label';
+      label.htmlFor = `field_${key}`;
+      label.textContent = field.label;
+      
+      if (field.required) {
+        const required = document.createElement('span');
+        required.className = 'required-indicator';
+        required.textContent = ' *';
+        label.appendChild(required);
+      }
+      
+      let input;
+      if (field.type === 'text') {
+        input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'form-control';
+      } else if (field.type === 'number') {
+        input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'form-control';
+        input.step = 'any';
+      } else if (field.type === 'date') {
+        input = document.createElement('input');
+        input.type = 'date';
+        input.className = 'form-control';
+      } else {
+        input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'form-control';
+      }
+      
+      input.id = `field_${key}`;
+      input.name = `field_${key}`;
+      if (field.required) {
+        input.required = true;
+      }
+      
+      colDiv.appendChild(label);
+      colDiv.appendChild(input);
+      dynamicFieldsContainer.appendChild(colDiv);
+    }
+  }
+  
+  // Form validation
+  form.addEventListener('submit', function(e) {
+    const submitBtn = document.getElementById('submit-request-btn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting...';
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,239 @@
+{% extends "base_dashboard.html" %}
+{% load static %}
+{% block extra_styles %}
+  <link rel="stylesheet" href="{% static 'css/dashboard-blue-modern.css' %}">
+{% endblock %}
+{% block extra_scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="{% static 'js/dashboard.js' %}"></script>
+  <script src="{% static 'js/dashboard-activity-unified.js' %}"></script>
+{% endblock %}
+{% block content %}
+    <!-- Page Header -->
+    <div class="mb-4">
+      <h2 class="mb-1">Dashboard</h2>
+      <p class="text-muted mb-0">Overview of your asset management system</p>
+    </div>
+    
+    <!-- 1. KEY METRICS (Clean Modern Design - Matches Mockup) -->
+    <section aria-label="Key Performance Indicators" class="mb-5">
+      <div class="metrics-grid">
+        <!-- Total Assets Card -->
+        <div class="metric-card">
+          <div class="metric-card__header">
+            <h3 class="metric-card__title">Total Assets</h3>
+            <div class="metric-card__menu" role="button" tabindex="0" aria-label="More options">
+              <i class="bi bi-three-dots-vertical"></i>
+            </div>
+          </div>
+          <div class="metric-card__body">
+            <div class="metric-card__value" aria-live="polite">
+              <span id="kpi-total">—</span>
+            </div>
+            <div class="metric-card__subtitle">Last 7 days</div>
+          </div>
+          <div class="metric-card__footer">
+            <a href="/assets/" class="metric-card__link">Details</a>
+          </div>
+        </div>
+
+        <!-- Active Assets Card -->
+        <div class="metric-card">
+          <div class="metric-card__header">
+            <h3 class="metric-card__title">Active Assets</h3>
+            <div class="metric-card__menu" role="button" tabindex="0" aria-label="More options">
+              <i class="bi bi-three-dots-vertical"></i>
+            </div>
+          </div>
+          <div class="metric-card__body">
+            <div class="metric-card__value" aria-live="polite">
+              <span id="kpi-active">—</span>
+            </div>
+            <div class="metric-card__subtitle">Operational assets</div>
+          </div>
+          <div class="metric-card__footer">
+            <a href="/assets/?status=active" class="metric-card__link">Details</a>
+          </div>
+        </div>
+
+        <!-- Needs Repair Card -->
+        <div class="metric-card">
+          <div class="metric-card__header">
+            <h3 class="metric-card__title">Needs Repair</h3>
+            <div class="metric-card__menu" role="button" tabindex="0" aria-label="More options">
+              <i class="bi bi-three-dots-vertical"></i>
+            </div>
+          </div>
+          <div class="metric-card__body">
+            <div class="metric-card__value" aria-live="polite">
+              <span id="kpi-repair">—</span>
+            </div>
+            <div class="metric-card__subtitle">Requires attention</div>
+          </div>
+          <div class="metric-card__footer">
+            <a href="/maintenance/" class="metric-card__link">Details</a>
+          </div>
+        </div>
+
+        <!-- Pending Approvals Card (Admins/Managers Only) -->
+        {% if user.is_authenticated and user.role != 'user' %}
+        <div class="metric-card">
+          <div class="metric-card__header">
+            <h3 class="metric-card__title">Pending Approvals</h3>
+            <div class="metric-card__menu" role="button" tabindex="0" aria-label="More options">
+              <i class="bi bi-three-dots-vertical"></i>
+            </div>
+          </div>
+          <div class="metric-card__body">
+            <div class="metric-card__value" aria-live="polite">
+              <span id="kpi-approvals">—</span>
+            </div>
+            <div class="metric-card__subtitle">Awaiting review</div>
+          </div>
+          <div class="metric-card__footer">
+            <a href="/assets/transfers/" class="metric-card__link">Details</a>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- 2. ANALYTICS CHARTS (Clean Grid Layout) -->
+    <section id="dashboard-charts" class="mb-5">
+      <div class="chart-container">
+        <div class="chart-container__header">
+          <div>
+            <h4 class="chart-container__title">Analytics Overview</h4>
+            <p class="chart-container__subtitle mb-0">Visual insights into your assets</p>
+          </div>
+        </div>
+        <div class="charts-grid">
+          <!-- Assets by Category -->
+          <div class="glass">
+            <div style="padding: 1.5rem;">
+              <h6 class="mb-3" style="font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                <i class="bi bi-pie-chart me-2" style="color: var(--primary);"></i>Assets by Category
+              </h6>
+              <div style="position: relative; height: 240px;">
+                <canvas id="chart-category"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Asset Acquisition -->
+          <div class="glass">
+            <div style="padding: 1.5rem;">
+              <h6 class="mb-3" style="font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                <i class="bi bi-graph-up me-2" style="color: var(--primary);"></i>Asset Acquisition
+              </h6>
+              <div style="position: relative; height: 240px;">
+                <canvas id="chart-acquisition"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- By Department -->
+          <div class="glass">
+            <div style="padding: 1.5rem;">
+              <h6 class="mb-3" style="font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                <i class="bi bi-building me-2" style="color: var(--primary);"></i>By Department
+              </h6>
+              <div style="position: relative; height: 240px;">
+                <canvas id="chart-department"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- By Location -->
+          <div class="glass">
+            <div style="padding: 1.5rem;">
+              <h6 class="mb-3" style="font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+                <i class="bi bi-geo-alt me-2" style="color: var(--primary);"></i>By Location
+              </h6>
+              <div style="position: relative; height: 240px;">
+                <canvas id="chart-location"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. UNIFIED ACTIVITY TABLE (All Activities in One Place) -->
+    <section id="dashboard-activity" class="mb-5">
+      <div class="activity-section">
+        <!-- Header with Filters -->
+        <div class="activity-section__header">
+          <h4 class="activity-section__title">
+            <i class="bi bi-activity me-2"></i>Recent Activity
+          </h4>
+          
+          <!-- Filter Tabs -->
+          <div class="activity-filters" role="tablist" aria-label="Activity filters">
+            <button class="activity-filter-btn active" data-filter="all" role="tab" aria-selected="true" aria-controls="activity-table-body">
+              All Activity
+            </button>
+            <button class="activity-filter-btn" data-filter="assets" role="tab" aria-selected="false" aria-controls="activity-table-body">
+              <i class="bi bi-box-seam me-1"></i>Assets
+            </button>
+            <button class="activity-filter-btn" data-filter="transfers" role="tab" aria-selected="false" aria-controls="activity-table-body">
+              <i class="bi bi-arrow-left-right me-1"></i>Transfers
+            </button>
+            <button class="activity-filter-btn" data-filter="scans" role="tab" aria-selected="false" aria-controls="activity-table-body">
+              <i class="bi bi-upc-scan me-1"></i>Scans
+            </button>
+            <button class="activity-filter-btn" data-filter="maintenance" role="tab" aria-selected="false" aria-controls="activity-table-body">
+              <i class="bi bi-tools me-1"></i>Maintenance
+            </button>
+            <button class="activity-filter-btn" data-filter="audit" role="tab" aria-selected="false" aria-controls="activity-table-body">
+              <i class="bi bi-clipboard-data me-1"></i>Audit
+            </button>
+          </div>
+        </div>
+
+        <!-- Scrollable Table -->
+        <div class="activity-table-wrapper">
+          <table class="activity-table" role="table" aria-label="Activity log">
+            <thead>
+              <tr role="row">
+                <th scope="col" role="columnheader">Type</th>
+                <th scope="col" role="columnheader">User</th>
+                <th scope="col" role="columnheader">Action</th>
+                <th scope="col" role="columnheader">Asset/Item</th>
+                <th scope="col" role="columnheader">Timestamp</th>
+                <th scope="col" role="columnheader">Details</th>
+              </tr>
+            </thead>
+            <tbody id="activity-table-body" role="rowgroup" aria-live="polite">
+              <!-- Loading State -->
+              <tr role="row">
+                <td colspan="6" class="text-center py-5">
+                  <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading activities...</span>
+                  </div>
+                  <p class="text-muted mt-2 mb-0">Loading recent activity...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <!-- Empty State (Hidden by default, shown by JS when no data) -->
+          <div id="activity-empty-state" class="activity-empty" style="display: none;">
+            <i class="bi bi-inbox"></i>
+            <p>No activity found</p>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div style="padding: 1rem 1.5rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+          <button id="activity-prev" class="btn btn-sm" style="background: var(--surface); border: var(--border); color: var(--text);" disabled>
+            <i class="bi bi-chevron-left me-1"></i>Previous
+          </button>
+          <span id="activity-page-info" class="text-muted" style="font-size: 0.875rem;">Page 1</span>
+          <button id="activity-next" class="btn btn-sm" style="background: var(--surface); border: var(--border); color: var(--text);" disabled>
+            Next<i class="bi bi-chevron-right ms-1"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+  {% endblock %} 

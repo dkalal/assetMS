@@ -1,0 +1,155 @@
+{% load static %}
+<!-- WORLD-CLASS SIDEBAR NAVIGATION -->
+<aside class="dashboard-sidebar glass sidebar-rail" role="navigation" aria-label="Primary" style="border-right: 1px solid rgba(0,0,0,0.08);">
+  
+  <!-- Primary Navigation (All Users) -->
+  <div class="sidebar-section">
+    {% url 'dashboard' as dashboard_url %}
+    {% url 'asset_list' as asset_list_url %}
+    {% url 'manager_dashboard' as manager_dashboard_url %}
+    {% url 'users:my_retirement' as my_retirement_url %}
+    
+    <a href="{{ dashboard_url }}" class="nav-link rail-item {% if request.path == dashboard_url %}active{% endif %}" title="Dashboard" {% if request.path == dashboard_url %}aria-current="page"{% endif %}>
+      <i class="bi bi-speedometer2"></i>
+      <span>Dashboard</span>
+    </a>
+    
+    <a href="{{ asset_list_url }}" class="nav-link rail-item {% if request.path|slice:":8" == "/assets/" and "/transfers/" not in request.path %}active{% endif %}" title="Assets" {% if request.path|slice:":8" == "/assets/" %}aria-current="page"{% endif %}>
+      <i class="bi bi-box-seam"></i>
+      <span>Assets</span>
+      {% if total_assets_count %}
+      <span class="badge bg-primary-subtle text-primary ms-auto small">{{ total_assets_count }}</span>
+      {% endif %}
+    </a>
+
+    {# Self-service retirement – available to all authenticated users #}
+    {% if request.user.is_authenticated %}
+    <a href="{{ my_retirement_url }}" class="nav-link rail-item {% if request.path == my_retirement_url %}active{% endif %}" title="My Retirement" {% if request.path == my_retirement_url %}aria-current="page"{% endif %}>
+      <i class="bi bi-person-x"></i>
+      <span>My Retirement</span>
+    </a>
+    {% endif %}
+    
+    <!-- Transfers (All Users - role-appropriate labels) -->
+    <a href="/assets/transfers/" class="nav-link rail-item {% if '/transfers/' in request.path %}active{% endif %}" title="{% if request.user.role == 'admin' %}All Transfers{% elif request.user.role == 'manager' %}Branch Transfers{% else %}My Transfers{% endif %}" {% if '/transfers/' in request.path %}aria-current="page"{% endif %}>
+      <i class="bi bi-arrow-left-right"></i>
+      <span>
+        {% if request.user.role == 'admin' %}
+          All Transfers
+        {% elif request.user.role == 'manager' %}
+          Branch Transfers
+        {% else %}
+          My Transfers
+        {% endif %}
+      </span>
+    </a>
+  </div>
+
+  <!-- Divider -->
+  <hr class="sidebar-divider my-2" style="border-color: rgba(0,0,0,0.08);">
+
+  <!-- Management Navigation (Admin & Manager Only) -->
+  {% if request.user.is_authenticated and request.user.role != 'user' %}
+  <div class="sidebar-section">
+    <div class="sidebar-label text-muted small text-uppercase px-3 py-2 fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+      Management
+    </div>
+    
+    <!-- Manager Dashboard (Managers & Admins) -->
+    <a href="{{ manager_dashboard_url }}" class="nav-link rail-item {% if request.path|slice:":23" == "/tenancy/manager-dashboard/" %}active{% endif %}" title="Manager Dashboard" {% if request.path|slice:":23" == "/tenancy/manager-dashboard/" %}aria-current="page"{% endif %}>
+      <i class="bi bi-briefcase"></i>
+      <span>{% if request.user.role == 'admin' %}Manager Dashboard{% else %}My Branches{% endif %}</span>
+    </a>
+    
+    {% url 'maintenance:list' as maintenance_url %}
+    <a href="{{ maintenance_url }}" class="nav-link rail-item {% if request.path|slice:":13" == "/maintenance/" %}active{% endif %}" title="Maintenance" {% if request.path|slice:":13" == "/maintenance/" %}aria-current="page"{% endif %}>
+      <i class="bi bi-tools"></i>
+      <span>Maintenance</span>
+      {% if pending_maintenance_count > 0 %}
+      <span class="badge bg-warning text-dark ms-auto">{{ pending_maintenance_count }}</span>
+      {% endif %}
+    </a>
+    
+    {% url 'approval_dashboard' as approvals_url %}
+    <a href="{{ approvals_url }}" class="nav-link rail-item {% if '/approvals/' in request.path and 'retirement' not in request.path %}active{% endif %}" title="Approvals" {% if '/approvals/' in request.path %}aria-current="page"{% endif %}>
+      <i class="bi bi-check-circle"></i>
+      <span>Approvals</span>
+      {% if pending_approvals_count > 0 %}
+      <span class="badge bg-danger ms-auto">{{ pending_approvals_count }}</span>
+      {% endif %}
+    </a>
+    
+    {% url 'users:retirement_approvals' as retirement_approvals_url %}
+    <a href="{{ retirement_approvals_url }}" class="nav-link rail-item {% if request.path == retirement_approvals_url %}active{% endif %}" title="Retirement Approvals" {% if request.path == retirement_approvals_url %}aria-current="page"{% endif %}>
+      <i class="bi bi-clipboard-check"></i>
+      <span>Retirement Approvals</span>
+    </a>
+  </div>
+
+  <hr class="sidebar-divider my-2" style="border-color: rgba(0,0,0,0.08);">
+  {% endif %}
+
+  <!-- Analytics & Reports (Admin & Manager) -->
+  {% if request.user.is_authenticated and request.user.role != 'user' %}
+  <div class="sidebar-section">
+    <div class="sidebar-label text-muted small text-uppercase px-3 py-2 fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+      Analytics
+    </div>
+    
+    {% url 'reports_dashboard' as reports_url %}
+    <a href="{{ reports_url }}" class="nav-link rail-item {% if request.path|slice:":9" == "/reports/" %}active{% endif %}" title="Reports" {% if request.path|slice:":9" == "/reports/" %}aria-current="page"{% endif %}>
+      <i class="bi bi-graph-up"></i>
+      <span>Reports</span>
+    </a>
+    
+    {% url 'audit_dashboard' as audit_url %}
+    <a href="{{ audit_url }}" class="nav-link rail-item {% if request.path|slice:":7" == "/audit/" %}active{% endif %}" title="Audit Log" {% if request.path|slice:":7" == "/audit/" %}aria-current="page"{% endif %}>
+      <i class="bi bi-clipboard-data"></i>
+      <span>Audit</span>
+    </a>
+  </div>
+
+  <hr class="sidebar-divider my-2" style="border-color: rgba(0,0,0,0.08);">
+  {% endif %}
+
+  <!-- Admin Only Section -->
+  {% if request.user.is_authenticated and request.user.role == 'admin' %}
+  <div class="sidebar-section">
+    <div class="sidebar-label text-muted small text-uppercase px-3 py-2 fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+      Administration
+    </div>
+    
+    <a href="{% url 'settings:user_management' %}" class="nav-link rail-item {% if '/settings/users/' in request.path %}active{% endif %}" title="Users" {% if '/settings/users/' in request.path %}aria-current="page"{% endif %}>
+      <i class="bi bi-people"></i>
+      <span>Users</span>
+    </a>
+    
+    <a href="{% url 'categories:category_list' %}" class="nav-link rail-item {% if '/categories/' in request.path %}active{% endif %}" title="Categories" {% if '/categories/' in request.path %}aria-current="page"{% endif %}>
+      <i class="bi bi-tags"></i>
+      <span>Categories</span>
+    </a>
+    
+    <a href="{% url 'settings:settings_dashboard' %}" class="nav-link rail-item {% if '/settings/' in request.path and '/settings/users/' not in request.path %}active{% endif %}" title="Settings" {% if '/settings/' in request.path %}aria-current="page"{% endif %}>
+      <i class="bi bi-gear"></i>
+      <span>Settings</span>
+    </a>
+  </div>
+  {% endif %}
+
+  <!-- Bottom Section (All Users) -->
+  <div class="flex-grow-1"></div>
+  
+  <hr class="sidebar-divider my-2" style="border-color: rgba(0,0,0,0.08);">
+  
+  <div class="sidebar-section">
+    <a href="{% url 'help_center' %}" class="nav-link rail-item" title="Help & Documentation">
+      <i class="bi bi-question-circle"></i>
+      <span>Help</span>
+    </a>
+    
+    <a href="{% url 'users:profile' %}" class="nav-link rail-item" title="My Profile">
+      <i class="bi bi-person-circle"></i>
+      <span>Profile</span>
+    </a>
+  </div>
+</aside>

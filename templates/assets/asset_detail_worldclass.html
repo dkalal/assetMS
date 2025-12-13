@@ -1,0 +1,660 @@
+{% extends 'base_dashboard.html' %}
+{% load asset_extras %}
+{% load static %}
+
+{% block title %}{{ asset.dynamic_data|get_item:'name'|default:asset.category.name }} - Asset Details{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<style>
+:root {
+    --accent-primary: #176B87;
+    --accent-secondary: #64CCC5;
+    --accent-success: #10b981;
+    --accent-warning: #f59e0b;
+    --accent-danger: #ef4444;
+}
+
+.asset-hero {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    border-radius: 20px;
+    padding: 2.5rem;
+    color: white;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 40px rgba(23, 107, 135, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.asset-hero::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+.asset-hero-content {
+    position: relative;
+    z-index: 1;
+}
+
+.asset-icon {
+    width: 70px;
+    height: 70px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.status-badge-hero {
+    padding: 0.6rem 1.5rem;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.metric-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.metric-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+}
+
+.metric-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.metric-icon.primary {
+    background: linear-gradient(135deg, #176B87 0%, #64CCC5 100%);
+    color: white;
+}
+
+.metric-icon.success {
+    background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+    color: white;
+}
+
+.metric-icon.warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+    color: white;
+}
+
+.metric-icon.danger {
+    background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+    color: white;
+}
+
+.metric-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+    line-height: 1.2;
+    margin-bottom: 0.25rem;
+}
+
+.metric-label {
+    color: #6b7280;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.nav-tabs-modern {
+    border-bottom: 2px solid #e5e7eb;
+    margin-bottom: 2rem;
+}
+
+.nav-tabs-modern .nav-link {
+    border: none;
+    padding: 1rem 1.5rem;
+    color: #6b7280;
+    font-weight: 600;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nav-tabs-modern .nav-link:hover {
+    color: var(--accent-primary);
+    background: rgba(23, 107, 135, 0.05);
+    border-radius: 8px 8px 0 0;
+}
+
+.nav-tabs-modern .nav-link.active {
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
+}
+
+.info-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+    margin-bottom: 1.5rem;
+}
+
+.info-card-header {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.info-value {
+    color: #111827;
+    font-weight: 600;
+    text-align: right;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.5rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 2rem;
+}
+
+.timeline-dot {
+    position: absolute;
+    left: -1.5rem;
+    top: 0.5rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    box-shadow: 0 0 0 4px rgba(23, 107, 135, 0.2);
+    z-index: 1;
+}
+
+.timeline-content {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border: 1px solid #e5e7eb;
+}
+
+.action-btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.qr-card {
+    text-align: center;
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    .asset-hero {
+        background: var(--accent-primary) !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% if user.is_authenticated %}
+  {% include 'components/breadcrumbs.html' with root_label='Dashboard' root_url='/dashboard/' parent_label='Assets' parent_url='/assets/' current_label='Asset Detail' %}
+{% endif %}
+
+<!-- Hero Section -->
+<div class="asset-hero">
+    <div class="asset-hero-content">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="asset-icon">
+                    <i class="bi bi-box-seam"></i>
+                </div>
+                <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">
+                    {{ asset.dynamic_data|get_item:'name'|default:asset.category.name }}
+                </h1>
+                <p style="font-size: 1.1rem; opacity: 0.9; margin-bottom: 0;">
+                    <i class="bi bi-tag me-2"></i>{{ asset.category.name }}
+                    {% if asset.branch %}<i class="bi bi-building ms-3 me-2"></i>{{ asset.branch.name }}{% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <span class="status-badge-hero">
+                    <i class="bi bi-{% if asset.status == 'active' %}check-circle{% elif asset.status == 'in_maintenance' %}wrench{% elif asset.status == 'retired' %}archive{% elif asset.status == 'lost' %}exclamation-triangle{% else %}question-circle{% endif %}"></i>
+                    {{ asset.get_status_display|default:asset.status }}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Bar -->
+{% if user.is_authenticated and can_view_sensitive %}
+<div class="mb-4 no-print" style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+    {% if is_admin_or_manager %}
+    <a href="{% url 'asset_update' asset.uuid %}" class="action-btn btn btn-primary">
+        <i class="bi bi-pencil-square"></i>Edit Asset
+    </a>
+    <button class="action-btn btn btn-info" onclick="window.print()">
+        <i class="bi bi-printer"></i>Print
+    </button>
+    {% endif %}
+    <a href="{% url 'asset_list' %}" class="action-btn btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>Back to List
+    </a>
+</div>
+{% endif %}
+
+<!-- Metric Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="metric-card">
+            <div class="metric-icon primary">
+                <i class="bi bi-clock-history"></i>
+            </div>
+            <div class="metric-value">{{ asset_age.months }}</div>
+            <div class="metric-label">Months Old</div>
+            <small class="text-muted">Created {{ asset.created_at|date:'M d, Y' }}</small>
+        </div>
+    </div>
+
+    {% if depreciation %}
+    <div class="col-md-3 col-sm-6">
+        <div class="metric-card">
+            <div class="metric-icon success">
+                <i class="bi bi-currency-dollar"></i>
+            </div>
+            <div class="metric-value">${{ depreciation.current_value }}</div>
+            <div class="metric-label">Current Value</div>
+            <small class="text-danger">
+                <i class="bi bi-arrow-down"></i>{{ depreciation.percentage }}% depreciated
+            </small>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if maintenance_status.enabled %}
+    <div class="col-md-3 col-sm-6">
+        <div class="metric-card">
+            <div class="metric-icon {% if maintenance_status.is_overdue %}danger{% else %}warning{% endif %}">
+                <i class="bi bi-tools"></i>
+            </div>
+            <div class="metric-value">
+                {% if maintenance_status.days_until_due != None %}{{ maintenance_status.days_until_due }}{% else %}--{% endif %}
+            </div>
+            <div class="metric-label">
+                {% if maintenance_status.is_overdue %}Days Overdue{% else %}Days Until Due{% endif %}
+            </div>
+            <small class="text-muted">
+                {% if maintenance_status.next_date %}Due {{ maintenance_status.next_date|date:'M d, Y' }}{% else %}Not scheduled{% endif %}
+            </small>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if warranty_status %}
+    <div class="col-md-3 col-sm-6">
+        <div class="metric-card">
+            <div class="metric-icon {% if warranty_status.is_expired %}danger{% elif warranty_status.is_expiring_soon %}warning{% else %}success{% endif %}">
+                <i class="bi bi-shield-check"></i>
+            </div>
+            <div class="metric-value">
+                {% if warranty_status.is_expired %}Expired{% else %}{{ warranty_status.days_remaining }}{% endif %}
+            </div>
+            <div class="metric-label">
+                {% if warranty_status.is_expired %}Warranty Status{% else %}Days Remaining{% endif %}
+            </div>
+            <small class="text-{% if warranty_status.is_expiring_soon %}warning{% else %}muted{% endif %}">
+                {% if warranty_status.is_expiring_soon and not warranty_status.is_expired %}<i class="bi bi-exclamation-triangle"></i> Expiring soon!{% endif %}
+            </small>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs-modern no-print" id="assetTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button">
+            <i class="bi bi-grid"></i>Overview
+        </button>
+    </li>
+    {% if can_view_sensitive %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="specs-tab" data-bs-toggle="tab" data-bs-target="#specs" type="button">
+            <i class="bi bi-list-check"></i>Specifications
+        </button>
+    </li>
+    {% endif %}
+    {% if audit_events %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button">
+            <i class="bi bi-clock-history"></i>History
+        </button>
+    </li>
+    {% endif %}
+    {% if transfers %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="transfers-tab" data-bs-toggle="tab" data-bs-target="#transfers" type="button">
+            <i class="bi bi-arrow-left-right"></i>Transfers
+        </button>
+    </li>
+    {% endif %}
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content" id="assetTabsContent">
+    <!-- Overview Tab -->
+    <div class="tab-pane fade show active" id="overview" role="tabpanel">
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <!-- Basic Information -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="bi bi-info-circle"></i>Basic Information
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Category</span>
+                        <span class="info-value">{{ asset.category.name }}</span>
+                    </div>
+                    {% if asset.branch %}
+                    <div class="info-row">
+                        <span class="info-label">Branch</span>
+                        <span class="info-value">{{ asset.branch.name }}</span>
+                    </div>
+                    {% endif %}
+                    {% if can_view_sensitive and asset.assigned_to %}
+                    <div class="info-row">
+                        <span class="info-label">Assigned To</span>
+                        <span class="info-value">{{ asset.assigned_to.get_full_name }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="info-row">
+                        <span class="info-label">Created</span>
+                        <span class="info-value">{{ asset.created_at|date:'F d, Y \a\t H:i' }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Last Updated</span>
+                        <span class="info-value">{{ asset.updated_at|date:'F d, Y \a\t H:i' }}</span>
+                    </div>
+                    {% if can_view_sensitive and asset.description %}
+                    <div class="mt-3">
+                        <strong class="text-muted">Description:</strong>
+                        <p class="mt-2 mb-0">{{ asset.description }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Financial Information -->
+                {% if can_view_sensitive and depreciation %}
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="bi bi-cash-stack"></i>Financial Information
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Purchase Value</span>
+                        <span class="info-value">${{ depreciation.purchase_value }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Current Value</span>
+                        <span class="info-value">${{ depreciation.current_value }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Total Depreciation</span>
+                        <span class="info-value text-danger">${{ depreciation.total_depreciation }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Depreciation %</span>
+                        <span class="info-value">{{ depreciation.percentage }}%</span>
+                    </div>
+                    {% if asset.purchase_date %}
+                    <div class="info-row">
+                        <span class="info-label">Purchase Date</span>
+                        <span class="info-value">{{ asset.purchase_date|date:'F d, Y' }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="mt-3">
+                        <label class="text-muted small mb-2">Depreciation Progress</label>
+                        <div class="progress" style="height: 12px; border-radius: 50px;">
+                            <div class="progress-bar" role="progressbar" style="width: {{ depreciation.percentage }}%; background: linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);"></div>
+                        </div>
+                        <small class="text-muted mt-1 d-block">{{ depreciation.years_since_purchase }} years since purchase</small>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                {% if asset.qr_code %}
+                <div class="qr-card mb-4">
+                    <h6 class="fw-bold mb-3" style="color: var(--accent-primary);">
+                        <i class="bi bi-qr-code me-2"></i>QR Code
+                    </h6>
+                    <img src="{{ asset.qr_code.url }}" alt="QR Code" class="img-fluid mb-3" style="max-width: 200px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    <div class="d-grid gap-2">
+                        <a href="{{ asset.qr_code.url }}" download class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-download me-1"></i>Download
+                        </a>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()">
+                            <i class="bi bi-printer me-1"></i>Print
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if can_view_sensitive and asset.images %}
+                <div class="qr-card mb-4">
+                    <h6 class="fw-bold mb-3" style="color: var(--accent-primary);">
+                        <i class="bi bi-image me-2"></i>Asset Image
+                    </h6>
+                    <img src="{{ asset.images.url }}" alt="Asset" class="img-fluid rounded">
+                </div>
+                {% endif %}
+
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="bi bi-fingerprint"></i>Identifiers
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">UUID</span>
+                        <span class="info-value small">{{ asset.uuid }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Internal Code</span>
+                        <span class="info-value small">ASSET|v1|{{ asset.uuid }}</span>
+                    </div>
+                </div>
+
+                {% if related_assets %}
+                <div class="info-card mt-3">
+                    <div class="info-card-header">
+                        <i class="bi bi-collection"></i>Related Assets
+                    </div>
+                    {% for related in related_assets %}
+                    <div style="padding: 0.5rem 0; border-bottom: 1px solid #f3f4f6;">
+                        <a href="{% url 'asset_detail_by_uuid' uuid=related.uuid %}" class="text-decoration-none">
+                            <i class="bi bi-box-seam me-2"></i>{{ related.dynamic_data|get_item:'name'|default:related.category.name }}
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Specifications Tab -->
+    {% if can_view_sensitive %}
+    <div class="tab-pane fade" id="specs" role="tabpanel">
+        <div class="info-card">
+            <div class="info-card-header">
+                <i class="bi bi-list-check"></i>Technical Specifications
+            </div>
+            <table class="table table-hover mb-0">
+                <tbody>
+                    {% for key, value in asset.dynamic_data.items %}
+                    {% if value and key != 'name' %}
+                    <tr>
+                        <th style="width: 40%; color: #6b7280; font-weight: 600; text-align: right;">{{ key|title }}</th>
+                        <td style="color: #111827; font-weight: 500;">{{ value }}</td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- History Tab -->
+    {% if audit_events %}
+    <div class="tab-pane fade" id="history" role="tabpanel">
+        <div class="info-card">
+            <div class="info-card-header">
+                <i class="bi bi-clock-history"></i>Activity Timeline
+            </div>
+            <div class="timeline">
+                {% for event in audit_events %}
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="d-flex justify-content-between mb-2">
+                            <strong style="color: var(--accent-primary);">{{ event.get_action_display }}</strong>
+                            <small class="text-muted">{{ event.timestamp|date:'M d, Y H:i' }}</small>
+                        </div>
+                        <p class="mb-1 small text-muted">{{ event.details|default:'' }}</p>
+                        {% if event.user %}
+                        <small class="text-muted">
+                            <i class="bi bi-person me-1"></i>{{ event.user.get_full_name }}
+                        </small>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Transfers Tab -->
+    {% if transfers %}
+    <div class="tab-pane fade" id="transfers" role="tabpanel">
+        <div class="info-card">
+            <div class="info-card-header">
+                <i class="bi bi-arrow-left-right"></i>Transfer History
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transfer in transfers %}
+                        <tr>
+                            <td>
+                                {% if transfer.from_branch %}{{ transfer.from_branch.name }}{% else %}{{ transfer.from_user.get_full_name }}{% endif %}
+                            </td>
+                            <td>
+                                {% if transfer.to_branch %}{{ transfer.to_branch.name }}{% else %}{{ transfer.to_user.get_full_name }}{% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if transfer.state == 'completed' %}success{% elif transfer.state == 'cancelled' %}danger{% else %}warning{% endif %}">
+                                    {{ transfer.get_state_display }}
+                                </span>
+                            </td>
+                            <td>{{ transfer.created_at|date:'M d, Y' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

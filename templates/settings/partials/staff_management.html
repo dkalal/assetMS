@@ -1,0 +1,839 @@
+{% load static %}
+
+<!-- Staff Management Partial (Settings Tab Content) -->
+<div class="staff-management-content">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="bi bi-people-fill text-primary me-2"></i>Staff Management</h4>
+            <p class="text-muted mb-0 small">Manage users, roles, and permissions across your organization</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary" onclick="refreshStaffList()">
+                <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+            </button>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">
+                <i class="bi bi-person-plus me-1"></i>Add User
+            </button>
+        </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="stat-icon bg-primary bg-opacity-10 text-primary rounded-3 p-3">
+                                <i class="bi bi-people fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1 small">Total Users</h6>
+                            <h3 class="mb-0" id="totalUsersCount">0</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="stat-icon bg-success bg-opacity-10 text-success rounded-3 p-3">
+                                <i class="bi bi-check-circle fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1 small">Active Users</h6>
+                            <h3 class="mb-0" id="activeUsersCount">0</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="stat-icon bg-warning bg-opacity-10 text-warning rounded-3 p-3">
+                                <i class="bi bi-clock-history fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1 small">Pending Invites</h6>
+                            <h3 class="mb-0" id="pendingInvitesCount">0</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="stat-icon bg-info bg-opacity-10 text-info rounded-3 p-3">
+                                <i class="bi bi-person-check fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1 small">Online Now</h6>
+                            <h3 class="mb-0" id="onlineUsersCount">0</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0" id="userSearchInput" 
+                               placeholder="Search by name, email, or username..." 
+                               onkeyup="filterUsers()">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="roleFilter" onchange="filterUsers()">
+                        <option value="">All Roles</option>
+                        <option value="admin">Admin</option>
+                        <option value="manager">Manager</option>
+                        <option value="user">User</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="statusFilter" onchange="filterUsers()">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="invited">Invited</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="branchFilter" onchange="filterUsers()">
+                        <option value="">All Branches</option>
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                        <i class="bi bi-x-circle me-1"></i>Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-table me-2"></i>User Directory</h5>
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-secondary active" onclick="setViewMode('table')">
+                        <i class="bi bi-table"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="setViewMode('grid')">
+                        <i class="bi bi-grid-3x3-gap"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="usersTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="px-4">
+                                <input type="checkbox" class="form-check-input" id="selectAllUsers" 
+                                       onchange="toggleSelectAll(this)">
+                            </th>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Branch</th>
+                            <th>Status</th>
+                            <th>Last Active</th>
+                            <th class="text-end px-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- Populated dynamically via JavaScript -->
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="text-muted mt-2 mb-0">Loading users...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-white border-top">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="text-muted small">
+                    Showing <span id="showingCount">0</span> of <span id="totalCount">0</span> users
+                </div>
+                <nav aria-label="User pagination">
+                    <ul class="pagination pagination-sm mb-0" id="userPagination">
+                        <!-- Populated dynamically -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals moved to staff_management_modals.html and included in settings.html dashboard_modals block -->
+
+<style>
+/* Staff Management Specific Styles */
+.staff-management-content {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.table thead th {
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6b7280;
+}
+
+.table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+    transform: scale(1.01);
+}
+
+.badge {
+    padding: 0.375rem 0.75rem;
+    font-weight: 500;
+    font-size: 0.75rem;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e5e7eb;
+}
+
+.user-avatar-placeholder {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #176B87 0%, #64CCC5 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.action-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+}
+</style>
+
+<script>
+// Staff Management JavaScript
+// Debug mode - set to false in production to reduce console logs
+const STAFF_DEBUG = false;
+
+let allUsers = [];
+let filteredUsers = [];
+let currentPage = 1;
+const usersPerPage = 10;
+
+// Initialize on tab show
+document.addEventListener('DOMContentLoaded', function() {
+    // Load users when staff tab is shown
+    const staffTab = document.getElementById('staff-tab');
+    if (staffTab) {
+        staffTab.addEventListener('shown.bs.tab', function() {
+            loadStaffData();
+        });
+        
+        // Load immediately if staff tab is active
+        if (staffTab.classList.contains('active')) {
+            loadStaffData();
+        }
+    }
+});
+
+function loadStaffData() {
+    if (STAFF_DEBUG) console.log('📊 Loading staff management data...');
+    
+    // Load users
+    fetch('/api/users/')
+        .then(response => response.json())
+        .then(data => {
+            allUsers = data.users || [];
+            filteredUsers = [...allUsers];
+            updateStats();
+            renderUsersTable();
+            loadBranchesFilter();
+        })
+        .catch(error => {
+            console.error('❌ Error loading users:', error);
+            showError('Failed to load users');
+        });
+}
+
+function updateStats() {
+    const total = allUsers.length;
+    const active = allUsers.filter(u => u.is_active).length;
+    const invited = allUsers.filter(u => u.is_invited).length;
+    const online = allUsers.filter(u => u.is_online).length;
+    
+    document.getElementById('totalUsersCount').textContent = total;
+    document.getElementById('activeUsersCount').textContent = active;
+    document.getElementById('pendingInvitesCount').textContent = invited;
+    document.getElementById('onlineUsersCount').textContent = online;
+}
+
+function filterUsers() {
+    const searchTerm = document.getElementById('userSearchInput').value.toLowerCase();
+    const roleFilter = document.getElementById('roleFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    const branchFilter = document.getElementById('branchFilter').value;
+    
+    filteredUsers = allUsers.filter(user => {
+        const matchesSearch = !searchTerm || 
+            user.full_name.toLowerCase().includes(searchTerm) ||
+            user.email.toLowerCase().includes(searchTerm) ||
+            user.username.toLowerCase().includes(searchTerm);
+        
+        const matchesRole = !roleFilter || user.role === roleFilter;
+        const matchesStatus = !statusFilter || 
+            (statusFilter === 'active' && user.is_active) ||
+            (statusFilter === 'inactive' && !user.is_active) ||
+            (statusFilter === 'invited' && user.is_invited);
+        const matchesBranch = !branchFilter || user.branch_id == branchFilter;
+        
+        return matchesSearch && matchesRole && matchesStatus && matchesBranch;
+    });
+    
+    currentPage = 1;
+    renderUsersTable();
+}
+
+function renderUsersTable() {
+    const tbody = document.getElementById('usersTableBody');
+    const start = (currentPage - 1) * usersPerPage;
+    const end = start + usersPerPage;
+    const pageUsers = filteredUsers.slice(start, end);
+    
+    if (pageUsers.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-5">
+                    <i class="bi bi-inbox fs-1 text-muted"></i>
+                    <p class="text-muted mt-2 mb-0">No users found</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = pageUsers.map(user => `
+        <tr>
+            <td class="px-4">
+                <input type="checkbox" class="form-check-input user-checkbox" value="${user.id}">
+            </td>
+            <td>
+                <div class="d-flex align-items-center">
+                    ${user.avatar ? 
+                        `<img src="${user.avatar}" class="user-avatar me-3" alt="${user.full_name}">` :
+                        `<div class="user-avatar-placeholder me-3">${user.initials}</div>`
+                    }
+                    <div>
+                        <div class="fw-semibold">${user.full_name}</div>
+                        <div class="small text-muted">${user.email}</div>
+                    </div>
+                </div>
+            </td>
+            <td>
+                <span class="badge ${getRoleBadgeClass(user.role)}">
+                    <i class="bi ${getRoleIcon(user.role)} me-1"></i>${user.role}
+                </span>
+            </td>
+            <td>${user.branch_name || '-'}</td>
+            <td>
+                <span class="badge ${user.is_active ? 'bg-success' : 'bg-secondary'}">
+                    ${user.is_active ? 'Active' : 'Inactive'}
+                </span>
+                ${user.is_online ? '<i class="bi bi-circle-fill text-success ms-1" style="font-size: 0.5rem;"></i>' : ''}
+            </td>
+            <td class="small text-muted">${user.last_login || 'Never'}</td>
+            <td class="text-end px-4">
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary action-btn" onclick="editUser(${user.id})" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-outline-info action-btn" onclick="viewUserDetails(${user.id})" title="View">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-outline-danger action-btn" onclick="deleteUser(${user.id})" title="Delete">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+    
+    updatePagination();
+}
+
+function getRoleBadgeClass(role) {
+    const classes = {
+        'admin': 'bg-danger',
+        'manager': 'bg-warning text-dark',
+        'user': 'bg-primary'
+    };
+    return classes[role] || 'bg-secondary';
+}
+
+function getRoleIcon(role) {
+    const icons = {
+        'admin': 'bi-shield-fill-check',
+        'manager': 'bi-person-badge',
+        'user': 'bi-person'
+    };
+    return icons[role] || 'bi-person';
+}
+
+function updatePagination() {
+    const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+    document.getElementById('showingCount').textContent = Math.min(filteredUsers.length, currentPage * usersPerPage);
+    document.getElementById('totalCount').textContent = filteredUsers.length;
+    
+    const pagination = document.getElementById('userPagination');
+    let html = '';
+    
+    for (let i = 1; i <= totalPages; i++) {
+        html += `
+            <li class="page-item ${i === currentPage ? 'active' : ''}">
+                <a class="page-link" href="#" onclick="changePage(${i}); return false;">${i}</a>
+            </li>
+        `;
+    }
+    
+    pagination.innerHTML = html;
+}
+
+function changePage(page) {
+    currentPage = page;
+    renderUsersTable();
+}
+
+function clearFilters() {
+    document.getElementById('userSearchInput').value = '';
+    document.getElementById('roleFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('branchFilter').value = '';
+    filterUsers();
+}
+
+function refreshStaffList() {
+    loadStaffData();
+}
+
+function setViewMode(mode) {
+    // Toggle view mode buttons
+    document.querySelectorAll('.btn-group button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.closest('button').classList.add('active');
+    
+    // Implement grid view if needed
+    console.log('View mode:', mode);
+}
+
+function toggleSelectAll(checkbox) {
+    document.querySelectorAll('.user-checkbox').forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+}
+
+function editUser(userId) {
+    if (STAFF_DEBUG) console.log('📝 Loading user for edit:', userId);
+    
+    // Find user in current list
+    const user = allUsers.find(u => u.id === userId);
+    if (!user) {
+        showError('User not found');
+        return;
+    }
+    
+    // Populate edit form
+    document.getElementById('editUserId').value = user.id;
+    document.getElementById('editFirstName').value = user.first_name || '';
+    document.getElementById('editLastName').value = user.last_name || '';
+    document.getElementById('editEmail').value = user.email || '';
+    document.getElementById('editUsername').value = user.username || '';
+    document.getElementById('editRole').value = user.role || 'user';
+    document.getElementById('editBranch').value = user.branch_id || '';
+    document.getElementById('editIsActive').checked = user.is_active;
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+    modal.show();
+}
+
+function viewUserDetails(userId) {
+    if (STAFF_DEBUG) console.log('👁️ Loading user details:', userId);
+    
+    // Show loading
+    const modal = new bootstrap.Modal(document.getElementById('viewUserModal'));
+    modal.show();
+    
+    const modalBody = document.querySelector('#viewUserModal .modal-body');
+    modalBody.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div><p class="mt-2">Loading user details...</p></div>';
+    
+    // Fetch detailed user info
+    fetch(`/api/users/${userId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.user) {
+                const user = data.user;
+                modalBody.innerHTML = `
+                    <div class="user-details-view">
+                        <div class="row g-3">
+                            <div class="col-12 text-center mb-3">
+                                ${user.avatar ? 
+                                    `<img src="${user.avatar}" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">` :
+                                    `<div class="user-avatar-placeholder mx-auto" style="width: 100px; height: 100px; font-size: 2rem;">${user.initials || user.username.substring(0,2).toUpperCase()}</div>`
+                                }
+                                <h4 class="mt-3 mb-0">${user.full_name}</h4>
+                                <p class="text-muted">@${user.username}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small">Email</label>
+                                <p class="fw-semibold">${user.email}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small">Role</label>
+                                <p><span class="badge ${getRoleBadgeClass(user.role)}">${user.role}</span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small">Branch</label>
+                                <p class="fw-semibold">${user.branch_name || 'Not assigned'}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small">Status</label>
+                                <p><span class="badge ${user.is_active ? 'bg-success' : 'bg-secondary'}">${user.is_active ? 'Active' : 'Inactive'}</span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small">Last Login</label>
+                                <p class="fw-semibold">${user.last_login || 'Never'}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small">Online Status</label>
+                                <p>${user.is_online ? '<i class="bi bi-circle-fill text-success"></i> Online' : '<i class="bi bi-circle text-muted"></i> Offline'}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                modalBody.innerHTML = '<div class="alert alert-danger">Failed to load user details</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading user details:', error);
+            modalBody.innerHTML = '<div class="alert alert-danger">Error loading user details</div>';
+        });
+}
+
+function deleteUser(userId) {
+    // Find user in current list
+    const user = allUsers.find(u => u.id === userId);
+    if (!user) {
+        showError('User not found');
+        return;
+    }
+    
+    // Show confirmation modal
+    const confirmModal = document.getElementById('deleteConfirmModal');
+    document.getElementById('deleteUserName').textContent = user.full_name;
+    document.getElementById('confirmDeleteBtn').onclick = () => performDelete(userId);
+    
+    const modal = new bootstrap.Modal(confirmModal);
+    modal.show();
+}
+
+function performDelete(userId) {
+    if (STAFF_DEBUG) console.log('🗑️ Deleting user:', userId);
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                      document.querySelector('meta[name="csrf-token"]')?.content;
+    
+    // Show loading
+    const btn = document.getElementById('confirmDeleteBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Deleting...';
+    btn.disabled = true;
+    
+    // Send delete request
+    fetch(`/api/users/${userId}/delete/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
+            
+            // Show success message
+            showSuccess(data.message || 'User deleted successfully');
+            
+            // Reload user list
+            loadStaffData();
+        } else {
+            showError(data.error || 'Failed to delete user');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting user:', error);
+        showError('Error deleting user');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+function saveUserEdit(event) {
+    if (STAFF_DEBUG) console.log('💾 Saving user edits...');
+    
+    // Prevent default if event exists
+    if (event) {
+        event.preventDefault();
+    }
+    
+    // Get form data
+    const userId = document.getElementById('editUserId').value;
+    const formData = {
+        first_name: document.getElementById('editFirstName').value.trim(),
+        last_name: document.getElementById('editLastName').value.trim(),
+        email: document.getElementById('editEmail').value.trim(),
+        username: document.getElementById('editUsername').value.trim(),
+        role: document.getElementById('editRole').value,
+        branch_id: document.getElementById('editBranch').value || null,
+        is_active: document.getElementById('editIsActive').checked
+    };
+    
+    // Validate
+    if (!formData.first_name || !formData.last_name || !formData.email || !formData.username) {
+        showError('Please fill in all required fields');
+        return;
+    }
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+        showError('Please enter a valid email address');
+        return;
+    }
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                      document.querySelector('meta[name="csrf-token"]')?.content;
+    
+    if (!csrfToken) {
+        showError('Security token missing. Please refresh the page.');
+        return;
+    }
+    
+    // Get the save button (use querySelector to be safe)
+    const btn = event?.target || document.querySelector('#editUserModal .btn-primary');
+    if (!btn) {
+        console.error('Save button not found');
+        return;
+    }
+    
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+    btn.disabled = true;
+    
+    // Send update request
+    fetch(`/api/users/${userId}/update/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify(formData),
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        // Check if response is ok
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.error || `HTTP error! status: ${response.status}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Update user in local cache
+            if (data.user && Array.isArray(allUsers)) {
+                const index = allUsers.findIndex(u => u.id === data.user.id);
+                if (index !== -1) {
+                    // Merge updated data with existing user data
+                    allUsers[index] = {
+                        ...allUsers[index],
+                        ...data.user
+                    };
+                    if (STAFF_DEBUG) console.log('✅ Updated user in cache:', allUsers[index]);
+                }
+            }
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
+            if (modal) {
+                modal.hide();
+            }
+            
+            // Show success message
+            showSuccess(data.message || 'User updated successfully');
+            
+            // Reload user list to reflect changes
+            if (typeof loadStaffData === 'function') {
+                loadStaffData();
+            }
+            
+            // Reset button state (in case modal doesn't close)
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }, 500);
+        } else {
+            throw new Error(data.error || 'Failed to update user');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating user:', error);
+        showError(error.message || 'Error updating user. Please try again.');
+        
+        // Reset button state
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+function loadBranchesFilter() {
+    // Load branches for filter dropdown
+    fetch('/api/tenancy/branches/')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('branchFilter');
+            const editSelect = document.getElementById('editBranch');
+            
+            data.branches.forEach(branch => {
+                const option = new Option(branch.name, branch.id);
+                select.add(option.cloneNode(true));
+                editSelect.add(option);
+            });
+        })
+        .catch(error => console.error('Error loading branches:', error));
+}
+
+function showSuccess(message) {
+    // Create toast notification
+    const toastContainer = document.getElementById('toastContainer') || createToastContainer();
+    const toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-success border-0';
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="bi bi-check-circle me-2"></i>${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    `;
+    toastContainer.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    toast.addEventListener('hidden.bs.toast', () => toast.remove());
+}
+
+function showError(message) {
+    // Create toast notification
+    const toastContainer = document.getElementById('toastContainer') || createToastContainer();
+    const toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-danger border-0';
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="bi bi-exclamation-triangle me-2"></i>${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    `;
+    toastContainer.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    toast.addEventListener('hidden.bs.toast', () => toast.remove());
+    console.error(message);
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'toast-container position-fixed top-0 end-0 p-3';
+    container.style.zIndex = '11000';
+    document.body.appendChild(container);
+    return container;
+}
+</script>

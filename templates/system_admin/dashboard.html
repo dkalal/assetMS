@@ -1,0 +1,183 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}System Dashboard - Asset Management System{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">
+        <i class="bi bi-speedometer2 me-2"></i>System Dashboard
+    </h2>
+    
+    <!-- System Metrics -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center">
+                    <i class="bi bi-building text-primary" style="font-size: 2rem;"></i>
+                    <h3 class="mt-2">{{ total_companies }}</h3>
+                    <p class="text-muted mb-0">Total Companies</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center">
+                    <i class="bi bi-people text-success" style="font-size: 2rem;"></i>
+                    <h3 class="mt-2">{{ total_users }}</h3>
+                    <p class="text-muted mb-0">Total Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center">
+                    <i class="bi bi-box-seam text-info" style="font-size: 2rem;"></i>
+                    <h3 class="mt-2">{{ total_assets }}</h3>
+                    <p class="text-muted mb-0">Total Assets</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center">
+                    <i class="bi bi-check-circle text-warning" style="font-size: 2rem;"></i>
+                    <h3 class="mt-2">{{ active_subscriptions }}</h3>
+                    <p class="text-muted mb-0">Active Subscriptions</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Companies by Plan -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Companies by Plan</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Plan</th>
+                                <th>Count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in companies_by_plan %}
+                                <tr>
+                                    <td>{{ item.plan|title }}</td>
+                                    <td><span class="badge bg-primary">{{ item.count }}</span></td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="2" class="text-center text-muted">No data</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- System Health -->
+        <div class="col-md-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">System Health</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>Status:</strong> 
+                        <span class="badge bg-success">{{ system_health.status|title }}</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Database:</strong> 
+                        <span class="badge bg-success">{{ system_health.database|title }}</span>
+                    </div>
+                    <div>
+                        <strong>Celery:</strong> 
+                        <span class="badge bg-success">{{ system_health.celery|title }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Companies -->
+    <div class="card shadow-lg border-0">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Recent Companies</h5>
+            <a href="{% url 'system_admin:company_list' %}" class="btn btn-light btn-sm">
+                View All
+            </a>
+        </div>
+        <div class="card-body">
+            {% if recent_companies %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Company Name</th>
+                                <th>Plan</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for company in recent_companies %}
+                                <tr>
+                                    <td>{{ company.name }}</td>
+                                    <td>
+                                        {% if company.registration %}
+                                            <span class="badge bg-secondary">{{ company.registration.get_plan_display }}</span>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if company.registration %}
+                                            <span class="badge bg-{% if company.registration.subscription_status == 'active' %}success{% elif company.registration.subscription_status == 'trial' %}warning{% else %}danger{% endif %}">
+                                                {{ company.registration.get_subscription_status_display }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ company.created_at|date:"M d, Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'system_admin:company_detail' company.id %}" class="btn btn-sm btn-outline-primary">
+                                            View
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted text-center">No companies yet.</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="mt-4">
+        <a href="{% url 'system_admin:create_company' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i>Create Company
+        </a>
+        <a href="{% url 'system_admin:company_list' %}" class="btn btn-outline-primary ms-2">
+            <i class="bi bi-list me-2"></i>View All Companies
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+
+
+
+
+
+

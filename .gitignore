@@ -1,0 +1,96 @@
+# Python / Django
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+*.egg
+*.log
+
+# Virtual environments
+venv/
+.env*/
+.venv/
+.env
+
+# Django specific
+staticfiles/
+# Media files (keep directory structure, ignore files)
+media/*
+!media/.gitkeep
+!media/*/
+!media/*/.gitkeep
+logs/
+*.sqlite3
+local_settings.py
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Coverage / pytest
+.coverage
+htmlcov/
+pytest_debug.log
+.pytest_cache/
+
+# Node (if used for front-end tooling)
+node_modules/
+
+# Tooling
+.amazonq/
+
+# Build artifacts
+build/
+dist/
+
+# Secrets & configs
+*.key
+*.pem
+*.crt
+*.der
+backup.*
+
+# Documentation files (too many)
+*.md
+!README.md
+!CHANGELOG.md
+
+# Test files
+test_*.py
+*_test.py
+test_*.html
+test_*.js
+
+# Backup files
+*.backup
+*.bak
+*_backup.*
+*_old.*
+
+# Generated reports
+reports/*.pdf
+reports/*.xlsx
+reports/*.csv
+asset_docs/
+asset_images/
+company/logos/
+profile_images/
+qr_codes/
+backups/
+tmp/
+
+# Celery
+celery_broker.db
+
+# Batch files
+*.bat
+*.ps1
+
+# Temporary files
+temp_*
+*.tmp

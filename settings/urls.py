@@ -1,0 +1,64 @@
+from django.urls import path
+from . import views, api_views
+
+app_name = 'settings'
+
+urlpatterns = [
+    # Main settings dashboard
+    path('', views.settings_dashboard, name='settings_dashboard'),
+    
+    # User management
+    path('users/', views.user_management, name='user_management'),
+    path('users/<int:user_id>/', views.staff_detail, name='staff_detail'),
+    path('session-management/', views.session_management, name='session_management'),
+    
+    # Organization settings
+    path('organization/', views.organization_settings, name='organization_settings'),
+    
+    # Security & Privacy settings
+    path('security/', views.security_privacy_settings, name='security_privacy_settings'),
+    
+    # API endpoints
+    path('api/users/', views.api_users_management, name='api_users_management'),
+    path('api/invite-user/', views.api_invite_user, name='api_invite_user'),
+    path('api/delete-user/', views.api_delete_user, name='api_delete_user'),
+    path('api/staff-analytics/', views.api_staff_analytics, name='api_staff_analytics'),
+    path('api/staff-export/', views.api_staff_export, name='api_staff_export'),
+    path('api/session-stats/', views.api_session_stats, name='api_session_stats'),
+    path('api/access-logs/', views.api_access_logs, name='api_access_logs'),
+    path('api/session-details/', views.api_session_details, name='api_session_details'),
+    path('api/session/heartbeat/', views.api_session_heartbeat, name='api_session_heartbeat'),
+    path('api/toggle-user-status/', views.api_toggle_user_status, name='api_toggle_user_status'),
+    path('api/update-user/', views.api_update_user, name='api_update_user'),
+    path('api/update/', views.update_setting, name='update_setting'),
+    path('api/create/', views.create_setting, name='create_setting'),
+    
+    # Session management endpoints
+    path('api/terminate-session/', views.api_terminate_session, name='api_terminate_session'),
+    path('api/terminate-user-sessions/', views.api_terminate_user_sessions, name='api_terminate_user_sessions'),
+    path('api/user-session-history/', views.api_user_session_history, name='api_user_session_history'),
+    path('api/session-report/', views.api_session_report, name='api_session_report'),
+    path('api/cleanup-sessions/', views.api_cleanup_sessions, name='api_cleanup_sessions'),
+    # Backup endpoint
+    path('api/backup/create/', views.api_create_backup, name='api_create_backup'),
+    path('api/backup/list/', views.api_list_backups, name='api_list_backups'),
+    path('api/backup/download/', views.api_download_backup, name='api_download_backup'),
+    path('api/backup/restore/', views.api_restore_backup, name='api_restore_backup'),
+    
+    # Organization API endpoints
+    path('api/organization/', views.api_organization_profile, name='api_organization_profile'),
+    path('api/organization/update/', views.api_update_organization, name='api_update_organization'),
+    
+    # Security API endpoints
+    path('api/security/', views.api_security_settings, name='api_security_settings'),
+    path('api/security/metrics/', views.api_security_metrics, name='api_security_metrics'),
+    path('api/security/update/', views.api_update_security_settings, name='api_update_security_settings'),
+    path('api/security/activities/', views.api_security_activities, name='api_security_activities'),
+    
+    # Multi-Tenancy Policy API endpoints
+    path('api/tenancy-policy/', views.api_get_tenancy_policy, name='api_get_tenancy_policy'),
+    path('api/tenancy-policy/update/', views.api_update_tenancy_policy, name='api_update_tenancy_policy'),
+    
+    # WORLD-CLASS: Branches API endpoint
+    path('api/branches/', api_views.api_branches, name='api_branches'),
+]

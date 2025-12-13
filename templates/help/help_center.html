@@ -1,0 +1,250 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Help Center - Enterprise Asset Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h2 font-bold mb-2">
+      <i class="bi bi-question-circle text-primary me-2"></i>
+      Help Center
+    </h1>
+    <p class="text-muted">Get help and learn how to use the asset management system</p>
+  </div>
+</div>
+
+<!-- Quick Help Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mb-8">
+  <div class="card">
+    <div class="card-body">
+      <div class="d-flex align-items-center mb-3">
+        <i class="bi bi-play-circle text-primary me-2" style="font-size: 1.5rem;"></i>
+        <h5 class="mb-0">Getting Started</h5>
+      </div>
+      <p class="text-muted mb-3">Learn the basics of asset management</p>
+      <ul class="list-unstyled">
+        <li><a href="#getting-started" class="text-decoration-none">• System Overview</a></li>
+        <li><a href="#getting-started" class="text-decoration-none">• First Steps</a></li>
+        <li><a href="#getting-started" class="text-decoration-none">• User Roles</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="d-flex align-items-center mb-3">
+        <i class="bi bi-archive text-success me-2" style="font-size: 1.5rem;"></i>
+        <h5 class="mb-0">Asset Management</h5>
+      </div>
+      <p class="text-muted mb-3">Manage your organization's assets</p>
+      <ul class="list-unstyled">
+        <li><a href="#asset-management" class="text-decoration-none">• Adding Assets</a></li>
+        <li><a href="#asset-management" class="text-decoration-none">• Asset Categories</a></li>
+        <li><a href="#asset-management" class="text-decoration-none">• Bulk Import</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="d-flex align-items-center mb-3">
+        <i class="bi bi-upc-scan text-info me-2" style="font-size: 1.5rem;"></i>
+        <h5 class="mb-0">Scanning & Tracking</h5>
+      </div>
+      <p class="text-muted mb-3">Track assets with QR codes</p>
+      <ul class="list-unstyled">
+        <li><a href="#scanning" class="text-decoration-none">• QR Code Scanning</a></li>
+        <li><a href="#scanning" class="text-decoration-none">• Asset Tracking</a></li>
+        <li><a href="#scanning" class="text-decoration-none">• Mobile App</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Help Sections -->
+<div class="row">
+  <div class="col-lg-8">
+    <!-- Getting Started -->
+    <div class="card mb-4" id="getting-started">
+      <div class="card-header">
+        <h4><i class="bi bi-play-circle me-2"></i>Getting Started</h4>
+      </div>
+      <div class="card-body">
+        <h5>System Overview</h5>
+        <p>The Enterprise Asset Management System helps you track, manage, and maintain your organization's assets efficiently.</p>
+        
+        <h5>Key Features:</h5>
+        <ul>
+          <li><strong>Asset Tracking:</strong> Complete lifecycle management</li>
+          <li><strong>QR Code Scanning:</strong> Quick asset identification</li>
+          <li><strong>Reporting:</strong> Comprehensive analytics and reports</li>
+          <li><strong>User Management:</strong> Role-based access control</li>
+          <li><strong>Audit Trail:</strong> Complete activity logging</li>
+        </ul>
+
+        <h5>User Roles:</h5>
+        <div class="row">
+          <div class="col-md-4">
+            <div class="p-3 border rounded">
+              <h6 class="text-primary">Admin</h6>
+              <small>Full system access, user management, settings</small>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 border rounded">
+              <h6 class="text-success">Manager</h6>
+              <small>Asset management, reports, team oversight</small>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 border rounded">
+              <h6 class="text-info">User</h6>
+              <small>Asset viewing, scanning, basic operations</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Asset Management -->
+    <div class="card mb-4" id="asset-management">
+      <div class="card-header">
+        <h4><i class="bi bi-archive me-2"></i>Asset Management</h4>
+      </div>
+      <div class="card-body">
+        <h5>Adding New Assets</h5>
+        <ol>
+          <li>Navigate to <strong>Assets → Add Asset</strong></li>
+          <li>Fill in required information (Name, Category, Location)</li>
+          <li>Add optional details (Serial Number, Purchase Date, Value)</li>
+          <li>Upload photos if available</li>
+          <li>Click <strong>Save Asset</strong></li>
+        </ol>
+
+        <h5>Asset Categories</h5>
+        <p>Organize assets into categories for better management:</p>
+        <ul>
+          <li><strong>IT Equipment:</strong> Computers, servers, networking</li>
+          <li><strong>Furniture:</strong> Desks, chairs, office furniture</li>
+          <li><strong>Vehicles:</strong> Company cars, trucks, equipment</li>
+          <li><strong>Machinery:</strong> Manufacturing equipment, tools</li>
+        </ul>
+
+        <h5>Bulk Import</h5>
+        <p>Import multiple assets at once using Excel/CSV files:</p>
+        <ol>
+          <li>Download the import template</li>
+          <li>Fill in asset information</li>
+          <li>Upload the completed file</li>
+          <li>Review and confirm imports</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- Scanning -->
+    <div class="card mb-4" id="scanning">
+      <div class="card-header">
+        <h4><i class="bi bi-upc-scan me-2"></i>Scanning & Tracking</h4>
+      </div>
+      <div class="card-body">
+        <h5>QR Code Scanning</h5>
+        <p>Each asset has a unique QR code for quick identification:</p>
+        <ol>
+          <li>Navigate to <strong>Scan</strong> page</li>
+          <li>Allow camera access</li>
+          <li>Point camera at QR code</li>
+          <li>View asset details instantly</li>
+        </ol>
+
+        <h5>Asset Tracking</h5>
+        <p>Track asset location and status changes:</p>
+        <ul>
+          <li>Location updates</li>
+          <li>Status changes (Active, Maintenance, Retired)</li>
+          <li>Assignment to users</li>
+          <li>Maintenance schedules</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header">
+        <h5><i class="bi bi-headset me-2"></i>Need More Help?</h5>
+      </div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <a href="/documents/" class="btn btn-outline-primary">
+            <i class="bi bi-file-text me-2"></i>Documentation
+          </a>
+          <a href="mailto:support@company.com" class="btn btn-outline-success">
+            <i class="bi bi-envelope me-2"></i>Contact Support
+          </a>
+          <button class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#videoModal">
+            <i class="bi bi-play-circle me-2"></i>Video Tutorials
+          </button>
+        </div>
+
+        <hr>
+
+        <h6>Quick Links</h6>
+        <ul class="list-unstyled">
+          <li><a href="/assets/register/" class="text-decoration-none">Add New Asset</a></li>
+          <li><a href="/scan/" class="text-decoration-none">Scan QR Code</a></li>
+          <li><a href="/reports/" class="text-decoration-none">Generate Report</a></li>
+          <li><a href="/settings/" class="text-decoration-none">System Settings</a></li>
+        </ul>
+
+        <hr>
+
+        <h6>System Status</h6>
+        <div class="d-flex align-items-center mb-2">
+          <span class="status status-success me-2">Online</span>
+          <small>All systems operational</small>
+        </div>
+        <div class="d-flex align-items-center">
+          <span class="badge bg-info me-2">v2.1.0</span>
+          <small>Latest version</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Video Modal -->
+<div class="modal fade" id="videoModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Video Tutorials</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <div class="card">
+              <div class="card-body text-center">
+                <i class="bi bi-play-circle text-primary" style="font-size: 3rem;"></i>
+                <h6 class="mt-2">Getting Started</h6>
+                <small class="text-muted">5 min tutorial</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="card">
+              <div class="card-body text-center">
+                <i class="bi bi-play-circle text-success" style="font-size: 3rem;"></i>
+                <h6 class="mt-2">Asset Management</h6>
+                <small class="text-muted">8 min tutorial</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

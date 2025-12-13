@@ -1,0 +1,44 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{#
+  Unified Settings Dashboard Template
+  - Shared layout/structure
+  - Provides blocks for minimal vs enterprise variants
+  - Defaults to minimal implementation; enterprise wrapper overrides blocks
+#}
+
+{% block title %}System Settings{% endblock %}
+
+
+{# ===== Scripts (minimal default) ===== #}
+{% block extra_scripts %}
+  <script src="{% static 'js/settings-unified.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="fw-bold" style="color:var(--accent);">
+        <i class="bi bi-gear-fill me-2"></i>System Settings
+      </h2>
+      {% block top_actions %}
+      <div class="d-flex gap-2">
+        {# Enterprise wrappers can override to add export/import #}
+        {% if 'system_settings' in available_settings %}
+        <button class="btn btn-primary" id="createSettingBtn">
+          <i class="bi bi-plus-lg me-1"></i>Add Setting
+        </button>
+        {% endif %}
+      </div>
+      {% endblock %}
+    </div>
+
+    {% block settings_nav %}{% endblock %}
+    {% block org_overview %}{% endblock %}
+    {% block settings_categories %}{% endblock %}
+    {% block modals %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,410 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Documents - Enterprise Asset Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h2 font-bold mb-2">
+      <i class="bi bi-file-text text-primary me-2"></i>
+      Documents & Resources
+    </h1>
+    <p class="text-muted">Access documentation, templates, and enterprise resources</p>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-search me-1"></i>Search Docs
+    </button>
+    <button class="btn btn-primary btn-sm">
+      <i class="bi bi-download me-1"></i>Download All
+    </button>
+  </div>
+</div>
+
+<!-- Document Categories -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mb-6">
+  <div class="card">
+    <div class="card-body">
+      <div class="d-flex align-items-center mb-3">
+        <i class="bi bi-book text-primary me-2" style="font-size: 1.5rem;"></i>
+        <h5 class="mb-0">User Manuals</h5>
+      </div>
+      <p class="text-muted mb-3">Complete guides for system usage</p>
+      <div class="d-grid">
+        <button class="btn btn-outline-primary btn-sm" onclick="showDocuments('manuals')">
+          View Manuals (4)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="d-flex align-items-center mb-3">
+        <i class="bi bi-file-spreadsheet text-success me-2" style="font-size: 1.5rem;"></i>
+        <h5 class="mb-0">Templates</h5>
+      </div>
+      <p class="text-muted mb-3">Excel and CSV import templates</p>
+      <div class="d-grid">
+        <button class="btn btn-outline-success btn-sm" onclick="showDocuments('templates')">
+          View Templates (6)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="d-flex align-items-center mb-3">
+        <i class="bi bi-shield-check text-warning me-2" style="font-size: 1.5rem;"></i>
+        <h5 class="mb-0">Policies</h5>
+      </div>
+      <p class="text-muted mb-3">Security and compliance documents</p>
+      <div class="d-grid">
+        <button class="btn btn-outline-warning btn-sm" onclick="showDocuments('policies')">
+          View Policies (3)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Document Lists -->
+<div class="row">
+  <div class="col-lg-8">
+    <!-- User Manuals -->
+    <div class="card mb-4" id="manuals-section">
+      <div class="card-header">
+        <h4><i class="bi bi-book me-2"></i>User Manuals</h4>
+      </div>
+      <div class="card-body">
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Document</th>
+                <th>Version</th>
+                <th>Updated</th>
+                <th>Size</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-file-pdf text-danger me-2"></i>
+                    <div>
+                      <div class="font-medium">Administrator Guide</div>
+                      <small class="text-muted">Complete admin documentation</small>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="badge bg-primary">v2.1</span></td>
+                <td>2024-01-15</td>
+                <td>2.4 MB</td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <button class="btn btn-outline-primary btn-sm" title="View">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-outline-success btn-sm" title="Download">
+                      <i class="bi bi-download"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-file-pdf text-danger me-2"></i>
+                    <div>
+                      <div class="font-medium">User Manual</div>
+                      <small class="text-muted">End-user guide</small>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="badge bg-primary">v2.1</span></td>
+                <td>2024-01-15</td>
+                <td>1.8 MB</td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <button class="btn btn-outline-primary btn-sm" title="View">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-outline-success btn-sm" title="Download">
+                      <i class="bi bi-download"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-file-pdf text-danger me-2"></i>
+                    <div>
+                      <div class="font-medium">API Documentation</div>
+                      <small class="text-muted">Developer reference</small>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="badge bg-info">v1.5</span></td>
+                <td>2024-01-10</td>
+                <td>3.2 MB</td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <button class="btn btn-outline-primary btn-sm" title="View">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-outline-success btn-sm" title="Download">
+                      <i class="bi bi-download"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Templates -->
+    <div class="card mb-4" id="templates-section">
+      <div class="card-header">
+        <h4><i class="bi bi-file-spreadsheet me-2"></i>Import Templates</h4>
+      </div>
+      <div class="card-body">
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Template</th>
+                <th>Format</th>
+                <th>Updated</th>
+                <th>Downloads</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-file-excel text-success me-2"></i>
+                    <div>
+                      <div class="font-medium">Asset Import Template</div>
+                      <small class="text-muted">Bulk asset import</small>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="badge bg-success">Excel</span></td>
+                <td>2024-01-15</td>
+                <td>1,247</td>
+                <td>
+                  <a href="/assets/download-import-template/" class="btn btn-outline-success btn-sm">
+                    <i class="bi bi-download"></i>
+                  </a>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-file-text text-info me-2"></i>
+                    <div>
+                      <div class="font-medium">User Import Template</div>
+                      <small class="text-muted">Bulk user creation</small>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="badge bg-info">CSV</span></td>
+                <td>2024-01-12</td>
+                <td>456</td>
+                <td>
+                  <button class="btn btn-outline-success btn-sm">
+                    <i class="bi bi-download"></i>
+                  </button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-file-excel text-success me-2"></i>
+                    <div>
+                      <div class="font-medium">Category Template</div>
+                      <small class="text-muted">Asset categories setup</small>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="badge bg-success">Excel</span></td>
+                <td>2024-01-10</td>
+                <td>234</td>
+                <td>
+                  <button class="btn btn-outline-success btn-sm">
+                    <i class="bi bi-download"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Policies -->
+    <div class="card mb-4" id="policies-section">
+      <div class="card-header">
+        <h4><i class="bi bi-shield-check me-2"></i>Policies & Compliance</h4>
+      </div>
+      <div class="card-body">
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Policy</th>
+                <th>Type</th>
+                <th>Effective Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-file-lock text-warning me-2"></i>
+                    <div>
+                      <div class="font-medium">Data Security Policy</div>
+                      <small class="text-muted">Information security guidelines</small>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="badge bg-warning">Security</span></td>
+                <td>2024-01-01</td>
+                <td><span class="status status-success">Active</span></td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <button class="btn btn-outline-primary btn-sm" title="View">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-outline-success btn-sm" title="Download">
+                      <i class="bi bi-download"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-file-lock text-warning me-2"></i>
+                    <div>
+                      <div class="font-medium">Asset Management Policy</div>
+                      <small class="text-muted">Asset handling procedures</small>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="badge bg-info">Operational</span></td>
+                <td>2024-01-01</td>
+                <td><span class="status status-success">Active</span></td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <button class="btn btn-outline-primary btn-sm" title="View">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-outline-success btn-sm" title="Download">
+                      <i class="bi bi-download"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="col-lg-4">
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5><i class="bi bi-info-circle me-2"></i>Quick Access</h5>
+      </div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <a href="/assets/download-import-template/" class="btn btn-success btn-sm">
+            <i class="bi bi-download me-2"></i>Asset Import Template
+          </a>
+          <button class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-file-pdf me-2"></i>User Manual
+          </button>
+          <button class="btn btn-outline-info btn-sm">
+            <i class="bi bi-code-square me-2"></i>API Documentation
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5><i class="bi bi-clock-history me-2"></i>Recent Updates</h5>
+      </div>
+      <div class="card-body">
+        <div class="small">
+          <div class="d-flex justify-content-between mb-2">
+            <span>Administrator Guide</span>
+            <span class="text-muted">Jan 15</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Asset Import Template</span>
+            <span class="text-muted">Jan 15</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span>User Manual</span>
+            <span class="text-muted">Jan 15</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h5><i class="bi bi-question-circle me-2"></i>Need Help?</h5>
+      </div>
+      <div class="card-body">
+        <p class="small text-muted mb-3">Can't find what you're looking for?</p>
+        <div class="d-grid gap-2">
+          <a href="/help/" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-question-circle me-2"></i>Help Center
+          </a>
+          <a href="mailto:support@company.com" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-envelope me-2"></i>Contact Support
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showDocuments(category) {
+  // Hide all sections
+  document.querySelectorAll('[id$="-section"]').forEach(section => {
+    section.style.display = 'none';
+  });
+  
+  // Show selected section
+  const targetSection = document.getElementById(category + '-section');
+  if (targetSection) {
+    targetSection.style.display = 'block';
+    targetSection.scrollIntoView({ behavior: 'smooth' });
+  }
+}
+
+// Show all sections by default
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('[id$="-section"]').forEach(section => {
+    section.style.display = 'block';
+  });
+});
+</script>
+{% endblock %}

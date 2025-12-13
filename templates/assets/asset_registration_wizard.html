@@ -1,0 +1,957 @@
+{% extends 'base_dashboard.html' %}
+{% load asset_extras %}
+{% load static %}
+
+{% block title %}Register Asset · Asset Management{% endblock %}
+
+{% block extra_head %}
+<!-- Phase 8: World-Class Form Styles -->
+<link href="{% static 'css/forms-worldclass.css' %}" rel="stylesheet">
+<link href="{% static 'css/wizard-worldclass.css' %}" rel="stylesheet">
+<link href="{% static 'css/duplicate-detection.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<!-- Breadcrumbs -->
+{% include 'components/breadcrumbs.html' with root_label='Dashboard' root_url='/dashboard/' parent_label='Assets' parent_url='/assets/' current_label='Register Asset' %}
+
+<!-- User role for JS (CSP-compliant) -->
+<div id="user-role" data-role="{{ user_role|default:'' }}" style="display:none;"></div>
+
+<!-- Wizard Container -->
+<div class="wizard-container" id="asset-registration-wizard">
+  
+  <!-- Progress Indicator -->
+  <div class="wizard-progress" role="progressbar" aria-valuenow="1" aria-valuemin="1" aria-valuemax="6">
+    <div class="wizard-progress-line" style="width: 0%;"></div>
+    
+    <div class="wizard-progress-step active" data-step="0">
+      <div class="wizard-step-circle">
+        <span class="step-number">1</span>
+      </div>
+      <span class="wizard-step-label">Basic Info</span>
+      <span class="wizard-step-description">Essential details</span>
+    </div>
+    
+    <div class="wizard-progress-step" data-step="1">
+      <div class="wizard-step-circle">
+        <span class="step-number">2</span>
+      </div>
+      <span class="wizard-step-label">Location</span>
+      <span class="wizard-step-description">Assignment</span>
+    </div>
+    
+    <div class="wizard-progress-step" data-step="2">
+      <div class="wizard-step-circle">
+        <span class="step-number">3</span>
+      </div>
+      <span class="wizard-step-label">Financial</span>
+      <span class="wizard-step-description">Purchase info</span>
+    </div>
+    
+    <div class="wizard-progress-step" data-step="3">
+      <div class="wizard-step-circle">
+        <span class="step-number">4</span>
+      </div>
+      <span class="wizard-step-label">Details</span>
+      <span class="wizard-step-description">Category fields</span>
+    </div>
+    
+    <div class="wizard-progress-step" data-step="4">
+      <div class="wizard-step-circle">
+        <span class="step-number">5</span>
+      </div>
+      <span class="wizard-step-label">Documents</span>
+      <span class="wizard-step-description">Files & images</span>
+    </div>
+    
+    <div class="wizard-progress-step" data-step="5">
+      <div class="wizard-step-circle">
+        <span class="step-number">6</span>
+      </div>
+      <span class="wizard-step-label">Review</span>
+      <span class="wizard-step-description">Confirm & submit</span>
+    </div>
+  </div>
+
+  <!-- Wizard Form -->
+  <form id="asset-registration-form" method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    
+    <!-- Wizard Steps Container -->
+    <div class="wizard-steps">
+      
+      <!-- Step 1: Basic Information -->
+      <div class="wizard-step active" data-step="0" id="step-basic">
+        <div class="wizard-step-header">
+          <h2 class="wizard-step-title">
+            <i class="bi bi-info-circle"></i>
+            Basic Information
+          </h2>
+          <p class="wizard-step-subtitle">
+            Enter the essential details about the asset
+          </p>
+        </div>
+        
+        <div class="wizard-step-content">
+          <div class="row g-3">
+            <!-- Asset Name -->
+            <div class="col-md-6">
+              <label for="asset-name" class="form-label required">Asset Name</label>
+              <input type="text" 
+                     class="form-control" 
+                     id="asset-name" 
+                     name="name"
+                     placeholder="e.g., Dell Latitude 7420"
+                     required
+                     maxlength="100"
+                     autocomplete="off">
+              <div class="invalid-feedback">Asset name is required (2-100 characters)</div>
+              <small class="form-text">
+                <i class="bi bi-info-circle"></i>
+                Use a descriptive name for easy identification
+              </small>
+            </div>
+            
+            <!-- Category -->
+            <div class="col-md-6">
+              <label for="category" class="form-label required">Category</label>
+              <select class="form-select" id="category" name="category" required>
+                <option value="">Select category...</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}" data-fields="{{ cat.fields|to_json }}">
+                  {{ cat.name }}
+                </option>
+                {% endfor %}
+              </select>
+              <div class="invalid-feedback">Please select a category</div>
+              <small class="form-text">
+                <i class="bi bi-info-circle"></i>
+                Category determines available fields
+              </small>
+            </div>
+            
+            <!-- Asset Tag (Auto-generated or Manual) -->
+            <div class="col-md-6">
+              <label for="asset-tag" class="form-label">Asset Tag</label>
+              <div class="input-group">
+                <input type="text" 
+                       class="form-control" 
+                       id="asset-tag" 
+                       name="asset_tag"
+                       placeholder="Auto-generated if empty"
+                       maxlength="50"
+                       autocomplete="off">
+                <button class="btn btn-outline-secondary" type="button" id="btn-generate-tag">
+                  <i class="bi bi-arrow-clockwise"></i>
+                  Generate
+                </button>
+              </div>
+              <small class="form-text">
+                <i class="bi bi-info-circle"></i>
+                Leave empty for auto-generation
+              </small>
+            </div>
+            
+            <!-- Status -->
+            <div class="col-md-6">
+              <label for="status" class="form-label required">Status</label>
+              <select class="form-select" id="status" name="status" required>
+                <option value="active" selected>Active</option>
+                <option value="in_maintenance">In Maintenance</option>
+                <option value="retired">Retired</option>
+              </select>
+              <div class="invalid-feedback">Please select a status</div>
+            </div>
+            
+            <!-- Description -->
+            <div class="col-12">
+              <label for="description" class="form-label">Description</label>
+              <textarea class="form-control" 
+                        id="description" 
+                        name="description"
+                        rows="3"
+                        maxlength="500"
+                        placeholder="Additional details about the asset..."></textarea>
+              <small class="form-text">
+                <i class="bi bi-info-circle"></i>
+                Optional: Add any relevant notes or details
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Location & Assignment -->
+      <div class="wizard-step" data-step="1" id="step-location">
+        <div class="wizard-step-header">
+          <h2 class="wizard-step-title">
+            <i class="bi bi-geo-alt"></i>
+            Location & Assignment
+          </h2>
+          <p class="wizard-step-subtitle">
+            Specify where the asset is located and who it's assigned to
+          </p>
+        </div>
+        
+        <div class="wizard-step-content">
+          <div class="row g-3">
+            <!-- Branch -->
+            <div class="col-md-6">
+              <label for="branch" class="form-label required">Branch</label>
+              <select class="form-select" id="branch" name="branch" required>
+                <option value="">Select branch...</option>
+                {% for branch in branches %}
+                <option value="{{ branch.id }}">{{ branch.name }}</option>
+                {% endfor %}
+              </select>
+              <div class="invalid-feedback">Please select a branch</div>
+            </div>
+            
+            <!-- Assigned To (Optional) -->
+            <div class="col-md-6">
+              <label for="assigned-to" class="form-label">Assigned To</label>
+              <select class="form-select" id="assigned-to" name="assigned_to">
+                <option value="">Unassigned</option>
+                {% for user in users %}
+                <option value="{{ user.id }}">{{ user.get_full_name|default:user.username }}</option>
+                {% endfor %}
+              </select>
+              <small class="form-text">
+                <i class="bi bi-info-circle"></i>
+                Optional: Assign to a specific user
+              </small>
+            </div>
+            
+            <!-- Department (Optional) -->
+            <div class="col-md-6">
+              <label for="department" class="form-label">Department</label>
+              <input type="text" 
+                     class="form-control" 
+                     id="department" 
+                     name="department"
+                     placeholder="e.g., IT, Finance, HR"
+                     maxlength="100">
+              <small class="form-text">
+                <i class="bi bi-info-circle"></i>
+                Optional: Specify department
+              </small>
+            </div>
+            
+            <!-- Physical Location (Optional) -->
+            <div class="col-md-6">
+              <label for="location" class="form-label">Physical Location</label>
+              <input type="text" 
+                     class="form-control" 
+                     id="location" 
+                     name="location"
+                     placeholder="e.g., Building A, Floor 3, Room 301"
+                     maxlength="200">
+              <small class="form-text">
+                <i class="bi bi-info-circle"></i>
+                Optional: Exact physical location
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Financial Information -->
+      <div class="wizard-step" data-step="2" id="step-financial">
+        <div class="wizard-step-header">
+          <h2 class="wizard-step-title">
+            <i class="bi bi-cash-coin"></i>
+            Financial Information
+          </h2>
+          <p class="wizard-step-subtitle">
+            Enter purchase and depreciation details
+          </p>
+        </div>
+        
+        <div class="wizard-step-content">
+          <div class="row g-3">
+            <!-- Purchase Value -->
+            <div class="col-md-6">
+              <label for="purchase-value" class="form-label">Purchase Value</label>
+              <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input type="number" 
+                       class="form-control" 
+                       id="purchase-value" 
+                       name="purchase_value"
+                       placeholder="0.00"
+                       min="0"
+                       step="0.01">
+              </div>
+              <small class="form-text">
+                <i class="bi bi-info-circle"></i>
+                Optional: Original purchase price
+              </small>
+            </div>
+            
+            <!-- Purchase Date -->
+            <div class="col-md-6">
+              <label for="purchase-date" class="form-label">Purchase Date</label>
+              <input type="date" 
+                     class="form-control" 
+                     id="purchase-date" 
+                     name="purchase_date">
+              <small class="form-text">
+                <i class="bi bi-info-circle"></i>
+                Optional: Date of purchase
+              </small>
+            </div>
+            
+            <!-- Depreciation Method -->
+            <div class="col-md-6">
+              <label for="depreciation-method" class="form-label">Depreciation Method</label>
+              <select class="form-select" id="depreciation-method" name="depreciation_method">
+                <option value="">No depreciation</option>
+                <option value="straight_line">Straight Line</option>
+                <option value="declining_balance">Declining Balance</option>
+              </select>
+              <small class="form-text">
+                <i class="bi bi-info-circle"></i>
+                Optional: Depreciation calculation method
+              </small>
+            </div>
+            
+            <!-- Useful Life (Years) -->
+            <div class="col-md-6">
+              <label for="useful-life" class="form-label">Useful Life (Years)</label>
+              <input type="number" 
+                     class="form-control" 
+                     id="useful-life" 
+                     name="useful_life_years"
+                     placeholder="e.g., 5"
+                     min="1"
+                     max="50">
+              <small class="form-text">
+                <i class="bi bi-info-circle"></i>
+                Optional: Expected lifespan in years
+              </small>
+            </div>
+            
+            <!-- Warranty Expiry -->
+            <div class="col-md-6">
+              <label for="warranty-expiry" class="form-label">Warranty Expiry</label>
+              <input type="date" 
+                     class="form-control" 
+                     id="warranty-expiry" 
+                     name="warranty_expiry">
+              <small class="form-text">
+                <i class="bi bi-info-circle"></i>
+                Optional: Warranty end date
+              </small>
+            </div>
+            
+            <!-- Maintenance Enabled -->
+            <div class="col-md-6">
+              <div class="form-check form-switch" style="padding-top: 2.2rem;">
+                <input class="form-check-input" 
+                       type="checkbox" 
+                       id="maintenance-enabled" 
+                       name="maintenance_enabled">
+                <label class="form-check-label" for="maintenance-enabled">
+                  Enable Maintenance Tracking
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Dynamic Fields (Category-Specific) -->
+      <div class="wizard-step" data-step="3" id="step-dynamic">
+        <div class="wizard-step-header">
+          <h2 class="wizard-step-title">
+            <i class="bi bi-sliders"></i>
+            Category-Specific Details
+          </h2>
+          <p class="wizard-step-subtitle">
+            Additional fields based on selected category
+          </p>
+        </div>
+        
+        <div class="wizard-step-content">
+          <div id="dynamic-fields-container" class="row g-3">
+            <!-- Dynamic fields will be inserted here by JavaScript -->
+            <div class="col-12 text-center text-muted" id="no-dynamic-fields">
+              <i class="bi bi-info-circle" style="font-size: 3rem; opacity: 0.3;"></i>
+              <p class="mt-3">Select a category in Step 1 to see additional fields</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 5: Documents & Images -->
+      <div class="wizard-step" data-step="4" id="step-documents">
+        <div class="wizard-step-header">
+          <h2 class="wizard-step-title">
+            <i class="bi bi-file-earmark-image"></i>
+            Documents & Images
+          </h2>
+          <p class="wizard-step-subtitle">
+            Upload photos, manuals, and related documents
+          </p>
+        </div>
+        
+        <div class="wizard-step-content">
+          <div class="row g-3">
+            <!-- Image Upload -->
+            <div class="col-12">
+              <label class="form-label">Asset Images</label>
+              <div class="file-drop-zone" id="image-drop-zone">
+                <i class="bi bi-cloud-upload"></i>
+                <p><strong>Drop images here</strong> or click to browse</p>
+                <p class="file-types">Supported: JPG, PNG, GIF (Max 5MB each)</p>
+                <input type="file" 
+                       id="asset-images" 
+                       name="images"
+                       accept="image/*"
+                       multiple
+                       style="display: none;">
+              </div>
+              <div id="image-preview-container" class="mt-3"></div>
+            </div>
+            
+            <!-- Document Upload -->
+            <div class="col-12">
+              <label class="form-label">Documents</label>
+              <div class="file-drop-zone" id="document-drop-zone">
+                <i class="bi bi-file-earmark-text"></i>
+                <p><strong>Drop documents here</strong> or click to browse</p>
+                <p class="file-types">Supported: PDF, DOC, DOCX, XLS, XLSX (Max 10MB each)</p>
+                <input type="file" 
+                       id="asset-documents" 
+                       name="documents"
+                       accept=".pdf,.doc,.docx,.xls,.xlsx"
+                       multiple
+                       style="display: none;">
+              </div>
+              <div id="document-preview-container" class="mt-3"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 6: Review & Submit -->
+      <div class="wizard-step" data-step="5" id="step-review">
+        <div class="wizard-step-header">
+          <h2 class="wizard-step-title">
+            <i class="bi bi-check-circle"></i>
+            Review & Submit
+          </h2>
+          <p class="wizard-step-subtitle">
+            Review all information before submitting
+          </p>
+        </div>
+        
+        <div class="wizard-step-content">
+          <div class="wizard-review">
+            <!-- Basic Information -->
+            <div class="wizard-review-section">
+              <div class="wizard-review-header">
+                <h3 class="wizard-review-title">Basic Information</h3>
+                <a href="#" class="wizard-review-edit" data-step="0">
+                  <i class="bi bi-pencil"></i> Edit
+                </a>
+              </div>
+              <div id="review-basic"></div>
+            </div>
+            
+            <!-- Location & Assignment -->
+            <div class="wizard-review-section">
+              <div class="wizard-review-header">
+                <h3 class="wizard-review-title">Location & Assignment</h3>
+                <a href="#" class="wizard-review-edit" data-step="1">
+                  <i class="bi bi-pencil"></i> Edit
+                </a>
+              </div>
+              <div id="review-location"></div>
+            </div>
+            
+            <!-- Financial Information -->
+            <div class="wizard-review-section">
+              <div class="wizard-review-header">
+                <h3 class="wizard-review-title">Financial Information</h3>
+                <a href="#" class="wizard-review-edit" data-step="2">
+                  <i class="bi bi-pencil"></i> Edit
+                </a>
+              </div>
+              <div id="review-financial"></div>
+            </div>
+            
+            <!-- Dynamic Fields -->
+            <div class="wizard-review-section" id="review-dynamic-section" style="display: none;">
+              <div class="wizard-review-header">
+                <h3 class="wizard-review-title">Category-Specific Details</h3>
+                <a href="#" class="wizard-review-edit" data-step="3">
+                  <i class="bi bi-pencil"></i> Edit
+                </a>
+              </div>
+              <div id="review-dynamic"></div>
+            </div>
+            
+            <!-- Documents -->
+            <div class="wizard-review-section" id="review-documents-section" style="display: none;">
+              <div class="wizard-review-header">
+                <h3 class="wizard-review-title">Documents & Images</h3>
+                <a href="#" class="wizard-review-edit" data-step="4">
+                  <i class="bi bi-pencil"></i> Edit
+                </a>
+              </div>
+              <div id="review-documents"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Wizard Navigation -->
+    <div class="wizard-navigation">
+      <div class="wizard-step-info">
+        Step <span id="current-step-number">1</span> of 6
+      </div>
+      <div class="wizard-nav-buttons">
+        <button type="button" 
+                class="wizard-btn wizard-btn-secondary" 
+                id="btn-previous"
+                style="display: none;">
+          <i class="bi bi-arrow-left"></i>
+          Previous
+        </button>
+        <button type="button" 
+                class="wizard-btn wizard-btn-primary" 
+                id="btn-next">
+          Next
+          <i class="bi bi-arrow-right"></i>
+        </button>
+        <button type="submit" 
+                class="wizard-btn wizard-btn-primary" 
+                id="btn-submit"
+                style="display: none;">
+          <i class="bi bi-check-lg"></i>
+          Submit Asset
+        </button>
+      </div>
+    </div>
+
+  </form>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Phase 8: Form Components -->
+<script src="{% static 'js/form-validator.js' %}"></script>
+<script src="{% static 'js/form-autosave.js' %}"></script>
+<script src="{% static 'js/form-wizard.js' %}"></script>
+<script src="{% static 'js/unique-field-validator.js' %}"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize wizard with custom logic
+  const wizard = {
+    currentStep: 0,
+    totalSteps: 6,
+    formData: {},
+    
+    init() {
+      this.bindEvents();
+      this.initAutoSave();
+      this.updateNavigation();
+      this.restoreProgress();
+    },
+    
+    bindEvents() {
+      // Navigation buttons
+      document.getElementById('btn-next')?.addEventListener('click', () => this.nextStep());
+      document.getElementById('btn-previous')?.addEventListener('click', () => this.previousStep());
+      document.getElementById('btn-submit')?.addEventListener('click', (e) => this.submitForm(e));
+      
+      // Progress step clicks
+      document.querySelectorAll('.wizard-progress-step').forEach((step, index) => {
+        step.addEventListener('click', () => {
+          if (index <= this.currentStep || step.classList.contains('completed')) {
+            this.goToStep(index);
+          }
+        });
+      });
+      
+      // Review edit links
+      document.querySelectorAll('.wizard-review-edit').forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const step = parseInt(link.dataset.step);
+          this.goToStep(step);
+        });
+      });
+      
+      // Category change - load dynamic fields
+      document.getElementById('category')?.addEventListener('change', (e) => {
+        this.loadDynamicFields(e.target);
+      });
+      
+      // Generate asset tag
+      document.getElementById('btn-generate-tag')?.addEventListener('click', () => {
+        this.generateAssetTag();
+      });
+      
+      // File drop zones
+      this.initFileDropZones();
+    },
+    
+    nextStep() {
+      if (this.validateCurrentStep()) {
+        this.saveStepData();
+        if (this.currentStep < this.totalSteps - 1) {
+          this.goToStep(this.currentStep + 1);
+        }
+      }
+    },
+    
+    previousStep() {
+      if (this.currentStep > 0) {
+        this.goToStep(this.currentStep - 1);
+      }
+    },
+    
+    goToStep(stepIndex) {
+      // Hide current step
+      const currentStepEl = document.querySelector(`.wizard-step[data-step="${this.currentStep}"]`);
+      if (currentStepEl) {
+        currentStepEl.classList.remove('active');
+      }
+      
+      // Update progress
+      const currentProgressStep = document.querySelector(`.wizard-progress-step[data-step="${this.currentStep}"]`);
+      if (currentProgressStep) {
+        currentProgressStep.classList.remove('active');
+        if (stepIndex > this.currentStep) {
+          currentProgressStep.classList.add('completed');
+        }
+      }
+      
+      // Show new step
+      this.currentStep = stepIndex;
+      const newStepEl = document.querySelector(`.wizard-step[data-step="${stepIndex}"]`);
+      if (newStepEl) {
+        newStepEl.classList.add('active');
+      }
+      
+      // Update progress indicator
+      const newProgressStep = document.querySelector(`.wizard-progress-step[data-step="${stepIndex}"]`);
+      if (newProgressStep) {
+        newProgressStep.classList.add('active');
+      }
+      
+      // Update progress bar
+      const progressLine = document.querySelector('.wizard-progress-line');
+      if (progressLine) {
+        const progress = (stepIndex / (this.totalSteps - 1)) * 100;
+        progressLine.style.width = `${progress}%`;
+      }
+      
+      // Update navigation
+      this.updateNavigation();
+      
+      // If review step, populate review
+      if (stepIndex === 5) {
+        this.populateReview();
+      }
+      
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+    
+    updateNavigation() {
+      const btnPrevious = document.getElementById('btn-previous');
+      const btnNext = document.getElementById('btn-next');
+      const btnSubmit = document.getElementById('btn-submit');
+      const stepNumber = document.getElementById('current-step-number');
+      
+      // Update step number
+      if (stepNumber) {
+        stepNumber.textContent = this.currentStep + 1;
+      }
+      
+      // Show/hide buttons
+      if (btnPrevious) {
+        btnPrevious.style.display = this.currentStep === 0 ? 'none' : 'inline-flex';
+      }
+      
+      if (btnNext) {
+        btnNext.style.display = this.currentStep === this.totalSteps - 1 ? 'none' : 'inline-flex';
+      }
+      
+      if (btnSubmit) {
+        btnSubmit.style.display = this.currentStep === this.totalSteps - 1 ? 'inline-flex' : 'none';
+      }
+    },
+    
+    validateCurrentStep() {
+      const currentStepEl = document.querySelector(`.wizard-step[data-step="${this.currentStep}"]`);
+      if (!currentStepEl) return true;
+      
+      const inputs = currentStepEl.querySelectorAll('input[required], select[required], textarea[required]');
+      let isValid = true;
+      
+      inputs.forEach(input => {
+        if (!input.value.trim()) {
+          input.classList.add('is-invalid');
+          isValid = false;
+        } else {
+          input.classList.remove('is-invalid');
+          input.classList.add('is-valid');
+        }
+      });
+      
+      return isValid;
+    },
+    
+    saveStepData() {
+      const currentStepEl = document.querySelector(`.wizard-step[data-step="${this.currentStep}"]`);
+      if (!currentStepEl) return;
+      
+      const inputs = currentStepEl.querySelectorAll('input, select, textarea');
+      inputs.forEach(input => {
+        if (input.name) {
+          this.formData[input.name] = input.value;
+        }
+      });
+      
+      // Save to localStorage
+      localStorage.setItem('asset_wizard_progress', JSON.stringify({
+        currentStep: this.currentStep,
+        formData: this.formData
+      }));
+    },
+    
+    restoreProgress() {
+      const saved = localStorage.getItem('asset_wizard_progress');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          this.formData = data.formData || {};
+          
+          // Restore form values
+          Object.keys(this.formData).forEach(name => {
+            const input = document.querySelector(`[name="${name}"]`);
+            if (input) {
+              input.value = this.formData[name];
+            }
+          });
+        } catch (e) {
+          console.error('Failed to restore progress:', e);
+        }
+      }
+    },
+    
+    loadDynamicFields(categorySelect) {
+      const container = document.getElementById('dynamic-fields-container');
+      const noFieldsMsg = document.getElementById('no-dynamic-fields');
+      
+      if (!categorySelect.value) {
+        container.innerHTML = '';
+        if (noFieldsMsg) noFieldsMsg.style.display = 'block';
+        return;
+      }
+      
+      const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+      const fieldsData = selectedOption.dataset.fields;
+      
+      if (!fieldsData || fieldsData === '[]') {
+        container.innerHTML = '';
+        if (noFieldsMsg) noFieldsMsg.style.display = 'block';
+        return;
+      }
+      
+      try {
+        const fields = JSON.parse(fieldsData);
+        if (noFieldsMsg) noFieldsMsg.style.display = 'none';
+        
+        container.innerHTML = fields.map(field => `
+          <div class="col-md-6">
+            <label for="dynamic-${field.key}" class="form-label ${field.is_required ? 'required' : ''}">
+              ${field.label}
+            </label>
+            ${this.renderDynamicField(field)}
+            ${field.is_required ? '<div class="invalid-feedback">This field is required</div>' : ''}
+          </div>
+        `).join('');
+      } catch (e) {
+        console.error('Failed to parse dynamic fields:', e);
+      }
+    },
+    
+    renderDynamicField(field) {
+      const commonAttrs = `id="dynamic-${field.key}" name="dynamic_${field.key}" ${field.is_required ? 'required' : ''}`;
+      
+      switch (field.field_type) {
+        case 'text':
+          return `<input type="text" class="form-control" ${commonAttrs} placeholder="${field.label}">`;
+        case 'number':
+          return `<input type="number" class="form-control" ${commonAttrs} placeholder="${field.label}">`;
+        case 'date':
+          return `<input type="date" class="form-control" ${commonAttrs}>`;
+        case 'textarea':
+          return `<textarea class="form-control" ${commonAttrs} rows="3" placeholder="${field.label}"></textarea>`;
+        default:
+          return `<input type="text" class="form-control" ${commonAttrs} placeholder="${field.label}">`;
+      }
+    },
+    
+    generateAssetTag() {
+      const prefix = 'AST';
+      const timestamp = Date.now().toString().slice(-6);
+      const random = Math.random().toString(36).substring(2, 5).toUpperCase();
+      const tag = `${prefix}-${timestamp}-${random}`;
+      
+      const input = document.getElementById('asset-tag');
+      if (input) {
+        input.value = tag;
+      }
+    },
+    
+    initFileDropZones() {
+      // Image drop zone
+      const imageZone = document.getElementById('image-drop-zone');
+      const imageInput = document.getElementById('asset-images');
+      
+      if (imageZone && imageInput) {
+        imageZone.addEventListener('click', () => imageInput.click());
+        imageZone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          imageZone.classList.add('drag-over');
+        });
+        imageZone.addEventListener('dragleave', () => {
+          imageZone.classList.remove('drag-over');
+        });
+        imageZone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          imageZone.classList.remove('drag-over');
+          imageInput.files = e.dataTransfer.files;
+          this.previewImages(imageInput.files);
+        });
+        imageInput.addEventListener('change', () => {
+          this.previewImages(imageInput.files);
+        });
+      }
+      
+      // Document drop zone (similar logic)
+      const docZone = document.getElementById('document-drop-zone');
+      const docInput = document.getElementById('asset-documents');
+      
+      if (docZone && docInput) {
+        docZone.addEventListener('click', () => docInput.click());
+        docInput.addEventListener('change', () => {
+          this.previewDocuments(docInput.files);
+        });
+      }
+    },
+    
+    previewImages(files) {
+      const container = document.getElementById('image-preview-container');
+      if (!container) return;
+      
+      container.innerHTML = '';
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const preview = document.createElement('div');
+          preview.className = 'image-preview';
+          preview.innerHTML = `
+            <img src="${e.target.result}" alt="${file.name}" style="max-width: 150px; border-radius: 8px; margin: 5px;">
+            <p style="font-size: 0.75rem; margin: 0;">${file.name}</p>
+          `;
+          container.appendChild(preview);
+        };
+        reader.readAsDataURL(file);
+      });
+    },
+    
+    previewDocuments(files) {
+      const container = document.getElementById('document-preview-container');
+      if (!container) return;
+      
+      container.innerHTML = Array.from(files).map(file => `
+        <div class="document-preview" style="padding: 0.5rem; border: 1px solid #e5e7eb; border-radius: 6px; margin: 5px 0;">
+          <i class="bi bi-file-earmark-text"></i>
+          <span style="margin-left: 0.5rem;">${file.name}</span>
+          <span style="color: #9ca3af; font-size: 0.75rem; margin-left: 0.5rem;">(${(file.size / 1024).toFixed(1)} KB)</span>
+        </div>
+      `).join('');
+    },
+    
+    populateReview() {
+      // Basic Information
+      document.getElementById('review-basic').innerHTML = this.createReviewItems([
+        { label: 'Asset Name', value: document.getElementById('asset-name')?.value },
+        { label: 'Category', value: document.getElementById('category')?.selectedOptions[0]?.text },
+        { label: 'Asset Tag', value: document.getElementById('asset-tag')?.value || 'Auto-generated' },
+        { label: 'Status', value: document.getElementById('status')?.selectedOptions[0]?.text },
+        { label: 'Description', value: document.getElementById('description')?.value || 'None' }
+      ]);
+      
+      // Location
+      document.getElementById('review-location').innerHTML = this.createReviewItems([
+        { label: 'Branch', value: document.getElementById('branch')?.selectedOptions[0]?.text },
+        { label: 'Assigned To', value: document.getElementById('assigned-to')?.selectedOptions[0]?.text || 'Unassigned' },
+        { label: 'Department', value: document.getElementById('department')?.value || 'None' },
+        { label: 'Location', value: document.getElementById('location')?.value || 'None' }
+      ]);
+      
+      // Financial
+      document.getElementById('review-financial').innerHTML = this.createReviewItems([
+        { label: 'Purchase Value', value: document.getElementById('purchase-value')?.value ? `$${document.getElementById('purchase-value').value}` : 'Not specified' },
+        { label: 'Purchase Date', value: document.getElementById('purchase-date')?.value || 'Not specified' },
+        { label: 'Depreciation Method', value: document.getElementById('depreciation-method')?.selectedOptions[0]?.text || 'None' },
+        { label: 'Useful Life', value: document.getElementById('useful-life')?.value ? `${document.getElementById('useful-life').value} years` : 'Not specified' }
+      ]);
+    },
+    
+    createReviewItems(items) {
+      return items.map(item => `
+        <div class="wizard-review-item">
+          <span class="wizard-review-label">${item.label}</span>
+          <span class="wizard-review-value">${item.value || 'N/A'}</span>
+        </div>
+      `).join('');
+    },
+    
+    initAutoSave() {
+      // Auto-save every 30 seconds
+      setInterval(() => {
+        this.saveStepData();
+      }, 30000);
+    },
+    
+    submitForm(e) {
+      e.preventDefault();
+      
+      if (!this.validateCurrentStep()) {
+        return;
+      }
+      
+      // Show loading state
+      const btnSubmit = document.getElementById('btn-submit');
+      if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting...';
+      }
+      
+      // Submit form
+      document.getElementById('asset-registration-form').submit();
+      
+      // Clear saved progress
+      localStorage.removeItem('asset_wizard_progress');
+    }
+  };
+  
+  // Initialize wizard
+  wizard.init();
+});
+</script>
+{% endblock %}

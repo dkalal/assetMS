@@ -1,0 +1,48 @@
+{# Breadcrumbs component - Enterprise-grade with accessibility support #}
+<nav class="app-breadcrumbs" aria-label="Breadcrumb navigation">
+	<ol class="breadcrumb mb-3" itemscope itemtype="https://schema.org/BreadcrumbList">
+		{# Primary: iterable crumbs passed from view context #}
+		{% if crumbs and crumbs|length > 0 %}
+			{% for c in crumbs %}
+				<li class="breadcrumb-item{% if forloop.last or not c.url %} active{% endif %}" 
+					{% if forloop.last %}aria-current="page"{% endif %}
+					itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+					{% if forloop.last or not c.url %}
+						<span itemprop="name">{{ c.label|default:'Page' }}</span>
+					{% else %}
+						<a href="{{ c.url|default:'#' }}" itemprop="item">
+							<span itemprop="name">{{ c.label|default:'Link' }}</span>
+						</a>
+					{% endif %}
+					<meta itemprop="position" content="{{ forloop.counter }}">
+				</li>
+			{% endfor %}
+		{% else %}
+			{# Fallback: up to three segments with robust defaults #}
+			<li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+				<a href="{{ root_url|default:'/dashboard/' }}" itemprop="item">
+					<span itemprop="name">{{ root_label|default:'Dashboard' }}</span>
+				</a>
+				<meta itemprop="position" content="1">
+			</li>
+			{% if parent_label %}
+				<li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+					<a href="{{ parent_url|default:'#' }}" itemprop="item">
+						<span itemprop="name">{{ parent_label }}</span>
+					</a>
+					<meta itemprop="position" content="2">
+				</li>
+				<li class="breadcrumb-item active" aria-current="page" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+					<span itemprop="name">{{ current_label|default:'Current Page' }}</span>
+					<meta itemprop="position" content="3">
+				</li>
+			{% else %}
+				<li class="breadcrumb-item active" aria-current="page" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+					<span itemprop="name">{{ current_label|default:'Current Page' }}</span>
+					<meta itemprop="position" content="2">
+				</li>
+			{% endif %}
+		{% endif %}
+	</ol>
+</nav>
+
