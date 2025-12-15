@@ -197,9 +197,9 @@ STATICFILES_DIRS = [str(BASE_DIR / "static")]
 
 # WhiteNoise: compressed static files (manifest only in non-debug/non-test)
 if DEBUG or TESTING:
-    STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
+    
 else:
-    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    
 
 # Configure WhiteNoise to serve media files in production
 WHITENOISE_USE_FINDERS = True
@@ -216,6 +216,10 @@ STORAGES = {
     "default": {
         "BACKEND": "assetms.storage_backends.MultiStorageBackend",
     },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+},
     "staticfiles": {
         "BACKEND": STATICFILES_STORAGE,
     },
@@ -447,5 +451,6 @@ INSTALLED_APPS += [
 # Store task results in Django database
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_CACHE_BACKEND = 'django-cache'
+
 
 
