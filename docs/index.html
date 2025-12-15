@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>assetMS — Modern Asset Management System</title>
+  <meta name="description" content="assetMS — scalable, secure, multi-tenant Asset Management System (AMS). Pulled-together landing page and docs entry for the project." />
+  <link rel="icon" href="/docs/assets/logo.svg" />
+  <link rel="stylesheet" href="/docs/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-grid">
+      <div class="brand">
+        <img src="/docs/assets/logo.svg" alt="assetMS logo" class="logo" />
+        <div>
+          <h1>assetMS</h1>
+          <p class="tag">Scalable • Secure • Multi-tenant</p>
+        </div>
+      </div>
+      <nav aria-label="Primary" class="nav">
+        <a href="#features">Features</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#security">Security</a>
+        <a href="#get-started" class="cta">Get Started</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-content">
+          <h2>Enterprise-grade Asset Management, engineered for modern stacks</h2>
+          <p class="lead">Manage hardware, software, licenses, contracts and lifecycle across multiple tenants with a modular, extensible platform built for performance, security, and developer friendliness.</p>
+          <p class="hero-cta">
+            <a href="#get-started" class="btn primary">Get started</a>
+            <a href="https://github.com/dkalal/assetMS" class="btn ghost">View on GitHub</a>
+          </p>
+          <ul class="pill-list">
+            <li>Multi-tenancy</li>
+            <li>RBAC & SSO</li>
+            <li>Event-driven & audit-ready</li>
+            <li>Cloud-native & scalable</li>
+          </ul>
+        </div>
+        <aside class="hero-aside" aria-hidden="true">
+          <div class="card">
+            <h3>Quick facts</h3>
+            <ul>
+              <li>Designed for millions of assets</li>
+              <li>Horizontal scaling with stateless services</li>
+              <li>Audit trails, retention & compliance hooks</li>
+              <li>Pluggable storage and integrations</li>
+            </ul>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="features" class="container features">
+      <h2>Core features</h2>
+      <div class="grid feature-grid">
+        <article>
+          <h3>Multi-tenancy</h3>
+          <p>Fine-grained tenant isolation with shared or isolated schemas, per-tenant configuration, usage quotas, and secure data partitioning.</p>
+        </article>
+        <article>
+          <h3>Asset lifecycle</h3>
+          <p>Track procurement, assignments, maintenance, depreciation, and retirement with event-driven workflows and scheduled rules.</p>
+        </article>
+        <article>
+          <h3>Security & RBAC</h3>
+          <p>Role-based access control, SSO/OIDC integration, permission boundaries, encryption at rest and in transit, and audit logs for every change.</p>
+        </article>
+        <article>
+          <h3>Integrations</h3>
+          <p>Webhooks, webhook signing, message buses (Kafka/RabbitMQ), CMDB sync, ITSM connectors, and CI/CD-friendly APIs.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="architecture" class="container architecture">
+      <h2>Architecture & design principles</h2>
+      <p class="muted">Built for scale, maintainability and operational excellence.</p>
+
+      <div class="arch-grid">
+        <div class="arch-block">
+          <h4>Modular services</h4>
+          <p>Small, focused microservices (or modular monolith by choice) expose clear API contracts. Each module has its own tests, CI, and deployment pipelines.</p>
+        </div>
+        <div class="arch-block">
+          <h4>Stateless compute</h4>
+          <p>Services are stateless where possible; state is stored in purpose-built stores (SQL for relational, object stores for files, caches for hot reads).</p>
+        </div>
+        <div class="arch-block">
+          <h4>Event-driven</h4>
+          <p>Use pub/sub for decoupling, reliability, and asynchronous processing (background jobs, notifications, audit publishing).</p>
+        </div>
+        <div class="arch-block">
+          <h4>Multi-tenancy patterns</h4>
+          <p>Support both shared-schema (with tenant_id) and isolated-schema strategies. Provide migration tooling and tenant onboarding APIs.</p>
+        </div>
+      </div>
+
+      <div class="note">
+        <strong>Operational notes:</strong> design for graceful degradation, health checks, metrics (Prometheus), tracing (OpenTelemetry), and robust backups.
+      </div>
+    </section>
+
+    <section id="security" class="container security">
+      <h2>Security & compliance</h2>
+      <ul>
+        <li>Least-privilege RBAC and audit trails for all mutating operations.</li>
+        <li>OIDC/SAML SSO, SCIM for user provisioning, and MFA recommendations for admins.</li>
+        <li>Encryption using KMS for secrets and keys, TLS everywhere, and strict CORS & CSP policies.</li>
+        <li>Automated vulnerability scanning in CI and dependency management.</li>
+      </ul>
+    </section>
+
+    <section id="get-started" class="container get-started">
+      <h2>Get started</h2>
+      <div class="grid start-grid">
+        <div>
+          <h3>Run locally</h3>
+          <pre class="terminal">git clone https://github.com/dkalal/assetMS.git
+cd assetMS
+# start services with Docker Compose (example)
+docker compose up --build</pre>
+        </div>
+        <div>
+          <h3>Deployment</h3>
+          <p>Deploy as containers to Kubernetes with horizontal autoscaling. Use managed databases and object storage for reliability. Provide a Helm chart or k8s manifests in <code>deploy/</code>.</p>
+        </div>
+      </div>
+
+      <p class="muted">For developer docs, architecture diagrams and contribution guidelines see the repository. If you want a tailored multi-tenant setup or benchmarking guidance, open an issue or PR.</p>
+
+      <div class="bottom-cta">
+        <a href="https://github.com/dkalal/assetMS/issues/new/choose" class="btn primary">Request features / report issue</a>
+        <a href="https://github.com/dkalal/assetMS/pulls" class="btn ghost">Open a PR</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <strong>assetMS</strong>
+        <p>Open source asset management designed for multi-tenant, secure environments.</p>
+      </div>
+      <div class="foot-links">
+        <a href="https://github.com/dkalal/assetMS">Repository</a>
+        <a href="https://github.com/dkalal/assetMS/issues">Issues</a>
+        <a href="https://github.com/dkalal/assetMS/pulls">Pull requests</a>
+      </div>
+    </div>
+    <div class="legal">© 2025 assetMS — Built by the community</div>
+  </footer>
+
+  <script>
+  // Small progressive enhancement: prefer-reduced-motion and focus outline management
+  (function(){
+    try {
+      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if(prefersReduced) document.documentElement.classList.add('reduced-motion');
+    } catch(e){}
+  })();
+  </script>
+</body>
+</html>
