@@ -1,4 +1,4 @@
-# ASGI compatibility library for Python web apps
+﻿# ASGI compatibility library for Python web apps
 asgiref==3.9.1
 # High performance Brotli compression library
 Brotli==1.1.0
@@ -14,8 +14,8 @@ cssselect2==0.8.0
 diff-match-patch==20241021
 # URL-style database configuration for Django
 dj-database-url==3.0.1 
-# High-level Python web framework (stick to LTS to satisfy celery-beat<5.2)
-Django==4.2.16
+# High-level Python web framework
+Django==5.1.6
 # Forms styling using Bootstrap for Django
 django-crispy-forms==2.4
 # Debug toolbar for Django development
@@ -114,3 +114,4 @@ django-celery-results==2.5.1
 flower==2.0.1
 # Fuzzy string matching for intelligent duplicate detection (world-class performance)
 rapidfuzz==3.10.1
+
