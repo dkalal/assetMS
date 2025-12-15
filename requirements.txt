@@ -14,8 +14,8 @@ cssselect2==0.8.0
 diff-match-patch==20241021
 # URL-style database configuration for Django
 dj-database-url==3.0.1 
-# High-level Python web framework
-Django==5.2.4
+# High-level Python web framework (stick to LTS to satisfy celery-beat<5.2)
+Django==4.2.16
 # Forms styling using Bootstrap for Django
 django-crispy-forms==2.4
 # Debug toolbar for Django development
