@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import api_views, views, asset_creation_views, asset_disposal_views, bulk_import_views, test_views
+from . import api_views, views, asset_creation_views, asset_disposal_views, bulk_import_views
 from reports import preview_views
 from .views import AssetUpdateView, asset_delete, asset_bulk_delete, regenerate_qr_code, bulk_regenerate_qr_codes, AssetRegistrationWizardView
 from .asset_creation_views import AssetCreationRequestView, api_pending_asset_creation_requests, api_quick_approve_asset_creation
@@ -11,7 +11,6 @@ app_name = 'assets'
 
 urlpatterns = [
     # DEBUG ENDPOINT - Remove in production
-    path('test/debug/', test_views.debug_api_status, name='debug_api'),
     
     # Asset List View
     path('', views.AssetListView.as_view(), name='list'),
