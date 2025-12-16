@@ -195,35 +195,30 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [str(BASE_DIR / "static")]
 
-# WhiteNoise: compressed static files (manifest only in non-debug/non-test)
 if DEBUG or TESTING:
-    
+    STATICFILES_BACKEND = "django.contrib.staticfiles.storage.StaticFilesStorage"
 else:
-    
+    STATICFILES_BACKEND = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# Configure WhiteNoise to serve media files in production
+# WhiteNoise settings
 WHITENOISE_USE_FINDERS = True
 WHITENOISE_AUTOREFRESH = True
 WHITENOISE_STATIC_PREFIX = '/static/'
 
-# Media files (uploads) - Multi-storage with Cloudinary primary
-USE_CLOUDINARY = os.environ.get('USE_CLOUDINARY', 'False').lower() == 'true'
-USE_IMAGEKIT = os.environ.get('USE_IMAGEKIT', 'False').lower() == 'true'
-USE_B2 = os.environ.get('USE_B2', 'False').lower() == 'true'
-
-# Storage configuration for Django 4.2+
+# STORAGES for Django 4.2+
 STORAGES = {
     "default": {
         "BACKEND": "assetms.storage_backends.MultiStorageBackend",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-},
-    "staticfiles": {
-        "BACKEND": STATICFILES_STORAGE,
+        "BACKEND": STATICFILES_BACKEND,
     },
 }
+
+# Media files (uploads) - Multi-storage with Cloudinary primary
+USE_CLOUDINARY = os.environ.get('USE_CLOUDINARY', 'False').lower() == 'true'
+USE_IMAGEKIT = os.environ.get('USE_IMAGEKIT', 'False').lower() == 'true'
+USE_B2 = os.environ.get('USE_B2', 'False').lower() == 'true'
 
 # Backward compatibility
 
@@ -451,6 +446,7 @@ INSTALLED_APPS += [
 # Store task results in Django database
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_CACHE_BACKEND = 'django-cache'
+
 
 
 
