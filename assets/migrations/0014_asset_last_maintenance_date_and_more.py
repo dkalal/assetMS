@@ -65,7 +65,7 @@ class Migration(migrations.Migration):
             options={
                 'ordering': ['-scheduled_for', '-created_at'],
                 'indexes': [models.Index(fields=['company', 'scheduled_for'], name='maint_company_sched_idx'), models.Index(fields=['company', 'status'], name='maint_company_status_idx'), models.Index(fields=['asset', 'status'], name='maint_asset_status_idx')],
-                'constraints': [models.CheckConstraint(condition=models.Q(('cost__gte', 0)), name='maintenance_cost_non_negative')],
+                'constraints': [models.CheckConstraint(check=models.Q(cost__gte=0), name='maintenance_cost_non_negative')],
             },
         ),
     ]
