@@ -398,10 +398,17 @@ if DEBUG:
     CELERY_RESULT_BACKEND = 'django-db'
     print("ðŸ”§ Celery EAGER mode enabled - tasks execute synchronously (no worker needed)")
 else:
-    # Production: Redis broker for async execution
-    CELERY_TASK_ALWAYS_EAGER = False
-    CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-    CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/1')
+    # Production: Prefer configured broker; fallback to EAGER if none provided
+    _broker_url = os.environ.get('CELERY_BROKER_URL') or os.environ.get('REDIS_URL')
+    if _broker_url:
+        CELERY_TASK_ALWAYS_EAGER = False
+        CELERY_BROKER_URL = _broker_url
+        CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'django-db')
+    else:
+        CELERY_TASK_ALWAYS_EAGER = True
+        CELERY_TASK_EAGER_PROPAGATES = True
+        CELERY_BROKER_URL = 'memory://'
+        CELERY_RESULT_BACKEND = 'django-db'
 
 # Celery Task Settings
 CELERY_ACCEPT_CONTENT = ['json']
