@@ -348,3 +348,153 @@ def api_branch_update(request, branch_id):
             'success': False,
             'error': f'Failed to update branch: {str(e)}'
         }, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])  # Create
+@csrf_protect
+def api_branch_create(request):
+    """
+    Create a new branch (Admin only).
+    Expected JSON body: {name, address, manager_id, is_active}
+    Auto-generates a unique branch code per company.
+    """
+    from audit.models import AuditEvent
+
+    try:
+        company = getattr(request, 'company', None) or getattr(request.user, 'company', None)
+        if not company:
+            return JsonResponse({'success': False, 'error': 'Company context required'}, status=403)
+
+        # Admin-only
+        if not (request.user.is_superuser or getattr(request.user, 'role', None) == 'admin'):
+            return JsonResponse({'success': False, 'error': 'Admin permission required to create branches'}, status=403)
+
+        # Payload can be JSON or form-encoded (fallback)
+        try:
+            data = json.loads(request.body or '{}')
+        except json.JSONDecodeError:
+            data = request.POST
+
+        name = (data.get('name') or '').strip()
+        address = (data.get('address') or '').strip()
+        manager_id = data.get('manager_id')
+        is_active = bool(data.get('is_active', True))
+
+        if not name:
+            return JsonResponse({'success': False, 'error': 'Branch name is required'}, status=400)
+
+        # Generate unique code per company
+        base = ''.join(ch for ch in name.upper() if ch.isalnum()) or 'BR'
+        base = base[:8]
+        code = base
+        suffix = 1
+        while Branch.objects.filter(company=company, code=code).exists():
+            suffix += 1
+            code = f"{base[:6]}{suffix}"
+
+        branch = Branch(
+            company=company,
+            name=name,
+            address=address,
+            code=code,
+            is_active=is_active,
+            is_head_office=False,
+        )
+
+        # Optional manager assignment
+        if manager_id:
+            mgr = User.objects.filter(id=manager_id, company=company, is_active=True).first()
+            if not mgr:
+                return JsonResponse({'success': False, 'error': 'Manager not found in your company'}, status=400)
+            branch.manager = mgr
+            branch.manager_assigned_at = timezone.now()
+            branch.manager_assigned_by = request.user
+
+        branch.full_clean()
+        branch.save()
+
+        AuditEvent.objects.create(
+            company=company,
+            user=request.user,
+            action='branch_created',
+            description=f'Created branch "{branch.name}"',
+            severity='low',
+            metadata={'branch_id': branch.id, 'branch_code': branch.code}
+        )
+
+        manager_data = None
+        if branch.manager:
+            manager_data = {
+                'id': branch.manager.id,
+                'username': branch.manager.username,
+                'full_name': branch.manager.get_full_name() or branch.manager.username,
+                'email': branch.manager.email,
+            }
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Branch created successfully',
+            'branch': {
+                'id': branch.id,
+                'name': branch.name,
+                'code': branch.code,
+                'address': branch.address or '',
+                'is_active': branch.is_active,
+                'is_head_office': branch.is_head_office,
+                'manager': manager_data,
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error creating branch: {e}", exc_info=True)
+        return JsonResponse({'success': False, 'error': 'Failed to create branch'}, status=500)
+
+
+@login_required
+@require_http_methods(["POST", "DELETE"])  # Delete
+@csrf_protect
+def api_branch_delete(request, branch_id):
+    """Delete a branch (Admin only). Prevent deleting head office or branches with assets."""
+    from audit.models import AuditEvent
+    try:
+        company = getattr(request, 'company', None) or getattr(request.user, 'company', None)
+        if not company:
+            return JsonResponse({'success': False, 'error': 'Company context required'}, status=403)
+
+        if not (request.user.is_superuser or getattr(request.user, 'role', None) == 'admin'):
+            return JsonResponse({'success': False, 'error': 'Admin permission required to delete branches'}, status=403)
+
+        branch = Branch.objects.filter(id=branch_id, company=company).first()
+        if not branch:
+            return JsonResponse({'success': False, 'error': 'Branch not found'}, status=404)
+
+        if branch.is_head_office:
+            return JsonResponse({'success': False, 'error': 'Head office branch cannot be deleted'}, status=400)
+
+        # Prevent deletion if assets exist
+        asset_count = 0
+        try:
+            from assets.models import Asset
+            asset_count = Asset.objects.filter(company=company, branch=branch).count()
+        except Exception:
+            pass
+        if asset_count > 0:
+            return JsonResponse({'success': False, 'error': 'Branch has assets. Deactivate instead of deleting.'}, status=400)
+
+        name = branch.name
+        code = branch.code
+        branch.delete()
+
+        AuditEvent.objects.create(
+            company=company,
+            user=request.user,
+            action='branch_deleted',
+            description=f'Deleted branch "{name}"',
+            severity='medium',
+            metadata={'branch_code': code}
+        )
+
+        return JsonResponse({'success': True, 'message': 'Branch deleted successfully'})
+    except Exception as e:
+        logger.error(f"Error deleting branch {branch_id}: {e}", exc_info=True)
+        return JsonResponse({'success': False, 'error': 'Failed to delete branch'}, status=500)

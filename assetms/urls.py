@@ -46,7 +46,8 @@ from assets.global_search_views import global_search_api
 from assets.api_views import api_category_update as api_category_update_v2
 from audit.views import audit_dashboard
 from health_check import health_check
-from reports.views import generate_report, reports_dashboard
+from reports.views import generate_report, reports_dashboard, api_report_trend, api_report_types
+from reports import preview_views
 from tenancy.views import BranchStatusToggleView, TenantSetupWizardView, switch_branch, UserBranchManagementView, BranchManagerManagementView
 from tenancy.manager_views import ManagerDashboardView, ManagerPerformanceView
 from tenancy.approval_views import ApprovalDashboardView, ApprovalRequestCreateView, ApprovalRequestDetailView, ApprovalActionView
@@ -88,6 +89,9 @@ urlpatterns = [
     path('assets/download-import-template/', download_import_template, name='download_import_template'),
     path('reports/', reports_dashboard, name='reports_dashboard'),
     path('reports/generate/', generate_report, name='generate_report'),
+    path('reports/api/trend/', api_report_trend, name='reports_api_trend'),
+    path('reports/api/types/', api_report_types, name='reports_api_types'),
+    path('reports/api/preview-export/', preview_views.api_preview_export, name='reports_api_preview_export'),
     path('audit/', audit_dashboard, name='audit_dashboard'),
     path('recent-added-assets-api/', recent_added_assets_api, name='recent_added_assets_api'),
     path('recent-scans-api/', recent_scans_api, name='recent_scans_api'),
@@ -122,6 +126,8 @@ urlpatterns = [
     path('api/tenancy/branches/', __import__('tenancy.api_views', fromlist=['api_branches_list']).api_branches_list, name='api_branches_list'),
     path('api/tenancy/branches/<int:branch_id>/', __import__('tenancy.api_views', fromlist=['api_branch_detail']).api_branch_detail, name='api_branch_detail'),
     path('api/tenancy/branches/<int:branch_id>/update/', __import__('tenancy.api_views', fromlist=['api_branch_update']).api_branch_update, name='api_branch_update'),
+    path('api/tenancy/branches/create/', __import__('tenancy.api_views', fromlist=['api_branch_create']).api_branch_create, name='api_branch_create'),
+    path('api/tenancy/branches/<int:branch_id>/delete/', __import__('tenancy.api_views', fromlist=['api_branch_delete']).api_branch_delete, name='api_branch_delete'),
     path('help/', __import__('help.views', fromlist=['HelpCenterView']).HelpCenterView.as_view(), name='help_center'),
     path('documents/', __import__('help.views', fromlist=['DocumentsView']).DocumentsView.as_view(), name='documents'),
     path('security/privacy', RedirectView.as_view(pattern_name='settings:security_privacy_settings', permanent=False)),

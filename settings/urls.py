@@ -59,6 +59,10 @@ urlpatterns = [
     path('api/tenancy-policy/', views.api_get_tenancy_policy, name='api_get_tenancy_policy'),
     path('api/tenancy-policy/update/', views.api_update_tenancy_policy, name='api_update_tenancy_policy'),
     
+    # Company profile (Company model) API endpoints
+    path('api/company/', views.api_company_profile, name='api_company_profile'),
+    path('api/company/update/', views.api_update_company, name='api_update_company'),
+    
     # WORLD-CLASS: Branches API endpoint
     path('api/branches/', api_views.api_branches, name='api_branches'),
 ]

@@ -724,6 +724,101 @@ def api_update_organization(request):
             'error': 'An unexpected error occurred. Please try again.'
         })
 
+@login_required
+@user_passes_test(lambda u: u.role == 'admin')
+def api_company_profile(request):
+    """Get the current company profile (Company model)."""
+    try:
+        company = getattr(request, 'company', None) or getattr(request.user, 'company', None)
+        if not company:
+            return JsonResponse({'success': False, 'error': 'Company context required'}, status=403)
+
+        meta = company.metadata or {}
+        return JsonResponse({
+            'success': True,
+            'company': {
+                'id': company.id,
+                'name': company.name or '',
+                'email': company.email or '',
+                'phone': company.phone or '',
+                'address': company.address or '',
+                'website': meta.get('website', ''),
+                'logo': company.logo.url if company.logo else None,
+                'timezone': company.timezone or 'UTC',
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error fetching company profile: {e}")
+        return JsonResponse({'success': False, 'error': 'Failed to load company data'})
+
+
+@login_required
+@user_passes_test(lambda u: u.role == 'admin')
+@require_POST
+def api_update_company(request):
+    """Update current company's contact fields (email, phone, address, website, logo)."""
+    try:
+        from django.core.validators import validate_email
+        from django.core.exceptions import ValidationError
+
+        company = getattr(request, 'company', None) or getattr(request.user, 'company', None)
+        if not company:
+            return JsonResponse({'success': False, 'error': 'Company context required'}, status=403)
+
+        email = request.POST.get('email', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        address = request.POST.get('address', '').strip()
+        website = request.POST.get('website', '').strip()
+
+        if email:
+            try:
+                validate_email(email)
+            except ValidationError:
+                return JsonResponse({'success': False, 'error': 'Invalid email format'}, status=400)
+
+        if website and not website.startswith(('http://', 'https://')):
+            website = 'https://' + website
+
+        company.email = email
+        company.phone = phone
+        company.address = address
+        company.metadata = company.metadata or {}
+        company.metadata['website'] = website
+
+        if 'logo' in request.FILES:
+            logo_file = request.FILES['logo']
+            # 5MB max
+            if getattr(logo_file, 'size', 0) > 5 * 1024 * 1024:
+                return JsonResponse({'success': False, 'error': 'Logo file size must be less than 5MB'}, status=400)
+            allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif']
+            if getattr(logo_file, 'content_type', '') not in allowed_types:
+                return JsonResponse({'success': False, 'error': 'Logo must be JPEG, PNG, or GIF'}, status=400)
+            company.logo = logo_file
+
+        company.save()
+
+        # Audit log
+        try:
+            log_audit(request.user, 'company_updated', None, f'Updated company profile: {company.name}', company=company)
+        except Exception:
+            pass
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Company information updated successfully',
+            'company': {
+                'id': company.id,
+                'email': company.email or '',
+                'phone': company.phone or '',
+                'address': company.address or '',
+                'website': company.metadata.get('website', '') if company.metadata else '',
+                'logo': company.logo.url if company.logo else None,
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error updating company profile: {e}", exc_info=True)
+        return JsonResponse({'success': False, 'error': 'Failed to update company information'}, status=500)
+
 @api_admin_or_manager_required
 def api_users_management(request):
     """API endpoint for user management with search and filtering"""

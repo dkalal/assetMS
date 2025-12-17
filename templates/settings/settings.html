@@ -311,6 +311,72 @@ function createToastContainer() {
   return container;
 }
 
+// Load Company profile from backend to populate fields (ensures website from metadata)
+function loadCompanyProfile() {
+  fetch('/settings/api/company/')
+    .then(res => res.json())
+    .then(data => {
+      if (data.success && data.company) {
+        const c = data.company;
+        const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+        setVal('companyEmail', c.email || '');
+        setVal('companyPhone', c.phone || '');
+        setVal('companyAddress', c.address || '');
+        setVal('companyWebsite', c.website || '');
+      }
+    })
+    .catch(err => console.error('Error loading company profile:', err));
+}
+
+// Save Company Information (email, phone, address, website, optional logo)
+function saveCompanyInfo() {
+  const btn = document.activeElement;
+  let originalText = '';
+  if (btn && btn.tagName === 'BUTTON') {
+    originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+  }
+
+  const formData = new FormData();
+  const appendField = (id, key) => { const el = document.getElementById(id); if (el) formData.append(key, (el.value || '').trim()); };
+  appendField('companyEmail', 'email');
+  appendField('companyPhone', 'phone');
+  appendField('companyAddress', 'address');
+  appendField('companyWebsite', 'website');
+
+  // Inline file picker in Company card (optional)
+  const inlineLogo = document.getElementById('companyLogo');
+  if (inlineLogo && inlineLogo.files && inlineLogo.files[0]) {
+    formData.append('logo', inlineLogo.files[0]);
+  }
+
+  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+  fetch('/settings/api/company/update/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrfToken },
+    body: formData
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      showToast(data.message || 'Company information updated successfully', 'success');
+    } else {
+      throw new Error(data.error || 'Failed to update company information');
+    }
+  })
+  .catch(err => {
+    console.error('Save company info error:', err);
+    showToast('Failed to save company info: ' + (err.message || ''), 'error');
+  })
+  .finally(() => {
+    if (btn && btn.tagName === 'BUTTON') {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  });
+}
+
 // Add Branch
 function saveBranch() {
   const form = document.getElementById('addBranchForm');
@@ -335,25 +401,35 @@ function saveBranch() {
   
   if (COMPANY_DEBUG) console.log('Creating branch:', branchData);
   
-  // TODO: Implement AJAX call to backend
-  // For now, simulate success
-  setTimeout(() => {
-    showToast('Branch created successfully!', 'success');
-    
-    // Close modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('addBranchModal'));
-    if (modal) modal.hide();
-    
-    // Reset form
-    form.reset();
-    
-    // Reset button
+  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+  fetch('/api/tenancy/branches/create/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrfToken
+    },
+    body: JSON.stringify(branchData)
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      showToast('Branch created successfully!', 'success');
+      const modal = bootstrap.Modal.getInstance(document.getElementById('addBranchModal'));
+      if (modal) modal.hide();
+      form.reset();
+      setTimeout(() => location.reload(), 800);
+    } else {
+      throw new Error(data.error || 'Failed to create branch');
+    }
+  })
+  .catch(err => {
+    console.error('Create branch error:', err);
+    showToast('Failed to create branch: ' + (err.message || ''), 'error');
+  })
+  .finally(() => {
     btn.disabled = false;
     btn.innerHTML = originalText;
-    
-    // Reload page to show new branch
-    setTimeout(() => location.reload(), 1000);
-  }, 1000);
+  });
 }
 
 // Edit Branch
@@ -524,18 +600,30 @@ function confirmDeleteBranch() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Deleting...';
   
-  // TODO: Implement AJAX call
-  setTimeout(() => {
-    showToast('Branch deleted successfully!', 'success');
-    
-    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteBranchModal'));
-    if (modal) modal.hide();
-    
+  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+  fetch(`/api/tenancy/branches/${branchId}/delete/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrfToken }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      showToast('Branch deleted successfully!', 'success');
+      const modal = bootstrap.Modal.getInstance(document.getElementById('deleteBranchModal'));
+      if (modal) modal.hide();
+      setTimeout(() => location.reload(), 800);
+    } else {
+      throw new Error(data.error || 'Failed to delete branch');
+    }
+  })
+  .catch(err => {
+    console.error('Delete branch error:', err);
+    showToast('Failed to delete branch: ' + (err.message || ''), 'error');
+  })
+  .finally(() => {
     btn.disabled = false;
     btn.innerHTML = originalText;
-    
-    setTimeout(() => location.reload(), 1000);
-  }, 1000);
+  });
 }
 
 // Company Logo Upload
@@ -570,18 +658,33 @@ function uploadCompanyLogo() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading...';
   
-  // TODO: Implement AJAX upload
-  setTimeout(() => {
-    showToast('Company logo updated successfully!', 'success');
-    
-    const modal = bootstrap.Modal.getInstance(document.getElementById('companyLogoModal'));
-    if (modal) modal.hide();
-    
+  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+  const fd = new FormData();
+  fd.append('logo', file);
+  fetch('/settings/api/company/update/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrfToken },
+    body: fd
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      showToast('Company logo updated successfully!', 'success');
+      const modal = bootstrap.Modal.getInstance(document.getElementById('companyLogoModal'));
+      if (modal) modal.hide();
+      setTimeout(() => location.reload(), 800);
+    } else {
+      throw new Error(data.error || 'Failed to update logo');
+    }
+  })
+  .catch(err => {
+    console.error('Upload logo error:', err);
+    showToast('Failed to upload logo: ' + (err.message || ''), 'error');
+  })
+  .finally(() => {
     btn.disabled = false;
     btn.innerHTML = originalText;
-    
-    setTimeout(() => location.reload(), 1000);
-  }, 1500);
+  });
 }
 
 // Logo preview
@@ -603,6 +706,16 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Load multi-tenancy settings
   loadTenancySettings();
+  // Load company profile values (ensures website from metadata)
+  loadCompanyProfile();
+  // Also load when Company tab is shown
+  const companyTabBtn = document.getElementById('company-tab');
+  if (companyTabBtn) {
+    companyTabBtn.addEventListener('shown.bs.tab', loadCompanyProfile);
+    if (companyTabBtn.classList.contains('active')) {
+      loadCompanyProfile();
+    }
+  }
   
   // Add change listeners to tenancy settings
   const tenancyToggles = [
