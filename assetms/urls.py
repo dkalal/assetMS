@@ -46,8 +46,6 @@ from assets.global_search_views import global_search_api
 from assets.api_views import api_category_update as api_category_update_v2
 from audit.views import audit_dashboard
 from health_check import health_check
-from reports.views import generate_report, reports_dashboard, api_report_trend, api_report_types
-from reports import preview_views
 from tenancy.views import BranchStatusToggleView, TenantSetupWizardView, switch_branch, UserBranchManagementView, BranchManagerManagementView
 from tenancy.manager_views import ManagerDashboardView, ManagerPerformanceView
 from tenancy.approval_views import ApprovalDashboardView, ApprovalRequestCreateView, ApprovalRequestDetailView, ApprovalActionView
@@ -87,11 +85,8 @@ urlpatterns = [
     path('test-modal/', TemplateView.as_view(template_name='test_modal.html'), name='test_modal'),
     path('assets/bulk-import/', AssetBulkImportView.as_view(), name='asset_bulk_import'),
     path('assets/download-import-template/', download_import_template, name='download_import_template'),
-    path('reports/', reports_dashboard, name='reports_dashboard'),
-    path('reports/generate/', generate_report, name='generate_report'),
-    path('reports/api/trend/', api_report_trend, name='reports_api_trend'),
-    path('reports/api/types/', api_report_types, name='reports_api_types'),
-    path('reports/api/preview-export/', preview_views.api_preview_export, name='reports_api_preview_export'),
+    # Delegate reports routes to the reports app to avoid cross-app imports
+    path('reports/', include('reports.urls')),
     path('audit/', audit_dashboard, name='audit_dashboard'),
     path('recent-added-assets-api/', recent_added_assets_api, name='recent_added_assets_api'),
     path('recent-scans-api/', recent_scans_api, name='recent_scans_api'),

@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.files.base import ContentFile
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -20,6 +20,8 @@ from .services import (
     fetch_assets_cached,
     render_assets_dataframe,
 )
+import pandas as pd
+from weasyprint import HTML
 
 def is_admin_or_manager(user):
     return user.is_authenticated and user.role in ('admin', 'manager')
@@ -406,3 +408,106 @@ def _generate_custom_report(company, branch, filters, fmt, request):
     
     filename = f"custom_report_{timezone.now():%Y%m%d_%H%M%S}.{extension}"
     return file_bytes, filename, content_type
+
+
+@login_required
+@company_required
+@require_http_methods(["GET"])
+def api_report_trend(request):
+    """Return report generation counts over time for the trend chart.
+
+    Period is controlled via the ``period`` query parameter: ``7d``, ``30d``, or ``90d``.
+    Data is scoped to the current company and, for non-admins, to branches the user
+    is allowed to access via the tenancy policy service.
+    """
+    from datetime import timedelta
+    from django.db.models import Count
+    from tenancy.policy_service import PolicyService
+
+    company = request.company
+    user = request.user
+
+    period = request.GET.get('period', '30d')
+    days_map = {
+        '7d': 7,
+        '30d': 30,
+        '90d': 90,
+    }
+    days = days_map.get(period, 30)
+
+    end_date = timezone.now().date()
+    start_date = end_date - timedelta(days=days - 1)
+
+    qs = Report.objects.filter(
+        company=company,
+        created_at__date__gte=start_date,
+        created_at__date__lte=end_date,
+    )
+
+    # Branch-level scoping for managers/users
+    if getattr(user, 'role', None) != 'admin':
+        accessible_branch_ids = PolicyService.get_accessible_branches(user, company)
+        qs = qs.filter(branch_id__in=list(accessible_branch_ids))
+
+    # Aggregate counts per day
+    aggregate = qs.values('created_at__date').annotate(count=Count('id'))
+    counts_by_date = {row['created_at__date']: row['count'] for row in aggregate}
+
+    labels = []
+    data = []
+    for offset in range(days):
+        current_date = start_date + timedelta(days=offset)
+        labels.append(current_date.strftime('%b %d'))
+        data.append(counts_by_date.get(current_date, 0))
+
+    return JsonResponse({
+        'labels': labels,
+        'data': data,
+        'start_date': start_date.isoformat(),
+        'end_date': end_date.isoformat(),
+    })
+
+
+@login_required
+@company_required
+@require_http_methods(["GET"])
+def api_report_types(request):
+    """Return distribution of report categories for the types chart.
+
+    Only supported dashboard categories are returned (asset_summary, maintenance, custom).
+    Results are scoped to the current company and, for non-admins, to accessible branches.
+    """
+    from django.db.models import Count
+    from tenancy.policy_service import PolicyService
+
+    company = request.company
+    user = request.user
+
+    qs = Report.objects.filter(company=company)
+
+    # Branch-level scoping for managers/users
+    if getattr(user, 'role', None) != 'admin':
+        accessible_branch_ids = PolicyService.get_accessible_branches(user, company)
+        qs = qs.filter(branch_id__in=list(accessible_branch_ids))
+
+    # Normalized labels for the dashboard
+    type_labels = {
+        'asset_summary': 'Asset Summary',
+        'maintenance': 'Maintenance',
+        'custom': 'Custom',
+    }
+    counts = {key: 0 for key in type_labels.keys()}
+
+    for row in qs.values('report_type').annotate(count=Count('id')):
+        rtype = row['report_type']
+        if rtype in counts:
+            counts[rtype] = row['count']
+
+    labels = [label for _key, label in type_labels.items()]
+    data = [counts[key] for key in type_labels.keys()]
+
+    return JsonResponse({
+        'labels': labels,
+        'data': data,
+        'total': sum(data),
+    })

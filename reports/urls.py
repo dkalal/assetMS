@@ -14,6 +14,10 @@ urlpatterns = [
     # Report generation
     path('generate/', views.generate_report, name='generate_report'),
     
+    # Reports analytics APIs
+    path('api/trend/', views.api_report_trend, name='api_report_trend'),
+    path('api/types/', views.api_report_types, name='api_report_types'),
+    
     # Preview API endpoints
     path('api/preview-export/', preview_views.api_preview_export, name='api_preview_export'),
 ]
