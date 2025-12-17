@@ -364,9 +364,14 @@ def api_user_create(request):
     # Authn
     if not request.user.is_authenticated:
         return JsonResponse({'success': False, 'error': 'Authentication required'}, status=401)
-    # Authz: only superuser can create users with Admin role; staff can create up to Manager
-    if not (request.user.is_staff or request.user.is_superuser):
+
+    # Authz: use RolePermissionMatrix via users.utils.can so any role with
+    # "manage_users" permission (typically Admin, optionally Manager) can
+    # create users in their company. This is more robust than relying only on
+    # is_staff / is_superuser flags and aligns with enterprise RBAC.
+    if not user_utils.can(request.user, 'manage_users'):
         return JsonResponse({'success': False, 'error': 'Staff privileges required'}, status=403)
+
     if not company:
         return JsonResponse({'success': False, 'error': 'Company context required.'}, status=403)
 
