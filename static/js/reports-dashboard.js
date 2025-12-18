@@ -20,7 +20,8 @@
   // INITIALIZATION
   // ==========================================
   document.addEventListener('DOMContentLoaded', function() {
-    initializeMetrics();
+    // Metrics are rendered from server-side context (stats) to avoid
+    // client-side re-computation with random data.
     initializeCharts();
     initializeFormValidation();
     loadReportsData();
@@ -141,53 +142,80 @@
     const ctx = document.getElementById('chart-types');
     if (!ctx) return;
 
-    state.charts.types = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: ['Asset Summary', 'Maintenance', 'Depreciation', 'Transfer', 'Audit'],
-        datasets: [{
-          data: [45, 25, 15, 10, 5],
-          backgroundColor: [
-            'rgba(107, 155, 209, 0.8)',  // Primary
-            'rgba(16, 185, 129, 0.8)',   // Success
-            'rgba(245, 158, 11, 0.8)',   // Warning
-            'rgba(59, 130, 246, 0.8)',   // Info
-            'rgba(107, 114, 128, 0.8)',  // Gray
-          ],
-          borderWidth: 0,
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: {
-              padding: 15,
-              font: { size: 11 },
-              usePointStyle: true,
-              pointStyle: 'circle'
-            }
+    fetch('/reports/api/types/')
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(data => {
+        const labels = data.labels || [];
+        const values = data.data || [];
+
+        if (!labels.length || !values.length || values.every(v => v === 0)) {
+          const heading = ctx.parentNode.querySelector('h6, h5');
+          if (heading && !heading.textContent.includes('No data')) {
+            heading.innerHTML += ' <span style="color:#888;font-size:0.85rem;">(No data)</span>';
+          }
+          return;
+        }
+
+        state.charts.types = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: labels,
+            datasets: [{
+              data: values,
+              backgroundColor: [
+                'rgba(107, 155, 209, 0.8)',  // Primary
+                'rgba(16, 185, 129, 0.8)',   // Success
+                'rgba(245, 158, 11, 0.8)',   // Warning
+                'rgba(59, 130, 246, 0.8)',   // Info
+                'rgba(107, 114, 128, 0.8)',  // Gray
+                'rgba(148, 163, 184, 0.8)',  // Extra
+              ],
+              borderWidth: 0,
+            }]
           },
-          tooltip: {
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            padding: 12,
-            titleFont: { size: 14, weight: 'bold' },
-            bodyFont: { size: 13 },
-            callbacks: {
-              label: function(context) {
-                const label = context.label || '';
-                const value = context.parsed || 0;
-                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                const percentage = ((value / total) * 100).toFixed(1);
-                return `${label}: ${value} (${percentage}%)`;
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: {
+                  padding: 15,
+                  font: { size: 11 },
+                  usePointStyle: true,
+                  pointStyle: 'circle'
+                }
+              },
+              tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                padding: 12,
+                titleFont: { size: 14, weight: 'bold' },
+                bodyFont: { size: 13 },
+                callbacks: {
+                  label: function(context) {
+                    const label = context.label || '';
+                    const value = context.parsed || 0;
+                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                    const percentage = total ? ((value / total) * 100).toFixed(1) : '0.0';
+                    return `${label}: ${value} (${percentage}%)`;
+                  }
+                }
               }
             }
           }
+        });
+      })
+      .catch(() => {
+        const heading = ctx.parentNode.querySelector('h6, h5');
+        if (heading && !heading.textContent.includes('Error')) {
+          heading.innerHTML += ' <span style="color:#dc3545;font-size:0.85rem;">(Error loading data)</span>';
         }
-      }
-    });
+      });
   }
 
   // ==========================================
@@ -208,26 +236,29 @@
       event.target.classList.add('active');
     }
 
-    // Generate data based on period
-    const labels = [];
-    const data = [];
-    const days = period === '7d' ? 7 : period === '30d' ? 30 : 90;
-    const today = new Date();
-    
-    for (let i = days - 1; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-      data.push(Math.floor(Math.random() * 15) + 5);
-    }
+    const url = `/reports/api/trend/?period=${encodeURIComponent(period || '30d')}`;
 
-    state.charts.trend.data.labels = labels;
-    state.charts.trend.data.datasets[0].data = data;
-    state.charts.trend.update('none');
+    fetch(url)
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(data => {
+        const labels = data.labels || [];
+        const values = data.data || [];
 
-    if (window.showToast) {
-      window.showToast(`Loaded ${period} data`, 'success');
-    }
+        state.charts.trend.data.labels = labels;
+        state.charts.trend.data.datasets[0].data = values;
+        state.charts.trend.update('none');
+      })
+      .catch(() => {
+        // Fallback: keep existing data and show a non-blocking toast
+        if (window.showToast) {
+          window.showToast('Unable to load report trend data.', 'danger');
+        }
+      });
   };
 
   // ==========================================

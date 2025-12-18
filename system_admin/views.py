@@ -324,3 +324,16 @@ def exit_impersonation_view(request):
     
     return redirect('system_admin:dashboard')
 
+
+@system_admin_required
+@require_http_methods(["GET"])
+def role_permissions_view(request):
+    """System-level Role & Permission management UI.
+
+    The actual RolePermissionMatrix is read and written via the
+    /api/roles/permissions/ endpoint in users.api_views, which is further
+    restricted to global operators (superuser or is_system_admin).
+    This view only serves the HTML shell for the admin console.
+    """
+    return render(request, 'system_admin/role_permissions.html')
+

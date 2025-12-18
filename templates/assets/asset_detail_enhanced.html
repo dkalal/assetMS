@@ -140,21 +140,13 @@
                 <i class="bi bi-cash-stack"></i>
             </div>
             <div class="metric-value">
-                {% if depreciation_data %}
-                    ${{ depreciation_data.current_value|floatformat:0 }}
-                {% elif asset.purchase_value %}
+                {% if asset.purchase_value %}
                     ${{ asset.purchase_value|floatformat:0 }}
                 {% else %}
                     N/A
                 {% endif %}
             </div>
-            <div class="metric-label">Current Value</div>
-            {% if depreciation_data %}
-            <div class="metric-sublabel">
-                <i class="bi bi-arrow-down text-danger"></i>
-                {{ depreciation_data.depreciation_percentage }}% depreciated
-            </div>
-            {% endif %}
+            <div class="metric-label">Purchase Value</div>
         </div>
     </div>
 
@@ -333,37 +325,21 @@
                 {% endif %}
 
                 <!-- Financial Details Card -->
-                {% if can_view_sensitive and depreciation_data %}
+                {% if can_view_sensitive and asset.purchase_value %}
                 <div class="info-card">
                     <div class="info-card-header">
                         <i class="bi bi-cash-coin"></i>Financial Details
                     </div>
                     <div class="info-row">
                         <span class="info-label">Purchase Value</span>
-                        <span class="info-value">${{ depreciation_data.purchase_value|floatformat:2 }}</span>
+                        <span class="info-value">${{ asset.purchase_value|floatformat:2 }}</span>
                     </div>
+                    {% if asset.purchase_date %}
                     <div class="info-row">
-                        <span class="info-label">Current Value</span>
-                        <span class="info-value">${{ depreciation_data.current_value|floatformat:2 }}</span>
+                        <span class="info-label">Purchase Date</span>
+                        <span class="info-value">{{ asset.purchase_date|date:"M d, Y" }}</span>
                     </div>
-                    <div class="info-row">
-                        <span class="info-label">Accumulated Depreciation</span>
-                        <span class="info-value text-danger">${{ depreciation_data.accumulated_depreciation|floatformat:2 }}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Years Elapsed</span>
-                        <span class="info-value">{{ depreciation_data.years_elapsed }} years</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Depreciation</span>
-                        <span class="info-value">
-                            <div class="progress" style="width: 150px; height: 20px;">
-                                <div class="progress-bar bg-danger" role="progressbar" style="width: {{ depreciation_data.depreciation_percentage }}%">
-                                    {{ depreciation_data.depreciation_percentage }}%
-                                </div>
-                            </div>
-                        </span>
-                    </div>
+                    {% endif %}
                 </div>
                 {% endif %}
             </div>

@@ -123,8 +123,10 @@ def api_roles_permissions(request):
     POST -> updates matrix (CSRF required)
     """
     try:
-        # Admin-only access (superuser). Consider extending to dedicated Admin role if present.
-        if not request.user.is_superuser:
+        # Admin-only access: allow global superuser or system_admin user.
+        # This keeps RolePermissionMatrix changes restricted to system-level
+        # operators, separate from per-company admins/managers.
+        if not (request.user.is_superuser or getattr(request.user, 'is_system_admin', False)):
             return JsonResponse({'success': False, 'error': 'Admin privileges required'}, status=403)
 
         if request.method == 'GET':

@@ -3,6 +3,7 @@ from .models import AssetCategory, Asset, AssetCategoryField
 from django.forms.models import BaseInlineFormSet
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
+from tenancy.admin_mixins import CompanyScopedAdmin
 from audit.utils import log_audit, ASSIGN_ACTION, MAINTENANCE_ACTION
 from django import forms
 from django.urls import reverse
@@ -17,7 +18,7 @@ class AssetCategoryFieldInline(admin.TabularInline):
     fields = ('key', 'label', 'type', 'required')
 
 @admin.register(AssetCategory)
-class AssetCategoryAdmin(admin.ModelAdmin):
+class AssetCategoryAdmin(CompanyScopedAdmin):
     list_display = ('name',)
     inlines = [AssetCategoryFieldInline]
     exclude = ('dynamic_fields',)
@@ -97,7 +98,7 @@ class AssetAdminForm(forms.ModelForm):
         return instance
 
 @admin.register(Asset)
-class AssetAdmin(ImportExportModelAdmin):
+class AssetAdmin(CompanyScopedAdmin, ImportExportModelAdmin):
     form = AssetAdminForm
     resource_class = AssetResource
     list_display = ('pk', 'category', 'status', 'assigned_to', 'branch', 'created_at')
@@ -142,7 +143,7 @@ class AssetAdmin(ImportExportModelAdmin):
 
 
 @admin.register(AssetCategoryField)
-class AssetCategoryFieldAdmin(admin.ModelAdmin):
+class AssetCategoryFieldAdmin(CompanyScopedAdmin):
     list_display = ('category', 'key', 'label', 'type', 'required')
     actions = ['delete_selected_fields']
 

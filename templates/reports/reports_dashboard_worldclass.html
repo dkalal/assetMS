@@ -122,12 +122,6 @@
             </button>
           </div>
           <div class="col-md-3">
-            <button type="button" class="quick-action-btn" onclick="openReportModal('depreciation')">
-              <i class="bi bi-graph-down"></i>
-              <span>Depreciation Report</span>
-            </button>
-          </div>
-          <div class="col-md-3">
             <button type="button" class="quick-action-btn" onclick="openReportModal('custom')">
               <i class="bi bi-sliders"></i>
               <span>Custom Report</span>
@@ -376,9 +370,7 @@
               <select name="report_type" class="form-select" required id="reportType">
                 <option value="asset_summary">Asset Summary Report</option>
                 <option value="maintenance">Maintenance Report</option>
-                <option value="depreciation">Depreciation Report</option>
-                <option value="transfer">Transfer History Report</option>
-                <option value="audit">Audit Trail Report</option>
+                <option value="custom">Custom Report</option>
               </select>
               <div class="form-text">Select the type of report you want to generate</div>
             </div>

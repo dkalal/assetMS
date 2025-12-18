@@ -18,7 +18,9 @@ urlpatterns = [
     path('system/companies/<int:pk>/reactivate/', views.reactivate_company_view, name='reactivate_company'),
     path('system/impersonate/<int:user_id>/', views.impersonate_user_view, name='impersonate'),
     path('system/exit-impersonation/', views.exit_impersonation_view, name='exit_impersonation'),
+    path('system/roles-permissions/', views.role_permissions_view, name='role_permissions'),
 ]
+
 
 
 

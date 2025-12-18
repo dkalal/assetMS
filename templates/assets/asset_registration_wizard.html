@@ -264,7 +264,7 @@
             Financial Information
           </h2>
           <p class="wizard-step-subtitle">
-            Enter purchase and depreciation details
+            Enter purchase details
           </p>
         </div>
         
@@ -907,8 +907,8 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('review-financial').innerHTML = this.createReviewItems([
         { label: 'Purchase Value', value: document.getElementById('purchase-value')?.value ? `$${document.getElementById('purchase-value').value}` : 'Not specified' },
         { label: 'Purchase Date', value: document.getElementById('purchase-date')?.value || 'Not specified' },
-        { label: 'Depreciation Method', value: document.getElementById('depreciation-method')?.selectedOptions[0]?.text || 'None' },
-        { label: 'Useful Life', value: document.getElementById('useful-life')?.value ? `${document.getElementById('useful-life').value} years` : 'Not specified' }
+        { label: 'Warranty Expiry', value: document.getElementById('warranty-expiry')?.value || 'Not specified' },
+        { label: 'Maintenance Tracking', value: document.getElementById('maintenance-enabled')?.checked ? 'Enabled' : 'Disabled' }
       ]);
     },
     

@@ -6,10 +6,11 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.utils import timezone
 from .models import UserInvitation, CompanyRegistration, OnboardingProgress
+from tenancy.admin_mixins import CompanyScopedAdmin
 
 
 @admin.register(UserInvitation)
-class UserInvitationAdmin(admin.ModelAdmin):
+class UserInvitationAdmin(CompanyScopedAdmin):
     list_display = [
         'email', 'company', 'role', 'status_badge',
         'invited_by', 'sent_at', 'expires_at', 'actions_column'
@@ -57,7 +58,7 @@ class UserInvitationAdmin(admin.ModelAdmin):
 
 
 @admin.register(CompanyRegistration)
-class CompanyRegistrationAdmin(admin.ModelAdmin):
+class CompanyRegistrationAdmin(CompanyScopedAdmin):
     list_display = [
         'company', 'plan_badge', 'subscription_status_badge',
         'trial_info', 'created_at'

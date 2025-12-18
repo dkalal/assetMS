@@ -25,7 +25,7 @@
           </div>
           <div class="col-md-6">
             <label for="companyWebsite" class="form-label fw-semibold">Website</label>
-            <input type="url" class="form-control" id="companyWebsite" value="{{ user.company.website|default:'' }}">
+            <input type="url" class="form-control" id="companyWebsite" value="{{ user.company.metadata.website|default:'' }}">
           </div>
           <div class="col-12">
             <label for="companyAddress" class="form-label fw-semibold">Address</label>

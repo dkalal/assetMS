@@ -1,0 +1,294 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Roles & Permissions · System Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1">
+        <i class="bi bi-shield-lock me-2 text-warning"></i>Roles & Permissions
+      </h2>
+      <p class="text-muted mb-0">
+        System-wide role and permission matrix. Changes affect all companies.
+      </p>
+    </div>
+  </div>
+
+  <div class="alert alert-warning d-flex align-items-start" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2 mt-1"></i>
+    <div>
+      <strong>Global impact:</strong> This matrix controls what <em>Admin</em>,
+      <em>Manager</em>, and <em>User</em> roles can do across all tenants.
+      Use cautiously and keep least-privilege in mind.
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"><i class="bi bi-people me-2"></i>Roles</h5>
+        </div>
+        <div class="card-body">
+          <p class="text-muted small">Select a role to view and adjust its
+            permissions.</p>
+          <div class="list-group" id="rp-role-list" role="tablist">
+            <button type="button" class="list-group-item list-group-item-action active"
+                    data-role="Admin" aria-current="true">
+              <div class="d-flex justify-content-between align-items-center">
+                <span><strong>Admin</strong></span>
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle">High</span>
+              </div>
+              <small class="text-muted d-block">Full company control</small>
+            </button>
+            <button type="button" class="list-group-item list-group-item-action"
+                    data-role="Manager">
+              <div class="d-flex justify-content-between align-items-center">
+                <span><strong>Manager</strong></span>
+                <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Medium</span>
+              </div>
+              <small class="text-muted d-block">Operational control</small>
+            </button>
+            <button type="button" class="list-group-item list-group-item-action"
+                    data-role="User">
+              <div class="d-flex justify-content-between align-items-center">
+                <span><strong>User</strong></span>
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Low</span>
+              </div>
+              <small class="text-muted d-block">Read-only / basic usage</small>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>
+            Permissions for <span id="rp-current-role-label">Admin</span>
+          </h5>
+          <button type="button" class="btn btn-light btn-sm" id="rp-save-btn">
+            <span class="rp-save-label"><i class="bi bi-check-lg me-1"></i>Save Changes</span>
+            <span class="rp-save-spinner d-none">
+              <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+              Saving...
+            </span>
+          </button>
+        </div>
+        <div class="card-body">
+          <div id="rp-feedback" class="mb-3" aria-live="polite"></div>
+
+          <div id="rp-loading" class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">Loading current role &amp; permission matrix...</p>
+          </div>
+
+          <div id="rp-permissions-wrapper" class="d-none" aria-hidden="true">
+            <p class="text-muted small mb-3">
+              Toggle capabilities for the selected role. These map directly to
+              server-side checks like <code>can(user, 'manage_users')</code> in
+              <code>users.utils</code>.
+            </p>
+            <div class="row g-3 permissions-grid">
+              <div class="col-md-6">
+                <h6 class="fw-semibold mb-2">Assets</h6>
+                <div class="form-check">
+                  <input class="form-check-input rp-perm" type="checkbox" value="view_assets" id="rp-view-assets">
+                  <label class="form-check-label" for="rp-view-assets">View assets</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input rp-perm" type="checkbox" value="create_assets" id="rp-create-assets">
+                  <label class="form-check-label" for="rp-create-assets">Create assets</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input rp-perm" type="checkbox" value="edit_assets" id="rp-edit-assets">
+                  <label class="form-check-label" for="rp-edit-assets">Edit assets</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input rp-perm" type="checkbox" value="delete_assets" id="rp-delete-assets">
+                  <label class="form-check-label" for="rp-delete-assets">Delete assets</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input rp-perm" type="checkbox" value="approve_asset_creation" id="rp-approve-asset-creation">
+                  <label class="form-check-label" for="rp-approve-asset-creation">Approve asset creation</label>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <h6 class="fw-semibold mb-2">Users &amp; Reporting</h6>
+                <div class="form-check">
+                  <input class="form-check-input rp-perm" type="checkbox" value="manage_users" id="rp-manage-users">
+                  <label class="form-check-label" for="rp-manage-users">Manage users &amp; roles</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input rp-perm" type="checkbox" value="view_reports" id="rp-view-reports">
+                  <label class="form-check-label" for="rp-view-reports">View analytics &amp; reports</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input rp-perm" type="checkbox" value="export_data" id="rp-export-data">
+                  <label class="form-check-label" for="rp-export-data">Export data</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input rp-perm" type="checkbox" value="system_admin" id="rp-system-admin">
+                  <label class="form-check-label" for="rp-system-admin">System admin capabilities</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function() {
+  'use strict';
+
+  const STATE = {
+    matrix: { Admin: [], Manager: [], User: [] },
+    currentRole: 'Admin',
+  };
+
+  function qs(sel) { return document.querySelector(sel); }
+  function qsa(sel) { return Array.from(document.querySelectorAll(sel)); }
+
+  function setFeedback(message, type) {
+    const box = qs('#rp-feedback');
+    if (!box) return;
+    if (!message) {
+      box.innerHTML = '';
+      return;
+    }
+    box.innerHTML = `<div class="alert alert-${type} mb-0" role="status">${message}</div>`;
+  }
+
+  function setLoading(isLoading) {
+    const loading = qs('#rp-loading');
+    const wrapper = qs('#rp-permissions-wrapper');
+    if (loading) loading.classList.toggle('d-none', !isLoading);
+    if (wrapper) {
+      wrapper.classList.toggle('d-none', isLoading);
+      wrapper.setAttribute('aria-hidden', isLoading ? 'true' : 'false');
+    }
+  }
+
+  function setSaveBusy(isBusy) {
+    const btn = qs('#rp-save-btn');
+    if (!btn) return;
+    btn.disabled = isBusy;
+    const label = btn.querySelector('.rp-save-label');
+    const spinner = btn.querySelector('.rp-save-spinner');
+    if (label && spinner) {
+      label.classList.toggle('d-none', isBusy);
+      spinner.classList.toggle('d-none', !isBusy);
+    }
+  }
+
+  function applyRoleToUI() {
+    const role = STATE.currentRole;
+    const label = qs('#rp-current-role-label');
+    if (label) label.textContent = role;
+
+    const active = qsa('#rp-role-list button');
+    active.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.role === role);
+      btn.setAttribute('aria-current', btn.dataset.role === role ? 'true' : 'false');
+    });
+
+    const perms = new Set(STATE.matrix[role] || []);
+    qsa('.rp-perm').forEach(cb => {
+      cb.checked = perms.has(cb.value);
+    });
+  }
+
+  async function loadMatrix() {
+    setLoading(true);
+    setFeedback('', 'info');
+    try {
+      const res = await fetch('/api/roles/permissions/');
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      const matrix = data.matrix || {};
+      ['Admin', 'Manager', 'User'].forEach(role => {
+        STATE.matrix[role] = Array.isArray(matrix[role]) ? matrix[role] : [];
+      });
+      applyRoleToUI();
+      setLoading(false);
+    } catch (err) {
+      console.error('Failed to load RolePermissionMatrix:', err);
+      setFeedback('Failed to load role permissions. Ensure you are signed in as a system admin or superuser.', 'danger');
+      setLoading(false);
+    }
+  }
+
+  async function saveMatrix() {
+    const role = STATE.currentRole;
+    const selectedPerms = qsa('.rp-perm')
+      .filter(cb => cb.checked)
+      .map(cb => cb.value);
+    STATE.matrix[role] = selectedPerms;
+
+    const payload = {
+      matrix: STATE.matrix,
+    };
+
+    setSaveBusy(true);
+    setFeedback('', 'info');
+
+    try {
+      const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+      const res = await fetch('/api/roles/permissions/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(csrf ? { 'X-CSRFToken': csrf } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      STATE.matrix = data.matrix || STATE.matrix;
+      setFeedback('Role permissions updated successfully.', 'success');
+    } catch (err) {
+      console.error('Failed to save RolePermissionMatrix:', err);
+      setFeedback('Failed to save role permissions: ' + (err.message || 'Unknown error'), 'danger');
+    } finally {
+      setSaveBusy(false);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const roleButtons = qsa('#rp-role-list button[data-role]');
+    roleButtons.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const role = this.dataset.role;
+        if (!role || role === STATE.currentRole) return;
+        STATE.currentRole = role;
+        applyRoleToUI();
+      });
+    });
+
+    const saveBtn = qs('#rp-save-btn');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', function() {
+        saveMatrix();
+      });
+    }
+
+    loadMatrix();
+  });
+})();
+</script>
+{% endblock %}

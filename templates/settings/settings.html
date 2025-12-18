@@ -319,6 +319,7 @@ function loadCompanyProfile() {
       if (data.success && data.company) {
         const c = data.company;
         const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+        setVal('companyName', c.name || '');
         setVal('companyEmail', c.email || '');
         setVal('companyPhone', c.phone || '');
         setVal('companyAddress', c.address || '');

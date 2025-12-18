@@ -801,26 +801,6 @@ class AssetForm(forms.ModelForm):
             # Preserve existing dynamic data during status changes
             if self.instance and hasattr(self.instance, 'dynamic_data'):
                 cleaned_data['dynamic_data'] = self.instance.dynamic_data or {}
-        
-        # Depreciation validation
-        purchase_value = cleaned_data.get('purchase_value')
-        purchase_date = cleaned_data.get('purchase_date')
-        useful_life_years = cleaned_data.get('useful_life_years')
-        depreciation_method = cleaned_data.get('depreciation_method')
-        # If any depreciation values supplied, require complete set & validate
-        if purchase_value or purchase_date or useful_life_years:
-            if not (purchase_value and purchase_date and useful_life_years and depreciation_method):
-                raise forms.ValidationError('All depreciation fields (value, date, method, useful life) are required for depreciable assets.')
-            if purchase_value is not None and purchase_value <= 0:
-                raise forms.ValidationError('Purchase value must be positive.')
-            if useful_life_years is not None and useful_life_years <= 0:
-                raise forms.ValidationError('Useful life must be positive.')
-        else:
-            # No depreciation provided: coerce safe defaults to satisfy model
-            cleaned_data['depreciation_method'] = 'straight_line'
-            cleaned_data['purchase_value'] = None
-            cleaned_data['purchase_date'] = None
-            cleaned_data['useful_life_years'] = None
         return cleaned_data
 
     def save(self, commit=True):

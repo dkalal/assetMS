@@ -491,52 +491,6 @@ function renderDashboardCharts() {
   });
 }
 
-function renderDepreciationChart(apiResponse) {
-    const container = document.getElementById('depreciation-chart-container');
-    // Clear previous content
-    container.innerHTML = '';
-
-    // Check for no data or message from API
-    if (!apiResponse.data || apiResponse.data.length === 0) {
-        const msg = document.createElement('div');
-        msg.className = 'no-data-message text-muted text-center py-4';
-        msg.setAttribute('role', 'status');
-        msg.setAttribute('aria-live', 'polite');
-        msg.innerHTML = `<i class='bi bi-info-circle me-2'></i>${apiResponse.message || 'No data available for depreciation trend.'}`;
-        container.appendChild(msg);
-        return;
-    }
-
-    // Render the chart as usual
-    const canvas = document.createElement('canvas');
-    canvas.setAttribute('aria-label', 'Depreciation/Value Trend Chart');
-    container.appendChild(canvas);
-    new Chart(canvas.getContext('2d'), {
-        type: 'line',
-        data: {
-            labels: apiResponse.labels,
-            datasets: [{
-                label: 'Depreciated Value',
-                data: apiResponse.data,
-                borderColor: '#007bff',
-                backgroundColor: 'rgba(0,123,255,0.1)',
-                fill: true,
-                tension: 0.3
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { display: false },
-                tooltip: { enabled: true }
-            },
-            scales: {
-                y: { beginAtZero: true, title: { display: true, text: 'Value' } },
-                x: { title: { display: true, text: 'Month' } }
-            }
-        }
-    });
-}
 
 function renderActivityLogTable(data, page, numPages, total) {
     const tbody = document.getElementById('activity-log-tbody');
