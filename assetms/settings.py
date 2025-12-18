@@ -348,7 +348,7 @@ LOGGING = {
         "file": {
             "level": "DEBUG",
             "class": "logging.FileHandler",
-            "filename": LOG_DIR / "django.log" if DEBUG else "/dev/null",
+            "filename": str(LOG_DIR / "django.log") if DEBUG else os.devnull,
             "formatter": "verbose",
         },
     },
