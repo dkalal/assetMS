@@ -38,8 +38,17 @@ class CompanyScopedAdmin(admin.ModelAdmin):
             if company:
                 if db_field.name == 'company':
                     kwargs['queryset'] = Company.objects.filter(pk=company.pk)
-                elif db_field.name == 'branch':
+                elif db_field.name in ('branch', 'from_branch', 'to_branch'):
                     kwargs['queryset'] = Branch.objects.filter(company=company)
-                elif db_field.name in ('assigned_to', 'user', 'manager', 'recipient', 'from_user', 'to_user', 'processed_by', 'requested_by', 'reviewed_by', 'completed_by'):
+                elif db_field.name == 'category':
+                    # Lazy import to avoid circular import (assets.admin -> tenancy.admin_mixins)
+                    from assets.models import AssetCategory  # local import
+                    kwargs['queryset'] = AssetCategory.objects.filter(company=company)
+                elif db_field.name in (
+                    'assigned_to', 'user', 'manager', 'recipient', 'from_user', 'to_user',
+                    'processed_by', 'requested_by', 'reviewed_by', 'completed_by', 'created_by',
+                    'updated_by', 'approved_by', 'performed_by', 'supervisor', 'retired_by',
+                    'initiator'
+                ):
                     kwargs['queryset'] = User.objects.filter(company=company)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)

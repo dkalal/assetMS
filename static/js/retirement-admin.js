@@ -15,6 +15,20 @@ let rejectModal = null;
 document.addEventListener('DOMContentLoaded', function() {
     approveModal = new bootstrap.Modal(document.getElementById('approveModal'));
     rejectModal = new bootstrap.Modal(document.getElementById('rejectModal'));
+
+    var approveEl = document.getElementById('approveModal');
+    var rejectEl = document.getElementById('rejectModal');
+    [approveEl, rejectEl].forEach(function(modalEl) {
+        if (!modalEl) {
+            return;
+        }
+        modalEl.addEventListener('shown.bs.modal', function() {
+            var backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(function(backdrop) {
+                backdrop.classList.add('retirement-modal-backdrop');
+            });
+        });
+    });
     
     loadDashboardStats();
     loadPendingApprovals();

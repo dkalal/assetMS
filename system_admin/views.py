@@ -17,6 +17,7 @@ from django.db import transaction
 from .decorators import system_admin_required
 from tenancy.models import Company, Branch
 from accounts.models import CompanyRegistration, UserInvitation
+from accounts.emails import send_invitation_email
 from assets.models import Asset
 from users.models import User
 
@@ -123,6 +124,8 @@ def create_company_view(request):
             messages.error(request, 'All fields are required.')
             return redirect('system_admin:create_company')
         
+        company = None
+        invitation = None
         try:
             with transaction.atomic():
                 # Create company
@@ -166,8 +169,7 @@ def create_company_view(request):
                     subscription_status='trial',
                 )
                 
-                # Send invitation email to admin
-                from accounts.emails import send_invitation_email
+                # Send invitation email to admin (invitation record)
                 invitation = UserInvitation.objects.create(
                     company=company,
                     email=admin_email,
@@ -177,14 +179,25 @@ def create_company_view(request):
                     branch=branch,
                     invited_by=None,  # System created
                 )
-                send_invitation_email(invitation, request)
-                
-                messages.success(request, f'Company {company_name} created successfully!')
-                return redirect('system_admin:company_detail', pk=company.id)
-                
         except Exception as e:
             logger.error(f"Error creating company: {e}", exc_info=True)
             messages.error(request, f'Error creating company: {str(e)}')
+        else:
+            # Only attempt to send email after the transaction has committed successfully
+            try:
+                send_invitation_email(invitation, request)
+                messages.success(request, f'Company {company_name} created successfully!')
+            except Exception as email_error:
+                logger.error(
+                    f"Error sending invitation email for company {company_name}: {email_error}",
+                    exc_info=True,
+                )
+                messages.warning(
+                    request,
+                    f'Company {company_name} was created, but the invitation email could not be sent. '
+                    'Please verify email settings or resend the invitation from the admin panel.',
+                )
+            return redirect('system_admin:company_detail', pk=company.id)
     
     return render(request, 'system_admin/create_company.html')
 

@@ -1,15 +1,16 @@
 from django.contrib import admin
 from .models import AuditLog, AuditEvent
+from tenancy.admin_mixins import CompanyScopedAdmin
 
 @admin.register(AuditLog)
-class AuditLogAdmin(admin.ModelAdmin):
+class AuditLogAdmin(CompanyScopedAdmin):
     list_display = ('user', 'action', 'asset', 'timestamp')
     list_filter = ('action', 'user')
     search_fields = ('details',)
 
 
 @admin.register(AuditEvent)
-class AuditEventAdmin(admin.ModelAdmin):
+class AuditEventAdmin(CompanyScopedAdmin):
     list_display = ('user', 'action', 'severity', 'company', 'timestamp')
     list_filter = ('action', 'severity', 'company', 'timestamp')
     search_fields = ('description', 'user__username', 'user__email')

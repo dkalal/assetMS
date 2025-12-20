@@ -28,3 +28,9 @@ class UserAdmin(BaseUserAdmin):
         if not self._is_global_operator(request):
             ro += ['is_system_admin', 'is_superuser', 'is_staff', 'groups', 'user_permissions', 'company']
         return ro
+
+    def save_model(self, request, obj, form, change):
+        if not self._is_global_operator(request):
+            # Ensure tenant admins cannot create/edit users outside their company
+            obj.company = getattr(request.user, 'company', None)
+        super().save_model(request, obj, form, change)

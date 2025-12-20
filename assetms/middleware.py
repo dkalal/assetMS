@@ -15,7 +15,7 @@ class CustomCSPMiddleware:
         response = self.get_response(request)
         
         # Build CSP header dynamically
-        img_src = "'self' data:"
+        img_src = "'self' data: blob:"
         connect_src = "'self'"
         
         # Cloudinary domains (always include - production ready)

@@ -338,7 +338,12 @@ def send_invitation_email(invitation, request=None):
     """
     # Store request in task context if available
     # Note: Celery tasks don't have direct access to request, so we'll build URL in task
-    send_invitation_email_task.delay(str(invitation.id))
+    try:
+        send_invitation_email_task.delay(str(invitation.id))
+        return True
+    except Exception as e:
+        logger.error(f"Error queueing invitation email task for {invitation.email}: {e}", exc_info=True)
+        return False
 
 
 def send_welcome_email(user):

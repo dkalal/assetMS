@@ -110,8 +110,7 @@ class ApprovalDashboardView(LoginRequiredMixin, BranchContextMixin, TemplateView
 
 
 class ApprovalRequestCreateView(LoginRequiredMixin, BranchContextMixin, CreateView):
-    """
-    View for creating new approval requests.
+    """View for creating new approval requests.
     
     Security:
     - Users can only create requests for their branches
@@ -135,6 +134,22 @@ class ApprovalRequestCreateView(LoginRequiredMixin, BranchContextMixin, CreateVi
             company=company,
             is_active=True
         ).order_by('name')
+        
+        # Limit request types exposed in this generic form.
+        # Asset creation/disposal workflows have dedicated views that
+        # capture full asset metadata. To avoid broken approvals,
+        # hide those system-managed types here.
+        request_type_field = form.fields.get('request_type')
+        if request_type_field is not None:
+            disallowed_types = {
+                ApprovalRequest.TYPE_ASSET_CREATION,
+                ApprovalRequest.TYPE_ASSET_DISPOSAL,
+            }
+            request_type_field.choices = [
+                (value, label)
+                for (value, label) in request_type_field.choices
+                if value not in disallowed_types
+            ]
         
         # Add CSS classes and configure widgets
         for field_name, field in form.fields.items():
@@ -409,49 +424,78 @@ class ApprovalActionView(LoginRequiredMixin, BranchContextMixin, View):
                     # If this is an asset creation request, create the asset
                     if approval_request.request_type == approval_request.TYPE_ASSET_CREATION:
                         logger.info(f"Request type is ASSET_CREATION, creating asset...")
-                        try:
-                            asset = approval_request.create_asset_from_approval()
-                            logger.info(f"✅ Asset created: {asset.uuid}")
-                            messages.success(
-                                request,
-                                f"✅ Request approved! Asset '{asset}' created successfully. "
-                                f"<a href='/assets/{asset.uuid}/' class='alert-link'>View Asset</a>",
-                                extra_tags='safe'
+                        metadata = approval_request.metadata or {}
+                        asset_data = metadata.get('asset_data')
+                        if asset_data:
+                            try:
+                                asset = approval_request.create_asset_from_approval()
+                                logger.info(f"✅ Asset created: {asset.uuid}")
+                                messages.success(
+                                    request,
+                                    f"✅ Request approved! Asset '{asset}' created successfully. "
+                                    f"<a href='/assets/{asset.uuid}/' class='alert-link'>View Asset</a>",
+                                    extra_tags='safe'
+                                )
+                                logger.info(f"Asset {asset.uuid} created from approval request {approval_request.pk}")
+                            except Exception as e:
+                                # Log detailed error
+                                import logging
+                                import traceback
+                                logger = logging.getLogger(__name__)
+                                logger.error(f"Asset creation failed for request {approval_request.pk}: {str(e)}")
+                                logger.error(traceback.format_exc())
+                                
+                                messages.error(
+                                    request,
+                                    f"Request approved but asset creation failed: {str(e)}. "
+                                    f"Please check the logs or contact support."
+                                )
+                        else:
+                            logger.warning(
+                                "Asset creation request %s has no 'asset_data' in metadata. "
+                                "Treating as approval-only workflow.",
+                                approval_request.pk,
                             )
-                            logger.info(f"Asset {asset.uuid} created from approval request {approval_request.pk}")
-                        except Exception as e:
-                            # Log detailed error
-                            import logging
-                            import traceback
-                            logger = logging.getLogger(__name__)
-                            logger.error(f"Asset creation failed for request {approval_request.pk}: {str(e)}")
-                            logger.error(traceback.format_exc())
-                            
-                            messages.error(
+                            messages.warning(
                                 request,
-                                f"Request approved but asset creation failed: {str(e)}. "
-                                f"Please check the logs or contact support."
+                                "Request approved successfully, but no asset record was created "
+                                "because this request does not contain structured asset details. "
+                                "Please register the asset manually from the Assets page."
                             )
                     
                     # If this is an asset disposal request, dispose the asset
                     elif approval_request.request_type == approval_request.TYPE_ASSET_DISPOSAL:
-                        try:
-                            asset = approval_request.execute_asset_disposal()
-                            messages.success(
-                                request,
-                                f"✅ Request approved! Asset '{asset}' has been disposed successfully."
+                        metadata = approval_request.metadata or {}
+                        asset_id = metadata.get('asset_id')
+                        if asset_id:
+                            try:
+                                asset = approval_request.execute_asset_disposal()
+                                messages.success(
+                                    request,
+                                    f"✅ Request approved! Asset '{asset}' has been disposed successfully."
+                                )
+                            except Exception as e:
+                                import logging
+                                import traceback
+                                logger = logging.getLogger(__name__)
+                                logger.error(f"Asset disposal failed for request {approval_request.pk}: {str(e)}")
+                                logger.error(traceback.format_exc())
+                                
+                                messages.error(
+                                    request,
+                                    f"Request approved but asset disposal failed: {str(e)}. "
+                                    f"Please check the logs or contact support."
+                                )
+                        else:
+                            logger.warning(
+                                "Asset disposal request %s has no 'asset_id' in metadata. "
+                                "Treating as approval-only workflow.",
+                                approval_request.pk,
                             )
-                        except Exception as e:
-                            import logging
-                            import traceback
-                            logger = logging.getLogger(__name__)
-                            logger.error(f"Asset disposal failed for request {approval_request.pk}: {str(e)}")
-                            logger.error(traceback.format_exc())
-                            
-                            messages.error(
+                            messages.warning(
                                 request,
-                                f"Request approved but asset disposal failed: {str(e)}. "
-                                f"Please check the logs or contact support."
+                                "Request approved successfully, but no asset record was updated "
+                                "because this request is not linked to a specific asset."
                             )
                     
                     else:

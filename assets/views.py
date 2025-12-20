@@ -151,7 +151,7 @@ class AssetCreateView(LoginRequiredMixin, BranchContextMixin, TemplateView):
         """Create asset directly without approval."""
         from .forms import AssetForm
         
-        form = AssetForm(request.POST, request=request)
+        form = AssetForm(request.POST, request.FILES, request=request)
         
         if not form.is_valid():
             messages.error(request, "Please correct the errors below.")
@@ -248,7 +248,11 @@ class AssetCreateView(LoginRequiredMixin, BranchContextMixin, TemplateView):
                 priority = request.POST.get('priority', ApprovalRequest.PRIORITY_MEDIUM)
                 
                 # Validate required fields
-                if not all([title, category_id, branch_id]):
+                # NOTE: The unified /assets/register/ form does not expose a
+                # dedicated "title" field for managers; we derive a sensible
+                # title later from the category/description. Only category and
+                # branch are strictly required here.
+                if not all([category_id, branch_id]):
                     messages.error(request, "Please fill in all required fields.")
                     context = self.get_context_data()
                     return self.render_to_response(context)
@@ -281,7 +285,15 @@ class AssetCreateView(LoginRequiredMixin, BranchContextMixin, TemplateView):
                 # Extract dynamic fields
                 fields = AssetCategoryField.objects.for_company(company).filter(category=category)
                 for field in fields:
-                    field_value = request.POST.get(f'field_{field.key}', '').strip()
+                    # Support both legacy "field_" prefix (used by the
+                    # dedicated asset-creation request form) and the
+                    # "dyn_" prefix used by the unified asset registration
+                    # form and AssetForm/asset_form.js.
+                    raw_value = request.POST.get(
+                        f'dyn_{field.key}',
+                        request.POST.get(f'field_{field.key}', '')
+                    )
+                    field_value = (raw_value or '').strip()
                     if field_value:
                         asset_data['dynamic_data'][field.key] = field_value
                     elif field.required:
@@ -299,6 +311,8 @@ class AssetCreateView(LoginRequiredMixin, BranchContextMixin, TemplateView):
                     company=company,
                     branch=branch,
                     request_type=ApprovalRequest.TYPE_ASSET_CREATION,
+                    # Derive a clear, human-readable title when the form
+                    # does not supply one explicitly.
                     title=title or f"Asset Creation: {category.name}",
                     description=f"{description}\n\nJustification: {justification}",
                     requested_by=user,

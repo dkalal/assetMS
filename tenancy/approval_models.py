@@ -37,23 +37,20 @@ class ApprovalRequest(CompanyScopedModel):
     # Request Types (Simplified - Option 2)
     TYPE_ASSET_CREATION = 'asset_creation'
     TYPE_ASSET_DISPOSAL = 'asset_disposal'
-    
-    # Future types (commented out for now - can be enabled later)
-    # TYPE_ASSET_TRANSFER = 'asset_transfer'
-    # TYPE_ASSET_MAINTENANCE = 'asset_maintenance'
-    # TYPE_USER_ACCESS = 'user_access'
-    # TYPE_BUDGET = 'budget'
-    # TYPE_CUSTOM = 'custom'
+    TYPE_ASSET_TRANSFER = 'asset_transfer'
+    TYPE_ASSET_MAINTENANCE = 'asset_maintenance'
+    TYPE_USER_ACCESS = 'user_access'
+    TYPE_BUDGET = 'budget'
+    TYPE_CUSTOM = 'custom'
     
     REQUEST_TYPES = [
         (TYPE_ASSET_CREATION, 'Asset Creation'),
         (TYPE_ASSET_DISPOSAL, 'Asset Disposal'),
-        # Future types (commented out):
-        # (TYPE_ASSET_TRANSFER, 'Asset Transfer'),
-        # (TYPE_ASSET_MAINTENANCE, 'Asset Maintenance'),
-        # (TYPE_USER_ACCESS, 'User Access Request'),
-        # (TYPE_BUDGET, 'Budget Approval'),
-        # (TYPE_CUSTOM, 'Custom Request'),
+        (TYPE_ASSET_TRANSFER, 'Asset Transfer'),
+        (TYPE_ASSET_MAINTENANCE, 'Asset Maintenance'),
+        (TYPE_USER_ACCESS, 'User Access Request'),
+        (TYPE_BUDGET, 'Budget Approval'),
+        (TYPE_CUSTOM, 'Custom Request'),
     ]
     
     # Status

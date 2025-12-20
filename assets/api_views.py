@@ -1227,9 +1227,8 @@ def api_asset_data_refresh(request, uuid):
         ).get(uuid=uuid, company=request.user.company)
     except Asset.DoesNotExist:
         return _json_error("Asset not found or access denied", status=404)
-    
-    # Check permissions
-    if not can(request.user, 'view_asset', asset):
+
+    if not can(request.user, 'view_assets'):
         return _json_error("Permission denied", status=403)
     
     # Get tab parameter (which tab to refresh)
