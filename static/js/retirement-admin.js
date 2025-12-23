@@ -15,20 +15,6 @@ let rejectModal = null;
 document.addEventListener('DOMContentLoaded', function() {
     approveModal = new bootstrap.Modal(document.getElementById('approveModal'));
     rejectModal = new bootstrap.Modal(document.getElementById('rejectModal'));
-
-    var approveEl = document.getElementById('approveModal');
-    var rejectEl = document.getElementById('rejectModal');
-    [approveEl, rejectEl].forEach(function(modalEl) {
-        if (!modalEl) {
-            return;
-        }
-        modalEl.addEventListener('shown.bs.modal', function() {
-            var backdrops = document.querySelectorAll('.modal-backdrop');
-            backdrops.forEach(function(backdrop) {
-                backdrop.classList.add('retirement-modal-backdrop');
-            });
-        });
-    });
     
     loadDashboardStats();
     loadPendingApprovals();
@@ -277,20 +263,38 @@ async function confirmApprove() {
     confirmBtn.innerHTML = '<span class="loading-spinner"></span> Approving...';
     
     try {
-        const response = await fetch('/api/retirement/approve/', {
+        // Use RESTful endpoint with path parameter: /api/retirement/<uuid>/approve/
+        const response = await fetch(`/api/retirement/${currentRetirementId}/approve/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': getCookie('csrftoken')
             },
             body: JSON.stringify({
-                retirement_id: currentRetirementId,
+                // Backend reads comments from body; ID comes from URL
                 comments: comments
             })
         });
-        
-        const result = await response.json();
-        
+
+        let result;
+        try {
+            result = await response.json();
+        } catch (e) {
+            // Fallback if server responded with non-JSON (e.g. HTML error page)
+            showAlert(`Approval failed: HTTP ${response.status}`, 'danger');
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = originalText;
+            return;
+        }
+
+        if (!response.ok || !result.success) {
+            const message = result.error || `Approval failed (HTTP ${response.status})`;
+            showAlert(message, 'danger');
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = originalText;
+            return;
+        }
+
         if (result.success) {
             approveModal.hide();
             showAlert(result.message || 'Request approved successfully', 'success');
@@ -300,10 +304,6 @@ async function confirmApprove() {
                 loadDashboardStats();
                 loadPendingApprovals();
             }, 1000);
-        } else {
-            showAlert(result.error || 'Failed to approve request', 'danger');
-            confirmBtn.disabled = false;
-            confirmBtn.innerHTML = originalText;
         }
     } catch (error) {
         console.error('Error approving request:', error);
@@ -331,20 +331,36 @@ async function confirmReject() {
     confirmBtn.innerHTML = '<span class="loading-spinner"></span> Rejecting...';
     
     try {
-        const response = await fetch('/api/retirement/reject/', {
+        // Use RESTful endpoint with path parameter: /api/retirement/<uuid>/reject/
+        const response = await fetch(`/api/retirement/${currentRetirementId}/reject/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': getCookie('csrftoken')
             },
             body: JSON.stringify({
-                retirement_id: currentRetirementId,
                 rejection_reason: reason
             })
         });
-        
-        const result = await response.json();
-        
+
+        let result;
+        try {
+            result = await response.json();
+        } catch (e) {
+            showAlert(`Rejection failed: HTTP ${response.status}`, 'danger');
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = originalText;
+            return;
+        }
+
+        if (!response.ok || !result.success) {
+            const message = result.error || `Rejection failed (HTTP ${response.status})`;
+            showAlert(message, 'danger');
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = originalText;
+            return;
+        }
+
         if (result.success) {
             rejectModal.hide();
             showAlert(result.message || 'Request rejected successfully', 'success');
@@ -354,10 +370,6 @@ async function confirmReject() {
                 loadDashboardStats();
                 loadPendingApprovals();
             }, 1000);
-        } else {
-            showAlert(result.error || 'Failed to reject request', 'danger');
-            confirmBtn.disabled = false;
-            confirmBtn.innerHTML = originalText;
         }
     } catch (error) {
         console.error('Error rejecting request:', error);

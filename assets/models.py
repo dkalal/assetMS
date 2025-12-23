@@ -617,6 +617,46 @@ class Asset(models.Model):
                 return v
         return None
 
+    @property
+    def purchase_price(self):
+        """Backward-compatible alias for purchase_value.
+        
+        Several reporting views refer to asset.purchase_price; we centralize
+        the logic here so both attributes behave consistently and never raise
+        AttributeError.
+        """
+        return self.purchase_value
+
+    @property
+    def current_value(self):
+        """Best-effort numeric current value for the asset.
+
+        Sources (in order of preference), all read from dynamic_data:
+        - current_value
+        - book_value / net_value / residual_value
+        - purchase_value style keys via purchase_value property
+
+        Returns a float on success or None if no parsable value is found.
+        This keeps API endpoints and reports robust even when data is
+        incomplete or stored as strings.
+        """
+        dd = self.dynamic_data or {}
+        candidates = [
+            dd.get('current_value'),
+            dd.get('book_value'),
+            dd.get('net_value'),
+            dd.get('residual_value'),
+            self.purchase_value,
+        ]
+        for raw in candidates:
+            if raw in (None, ''):
+                continue
+            try:
+                return float(raw)
+            except (TypeError, ValueError):
+                continue
+        return None
+
     def __str__(self):
         return f"{self.category.name} Asset #{self.pk}"
 

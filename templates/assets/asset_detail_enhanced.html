@@ -1063,7 +1063,9 @@ async function executeTransfer() {
 
     try {
         const payload = {
+            // Provide both numeric ID and UUID for robust server-side resolution
             asset_id: {{ asset.id }},
+            asset_uuid: '{{ asset.uuid }}',
             to_user_id: parseInt(toUserId),
             to_branch_id: branchId ? parseInt(branchId) : null,
             initiator_comment: reason,
@@ -1085,7 +1087,35 @@ async function executeTransfer() {
             body: JSON.stringify(payload)
         });
 
-        const data = await response.json();
+        let data = null;
+        try {
+            data = await response.json();
+        } catch (e) {
+            // Non-JSON response (unexpected HTML, etc.)
+            showToast('❌ Transfer failed: invalid server response', 'error');
+            btn.disabled = false;
+            return;
+        }
+
+        if (!response.ok || !data.success) {
+            // Prefer explicit error message from API
+            let message = data.error || 'Transfer failed';
+
+            // If form validation errors are returned, surface the first one
+            if (!data.error && data.errors) {
+                try {
+                    const firstField = Object.keys(data.errors)[0];
+                    const firstError = data.errors[firstField][0];
+                    message = `${firstError}`;
+                } catch (e) {
+                    // Fallback to generic message
+                }
+            }
+
+            showToast('❌ ' + message, 'error');
+            btn.disabled = false;
+            return;
+        }
 
         if (data.success) {
             showToast('✅ Transfer initiated successfully! The receiver will be notified.', 'success');
