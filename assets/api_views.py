@@ -1227,7 +1227,10 @@ def api_asset_data_refresh(request, uuid):
         ).get(uuid=uuid, company=request.user.company)
     except Asset.DoesNotExist:
         return _json_error("Asset not found or access denied", status=404)
-
+    
+    # Check permissions using logical matrix-based permission.
+    # Object-level scoping is enforced by the company filter above and
+    # branch/tenant policies elsewhere in the stack.
     if not can(request.user, 'view_assets'):
         return _json_error("Permission denied", status=403)
     
@@ -1276,7 +1279,7 @@ def api_asset_data_refresh(request, uuid):
                 'to_branch': pending_transfer.to_branch.name if pending_transfer.to_branch else None,
                 'initiator': pending_transfer.initiator.get_full_name() if pending_transfer.initiator else None,
                 'created_at': pending_transfer.created_at.isoformat(),
-                'initiator_comment': pending_transfer.initiator_comment,
+                'initiator_comment': pending_transfer.reason,
             }
         
         # Transfer history
@@ -1295,8 +1298,8 @@ def api_asset_data_refresh(request, uuid):
             'initiator': t.initiator.get_full_name() if t.initiator else None,
             'approved_by': t.approved_by.get_full_name() if t.approved_by else None,
             'created_at': t.created_at.isoformat(),
-            'completed_at': t.completed_at.isoformat() if t.completed_at else None,
-            'initiator_comment': t.initiator_comment,
+            'completed_at': (t.admin_decided_at or t.receiver_decided_at).isoformat() if (t.admin_decided_at or t.receiver_decided_at) else None,
+            'initiator_comment': t.reason,
         } for t in transfers]
         
         response_data['transfer_count'] = asset.transfers.count()
@@ -1336,7 +1339,7 @@ def api_asset_data_refresh(request, uuid):
             'action_display': e.get_action_display() if hasattr(e, 'get_action_display') else e.action.title(),
             'user': e.user.get_full_name() if e.user else 'System',
             'branch': e.branch.name if e.branch else None,
-            'description': e.description,
+            'description': getattr(e, 'description', None) or getattr(e, 'details', ''),
             'timestamp': e.timestamp.isoformat(),
         } for e in audit_events]
         

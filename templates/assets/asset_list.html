@@ -442,7 +442,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <tbody>
         {% for asset in assets %}
         <tr>
-          <td><input type="checkbox" class="asset-checkbox" value="{{ asset.pk }}" aria-label="Select asset {{ asset.pk }}"></td>
+          <td><input type="checkbox" class="asset-checkbox" name="asset_ids" value="{{ asset.pk }}" aria-label="Select asset {{ asset.pk }}"></td>
           <td>{{ asset.category }}</td>
           <td>{{ asset.status }}</td>
           <td>{{ asset.assigned_to }}</td>

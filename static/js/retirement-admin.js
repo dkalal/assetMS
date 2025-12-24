@@ -8,6 +8,7 @@
 // Global state
 let currentRetirementId = null;
 let allRequests = [];
+let approvedRequests = [];
 let approveModal = null;
 let rejectModal = null;
 
@@ -18,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     loadDashboardStats();
     loadPendingApprovals();
+    loadApprovedRequests();
     setupEventListeners();
 });
 
@@ -71,6 +73,47 @@ async function loadPendingApprovals() {
         document.getElementById('emptyState').style.display = 'block';
     } finally {
         document.getElementById('loadingState').style.display = 'none';
+    }
+}
+
+/**
+ * Load approved and in-progress requests (admin processing pipeline)
+ */
+async function loadApprovedRequests() {
+    const loading = document.getElementById('approvedLoadingState');
+    const list = document.getElementById('approvedList');
+    const empty = document.getElementById('approvedEmptyState');
+
+    // Gracefully no-op if the approved section is not present
+    if (!loading || !list || !empty) {
+        return;
+    }
+
+    try {
+        loading.style.display = 'block';
+        list.style.display = 'none';
+        empty.style.display = 'none';
+
+        const response = await fetch('/api/retirement/approved-requests/');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+            approvedRequests = data.requests || [];
+            displayApprovedRequests(approvedRequests);
+        } else {
+            showAlert('Failed to load approved requests: ' + (data.error || 'Unknown error'), 'danger');
+            empty.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error loading approved requests:', error);
+        showAlert('Error loading approved retirement requests: ' + error.message, 'danger');
+        empty.style.display = 'block';
+    } finally {
+        loading.style.display = 'none';
     }
 }
 
@@ -233,6 +276,141 @@ function displayRequests(requests) {
 }
 
 /**
+ * Display approved & in-progress requests (read-only cards)
+ */
+function displayApprovedRequests(requests) {
+    const container = document.getElementById('approvedList');
+    const emptyState = document.getElementById('approvedEmptyState');
+
+    if (!container || !emptyState) {
+        return;
+    }
+
+    if (!Array.isArray(requests) || requests.length === 0) {
+        emptyState.style.display = 'block';
+        container.style.display = 'none';
+        return;
+    }
+
+    emptyState.style.display = 'none';
+    container.style.display = 'block';
+
+    const cards = requests.map(request => {
+        try {
+            const userName = request.user?.name || request.user_name || 'Unknown User';
+            const userEmail = request.user?.email || request.user_email || 'No email';
+            const userRole = request.user?.role || request.user_role || '';
+
+            const nameParts = userName.split(' ').filter(part => part.length > 0);
+            const initials = nameParts.length > 1
+                ? nameParts[0][0] + nameParts[nameParts.length - 1][0]
+                : (nameParts[0]?.[0] || 'U');
+
+            const effectiveDate = request.effective_date
+                ? new Date(request.effective_date)
+                : null;
+            const requestDate = request.request_date
+                ? new Date(request.request_date)
+                : null;
+
+            const statusLabel = request.status_display || request.status || 'Approved';
+
+            const daysUntil = typeof request.days_until_effective === 'number'
+                ? request.days_until_effective
+                : (effectiveDate
+                    ? Math.max(0, Math.ceil((effectiveDate - new Date()) / (1000 * 60 * 60 * 24)))
+                    : null);
+
+            return `
+                <div class="request-card request-card--approved">
+                    <div class="request-card-header">
+                        <div class="request-avatar">
+                            ${escapeHtml(initials.toUpperCase())}
+                        </div>
+                        <div class="request-user-info">
+                            <h6 class="request-user-name">
+                                ${escapeHtml(userName)}
+                                ${userRole ? `<span class="badge bg-secondary">${escapeHtml(userRole)}</span>` : ''}
+                            </h6>
+                            <p class="request-user-email">
+                                <i class="bi bi-envelope"></i>
+                                ${escapeHtml(userEmail)}
+                            </p>
+                        </div>
+                        <div class="ms-auto">
+                            <span class="badge bg-success-subtle text-success">
+                                <i class="bi bi-check2-circle me-1"></i>${escapeHtml(statusLabel)}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="request-card-body">
+                        <div class="request-info-item">
+                            <div class="request-info-label">
+                                <i class="bi bi-calendar-event"></i>
+                                Request Date
+                            </div>
+                            <div class="request-info-value">
+                                ${requestDate ? requestDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                            </div>
+                        </div>
+                        <div class="request-info-item">
+                            <div class="request-info-label">
+                                <i class="bi bi-calendar-check"></i>
+                                Effective Date
+                            </div>
+                            <div class="request-info-value">
+                                ${effectiveDate ? effectiveDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                            </div>
+                        </div>
+                        <div class="request-info-item">
+                            <div class="request-info-label">
+                                <i class="bi bi-hourglass-split"></i>
+                                Days Until
+                            </div>
+                            <div class="request-info-value">
+                                ${daysUntil !== null ? `${daysUntil} days` : '—'}
+                            </div>
+                        </div>
+                        <div class="request-info-item">
+                            <div class="request-info-label">
+                                <i class="bi bi-box-seam"></i>
+                                Assets
+                            </div>
+                            <div class="request-info-value">
+                                ${request.asset_count || 0} items
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="request-reason-section">
+                        <div class="request-reason-label">
+                            <i class="bi bi-chat-left-text"></i>
+                            Retirement Reason
+                        </div>
+                        <p class="request-reason-text">
+                            ${escapeHtml(request.reason || '')}
+                        </p>
+                    </div>
+                </div>
+            `;
+        } catch (error) {
+            console.error('Error rendering approved request card:', error, request);
+            return `
+                <div class="request-card">
+                    <div class="alert alert-warning mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Error displaying approved request. Please contact support.
+                    </div>
+                </div>
+            `;
+        }
+    }).join('');
+
+    container.innerHTML = cards;
+}
+
+/**
  * Show approve modal
  */
 function showApproveModal(retirementId) {
@@ -383,35 +561,47 @@ async function confirmReject() {
  * Filter requests
  */
 function filterRequests() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const statusFilter = document.getElementById('statusFilter').value;
-    const sortBy = document.getElementById('sortBy').value;
-    
-    let filtered = [...allRequests];
-    
-    // Apply search filter
-    if (searchTerm) {
-        filtered = filtered.filter(request =>
-            request.user_name.toLowerCase().includes(searchTerm) ||
-            request.user_email.toLowerCase().includes(searchTerm)
-        );
-    }
-    
-    // Apply status filter
-    if (statusFilter) {
-        filtered = filtered.filter(request => request.status === statusFilter);
-    }
-    
-    // Apply sorting
-    if (sortBy === 'newest') {
-        filtered.sort((a, b) => new Date(b.request_date) - new Date(a.request_date));
-    } else if (sortBy === 'oldest') {
-        filtered.sort((a, b) => new Date(a.request_date) - new Date(b.request_date));
-    } else if (sortBy === 'effective_date') {
-        filtered.sort((a, b) => new Date(a.effective_date) - new Date(b.effective_date));
-    }
-    
-    displayRequests(filtered);
+    const searchInput = document.getElementById('searchInput');
+    const statusSelect = document.getElementById('statusFilter');
+    const sortSelect = document.getElementById('sortBy');
+
+    const searchTerm = (searchInput?.value || '').toLowerCase();
+    const statusFilter = statusSelect?.value || '';
+    const sortBy = sortSelect?.value || 'newest';
+
+    const applyFilters = (requests) => {
+        let filtered = Array.isArray(requests) ? [...requests] : [];
+
+        if (searchTerm) {
+            filtered = filtered.filter(request => {
+                const userName = request.user?.name || request.user_name || '';
+                const userEmail = request.user?.email || request.user_email || '';
+                return userName.toLowerCase().includes(searchTerm) ||
+                       userEmail.toLowerCase().includes(searchTerm);
+            });
+        }
+
+        if (statusFilter) {
+            filtered = filtered.filter(request => request.status === statusFilter);
+        }
+
+        if (sortBy === 'newest') {
+            filtered.sort((a, b) => new Date(b.request_date) - new Date(a.request_date));
+        } else if (sortBy === 'oldest') {
+            filtered.sort((a, b) => new Date(a.request_date) - new Date(b.request_date));
+        } else if (sortBy === 'effective_date') {
+            filtered.sort((a, b) => new Date(a.effective_date) - new Date(b.effective_date));
+        }
+
+        return filtered;
+    };
+
+    // Apply filters to both pending and approved datasets
+    const filteredPending = applyFilters(allRequests);
+    const filteredApproved = applyFilters(approvedRequests);
+
+    displayRequests(filteredPending);
+    displayApprovedRequests(filteredApproved);
 }
 
 /**

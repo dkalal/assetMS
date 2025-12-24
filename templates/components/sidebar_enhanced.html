@@ -96,7 +96,7 @@
       Analytics
     </div>
     
-    {% url 'reports_dashboard' as reports_url %}
+    {% url 'reports:reports_dashboard' as reports_url %}
     <a href="{{ reports_url }}" class="nav-link rail-item {% if request.path|slice:":9" == "/reports/" %}active{% endif %}" title="Reports" {% if request.path|slice:":9" == "/reports/" %}aria-current="page"{% endif %}>
       <i class="bi bi-graph-up"></i>
       <span>Reports</span>

@@ -81,11 +81,11 @@
    ============================================== */
 
 .help-category-card {
-    background: var(--glass-bg, rgba(255, 255, 255, 0.95));
+    background: var(--card-bg, #ffffff);
     backdrop-filter: blur(10px);
     border-radius: 1rem;
     padding: 1.5rem;
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.05));
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     height: 100%;
 }
@@ -141,12 +141,12 @@
    ============================================== */
 
 .help-article {
-    background: var(--glass-bg, rgba(255, 255, 255, 0.95));
+    background: var(--card-bg, #ffffff);
     backdrop-filter: blur(10px);
     border-radius: 1rem;
     padding: 2rem;
     margin-bottom: 2rem;
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.05));
 }
 
 .help-article h2 {
@@ -233,11 +233,11 @@
    ============================================== */
 
 .help-toc {
-    background: var(--glass-bg, rgba(255, 255, 255, 0.95));
+    background: var(--card-bg, #ffffff);
     backdrop-filter: blur(10px);
     border-radius: 1rem;
     padding: 1.5rem;
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.05));
     position: sticky;
     top: 2rem;
 }
@@ -366,9 +366,9 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.875rem 1rem;
-    background: white;
+    background: var(--card-bg, #ffffff);
     border-radius: 0.75rem;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--border-color, #e5e7eb);
     text-decoration: none;
     color: #374151;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);

@@ -8,6 +8,18 @@
 <link rel="stylesheet" href="{% static 'css/retirement-worldclass.css' %}">
 {% endblock %}
 
+{% block extra_styles %}
+{{ block.super }}
+<style>
+  /* Page-specific backdrop override: keep Bootstrap modal structure
+     but remove the heavy dark overlay for a lighter, inline feel. */
+  .modal-backdrop {
+      background-color: transparent !important;
+      backdrop-filter: none !important;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid px-4 py-4">
     <!-- Breadcrumb -->
@@ -73,6 +85,8 @@
                     <option value="">All Statuses</option>
                     <option value="requested">Requested</option>
                     <option value="pending_approval">Pending Approval</option>
+                    <option value="approved">Approved</option>
+                    <option value="in_progress">In Progress</option>
                 </select>
             </div>
             <div class="col-md-3">
@@ -132,8 +146,58 @@
             </div>
         </div>
     </div>
-</div>
 
+    <!-- Approved & In-Progress Container -->
+    <div class="approvals-container mt-4">
+        <!-- Header -->
+        <div class="approvals-header">
+            <h5>
+                <i class="bi bi-check2-circle"></i>
+                Approved &amp; In-Progress Requests
+            </h5>
+        </div>
+
+        <!-- Scrollable Body -->
+        <div class="approvals-body">
+            <!-- Loading State -->
+            <div id="approvedLoadingState" style="display: none;">
+                <div class="text-center py-5">
+                    <div class="loading-spinner mx-auto mb-3"></div>
+                    <p class="text-muted">Loading approved and in-progress requests...</p>
+                </div>
+            </div>
+
+            <!-- Approved List -->
+            <div id="approvedList"></div>
+
+            <!-- Empty State -->
+            <div id="approvedEmptyState" style="display: none;">
+                <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <p>No approved or in-progress requests</p>
+                    <small class="text-muted">Approved and in-progress retirement requests will appear here</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="approvals-footer">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="text-muted small">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Showing approved and in-progress requests
+                </div>
+                <button class="btn btn-sm btn-outline-primary" onclick="loadApprovedRequests()">
+                    <i class="bi bi-arrow-clockwise me-1"></i>
+                    Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block dashboard_modals %}
 <!-- Approve Modal -->
 <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">

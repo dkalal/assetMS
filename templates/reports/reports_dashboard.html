@@ -4,13 +4,13 @@
 
 <ul class="nav nav-tabs section-tabs" role="tablist" aria-label="Reports tabs">
   <li class="nav-item" role="presentation">
-    <a class="nav-link {% if not request.GET.status %}active{% endif %}" href="{% url 'reports_dashboard' %}">All</a>
+    <a class="nav-link {% if not request.GET.status %}active{% endif %}" href="{% url 'reports:reports_dashboard' %}">All</a>
   </li>
   <li class="nav-item" role="presentation">
-    <a class="nav-link {% if request.GET.status == 'generated' %}active{% endif %}" href="{% url 'reports_dashboard' %}?status=generated">Generated</a>
+    <a class="nav-link {% if request.GET.status == 'generated' %}active{% endif %}" href="{% url 'reports:reports_dashboard' %}?status=generated">Generated</a>
   </li>
   <li class="nav-item" role="presentation">
-    <a class="nav-link {% if request.GET.status == 'queued' %}active{% endif %}" href="{% url 'reports_dashboard' %}?status=queued">Queued</a>
+    <a class="nav-link {% if request.GET.status == 'queued' %}active{% endif %}" href="{% url 'reports:reports_dashboard' %}?status=queued">Queued</a>
   </li>
 </ul>
 <div class="glass" style="padding:2rem;margin:2rem auto;max-width:900px;">
@@ -132,7 +132,7 @@
       <button type="button" class="custom-modal-close" id="closeGenerateReportModal" aria-label="Close">&times;</button>
     </div>
     <div class="custom-modal-body">
-      <form method="post" action="{% url 'generate_report' %}">
+      <form method="post" action="{% url 'reports:generate_report' %}">
         {% csrf_token %}
         <div class="mb-3">
           <label for="reportType" class="form-label">Report Type</label>

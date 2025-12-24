@@ -403,9 +403,10 @@ class ApprovalActionView(LoginRequiredMixin, BranchContextMixin, View):
         
         logger.info(f"✅ Approval authority check passed")
         
-        # Get action
-        action = request.POST.get('action')
-        logger.info(f"Action requested: {action}")
+        # Get action and normalize for robust handling
+        raw_action = request.POST.get('action')
+        action = (raw_action or '').strip().lower()
+        logger.info(f"Action requested: raw={raw_action!r}, normalized={action!r}")
         
         if action == 'approve':
             logger.info(f"Processing APPROVE action...")
@@ -537,7 +538,8 @@ class ApprovalActionView(LoginRequiredMixin, BranchContextMixin, View):
             messages.info(request, f"Request '{approval_request.title}' escalated to admin.")
         
         else:
-            logger.warning(f"Invalid action received: {action}")
+            # Unknown or missing action value – keep user-facing message simple
+            logger.warning(f"Invalid action received: raw={raw_action!r}, normalized={action!r}")
             messages.error(request, "Invalid action.")
         
         logger.info(f"=== APPROVAL ACTION COMPLETED ===")

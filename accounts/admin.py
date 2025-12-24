@@ -31,6 +31,7 @@ class UserInvitationAdmin(CompanyScopedAdmin):
             'classes': ('collapse',)
         }),
     )
+    # Rely on CompanyScopedAdmin for queryset and FK scoping by company
     
     def status_badge(self, obj):
         colors = {
@@ -134,7 +135,7 @@ class CompanyRegistrationAdmin(CompanyScopedAdmin):
 
 
 @admin.register(OnboardingProgress)
-class OnboardingProgressAdmin(admin.ModelAdmin):
+class OnboardingProgressAdmin(CompanyScopedAdmin):
     list_display = [
         'user', 'completion_bar', 'current_step',
         'company_details_completed', 'team_invited', 'tour_completed',
@@ -165,6 +166,22 @@ class OnboardingProgressAdmin(admin.ModelAdmin):
         }),
     )
     
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if self._is_global_operator(request):
+            return qs
+        company = getattr(request.user, 'company', None)
+        return qs.filter(user__company=company) if company else qs.none()
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if not self._is_global_operator(request):
+            company = getattr(request.user, 'company', None)
+            if company and db_field.name == 'user':
+                from django.contrib.auth import get_user_model
+                User = get_user_model()
+                kwargs['queryset'] = User.objects.filter(company=company)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
     def completion_bar(self, obj):
         percentage = obj.completion_percentage
         color = 'green' if percentage == 100 else 'orange' if percentage >= 50 else 'red'

@@ -227,7 +227,7 @@
                 <button type="submit" class="btn btn-sm btn-primary">
                   <i class="bi bi-search me-1"></i> Apply Filters
                 </button>
-                <a href="{% url 'reports_dashboard' %}" class="btn btn-sm btn-outline-secondary">
+                <a href="{% url 'reports:reports_dashboard' %}" class="btn btn-sm btn-outline-secondary">
                   <i class="bi bi-x-circle me-1"></i> Clear
                 </a>
               </div>
@@ -360,7 +360,7 @@
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <form method="post" action="{% url 'generate_report' %}" id="generateReportForm">
+      <form method="post" action="{% url 'reports:generate_report' %}" id="generateReportForm">
         {% csrf_token %}
         <div class="modal-body">
           <div class="row g-3">

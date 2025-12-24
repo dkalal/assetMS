@@ -178,9 +178,22 @@ def user_management(request):
         is_primary=True
     ).values('branch__name')[:1]
 
+    # WORLD-CLASS: Company-scoped per-user metrics to prevent cross-tenant leakage
+    # - Assets: count ACTIVE assets assigned to this user in the current company
+    # - Activities: count all audit log entries for this user in the current company
     users = users.annotate(
-        total_assets=Count('asset', filter=Q(asset__status='active')),
-        total_activities=Count('auditlog', distinct=True),
+        total_assets=Count(
+            'asset',
+            filter=Q(
+                asset__company=company,
+                asset__status='active',
+            ),
+        ),
+        total_activities=Count(
+            'auditlog',
+            filter=Q(auditlog__company=company),
+            distinct=True,
+        ),
         primary_branch_name=Coalesce(Subquery(primary_branch_name_sq), Value(''))
     ).order_by('-is_active', 'first_name')
     

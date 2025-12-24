@@ -86,7 +86,7 @@ urlpatterns = [
     path('assets/bulk-import/', AssetBulkImportView.as_view(), name='asset_bulk_import'),
     path('assets/download-import-template/', download_import_template, name='download_import_template'),
     # Delegate reports routes to the reports app to avoid cross-app imports
-    path('reports/', include('reports.urls')),
+    path('reports/', include(('reports.urls', 'reports'), namespace='reports')),
     path('audit/', audit_dashboard, name='audit_dashboard'),
     path('recent-added-assets-api/', recent_added_assets_api, name='recent_added_assets_api'),
     path('recent-scans-api/', recent_scans_api, name='recent_scans_api'),

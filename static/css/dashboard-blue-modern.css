@@ -305,6 +305,46 @@ body {
   margin-bottom: var(--space-8);
 }
 
+/* Chart cards (ensures consistent padding and canvas sizing) */
+.charts-grid .glass {
+  padding: 0;
+  display: flex;
+}
+
+.chart-card__inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  padding: var(--space-6);
+}
+
+.chart-card__title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.chart-card__title i {
+  color: var(--primary);
+}
+
+.chart-card__canvas {
+  position: relative;
+  flex: 1;
+  min-height: 240px;
+}
+
+.chart-card__canvas canvas {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+
 /* ===========================
    5. UNIFIED ACTIVITY TABLE (Scrollable with Filters)
    =========================== */
@@ -757,6 +797,14 @@ main.dashboard-content {
     grid-template-columns: 1fr;
     gap: var(--space-4);
   }
+
+  .chart-card__inner {
+    padding: var(--space-4);
+  }
+
+  .chart-card__canvas {
+    min-height: 200px;
+  }
   
   .activity-section__header {
     flex-direction: column;
@@ -800,6 +848,10 @@ main.dashboard-content {
   
   .chart-container {
     padding: var(--space-4);
+  }
+
+  .chart-card__canvas {
+    min-height: 180px;
   }
   
   .activity-section__header {

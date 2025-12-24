@@ -36,6 +36,7 @@ from users.models import User, UserRetirement
 from users.services.retirement import UserRetirementService
 from assets.models import Asset
 from users.decorators import api_admin_required, api_manager_or_admin_required
+from tenancy.policy_service import PolicyService
 
 logger = logging.getLogger(__name__)
 
@@ -302,11 +303,21 @@ def api_retirement_pending_approvals(request):
     try:
         company = request.user.company
         
-        # Get pending retirement requests
-        pending = UserRetirement.objects.filter(
+        # Base queryset: pending retirement requests for this company
+        pending_qs = UserRetirement.objects.filter(
             company=company,
             status__in=[UserRetirement.STATUS_REQUESTED, UserRetirement.STATUS_PENDING_APPROVAL]
-        ).select_related('user', 'requested_by').order_by('request_date')
+        ).select_related('user', 'requested_by')
+
+        # Optional branch-level scoping for managers when enabled in policy
+        if PolicyService.should_enforce_branch_scoping(request.user, company):
+            accessible_branch_ids = list(PolicyService.get_accessible_branches(request.user, company))
+            if accessible_branch_ids:
+                pending_qs = pending_qs.filter(user__primary_branch_id__in=accessible_branch_ids)
+            else:
+                pending_qs = pending_qs.none()
+
+        pending = pending_qs.order_by('request_date')
         
         requests_list = []
         for retirement in pending:
@@ -437,13 +448,16 @@ def api_retirement_approved_list(request):
     """
     try:
         company = request.user.company
-        
-        # Get approved retirement requests
+
+        # Get approved and in-progress retirement requests for this company
         approved = UserRetirement.objects.filter(
             company=company,
-            status=UserRetirement.STATUS_APPROVED
+            status__in=[
+                UserRetirement.STATUS_APPROVED,
+                UserRetirement.STATUS_IN_PROGRESS,
+            ]
         ).select_related('user', 'reviewed_by').order_by('effective_date')
-        
+
         requests_list = []
         for retirement in approved:
             requests_list.append({
@@ -452,22 +466,28 @@ def api_retirement_approved_list(request):
                     'id': retirement.user.id,
                     'name': retirement.user.get_full_name(),
                     'email': retirement.user.email,
-                    'role': retirement.user.get_role_display()
+                    'role': retirement.user.get_role_display(),
                 },
+                'request_date': retirement.request_date.isoformat() if retirement.request_date else None,
                 'effective_date': retirement.effective_date.isoformat(),
                 'days_until_effective': retirement.days_until_effective,
                 'is_effective_date_reached': retirement.is_effective_date_reached,
                 'asset_count': retirement.asset_count,
+                'status': retirement.status,
+                'status_display': retirement.get_status_display(),
+                'reason': retirement.reason[:200] if retirement.reason else '',
+                'reason_category': retirement.reason_category,
+                'reason_category_display': retirement.get_reason_category_display(),
                 'approved_by': retirement.reviewed_by.get_full_name() if retirement.reviewed_by else None,
-                'approved_at': retirement.reviewed_at.isoformat() if retirement.reviewed_at else None
+                'approved_at': retirement.reviewed_at.isoformat() if retirement.reviewed_at else None,
             })
-        
+
         return JsonResponse({
             'success': True,
             'count': len(requests_list),
-            'requests': requests_list
+            'requests': requests_list,
         })
-        
+
     except Exception as e:
         logger.error(f"Error getting approved requests: {e}", exc_info=True)
         return JsonResponse({'success': False, 'error': 'Internal server error'}, status=500)
@@ -515,23 +535,32 @@ def api_retirement_dashboard_stats(request):
     try:
         company = request.user.company
         
-        # Get counts by status
-        stats = UserRetirement.objects.filter(company=company).values('status').annotate(count=Count('id'))
+        # Base queryset: all retirements for this company
+        base_qs = UserRetirement.objects.filter(company=company)
+
+        # Optional branch-level scoping for managers when enabled in policy
+        if PolicyService.should_enforce_branch_scoping(request.user, company):
+            accessible_branch_ids = list(PolicyService.get_accessible_branches(request.user, company))
+            if accessible_branch_ids:
+                base_qs = base_qs.filter(user__primary_branch_id__in=accessible_branch_ids)
+            else:
+                base_qs = base_qs.none()
+        
+        # Get counts by status from scoped queryset
+        stats = base_qs.values('status').annotate(count=Count('id'))
         
         status_counts = {item['status']: item['count'] for item in stats}
         
         # Get recent requests (last 30 days)
         thirty_days_ago = timezone.now() - timedelta(days=30)
-        recent_count = UserRetirement.objects.filter(
-            company=company,
+        recent_count = base_qs.filter(
             request_date__gte=thirty_days_ago
         ).count()
         
         # Get upcoming effective dates (next 30 days)
         today = date.today()
         thirty_days_later = today + timedelta(days=30)
-        upcoming = UserRetirement.objects.filter(
-            company=company,
+        upcoming = base_qs.filter(
             effective_date__gte=today,
             effective_date__lte=thirty_days_later,
             status__in=[
@@ -578,6 +607,16 @@ def api_retirement_timeline(request, retirement_id):
         retirement = UserRetirement.objects.select_related(
             'user', 'requested_by', 'reviewed_by', 'processed_by', 'completed_by'
         ).get(id=retirement_id, company=company)
+
+        # Optional branch-level permission check for managers
+        if PolicyService.should_enforce_branch_scoping(request.user, company):
+            accessible_branch_ids = list(PolicyService.get_accessible_branches(request.user, company))
+            user_branch_id = getattr(retirement.user, 'primary_branch_id', None)
+            if not accessible_branch_ids or user_branch_id not in accessible_branch_ids:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Insufficient permissions for this retirement request'
+                }, status=403)
         
         # Get timeline events
         timeline = retirement.get_timeline_events()

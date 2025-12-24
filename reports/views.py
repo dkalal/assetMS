@@ -141,12 +141,12 @@ def generate_report(request):
     valid_report_types = ['asset_summary', 'maintenance', 'custom']
     if report_type not in valid_report_types:
         messages.error(request, f'Invalid report type: {report_type}')
-        return redirect(reverse('reports_dashboard'))
+        return redirect(reverse('reports:reports_dashboard'))
 
     # Validate format
     if fmt not in ['excel', 'csv', 'pdf']:
         messages.error(request, 'Invalid format. Please choose Excel, CSV, or PDF.')
-        return redirect(reverse('reports_dashboard'))
+        return redirect(reverse('reports:reports_dashboard'))
 
     filters = ReportFilters(
         status=request.POST.get('status') or None,
@@ -160,7 +160,7 @@ def generate_report(request):
         branch = Branch.objects.filter(pk=filters.branch_id, company=request.company).first()
         if branch is None:
             messages.error(request, 'Invalid branch selection for your company.')
-            return redirect(reverse('reports_dashboard'))
+            return redirect(reverse('reports:reports_dashboard'))
 
     # Generate report based on type
     try:
@@ -178,7 +178,7 @@ def generate_report(request):
             )
         else:
             messages.error(request, 'Report type not implemented yet.')
-            return redirect(reverse('reports_dashboard'))
+            return redirect(reverse('reports:reports_dashboard'))
 
         # Save report to database
         report = Report.objects.create(
@@ -209,7 +209,7 @@ def generate_report(request):
 
     except Exception as e:
         messages.error(request, f'Error generating report: {str(e)}')
-        return redirect(reverse('reports_dashboard'))
+        return redirect(reverse('reports:reports_dashboard'))
 
 
 def _generate_asset_summary_report(company, branch, filters, fmt, request):

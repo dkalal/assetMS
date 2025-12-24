@@ -7,7 +7,7 @@
     <img src="{% static 'img/logo.png' %}" alt="Logo" class="app-logo" />
   </div>
   {% url 'asset_list' as asset_list_url %}
-  {% url 'reports_dashboard' as reports_url %}
+  {% url 'reports:reports_dashboard' as reports_url %}
   {% url 'audit_dashboard' as audit_url %}
   <nav class="d-flex align-items-center gap-2 me-4" aria-label="Secondary">
     <a href="{{ asset_list_url }}" class="btn btn-pill btn-sm {% if request.path|slice:":8" == "/assets/" %}btn-outline-primary active{% else %}btn-outline-secondary{% endif %}" {% if request.path|slice:":8" == "/assets/" %}aria-current="page"{% endif %}>Assets</a>

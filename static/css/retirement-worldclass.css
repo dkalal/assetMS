@@ -786,7 +786,3 @@
         text-align: left;
     }
 }
-
-.modal-backdrop.retirement-modal-backdrop {
-    background-color: rgba(0, 0, 0, 0.25) !important;
-}
