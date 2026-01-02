@@ -1808,9 +1808,29 @@ def asset_export(request):
             log_audit(request.user, 'export', None, 'Assets exported as Excel')
             return response
         elif format == 'pdf':
+            all_columns = list(columns or (list(data[0].keys()) if data else []))
+            core_default = ['ID', 'Category', 'Status', 'Assigned To', 'Created', 'Updated']
+            core_columns = [c for c in all_columns if c in core_default]
+            dynamic_attributes_map = {}
+            for row in data:
+                try:
+                    aid = row.get('ID') or row.get('id')
+                except Exception:
+                    aid = None
+                attrs = []
+                for k, v in row.items():
+                    if k not in core_columns:
+                        attrs.append({'label': k, 'value': v})
+                if aid is not None:
+                    dynamic_attributes_map[aid] = attrs
+
             html_string = render_to_string('assets/export_pdf.html', {
                 'assets': data,
-                'columns': columns or (data[0].keys() if data else []),
+                'columns': all_columns,
+                'core_columns': core_columns,
+                'dynamic_attributes_map': dynamic_attributes_map,
+                'tenant_name': getattr(getattr(request, 'company', None), 'name', ''),
+                'generated_by': (request.user.get_full_name() or request.user.username) if request.user.is_authenticated else 'System',
                 'logo_url': settings.STATIC_URL + 'img/logo.png',
                 'export_date': datetime.now(),
             })

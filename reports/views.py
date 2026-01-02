@@ -137,6 +137,8 @@ def generate_report(request):
     report_type = request.POST.get('report_type', 'asset_summary')
     fmt = request.POST.get('format', 'excel').lower()
 
+    rtype_db = fmt
+
     # Validate report type
     valid_report_types = ['asset_summary', 'maintenance', 'custom']
     if report_type not in valid_report_types:
@@ -180,11 +182,10 @@ def generate_report(request):
             messages.error(request, 'Report type not implemented yet.')
             return redirect(reverse('reports:reports_dashboard'))
 
-        # Save report to database
         report = Report.objects.create(
             company=request.company,
             branch=branch,
-            report_type=report_type,
+            report_type=rtype_db,
             created_by=request.user,
             metadata={
                 'generated_at': timezone.now().strftime('%Y-%m-%d %H:%M'),
@@ -193,14 +194,13 @@ def generate_report(request):
                 'branch': branch.name if branch else 'All Branches',
                 'filters': filters.__dict__,
                 'format': fmt,
+                'report_type': report_type,
             },
         )
         
-        # Save file
         extension = filename.split('.')[-1]
         report.file.save(f'{report_type}_{report.pk}.{extension}', ContentFile(file_bytes))
 
-        # Return file download
         response = HttpResponse(file_bytes, content_type=content_type)
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         
@@ -215,8 +215,6 @@ def generate_report(request):
 def _generate_asset_summary_report(company, branch, filters, fmt, request):
     """Generate comprehensive asset summary report."""
     assets = fetch_assets_cached(company, branch, filters)
-    if not assets:
-        raise ValueError('No assets found for the selected filters.')
 
     df = render_assets_dataframe(assets)
     metadata = {
@@ -264,14 +262,11 @@ def _generate_maintenance_report(company, branch, filters, fmt, request):
     if branch:
         maintenance_qs = maintenance_qs.filter(branch=branch)
     if filters.date_from:
-        maintenance_qs = maintenance_qs.filter(scheduled_date__gte=filters.date_from)
+        maintenance_qs = maintenance_qs.filter(scheduled_for__gte=filters.date_from)
     if filters.date_to:
-        maintenance_qs = maintenance_qs.filter(scheduled_date__lte=filters.date_to)
+        maintenance_qs = maintenance_qs.filter(scheduled_for__lte=filters.date_to)
     
-    maintenance_records = list(maintenance_qs.order_by('-scheduled_date'))
-    
-    if not maintenance_records:
-        raise ValueError('No maintenance records found for the selected filters.')
+    maintenance_records = list(maintenance_qs.order_by('-scheduled_for'))
     
     # Build DataFrame
     rows = []
@@ -279,7 +274,7 @@ def _generate_maintenance_report(company, branch, filters, fmt, request):
         rows.append({
             'Asset': f"{record.asset.category.name} - {record.asset.asset_tag}",
             'Status': record.get_status_display(),
-            'Scheduled Date': record.scheduled_date.strftime('%Y-%m-%d'),
+            'Scheduled Date': record.scheduled_for.strftime('%Y-%m-%d'),
             'Started': record.started_at.strftime('%Y-%m-%d %H:%M') if record.started_at else '—',
             'Completed': record.completed_at.strftime('%Y-%m-%d %H:%M') if record.completed_at else '—',
             'Performed By': record.performed_by.get_full_name() if record.performed_by else '—',
@@ -336,8 +331,6 @@ def _generate_custom_report(company, branch, filters, fmt, request):
     """Generate custom report with user-selected fields."""
     # For now, generate a comprehensive report with all available data
     assets = fetch_assets_cached(company, branch, filters)
-    if not assets:
-        raise ValueError('No assets found for the selected filters.')
     
     # Build comprehensive DataFrame with additional fields
     rows = []
@@ -498,10 +491,17 @@ def api_report_types(request):
     }
     counts = {key: 0 for key in type_labels.keys()}
 
-    for row in qs.values('report_type').annotate(count=Count('id')):
-        rtype = row['report_type']
-        if rtype in counts:
-            counts[rtype] = row['count']
+    # Count by canonical report type stored in metadata.report_type (fallbacks for legacy rows)
+    for report in qs.only('metadata', 'report_type'):
+        meta = report.metadata or {}
+        canonical = str(meta.get('report_type') or '').strip().lower()
+        if not canonical:
+            # Legacy fallback: some rows stored canonical token in report_type
+            rt = (report.report_type or '').lower()
+            if rt in {'asset_summary', 'maintenance', 'custom'}:
+                canonical = rt
+        if canonical in counts:
+            counts[canonical] += 1
 
     labels = [label for _key, label in type_labels.items()]
     data = [counts[key] for key in type_labels.keys()]

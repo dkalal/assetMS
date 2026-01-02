@@ -74,3 +74,21 @@ class Report(models.Model):
             return self.report_type
 
         return ""
+
+    @property
+    def type_label(self) -> str:
+        meta = self.metadata or {}
+        token = str(meta.get("report_type") or "").lower()
+        mapping = {
+            "asset_summary": "Asset Summary",
+            "maintenance": "Maintenance",
+            "custom": "Custom",
+        }
+        if token in mapping:
+            return mapping[token]
+        # Legacy fallback: some rows stored canonical type in report_type
+        if self.report_type in mapping:
+            return mapping[self.report_type]
+        # Final fallback: show export format nicely
+        fmt = self.format
+        return fmt.title() if fmt else "Report"

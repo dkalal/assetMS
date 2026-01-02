@@ -1,4 +1,5 @@
 {% load static %}
+{% load asset_extras %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -224,6 +225,49 @@
       color: var(--secondary);
       min-width: 140px;
     }
+
+    .attr-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      margin: 12px 0;
+      padding: 10px 12px;
+      background: #ffffff;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .attr-card__title {
+      font-weight: 700;
+      color: #0f172a;
+      margin: 2px 0 8px;
+      font-size: 0.9rem;
+    }
+    .attr-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .attr-table td {
+      padding: 6px 8px;
+      border-bottom: 1px dashed #e5e7eb;
+      vertical-align: top;
+      font-size: 0.75rem;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      white-space: normal;
+      hyphens: auto;
+    }
+    .attr-table tr:last-child td {
+      border-bottom: none;
+    }
+    .attr-label {
+      width: 32%;
+      font-weight: 600;
+      color: #334155;
+      background: #f8fafc;
+    }
+    .attr-value {
+      width: 68%;
+      color: #0f172a;
+    }
   </style>
 </head>
 <body>
@@ -308,44 +352,27 @@
   </table>
 
   <h3 class="section-title">Dynamic Attributes</h3>
-  <table class="dynamic-table">
-    <thead>
-      <tr>
-        <th>Asset Name</th>
-        {% with column_keys=assets.0.dynamic_data.items %}
-          {% if column_keys %}
-            {% for key, value in column_keys %}
-              <th>{{ key|upper }}</th>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
-      </tr>
-    </thead>
-    <tbody>
-      {% for asset in assets %}
-      <tr>
-        <td class="asset-name-cell">{{ asset.name }}</td>
-        {% with row_items=asset.dynamic_data.items %}
-          {% if row_items %}
-            {% for key, value in row_items %}
-              <td>{{ value|default:"--" }}</td>
-            {% endfor %}
-          {% else %}
-            {% with column_keys=assets.0.dynamic_data.items %}
-              {% if column_keys %}
-                {% for key, value in column_keys %}
-                  <td>--</td>
-                {% endfor %}
-              {% else %}
-                <td>--</td>
-              {% endif %}
-            {% endwith %}
-          {% endif %}
-        {% endwith %}
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  {% if dynamic_columns %}
+    {% for asset in assets %}
+    <div class="attr-card">
+      <div class="attr-card__title">{{ asset.name }}</div>
+      <table class="attr-table">
+        <tbody>
+          {% for key in dynamic_columns %}
+          <tr>
+            <td class="attr-label">{{ key|upper }}</td>
+            <td class="attr-value">{{ asset.dynamic_data|get_item:key|default:"--" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <strong>No dynamic attributes available.</strong>
+    </div>
+  {% endif %}
   {% else %}
   <div class="empty-state">
     <strong>No assets match the selected filters.</strong>

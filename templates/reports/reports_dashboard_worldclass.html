@@ -15,6 +15,17 @@
       <h2 class="mb-1">Reports & Analytics</h2>
       <p class="text-muted mb-0">Generate comprehensive asset reports and insights</p>
     </div>
+    {% if messages %}
+    <div class="mb-3">
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        <i class="bi bi-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' or message.tags == 'danger' %}exclamation-triangle{% elif message.tags == 'warning' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
     
     <!-- Key Metrics Section -->
     <section aria-label="Report Metrics" class="mb-5">
@@ -287,7 +298,7 @@
                     {% endif %}
                   </div>
                   <div class="report-card__meta">
-                    <h6 class="report-card__title">{{ report.report_type|title }} Report</h6>
+                    <h6 class="report-card__title">{{ report.type_label }} Report</h6>
                     <div class="report-card__subtitle">
                       {{ report.created_at|date:'M d, Y · h:i A' }}
                     </div>
@@ -360,7 +371,7 @@
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <form method="post" action="{% url 'reports:generate_report' %}" id="generateReportForm">
+      <form method="post" action="{% url 'reports:generate_report' %}" id="generateReportForm" target="downloadFrame">
         {% csrf_token %}
         <div class="modal-body">
           <div class="row g-3">
@@ -453,3 +464,4 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="{% static 'js/reports-dashboard.js' %}"></script>
 {% endblock %}
+<iframe id="downloadFrame" name="downloadFrame" style="display:none;"></iframe>

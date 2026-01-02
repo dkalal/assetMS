@@ -94,8 +94,23 @@ def render_assets_dataframe(assets: Iterable[Asset]) -> pd.DataFrame:
 
 def build_excel_bytes(df: pd.DataFrame) -> bytes:
     buffer = io.BytesIO()
-    with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
-        df.to_excel(writer, index=False, sheet_name="Assets")
+    engine = None
+    try:
+        import xlsxwriter  # noqa: F401
+        engine = "xlsxwriter"
+    except Exception:
+        try:
+            import openpyxl  # noqa: F401
+            engine = "openpyxl"
+        except Exception:
+            engine = None
+
+    if engine:
+        with pd.ExcelWriter(buffer, engine=engine) as writer:
+            df.to_excel(writer, index=False, sheet_name="Assets")
+    else:
+        with pd.ExcelWriter(buffer) as writer:
+            df.to_excel(writer, index=False, sheet_name="Assets")
     return buffer.getvalue()
 
 
@@ -104,7 +119,21 @@ def build_csv_bytes(df: pd.DataFrame) -> bytes:
 
 
 def build_pdf_bytes(assets: Iterable[Asset], metadata: Dict[str, object]) -> bytes:
-    html_string = render_to_string("reports/asset_summary_pdf.html", {"assets": assets, "metadata": metadata})
+    assets_list = list(assets)
+    dynamic_columns: list[str] = []
+    seen: set[str] = set()
+    for a in assets_list:
+        for k in (getattr(a, "dynamic_data", None) or {}).keys():
+            if k not in seen:
+                seen.add(k)
+                dynamic_columns.append(k)
+
+    ctx = {
+        "assets": assets_list,
+        "metadata": metadata,
+        "dynamic_columns": sorted(dynamic_columns),
+    }
+    html_string = render_to_string("reports/asset_summary_pdf.html", ctx)
     buffer = io.BytesIO()
     HTML(string=html_string, base_url=metadata.get("base_url")).write_pdf(buffer)
     return buffer.getvalue()

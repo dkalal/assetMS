@@ -14,6 +14,7 @@
     charts: {},
     metrics: {},
     reports: [],
+    isDownloading: false,
   };
 
   // ==========================================
@@ -25,6 +26,24 @@
     initializeCharts();
     initializeFormValidation();
     loadReportsData();
+
+    // After-download refresh via hidden iframe
+    const iframe = document.getElementById('downloadFrame');
+    if (iframe) {
+      iframe.addEventListener('load', function() {
+        if (state.isDownloading) {
+          state.isDownloading = false;
+          setTimeout(() => {
+            // Refresh list and charts after download completes
+            if (typeof window.refreshReports === 'function') {
+              window.refreshReports();
+            } else {
+              window.location.reload();
+            }
+          }, 600);
+        }
+      });
+    }
   });
 
   // ==========================================
@@ -274,6 +293,16 @@
         e.stopPropagation();
       }
       form.classList.add('was-validated');
+
+      // Mark that a download is in progress; hidden iframe onload will refresh
+      state.isDownloading = true;
+
+      // Close modal immediately on submit for better UX
+      const modalEl = document.getElementById('generateReportModal');
+      if (modalEl && window.bootstrap && bootstrap.Modal) {
+        const instance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        try { instance.hide(); } catch (err) {}
+      }
     });
 
     // Dynamic field visibility
