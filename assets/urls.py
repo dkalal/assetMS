@@ -54,6 +54,8 @@ urlpatterns = [
     path('api/category/<int:category_id>/delete/', api_views.api_category_delete, name='api_category_delete'),
     # Dynamic Data Refresh (Real-time updates)
     path('api/asset/<uuid:uuid>/refresh/', api_views.api_asset_data_refresh, name='api_asset_data_refresh'),
+    # Quick Edit API (Inline editing)
+    path('api/<uuid:uuid>/quick-edit/', api_views.api_asset_quick_edit, name='api_asset_quick_edit'),
     
     # ========================================
     # Export Preview Feature

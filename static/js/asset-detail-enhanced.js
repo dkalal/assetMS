@@ -142,7 +142,7 @@ class AssetDetailManager {
       // Cmd/Ctrl + E: Edit asset
       if ((e.metaKey || e.ctrlKey) && e.key === 'e') {
         e.preventDefault();
-        const editBtn = document.querySelector('a[href*="update"]');
+        const editBtn = document.querySelector('a[href*="edit"]');
         if (editBtn) editBtn.click();
       }
       
@@ -321,7 +321,7 @@ class AssetDetailManager {
       
       switch (action) {
         case 'edit':
-          document.querySelector('a[href*="update"]')?.click();
+          document.querySelector('a[href*="edit"]')?.click();
           break;
         case 'transfer':
           document.querySelector('[data-bs-target="#transferAssetModal"]')?.click();

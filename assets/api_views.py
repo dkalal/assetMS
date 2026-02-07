@@ -1665,6 +1665,100 @@ def api_asset_list(request):
         return _json_error("Failed to fetch assets. Please try again.", status=500)
 
 
+@api_login_required
+@require_http_methods(["POST"])
+def api_asset_quick_edit(request, uuid):
+    """Quick edit API for inline editing of asset fields (professional UX)."""
+    try:
+        # Parse request body
+        data = _parse_body(request)
+        field = data.get('field')
+        value = data.get('value')
+
+        if not field or value is None:
+            return _json_error("Field and value are required", status=400)
+
+        # Get asset and validate permissions
+        try:
+            asset = Asset.objects.select_related('company', 'branch', 'category', 'assigned_to').get(uuid=uuid)
+        except Asset.DoesNotExist:
+            return _json_error("Asset not found", status=404)
+
+        # Check permissions
+        if not can(request.user, 'edit_assets', asset):
+            return _json_error("You don't have permission to edit this asset", status=403)
+
+        # Validate field permissions (some fields are sensitive)
+        sensitive_fields = ['purchase_value', 'depreciation_method', 'useful_life_years']
+        if field in sensitive_fields and not can(request.user, 'manage_financial_data', asset):
+            return _json_error("You don't have permission to edit financial data", status=403)
+
+        # Get old value for audit
+        old_value = getattr(asset, field, None)
+        if hasattr(asset, 'dynamic_data') and field in asset.dynamic_data:
+            old_value = asset.dynamic_data.get(field)
+
+        # Update field based on type
+        allowed_fields = [
+            'description', 'purchase_value', 'depreciation_method', 'useful_life_years',
+            'maintenance_enabled', 'maintenance_interval_days', 'maintenance_notes'
+        ]
+
+        if field in allowed_fields:
+            # Handle special field types
+            if field == 'purchase_value' and value:
+                try:
+                    value = float(value)
+                except (ValueError, TypeError):
+                    return _json_error("Purchase value must be a valid number", status=400)
+            elif field in ['maintenance_enabled']:
+                value = str(value).lower() in ('true', '1', 'yes', 'on')
+            elif field == 'maintenance_interval_days' and value:
+                try:
+                    value = int(value)
+                    if value <= 0:
+                        return _json_error("Maintenance interval must be positive", status=400)
+                except (ValueError, TypeError):
+                    return _json_error("Maintenance interval must be a valid number", status=400)
+
+            setattr(asset, field, value)
+        else:
+            # Dynamic field update
+            if not hasattr(asset, 'dynamic_data'):
+                asset.dynamic_data = {}
+            asset.dynamic_data[field] = value
+
+        # Save with validation
+        asset.full_clean()  # Validate all fields
+        asset.save()
+
+        # Log audit
+        log_audit(
+            request.user, 'ASSET_EDIT', asset,
+            f"Quick edit: {field} changed from '{old_value}' to '{value}'",
+            company=asset.company,
+            metadata={
+                'field': field,
+                'old_value': str(old_value),
+                'new_value': str(value),
+                'method': 'quick_edit'
+            }
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': f'{field.replace("_", " ").title()} updated successfully'
+        })
+
+    except ValidationError as e:
+        return _json_error(str(e), status=400)
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error in quick edit: {e}", exc_info=True)
+        return _json_error("Failed to update asset. Please try again.", status=500)
+
+
 __all__ = [
     "api_transfer_initiate",
     "api_transfer_receiver_decision",
@@ -1678,4 +1772,5 @@ __all__ = [
     "api_asset_data_refresh",
     "api_check_unique_field",
     "api_asset_list",
+    "api_asset_quick_edit",
 ]
