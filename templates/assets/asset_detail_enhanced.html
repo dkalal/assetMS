@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block content %}
-<div data-asset-uuid="{{ asset.uuid }}">
+<div data-asset-uuid="{{ asset.uuid }}" data-can-view-sensitive="{{ can_view_sensitive|yesno:'1,0' }}" data-login-url="{% url 'users:login' %}">
 <!-- Breadcrumbs -->
 {% if is_authenticated %}
 {% include 'components/breadcrumbs.html' with root_label='Dashboard' root_url='/dashboard/' parent_label='Assets' parent_url='/assets/' current_label=asset.dynamic_data|get_item:'name'|default:asset.category.name %}
@@ -33,16 +33,26 @@
                     {{ asset.category.name }}
                 {% endif %}
             </h1>
-            <p style="font-size: 1.1rem; opacity: 0.9; margin-bottom: 0;">
-                <i class="bi bi-tag me-2"></i>{{ asset.category.name }}
-                {% if asset.branch %}
-                <i class="bi bi-building ms-3 me-2"></i>{{ asset.branch.name }}
-                {% endif %}
-                {% if asset.assigned_to and can_view_sensitive %}
-                <i class="bi bi-person ms-3 me-2"></i>{{ asset.assigned_to.get_full_name }}
-                {% endif %}
-            </p>
-        </div>
+             <p style="font-size: 1.1rem; opacity: 0.9; margin-bottom: 0;">
+                 <i class="bi bi-tag me-2"></i>{{ asset.category.name }}
+                 {% if asset.branch %}
+                 <i class="bi bi-building ms-3 me-2"></i>{{ asset.branch.name }}
+                 {% endif %}
+                 {% if asset.assigned_to %}
+                    {% if can_view_sensitive %}
+                    <i class="bi bi-person ms-3 me-2"></i><span id="assignedToHero">{{ asset.assigned_to.get_full_name }}</span>
+                    {% else %}
+                    <span class="auth-locked-pill ms-3" role="button" tabindex="0" data-requires-auth="1" data-auth-message="Log in to see who this asset is assigned to.">
+                        <i class="bi bi-person me-2"></i>Assigned: <span class="auth-locked-text">Login to view</span>
+                    </span>
+                    {% endif %}
+                 {% else %}
+                    <span class="ms-3 opacity-75">
+                        <i class="bi bi-person me-2"></i>Unassigned
+                    </span>
+                 {% endif %}
+             </p>
+         </div>
         <div class="col-md-4 text-md-end mt-3 mt-md-0">
             {% if asset.status == 'active' %}
             <span class="status-badge status-active">
@@ -135,15 +145,19 @@
 <div class="row g-3 mb-4">
     <!-- Asset Value Card -->
     <div class="col-md-6 col-lg-3">
-        <div class="metric-card">
+        <div class="metric-card {% if not can_view_sensitive %}auth-required{% endif %}" {% if not can_view_sensitive %}role="button" tabindex="0" data-requires-auth="1" data-auth-message="Log in to view the purchase value and financial details."{% endif %}>
             <div class="metric-icon primary">
                 <i class="bi bi-cash-stack"></i>
             </div>
             <div class="metric-value">
-                {% if asset.purchase_value %}
-                    ${{ asset.purchase_value|floatformat:0 }}
+                {% if can_view_sensitive %}
+                    {% if asset.purchase_value %}
+                        ${{ asset.purchase_value|floatformat:0 }}
+                    {% else %}
+                        N/A
+                    {% endif %}
                 {% else %}
-                    N/A
+                    <span class="auth-locked-value"><i class="bi bi-lock-fill me-1"></i>Login</span>
                 {% endif %}
             </div>
             <div class="metric-label">Purchase Value</div>
@@ -152,29 +166,37 @@
 
     <!-- Maintenance Status Card -->
     <div class="col-md-6 col-lg-3">
-        <div class="metric-card">
+        <div class="metric-card {% if not can_view_sensitive %}auth-required{% endif %}" {% if not can_view_sensitive %}role="button" tabindex="0" data-requires-auth="1" data-auth-message="Log in to view maintenance status and history."{% endif %}>
             <div class="metric-icon {% if maintenance_status.is_overdue %}danger{% elif maintenance_status.is_due_soon %}warning{% else %}success{% endif %}">
                 <i class="bi bi-tools"></i>
             </div>
             <div class="metric-value">
-                {% if maintenance_status.enabled %}
-                    {% if maintenance_status.is_overdue %}
-                        {{ maintenance_status.days_overdue }}d
+                {% if can_view_sensitive %}
+                    {% if maintenance_status.enabled %}
+                        {% if maintenance_status.is_overdue %}
+                            {{ maintenance_status.days_overdue }}d
+                        {% else %}
+                            {{ maintenance_status.days_until }}d
+                        {% endif %}
                     {% else %}
-                        {{ maintenance_status.days_until }}d
+                        N/A
                     {% endif %}
                 {% else %}
-                    N/A
+                    <span class="auth-locked-value"><i class="bi bi-lock-fill me-1"></i>Login</span>
                 {% endif %}
             </div>
             <div class="metric-label">
-                {% if maintenance_status.enabled %}
-                    {% if maintenance_status.is_overdue %}Overdue{% else %}Next Maintenance{% endif %}
+                {% if can_view_sensitive %}
+                    {% if maintenance_status.enabled %}
+                        {% if maintenance_status.is_overdue %}Overdue{% else %}Next Maintenance{% endif %}
+                    {% else %}
+                        Maintenance Disabled
+                    {% endif %}
                 {% else %}
-                    Maintenance Disabled
+                    Maintenance
                 {% endif %}
             </div>
-            {% if maintenance_status.last_date %}
+            {% if can_view_sensitive and maintenance_status.last_date %}
             <div class="metric-sublabel">
                 Last: {{ maintenance_status.last_date|date:"M d, Y" }}
             </div>
@@ -184,17 +206,23 @@
 
     <!-- Transfer History Card -->
     <div class="col-md-6 col-lg-3">
-        <div class="metric-card">
+        <div class="metric-card {% if not can_view_sensitive %}auth-required{% endif %}" {% if not can_view_sensitive %}role="button" tabindex="0" data-requires-auth="1" data-auth-message="Log in to view transfers and transfer history."{% endif %}>
             <div class="metric-icon primary">
                 <i class="bi bi-arrow-left-right"></i>
             </div>
-            <div class="metric-value">{{ utilization_stats.transfers_total }}</div>
+            <div class="metric-value">
+                {% if can_view_sensitive %}
+                    {{ utilization_stats.transfers_total }}
+                {% else %}
+                    <span class="auth-locked-value"><i class="bi bi-lock-fill me-1"></i>Login</span>
+                {% endif %}
+            </div>
             <div class="metric-label">Total Transfers</div>
-            {% if asset.pending_transfer %}
+            {% if can_view_sensitive and asset.pending_transfer %}
             <div class="metric-sublabel text-warning">
                 <i class="bi bi-clock"></i> Transfer pending
             </div>
-            {% else %}
+            {% elif can_view_sensitive %}
             <div class="metric-sublabel">
                 All transfers completed
             </div>
@@ -204,21 +232,27 @@
 
     <!-- Utilization Card -->
     <div class="col-md-6 col-lg-3">
-        <div class="metric-card">
+        <div class="metric-card {% if not can_view_sensitive %}auth-required{% endif %}" {% if not can_view_sensitive %}role="button" tabindex="0" data-requires-auth="1" data-auth-message="Log in to view utilization, activity, and service insights."{% endif %}>
             <div class="metric-icon success">
                 <i class="bi bi-graph-up"></i>
             </div>
             <div class="metric-value">
-                {% if asset.created_at %}
-                    {{ asset.created_at|timesince|truncatewords:1 }}
+                {% if can_view_sensitive %}
+                    {% if asset.created_at %}
+                        {{ asset.created_at|timesince|truncatewords:1 }}
+                    {% else %}
+                        N/A
+                    {% endif %}
                 {% else %}
-                    N/A
+                    <span class="auth-locked-value"><i class="bi bi-lock-fill me-1"></i>Login</span>
                 {% endif %}
             </div>
             <div class="metric-label">In Service</div>
+            {% if can_view_sensitive %}
             <div class="metric-sublabel">
                 {{ utilization_stats.scans_30_days }} scans (30d)
             </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -231,22 +265,22 @@
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="maintenance-tab" data-bs-toggle="tab" data-bs-target="#maintenance" type="button" role="tab">
+        <button class="nav-link {% if not can_view_sensitive %}auth-required-tab{% endif %}" id="maintenance-tab" {% if can_view_sensitive %}data-bs-toggle="tab" data-bs-target="#maintenance"{% else %}data-requires-auth="1" data-auth-message="Log in to access Maintenance history and scheduling." aria-disabled="true"{% endif %} type="button" role="tab">
             <i class="bi bi-tools"></i>Maintenance
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="transfers-tab" data-bs-toggle="tab" data-bs-target="#transfers" type="button" role="tab">
+        <button class="nav-link {% if not can_view_sensitive %}auth-required-tab{% endif %}" id="transfers-tab" {% if can_view_sensitive %}data-bs-toggle="tab" data-bs-target="#transfers"{% else %}data-requires-auth="1" data-auth-message="Log in to access Transfers and transfer history." aria-disabled="true"{% endif %} type="button" role="tab">
             <i class="bi bi-arrow-left-right"></i>Transfers
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity" type="button" role="tab">
+        <button class="nav-link {% if not can_view_sensitive %}auth-required-tab{% endif %}" id="activity-tab" {% if can_view_sensitive %}data-bs-toggle="tab" data-bs-target="#activity"{% else %}data-requires-auth="1" data-auth-message="Log in to access Activity and audit timeline." aria-disabled="true"{% endif %} type="button" role="tab">
             <i class="bi bi-clock-history"></i>Activity
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="documents-tab" data-bs-toggle="tab" data-bs-target="#documents" type="button" role="tab">
+        <button class="nav-link {% if not can_view_sensitive %}auth-required-tab{% endif %}" id="documents-tab" {% if can_view_sensitive %}data-bs-toggle="tab" data-bs-target="#documents"{% else %}data-requires-auth="1" data-auth-message="Log in to access Documents and attachments." aria-disabled="true"{% endif %} type="button" role="tab">
             <i class="bi bi-file-earmark"></i>Documents
         </button>
     </li>
@@ -275,12 +309,24 @@
                         <span class="info-label">Branch</span>
                         <span class="info-value">{{ asset.branch.name|default:"Not assigned" }}</span>
                     </div>
-                    {% if can_view_sensitive and asset.assigned_to %}
                     <div class="info-row">
                         <span class="info-label">Assigned To</span>
-                        <span class="info-value">{{ asset.assigned_to.get_full_name }}</span>
+                        {% if can_view_sensitive %}
+                            <span class="info-value" id="assignedToSummary" data-field="assigned-to">
+                                {% if asset.assigned_to %}
+                                    {{ asset.assigned_to.get_full_name }}
+                                {% else %}
+                                    Unassigned
+                                {% endif %}
+                            </span>
+                        {% elif asset.assigned_to %}
+                            <span class="info-value auth-locked-inline" role="button" tabindex="0" data-requires-auth="1" data-auth-message="Log in to see who this asset is assigned to.">
+                                <i class="bi bi-lock-fill me-1"></i>Login to view
+                            </span>
+                        {% else %}
+                            <span class="info-value text-muted">Unassigned</span>
+                        {% endif %}
                     </div>
-                    {% endif %}
                     <div class="info-row">
                         <span class="info-label">Status</span>
                         <span class="info-value">
@@ -345,24 +391,6 @@
             </div>
 
             <div class="col-lg-4">
-                <!-- QR Code Card -->
-                {% if asset.qr_code %}
-                <div class="info-card text-center">
-                    <div class="info-card-header justify-content-center">
-                        <i class="bi bi-qr-code"></i>QR Code
-                    </div>
-                    <img src="{{ asset.qr_code.url }}" alt="QR Code" class="img-fluid" style="max-width: 200px;">
-                    <div class="mt-3 d-flex gap-2 justify-content-center">
-                        <a href="{{ asset.qr_code.url }}" download class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-download"></i> Download
-                        </a>
-                        <button onclick="window.open('{{ asset.qr_code.url }}').print()" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-printer"></i> Print
-                        </button>
-                    </div>
-                </div>
-                {% endif %}
-
                 <!-- Asset Image -->
                 {% if can_view_sensitive and asset.images %}
                 <div class="info-card text-center">
@@ -394,6 +422,13 @@
     
     <!-- Maintenance Tab -->
     <div class="tab-pane fade" id="maintenance" role="tabpanel">
+        {% if not can_view_sensitive %}
+        <div class="info-card text-center py-5 auth-required-callout" role="button" tabindex="0" data-requires-auth="1" data-auth-message="Log in to view Maintenance details for this asset.">
+            <i class="bi bi-lock-fill" style="font-size: 3rem; color: #d1d5db;"></i>
+            <h5 class="mt-3 text-muted">Login required</h5>
+            <p class="text-muted mb-0">Maintenance history and scheduling are protected.</p>
+        </div>
+        {% else %}
         {% if maintenance_records %}
         <div class="info-card">
             <div class="info-card-header">
@@ -456,10 +491,18 @@
             <p class="text-muted">This asset has no maintenance history yet.</p>
         </div>
         {% endif %}
+        {% endif %}
     </div>
     
     <!-- Transfers Tab -->
     <div class="tab-pane fade" id="transfers" role="tabpanel">
+        {% if not can_view_sensitive %}
+        <div class="info-card text-center py-5 auth-required-callout" role="button" tabindex="0" data-requires-auth="1" data-auth-message="Log in to view Transfers for this asset.">
+            <i class="bi bi-lock-fill" style="font-size: 3rem; color: #d1d5db;"></i>
+            <h5 class="mt-3 text-muted">Login required</h5>
+            <p class="text-muted mb-0">Transfers and transfer history are protected.</p>
+        </div>
+        {% else %}
         {% if transfer_history %}
         <div class="info-card">
             <div class="info-card-header">
@@ -524,10 +567,18 @@
             <p class="text-muted">This asset has never been transferred.</p>
         </div>
         {% endif %}
+        {% endif %}
     </div>
     
     <!-- Activity Tab -->
     <div class="tab-pane fade" id="activity" role="tabpanel">
+        {% if not can_view_sensitive %}
+        <div class="info-card text-center py-5 auth-required-callout" role="button" tabindex="0" data-requires-auth="1" data-auth-message="Log in to view Activity and audit logs for this asset.">
+            <i class="bi bi-lock-fill" style="font-size: 3rem; color: #d1d5db;"></i>
+            <h5 class="mt-3 text-muted">Login required</h5>
+            <p class="text-muted mb-0">Activity timeline and audit events are protected.</p>
+        </div>
+        {% else %}
         {% if audit_events %}
         <div class="info-card">
             <div class="info-card-header">
@@ -587,10 +638,18 @@
             <p class="text-muted">No activity has been recorded for this asset.</p>
         </div>
         {% endif %}
+        {% endif %}
     </div>
     
     <!-- Documents Tab -->
     <div class="tab-pane fade" id="documents" role="tabpanel">
+        {% if not can_view_sensitive %}
+        <div class="info-card text-center py-5 auth-required-callout" role="button" tabindex="0" data-requires-auth="1" data-auth-message="Log in to view Documents and attachments for this asset.">
+            <i class="bi bi-lock-fill" style="font-size: 3rem; color: #d1d5db;"></i>
+            <h5 class="mt-3 text-muted">Login required</h5>
+            <p class="text-muted mb-0">Documents, QR tools, and attachments are protected.</p>
+        </div>
+        {% else %}
         <div class="row">
             <div class="col-lg-6">
                 <!-- QR Code -->
@@ -661,6 +720,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
     </div>
 </div>
 
@@ -668,6 +728,47 @@
 {% endblock %}
 
 {% block dashboard_modals %}
+<!-- Login Required Modal -->
+<div class="modal fade" id="authRequiredModal" tabindex="-1" aria-labelledby="authRequiredModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="authRequiredModalLabel">
+                    <i class="bi bi-shield-lock me-2"></i>Login required
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3" data-auth-modal-message>
+                    Please log in to view this protected section.
+                </p>
+                <form method="post" action="{% url 'users:login' %}" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <div class="mb-3">
+                        <label class="form-label">Email or Username</label>
+                        <input type="text" name="username" class="form-control" autocomplete="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" name="password" class="form-control" autocomplete="current-password" required>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="1" id="authRememberMe" name="remember_me">
+                            <label class="form-check-label" for="authRememberMe">Remember me</label>
+                        </div>
+                        <a class="small text-decoration-none" href="{% url 'users:password_reset' %}">Forgot password?</a>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Login
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Transfer Asset Modal -->
 <div class="modal fade" id="transferAssetModal" tabindex="-1" aria-labelledby="transferAssetModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">

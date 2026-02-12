@@ -235,6 +235,72 @@
   color: var(--ad-text-muted);
 }
 
+.metric-card.auth-required {
+  cursor: pointer;
+}
+
+.metric-card.auth-required:focus {
+  outline: 3px solid rgba(107, 155, 209, 0.45);
+  outline-offset: 2px;
+}
+
+.auth-locked-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--ad-text-muted);
+  font-weight: 700;
+  font-size: 1.125rem;
+}
+
+.auth-locked-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  cursor: pointer;
+  user-select: none;
+}
+
+.auth-locked-pill:focus {
+  outline: 3px solid rgba(255, 255, 255, 0.45);
+  outline-offset: 2px;
+}
+
+.auth-locked-text {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.auth-locked-inline {
+  cursor: pointer;
+  user-select: none;
+}
+
+.auth-locked-inline:focus {
+  outline: 3px solid rgba(107, 155, 209, 0.45);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.nav-tabs-modern .nav-link.auth-required-tab {
+  cursor: pointer;
+  opacity: 0.9;
+}
+
+.auth-required-callout {
+  cursor: pointer;
+  user-select: none;
+}
+
+.auth-required-callout:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ad-shadow-lg);
+  border-color: var(--ad-primary);
+}
+
 /* MODERN TABS */
 .nav-tabs-modern {
   border-bottom: 2px solid var(--ad-border);

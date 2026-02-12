@@ -17,10 +17,111 @@ class AssetDetailManager {
   }
 
   init() {
+    this.setupAuthGates();
     this.setupInlineEditing();
     this.setupKeyboardShortcuts();
     this.setupTabRefresh();
     this.setupQuickActions();
+  }
+
+  /**
+   * AUTH GATING - Prompt login for protected sections on public QR views.
+   * Server-side enforcement still applies; this is UX only.
+   */
+  setupAuthGates() {
+    const wrapper = document.querySelector('[data-asset-uuid]');
+    const canViewSensitive = wrapper?.dataset?.canViewSensitive === '1';
+    if (canViewSensitive) return;
+
+    const modalEl = document.getElementById('authRequiredModal');
+    const messageEl = modalEl?.querySelector('[data-auth-modal-message]');
+    const usernameInput = modalEl?.querySelector('input[name="username"]');
+    if (!modalEl) return;
+
+    const hasBootstrapModal = typeof bootstrap !== 'undefined' && !!bootstrap?.Modal;
+    const bootstrapModal = hasBootstrapModal ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+
+    const fallback = {
+      isOpen: false,
+      open: () => {
+        if (fallback.isOpen) return;
+        fallback.isOpen = true;
+
+        modalEl.classList.add('show');
+        modalEl.style.display = 'block';
+        modalEl.removeAttribute('aria-hidden');
+        modalEl.setAttribute('aria-modal', 'true');
+        document.body.classList.add('modal-open');
+
+        // Backdrop
+        const existingBackdrop = document.querySelector('[data-auth-backdrop="1"]');
+        if (!existingBackdrop) {
+          const backdrop = document.createElement('div');
+          backdrop.className = 'modal-backdrop fade show';
+          backdrop.setAttribute('data-auth-backdrop', '1');
+          backdrop.addEventListener('click', () => fallback.close());
+          document.body.appendChild(backdrop);
+        }
+
+        // Wire close buttons for fallback mode
+        modalEl.querySelectorAll('[data-bs-dismiss="modal"]').forEach((btn) => {
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            fallback.close();
+          });
+        });
+
+        window.setTimeout(() => usernameInput?.focus(), 50);
+      },
+      close: () => {
+        if (!fallback.isOpen) return;
+        fallback.isOpen = false;
+
+        modalEl.classList.remove('show');
+        modalEl.style.display = 'none';
+        modalEl.setAttribute('aria-hidden', 'true');
+        modalEl.removeAttribute('aria-modal');
+        document.body.classList.remove('modal-open');
+
+        document.querySelectorAll('[data-auth-backdrop="1"]').forEach((b) => b.remove());
+      }
+    };
+
+    const openModal = (message) => {
+      if (messageEl) {
+        messageEl.textContent = message || 'Please log in to view this protected section.';
+      }
+
+      if (bootstrapModal) {
+        bootstrapModal.show();
+        window.setTimeout(() => usernameInput?.focus(), 250);
+        return;
+      }
+
+      fallback.open();
+    };
+
+    // Escape closes fallback modal
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && fallback.isOpen) {
+        fallback.close();
+      }
+    });
+
+    const triggers = document.querySelectorAll('[data-requires-auth="1"]');
+    triggers.forEach((el) => {
+      const handler = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+        openModal(el.dataset.authMessage);
+      };
+
+      el.addEventListener('click', handler);
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') handler(e);
+      });
+    });
   }
 
   /**

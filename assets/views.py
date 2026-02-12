@@ -21,6 +21,8 @@ from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView, DetailView, TemplateView, UpdateView
 from .models import Asset, AssetCategory, AssetCategoryField, ExportLog
 from .forms import AssetForm
+
+from django.urls import NoReverseMatch
 import qrcode
 from io import BytesIO
 from django.core.files.base import ContentFile
@@ -3420,11 +3422,21 @@ def asset_delete(request, asset_id):
         )
         
         # Return redirect to disposal workflow
+        try:
+            disposal_url = reverse('assets:asset_disposal_request', kwargs={'asset_uuid': asset.uuid})
+        except NoReverseMatch:
+            disposal_url = reverse('asset_disposal_request', kwargs={'asset_uuid': asset.uuid})
+
+        # Allow disposal form to render even for admins when coming from the deprecated delete button.
+        # This preserves a consistent UX while keeping the default admin behavior (edit/status change) elsewhere.
+        separator = '&' if '?' in disposal_url else '?'
+        disposal_url = f"{disposal_url}{separator}from=delete"
+
         return JsonResponse({
             'success': False,
             'deprecated': True,
             'message': 'Direct deletion is deprecated. Please use the disposal workflow to maintain audit trail and compliance.',
-            'redirect_url': reverse('asset_disposal_request', kwargs={'asset_uuid': asset.uuid}),
+            'redirect_url': disposal_url,
             'action': 'redirect'
         }, status=410)  # 410 Gone - Resource no longer available
         

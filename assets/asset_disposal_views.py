@@ -62,9 +62,17 @@ class AssetDisposalRequestView(LoginRequiredMixin, BranchContextMixin, CreateVie
             return redirect('asset_detail', uuid=asset_uuid)
         
         # Admins can dispose directly (skip approval)
-        if user.role == 'admin':
+        if user.role == 'admin' and request.GET.get('from') != 'delete':
             messages.info(request, "As an admin, you can change asset status directly from the edit page.")
-            return redirect('asset_edit', uuid=asset_uuid)
+
+            # Prefer namespaced assets edit route; fall back to legacy/global naming if needed.
+            try:
+                return redirect('assets:asset_update', uuid=asset_uuid)
+            except Exception:
+                try:
+                    return redirect('asset_update', uuid=asset_uuid)
+                except Exception:
+                    return redirect('asset_list')
         
         return super().dispatch(request, *args, **kwargs)
     

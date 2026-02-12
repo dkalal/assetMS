@@ -188,6 +188,7 @@ def user_management(request):
                 asset__company=company,
                 asset__status='active',
             ),
+            distinct=True,
         ),
         total_activities=Count(
             'auditlog',

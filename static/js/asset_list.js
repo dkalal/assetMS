@@ -161,6 +161,12 @@ document.addEventListener('DOMContentLoaded', function() {
     })
     .then(res => res.json())
     .then(data => {
+      // WORLD-CLASS: Deletion is deprecated; redirect to disposal workflow to preserve audit trail.
+      if (data && (data.action === 'redirect' || data.deprecated === true) && data.redirect_url) {
+        window.location.href = data.redirect_url;
+        return;
+      }
+
       if (data.success) {
         document.querySelector(`button.delete-asset[data-asset-id="${assetId}"]`).closest('tr').remove();
         alert(data.message);
