@@ -13,6 +13,7 @@ urlpatterns = [
     
     # Report generation
     path('generate/', views.generate_report, name='generate_report'),
+    path('individual/<int:user_id>/export/', views.export_individual_report, name='export_individual_report'),
     
     # Reports analytics APIs
     path('api/trend/', views.api_report_trend, name='api_report_trend'),

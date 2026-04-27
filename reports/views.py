@@ -8,23 +8,33 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
 from assets.models import Asset
+from audit.utils import BULK_EXPORT_ACTION, log_audit
 from tenancy.mixins import company_required
 from tenancy.models import Branch
 
 from .models import Report
 from .services import (
     ReportFilters,
+    build_individual_excel_bytes,
+    build_individual_pdf_bytes,
     build_csv_bytes,
     build_excel_bytes,
     build_pdf_bytes,
+    fetch_individual_report_data,
     fetch_assets_cached,
+    attach_report_branch_labels,
+    get_available_individual_report_users,
+    render_individual_assets_dataframe,
     render_assets_dataframe,
+    user_can_access_report_branch,
+    validate_report_filters,
 )
 import pandas as pd
 from weasyprint import HTML
 
 def is_admin_or_manager(user):
     return user.is_authenticated and user.role in ('admin', 'manager')
+
 
 # Create your views here.
 
@@ -114,10 +124,16 @@ def reports_dashboard(request):
         'pending': reports.filter(file="").count(),
     }
     
+    available_report_users = attach_report_branch_labels(
+        get_available_individual_report_users(company, user),
+        company,
+    )
+
     context = {
         'reports': reports,
         'stats': stats,
         'available_branches': available_branches,
+        'available_report_users': available_report_users,
         'active_branch': getattr(request, 'branch', None),
         'asset_status_choices': Asset.STATUS_CHOICES,
         'request': request,
@@ -140,7 +156,7 @@ def generate_report(request):
     rtype_db = fmt
 
     # Validate report type
-    valid_report_types = ['asset_summary', 'maintenance', 'custom']
+    valid_report_types = ['asset_summary', 'maintenance', 'custom', 'individual']
     if report_type not in valid_report_types:
         messages.error(request, f'Invalid report type: {report_type}')
         return redirect(reverse('reports:reports_dashboard'))
@@ -150,18 +166,27 @@ def generate_report(request):
         messages.error(request, 'Invalid format. Please choose Excel, CSV, or PDF.')
         return redirect(reverse('reports:reports_dashboard'))
 
+    subject_user = None
     filters = ReportFilters(
         status=request.POST.get('status') or None,
         branch_id=request.POST.get('branch_id') or None,
         date_from=request.POST.get('date_from') or None,
         date_to=request.POST.get('date_to') or None,
+        user_id=request.POST.get('user_id') or None,
     )
+    filter_error = validate_report_filters(filters)
+    if filter_error:
+        messages.error(request, filter_error)
+        return redirect(reverse('reports:reports_dashboard'))
 
     branch = None
     if filters.branch_id:
         branch = Branch.objects.filter(pk=filters.branch_id, company=request.company).first()
         if branch is None:
             messages.error(request, 'Invalid branch selection for your company.')
+            return redirect(reverse('reports:reports_dashboard'))
+        if not user_can_access_report_branch(request.company, request.user, branch):
+            messages.error(request, 'You do not have access to the selected branch.')
             return redirect(reverse('reports:reports_dashboard'))
 
     # Generate report based on type
@@ -176,6 +201,10 @@ def generate_report(request):
             )
         elif report_type == 'custom':
             file_bytes, filename, content_type = _generate_custom_report(
+                request.company, branch, filters, fmt, request
+            )
+        elif report_type == 'individual':
+            file_bytes, filename, content_type, subject_user = _generate_individual_report(
                 request.company, branch, filters, fmt, request
             )
         else:
@@ -195,11 +224,33 @@ def generate_report(request):
                 'filters': filters.__dict__,
                 'format': fmt,
                 'report_type': report_type,
+                'subject_user_id': getattr(subject_user, 'pk', None),
+                'subject_user_name': (
+                    (subject_user.get_full_name() or subject_user.username)
+                    if subject_user
+                    else ''
+                ),
             },
         )
         
         extension = filename.split('.')[-1]
         report.file.save(f'{report_type}_{report.pk}.{extension}', ContentFile(file_bytes))
+
+        log_audit(
+            request.user,
+            BULK_EXPORT_ACTION,
+            None,
+            f'Generated {report_type.replace("_", " ")} report in {fmt} format.',
+            company=request.company,
+            branch=branch,
+            related_user=subject_user,
+            metadata={
+                'report_id': report.pk,
+                'report_type': report_type,
+                'format': fmt,
+                'subject_user_id': getattr(subject_user, 'pk', None),
+            },
+        )
 
         response = HttpResponse(file_bytes, content_type=content_type)
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
@@ -210,6 +261,88 @@ def generate_report(request):
     except Exception as e:
         messages.error(request, f'Error generating report: {str(e)}')
         return redirect(reverse('reports:reports_dashboard'))
+
+
+@login_required
+@company_required
+@user_passes_test(is_admin_or_manager, login_url='users:login')
+@require_http_methods(["GET"])
+def export_individual_report(request, user_id):
+    """Direct staff-detail export for one person's report."""
+    fmt = request.GET.get('format', 'pdf').lower()
+    if fmt not in ['excel', 'csv', 'pdf']:
+        messages.error(request, 'Invalid format. Please choose Excel, CSV, or PDF.')
+        return redirect(reverse('settings:staff_detail', kwargs={'user_id': user_id}))
+
+    branch = None
+    branch_id = request.GET.get('branch_id') or None
+    if branch_id:
+        branch = Branch.objects.filter(pk=branch_id, company=request.company).first()
+        if branch is None or not user_can_access_report_branch(request.company, request.user, branch):
+            messages.error(request, 'Invalid branch selection for your company.')
+            return redirect(reverse('settings:staff_detail', kwargs={'user_id': user_id}))
+
+    filters = ReportFilters(
+        status=request.GET.get('status') or None,
+        branch_id=branch_id,
+        date_from=request.GET.get('date_from') or None,
+        date_to=request.GET.get('date_to') or None,
+        user_id=user_id,
+    )
+    filter_error = validate_report_filters(filters)
+    if filter_error:
+        messages.error(request, filter_error)
+        return redirect(reverse('settings:staff_detail', kwargs={'user_id': user_id}))
+
+    try:
+        file_bytes, filename, content_type, subject_user = _generate_individual_report(
+            request.company, branch, filters, fmt, request
+        )
+
+        report = Report.objects.create(
+            company=request.company,
+            branch=branch,
+            report_type=fmt,
+            created_by=request.user,
+            metadata={
+                'generated_at': timezone.now().strftime('%Y-%m-%d %H:%M'),
+                'generated_by': request.user.get_full_name() or request.user.username,
+                'company': request.company.name,
+                'branch': branch.name if branch else 'All Branches',
+                'filters': filters.__dict__,
+                'format': fmt,
+                'report_type': 'individual',
+                'subject_user_id': subject_user.pk,
+                'subject_user_name': subject_user.get_full_name() or subject_user.username,
+                'source': 'staff_detail',
+            },
+        )
+        extension = filename.split('.')[-1]
+        report.file.save(f'individual_{report.pk}.{extension}', ContentFile(file_bytes))
+
+        log_audit(
+            request.user,
+            BULK_EXPORT_ACTION,
+            None,
+            f'Generated individual report for {subject_user.get_full_name() or subject_user.username} from staff detail.',
+            company=request.company,
+            branch=branch,
+            related_user=subject_user,
+            metadata={
+                'report_id': report.pk,
+                'report_type': 'individual',
+                'format': fmt,
+                'subject_user_id': subject_user.pk,
+                'source': 'staff_detail',
+            },
+        )
+
+        response = HttpResponse(file_bytes, content_type=content_type)
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+    except Exception as e:
+        messages.error(request, f'Error generating individual report: {str(e)}')
+        return redirect(reverse('settings:staff_detail', kwargs={'user_id': user_id}))
 
 
 def _generate_asset_summary_report(company, branch, filters, fmt, request):
@@ -403,6 +536,49 @@ def _generate_custom_report(company, branch, filters, fmt, request):
     return file_bytes, filename, content_type
 
 
+def _generate_individual_report(company, branch, filters, fmt, request):
+    """Generate a detailed report for one person within the current tenant."""
+    if not filters.user_id:
+        raise ValueError('Please select a person for the individual report.')
+
+    subject_user = get_available_individual_report_users(company, request.user).filter(pk=filters.user_id).first()
+    if subject_user is None:
+        raise ValueError('Invalid person selection for your company or branch access.')
+    subject_user = attach_report_branch_labels([subject_user], company)[0]
+
+    report_data = fetch_individual_report_data(company, subject_user, filters, branch)
+    metadata = {
+        'title': 'Individual Report',
+        'generated_at': timezone.now().strftime('%Y-%m-%d %H:%M'),
+        'generated_by': request.user.get_full_name() or request.user.username,
+        'company': company.name,
+        'company_logo': request.build_absolute_uri(company.logo.url) if getattr(company, 'logo', None) else '',
+        'branch': branch.name if branch else 'All Branches',
+        'filters': filters.__dict__,
+        'base_url': request.build_absolute_uri('/').rstrip('/'),
+        'subject_user': subject_user.get_full_name() or subject_user.username,
+        'subject_branch': subject_user.report_branch_label,
+        'report_reference': f"IND-{timezone.now():%Y%m%d%H%M}-{subject_user.pk}",
+    }
+
+    if fmt == 'excel':
+        file_bytes = build_individual_excel_bytes(report_data)
+        content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        extension = 'xlsx'
+    elif fmt == 'csv':
+        df = render_individual_assets_dataframe(report_data)
+        file_bytes = build_csv_bytes(df)
+        content_type = 'text/csv'
+        extension = 'csv'
+    elif fmt == 'pdf':
+        file_bytes = build_individual_pdf_bytes(report_data, metadata)
+        content_type = 'application/pdf'
+        extension = 'pdf'
+
+    filename = f"individual_report_{subject_user.username}_{timezone.now():%Y%m%d_%H%M%S}.{extension}"
+    return file_bytes, filename, content_type, subject_user
+
+
 @login_required
 @company_required
 @require_http_methods(["GET"])
@@ -467,7 +643,7 @@ def api_report_trend(request):
 def api_report_types(request):
     """Return distribution of report categories for the types chart.
 
-    Only supported dashboard categories are returned (asset_summary, maintenance, custom).
+    Only supported dashboard categories are returned.
     Results are scoped to the current company and, for non-admins, to accessible branches.
     """
     from django.db.models import Count
@@ -488,6 +664,7 @@ def api_report_types(request):
         'asset_summary': 'Asset Summary',
         'maintenance': 'Maintenance',
         'custom': 'Custom',
+        'individual': 'Individual',
     }
     counts = {key: 0 for key in type_labels.keys()}
 
@@ -498,7 +675,7 @@ def api_report_types(request):
         if not canonical:
             # Legacy fallback: some rows stored canonical token in report_type
             rt = (report.report_type or '').lower()
-            if rt in {'asset_summary', 'maintenance', 'custom'}:
+            if rt in {'asset_summary', 'maintenance', 'custom', 'individual'}:
                 canonical = rt
         if canonical in counts:
             counts[canonical] += 1

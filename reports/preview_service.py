@@ -31,7 +31,56 @@ from django.core.cache import cache
 from django.utils import timezone
 
 from assets.models import Asset
-from .services import ReportFilters, fetch_assets_cached, render_assets_dataframe
+from .services import (
+    ReportFilters,
+    fetch_assets_cached,
+    fetch_individual_report_data,
+    get_available_individual_report_users,
+    render_assets_dataframe,
+    render_individual_assets_dataframe,
+)
+
+
+def _json_safe(value):
+    """Normalize pandas/numpy scalars and dates into JSON-safe Python values."""
+    if isinstance(value, dict):
+        return {str(key): _json_safe(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, tuple):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, Decimal):
+        return str(value)
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if not isinstance(value, (list, tuple, dict)) and pd.isna(value):
+        return None
+    if hasattr(value, "item"):
+        try:
+            return value.item()
+        except (TypeError, ValueError):
+            pass
+    return value
+
+
+def _preview_result_from_dict(data: Dict[str, Any]) -> "PreviewResult":
+    """Rehydrate a cached preview result into dataclasses."""
+    metrics = data.get("metrics") or {}
+    columns = data.get("column_metadata") or []
+    return PreviewResult(
+        success=bool(data.get("success")),
+        preview_data=data.get("preview_data") or [],
+        columns=data.get("columns") or [],
+        column_metadata=[ColumnMetadata(**column) for column in columns],
+        metrics=PreviewMetrics(**metrics),
+        filters_applied=data.get("filters_applied") or {},
+        export_format=data.get("export_format") or "",
+        report_type=data.get("report_type") or "",
+        company_name=data.get("company_name") or "",
+        branch_name=data.get("branch_name"),
+        generated_at=data.get("generated_at") or "",
+        cache_key=data.get("cache_key") or "",
+    )
 
 
 @dataclass
@@ -48,7 +97,7 @@ class PreviewMetrics:
     errors: List[str]
     
     def to_dict(self) -> Dict:
-        return asdict(self)
+        return _json_safe(asdict(self))
 
 
 @dataclass
@@ -65,7 +114,7 @@ class ColumnMetadata:
     is_unique: bool
     
     def to_dict(self) -> Dict:
-        return asdict(self)
+        return _json_safe(asdict(self))
 
 
 @dataclass
@@ -86,7 +135,7 @@ class PreviewResult:
     
     def to_dict(self) -> Dict:
         """Convert to JSON-serializable dict"""
-        return {
+        return _json_safe({
             'success': self.success,
             'preview_data': self.preview_data,
             'columns': self.columns,
@@ -99,7 +148,7 @@ class PreviewResult:
             'branch_name': self.branch_name,
             'generated_at': self.generated_at,
             'cache_key': self.cache_key,
-        }
+        })
 
 
 class ExportPreviewService:
@@ -172,7 +221,7 @@ class ExportPreviewService:
         self.errors = []
         
         # Validate inputs
-        preview_limit = min(preview_limit, self.MAX_PREVIEW_ROWS)
+        preview_limit = max(1, min(preview_limit, self.MAX_PREVIEW_ROWS))
         export_format = export_format.lower()
         
         # Generate cache key
@@ -183,7 +232,7 @@ class ExportPreviewService:
         # Check cache first
         cached_result = cache.get(cache_key)
         if cached_result:
-            return PreviewResult(**cached_result)
+            return _preview_result_from_dict(cached_result)
         
         # Generate preview based on report type
         try:
@@ -197,6 +246,10 @@ class ExportPreviewService:
                 )
             elif report_type == 'custom':
                 result = self._preview_custom(
+                    company, branch, filters, export_format, preview_limit, user
+                )
+            elif report_type == 'individual':
+                result = self._preview_individual(
                     company, branch, filters, export_format, preview_limit, user
                 )
             else:
@@ -259,13 +312,13 @@ class ExportPreviewService:
         
         # Apply filters
         if branch:
-            records = records.filter(asset__branch=branch)
+            records = records.filter(branch=branch)
         if filters.status:
             records = records.filter(status=filters.status)
         if filters.date_from:
-            records = records.filter(scheduled_date__gte=filters.date_from)
+            records = records.filter(scheduled_for__gte=filters.date_from)
         if filters.date_to:
-            records = records.filter(scheduled_date__lte=filters.date_to)
+            records = records.filter(scheduled_for__lte=filters.date_to)
         
         records = list(records[:10000])  # Limit for performance
         
@@ -282,14 +335,14 @@ class ExportPreviewService:
                 'Asset': record.asset.dynamic_data.get('name', f'Asset #{record.asset.pk}'),
                 'Category': record.asset.category.name,
                 'Branch': record.asset.branch.name if record.asset.branch else 'N/A',
-                'Type': record.get_maintenance_type_display(),
                 'Status': record.get_status_display(),
-                'Scheduled Date': record.scheduled_date.strftime('%Y-%m-%d') if record.scheduled_date else 'N/A',
+                'Scheduled Date': record.scheduled_for.strftime('%Y-%m-%d') if record.scheduled_for else 'N/A',
                 'Started At': record.started_at.strftime('%Y-%m-%d %H:%M') if record.started_at else 'Not Started',
                 'Completed At': record.completed_at.strftime('%Y-%m-%d %H:%M') if record.completed_at else 'Not Completed',
                 'Performed By': record.performed_by.get_full_name() if record.performed_by else 'N/A',
                 'Cost': f'{record.cost:.2f}' if record.cost else '0.00',
-                'Notes': record.notes[:50] if record.notes else '',
+                'Description': record.description[:80] if record.description else '',
+                'Outcome': record.outcome_notes[:80] if record.outcome_notes else '',
             })
         
         df = pd.DataFrame(data)
@@ -313,6 +366,44 @@ class ExportPreviewService:
         return self._preview_asset_summary(
             company, branch, filters, export_format, preview_limit, user
         )
+
+    def _preview_individual(
+        self,
+        company,
+        branch,
+        filters: ReportFilters,
+        export_format: str,
+        preview_limit: int,
+        user
+    ) -> PreviewResult:
+        """Generate preview for one person's report."""
+        if not filters.user_id:
+            raise ValueError('Please select a person for the individual report preview.')
+        if user is None:
+            raise ValueError('A requesting user is required for individual report preview.')
+
+        subject_user = get_available_individual_report_users(company, user).filter(pk=filters.user_id).first()
+        if subject_user is None:
+            raise ValueError('Invalid person selection for your company or branch access.')
+
+        report_data = fetch_individual_report_data(company, subject_user, filters, branch)
+        if not report_data["assets"]:
+            self.warnings.append('No assigned assets found for the selected person and filters.')
+            return self._create_empty_result(
+                company, 'individual', export_format, filters, branch
+            )
+
+        df = render_individual_assets_dataframe(report_data)
+        result = self._create_preview_result(
+            df, company, 'individual', export_format, filters, branch, preview_limit
+        )
+        result.filters_applied['Person'] = subject_user.get_full_name() or subject_user.username
+        result.metrics.warnings.extend([
+            f"Transfers included in full report: {len(report_data['transfers'])}",
+            f"Maintenance records included in full report: {len(report_data['maintenance_records'])}",
+            f"Recent activities included in full report: {len(report_data['activities'])}",
+        ])
+        return result
     
     def _create_preview_result(
         self,

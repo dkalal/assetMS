@@ -1,0 +1,362 @@
+{% load asset_extras %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Individual Report</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Inter", "Segoe UI", Arial, sans-serif;
+      font-size: 11px;
+      color: #111827;
+      margin: 0;
+      padding: 26px 32px;
+      line-height: 1.45;
+      background: #ffffff;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      border-bottom: 2px solid #1f4e79;
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+    }
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      border: 1px solid #d7dee8;
+      border-radius: 8px;
+      padding: 4px;
+    }
+    h1 {
+      margin: 0;
+      color: #12355b;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+    h2 {
+      margin: 18px 0 8px;
+      color: #1f2937;
+      font-size: 14px;
+      letter-spacing: 0;
+    }
+    .muted { color: #6b7280; }
+    .header-meta { text-align: right; }
+    .header-meta strong, .header-meta span { display: block; }
+    .reference {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #eaf1f8;
+      color: #12355b;
+      font-weight: 700;
+      font-size: 9px;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin: 14px 0 18px;
+    }
+    .metric {
+      border: 1px solid #d7dee8;
+      border-radius: 8px;
+      padding: 10px;
+      background: #f8fafc;
+      min-height: 58px;
+    }
+    .metric span {
+      display: block;
+      color: #64748b;
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .metric strong {
+      display: block;
+      margin-top: 5px;
+      color: #111827;
+      font-size: 14px;
+    }
+    .profile {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px 18px;
+      padding: 12px;
+      border: 1px solid #d7dee8;
+      border-radius: 8px;
+      margin-bottom: 14px;
+    }
+    .profile div span {
+      color: #64748b;
+      display: block;
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .profile div strong {
+      display: block;
+      margin-top: 3px;
+      color: #111827;
+    }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border: 1px solid #d7dee8;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    th {
+      background: #eaf1f8;
+      color: #1f2937;
+      padding: 8px;
+      text-align: left;
+      font-size: 10px;
+      border-bottom: 1px solid #d7dee8;
+    }
+    td {
+      padding: 7px 8px;
+      border-bottom: 1px solid #edf2f7;
+      vertical-align: top;
+      word-break: break-word;
+    }
+    tr:last-child td { border-bottom: 0; }
+    tr:nth-child(even) td { background: #f8fafc; }
+    .status-chip {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 8px;
+      background: #e5e7eb;
+      color: #374151;
+      font-size: 9px;
+      font-weight: 700;
+    }
+    .status-active { background: #dcfce7; color: #166534; }
+    .status-in-maintenance { background: #fef3c7; color: #92400e; }
+    .status-retired, .status-transferred { background: #e0f2fe; color: #075985; }
+    .status-lost, .status-deleted { background: #fee2e2; color: #991b1b; }
+    .empty {
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+      padding: 14px;
+      color: #64748b;
+      background: #f8fafc;
+      margin-bottom: 14px;
+    }
+    footer {
+      margin-top: 24px;
+      padding-top: 10px;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      color: #64748b;
+      font-size: 9px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand-row">
+      {% if metadata.company_logo %}
+      <img class="logo" src="{{ metadata.company_logo }}" alt="">
+      {% endif %}
+      <div>
+        <h1>Individual Report</h1>
+        <div class="muted">Detailed person-level asset and activity report</div>
+        <span class="reference">{{ metadata.report_reference }}</span>
+      </div>
+    </div>
+    <div class="header-meta">
+      <span class="muted">Company</span>
+      <strong>{{ metadata.company }}</strong>
+      <span class="muted">Generated</span>
+      <strong>{{ metadata.generated_at }}</strong>
+    </div>
+  </header>
+
+  <section class="profile">
+    <div>
+      <span>Person</span>
+      <strong>{{ report_data.subject_user.get_full_name|default:report_data.subject_user.username }}</strong>
+    </div>
+    <div>
+      <span>Username</span>
+      <strong>{{ report_data.subject_user.username }}</strong>
+    </div>
+    <div>
+      <span>Email</span>
+      <strong>{{ report_data.subject_user.email|default:"--" }}</strong>
+    </div>
+    <div>
+      <span>Phone</span>
+      <strong>{{ report_data.subject_user.phone_number|default:"--" }}</strong>
+    </div>
+    <div>
+      <span>Role</span>
+      <strong>{{ report_data.subject_user.get_role_display }}</strong>
+    </div>
+    <div>
+      <span>Branch Scope</span>
+      <strong>{{ metadata.branch }}</strong>
+    </div>
+    <div>
+      <span>Assigned Branches</span>
+      <strong>{{ metadata.subject_branch|default:"No branch assigned" }}</strong>
+    </div>
+    <div>
+      <span>Account Status</span>
+      <strong>{{ report_data.subject_user.is_active|yesno:"Active,Inactive" }}</strong>
+    </div>
+  </section>
+
+  <section class="summary-grid">
+    <div class="metric">
+      <span>Total Assets</span>
+      <strong>{{ report_data.summary.total_assets }}</strong>
+    </div>
+    <div class="metric">
+      <span>Active</span>
+      <strong>{{ report_data.summary.active_assets }}</strong>
+    </div>
+    <div class="metric">
+      <span>In Maintenance</span>
+      <strong>{{ report_data.summary.maintenance_assets }}</strong>
+    </div>
+    <div class="metric">
+      <span>Total Value</span>
+      <strong>{{ report_data.summary.total_value }}</strong>
+    </div>
+  </section>
+
+  <h2>Assigned Assets</h2>
+  {% if report_data.assets %}
+  <table>
+    <thead>
+      <tr>
+        <th>Asset</th>
+        <th>Category</th>
+        <th>Tag</th>
+        <th>Serial</th>
+        <th>Status</th>
+        <th>Branch</th>
+        <th>Created</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for asset in report_data.assets %}
+      <tr>
+        <td>{{ asset.dynamic_data|get_item:"name"|default:asset.asset_tag|default:asset.category.name }}</td>
+        <td>{{ asset.category.name }}</td>
+        <td>{{ asset.asset_tag|default:"--" }}</td>
+        <td>{{ asset.serial_number|default:"--" }}</td>
+        <td><span class="status-chip status-{{ asset.status|default:''|cut:'_'|slugify }}">{{ asset.get_status_display }}</span></td>
+        <td>{{ asset.branch.name|default:"Head Office" }}</td>
+        <td>{{ asset.created_at|date:"Y-m-d H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">No assigned assets match the selected filters.</div>
+  {% endif %}
+
+  <h2>Transfer History</h2>
+  {% if report_data.transfers %}
+  <table>
+    <thead>
+      <tr>
+        <th>Asset</th>
+        <th>From</th>
+        <th>To</th>
+        <th>State</th>
+        <th>Created</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for transfer in report_data.transfers %}
+      <tr>
+        <td>{{ transfer.asset.dynamic_data|get_item:"name"|default:transfer.asset.asset_tag|default:transfer.asset.category.name }}</td>
+        <td>{% if transfer.from_user %}{{ transfer.from_user.get_full_name|default:transfer.from_user.username }}{% else %}--{% endif %}</td>
+        <td>{{ transfer.to_user.get_full_name|default:transfer.to_user.username }}</td>
+        <td>{{ transfer.get_state_display }}</td>
+        <td>{{ transfer.created_at|date:"Y-m-d H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">No transfer history found for this person.</div>
+  {% endif %}
+
+  <h2>Maintenance Records</h2>
+  {% if report_data.maintenance_records %}
+  <table>
+    <thead>
+      <tr>
+        <th>Asset</th>
+        <th>Status</th>
+        <th>Scheduled</th>
+        <th>Performed By</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for record in report_data.maintenance_records %}
+      <tr>
+        <td>{{ record.asset.dynamic_data|get_item:"name"|default:record.asset.asset_tag|default:record.asset.category.name }}</td>
+        <td>{{ record.get_status_display }}</td>
+        <td>{{ record.scheduled_for|date:"Y-m-d" }}</td>
+        <td>{% if record.performed_by %}{{ record.performed_by.get_full_name|default:record.performed_by.username }}{% else %}--{% endif %}</td>
+        <td>{{ record.description|default:"--" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">No maintenance records found for the selected assets.</div>
+  {% endif %}
+
+  <h2>Recent Activity</h2>
+  {% if report_data.activities %}
+  <table>
+    <thead>
+      <tr>
+        <th>Action</th>
+        <th>Asset</th>
+        <th>Details</th>
+        <th>Time</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for activity in report_data.activities %}
+      <tr>
+        <td>{{ activity.get_action_display }}</td>
+        <td>{% if activity.asset %}{{ activity.asset.dynamic_data|get_item:"name"|default:activity.asset.asset_tag|default:activity.asset.category.name }}{% else %}--{% endif %}</td>
+        <td>{{ activity.details|default:"--" }}</td>
+        <td>{{ activity.timestamp|date:"Y-m-d H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">No recent activity found for this person.</div>
+  {% endif %}
+
+  <footer>
+    <span>Confidential company report</span>
+    <span>Generated by {{ metadata.generated_by }} - {{ metadata.base_url }}</span>
+  </footer>
+</body>
+</html>

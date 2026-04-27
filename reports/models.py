@@ -83,6 +83,7 @@ class Report(models.Model):
             "asset_summary": "Asset Summary",
             "maintenance": "Maintenance",
             "custom": "Custom",
+            "individual": "Individual",
         }
         if token in mapping:
             return mapping[token]
@@ -92,3 +93,11 @@ class Report(models.Model):
         # Final fallback: show export format nicely
         fmt = self.format
         return fmt.title() if fmt else "Report"
+
+    @property
+    def subject_label(self) -> str:
+        """Return the individual subject name for person-level reports."""
+        meta = self.metadata or {}
+        if str(meta.get("report_type") or "").lower() != "individual":
+            return ""
+        return str(meta.get("subject_user_name") or "").strip()

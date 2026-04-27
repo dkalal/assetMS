@@ -26,6 +26,7 @@ from audit.utils import log_audit
 from users.utils import can
 
 from .services import ReportFilters
+from .services import user_can_access_report_branch, validate_report_filters
 from .preview_service import ExportPreviewService
 
 
@@ -99,10 +100,16 @@ def api_preview_export(request):
     # Extract parameters
     report_type = data.get('report_type', 'asset_summary')
     export_format = data.get('format', 'xlsx').lower()
-    preview_limit = int(data.get('preview_limit', 50))
+    try:
+        preview_limit = int(data.get('preview_limit', 50))
+    except (TypeError, ValueError):
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid preview limit.'
+        }, status=400)
     
     # Validate report type
-    valid_report_types = ['asset_summary', 'maintenance', 'custom']
+    valid_report_types = ['asset_summary', 'maintenance', 'custom', 'individual']
     if report_type not in valid_report_types:
         return JsonResponse({
             'success': False,
@@ -123,7 +130,14 @@ def api_preview_export(request):
         branch_id=data.get('branch_id') or None,
         date_from=data.get('date_from') or None,
         date_to=data.get('date_to') or None,
+        user_id=data.get('user_id') or None,
     )
+    filter_error = validate_report_filters(filters)
+    if filter_error:
+        return JsonResponse({
+            'success': False,
+            'error': filter_error
+        }, status=400)
     
     # Get branch (if specified)
     branch = None
@@ -139,6 +153,12 @@ def api_preview_export(request):
                 'success': False,
                 'error': 'Invalid branch selection for your company.'
             }, status=400)
+
+        if not user_can_access_report_branch(company, user, branch):
+            return JsonResponse({
+                'success': False,
+                'error': 'You do not have access to the selected branch.'
+            }, status=403)
     
     # Generate preview
     try:

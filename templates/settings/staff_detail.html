@@ -483,6 +483,28 @@ select.form-select option:focus {
     <button class="action-btn btn btn-info" onclick="window.print()">
         <i class="bi bi-printer"></i>Print
     </button>
+    <div class="dropdown">
+        <button class="action-btn btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-file-earmark-arrow-down"></i>Export Individual Report
+        </button>
+        <ul class="dropdown-menu">
+            <li>
+                <a class="dropdown-item" href="{% url 'reports:export_individual_report' staff.id %}?format=pdf">
+                    <i class="bi bi-file-earmark-pdf me-2"></i>PDF
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item" href="{% url 'reports:export_individual_report' staff.id %}?format=excel">
+                    <i class="bi bi-file-earmark-excel me-2"></i>Excel
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item" href="{% url 'reports:export_individual_report' staff.id %}?format=csv">
+                    <i class="bi bi-file-earmark-spreadsheet me-2"></i>CSV
+                </a>
+            </li>
+        </ul>
+    </div>
     <a href="{% url 'settings:user_management' %}" class="action-btn btn btn-outline-secondary">
         <i class="bi bi-arrow-left"></i>Back to List
     </a>

@@ -196,7 +196,7 @@ def maintenance_record_post_save_handler(sender, instance, created, **kwargs):
             logger.info(f"Maintenance scheduled: {instance.id} - Asset {instance.asset.uuid}")
             
             # Send reminder email (async, scheduled for 7 days before due date)
-            if instance.scheduled_date and instance.status == 'scheduled':
+            if instance.scheduled_for and instance.status == MaintenanceRecord.Status.SCHEDULED:
                 from .tasks import schedule_maintenance_reminder
                 schedule_maintenance_reminder.delay(
                     instance.id,

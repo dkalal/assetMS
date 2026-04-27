@@ -138,6 +138,12 @@
               <span>Custom Report</span>
             </button>
           </div>
+          <div class="col-md-3">
+            <button type="button" class="quick-action-btn" onclick="openReportModal('individual')">
+              <i class="bi bi-person-lines-fill"></i>
+              <span>Individual Report</span>
+            </button>
+          </div>
         </div>
       </div>
     </section>
@@ -315,6 +321,12 @@
                       <i class="bi bi-person"></i>
                       <span>{% if report.created_by %}{{ report.created_by.get_full_name|default:report.created_by.username }}{% else %}System{% endif %}</span>
                     </div>
+                    {% if report.subject_label %}
+                    <div class="info-item">
+                      <i class="bi bi-person-badge"></i>
+                      <span>{{ report.subject_label }}</span>
+                    </div>
+                    {% endif %}
                     {% if report.file %}
                     <div class="info-item">
                       <i class="bi bi-file-earmark-arrow-down"></i>
@@ -382,8 +394,31 @@
                 <option value="asset_summary">Asset Summary Report</option>
                 <option value="maintenance">Maintenance Report</option>
                 <option value="custom">Custom Report</option>
+                <option value="individual">Individual Report</option>
               </select>
               <div class="form-text">Select the type of report you want to generate</div>
+            </div>
+
+            <!-- Individual Person -->
+            <div class="col-12" id="individualUserGroup">
+              <div class="d-flex justify-content-between align-items-center gap-3">
+                <label class="form-label fw-medium mb-0">Person <span class="text-danger">*</span></label>
+                <div class="form-check form-switch mb-0">
+                  <input class="form-check-input" type="checkbox" id="includeInactiveUsers">
+                  <label class="form-check-label small" for="includeInactiveUsers">Include inactive</label>
+                </div>
+              </div>
+              <select name="user_id" class="form-select" id="individualUserSelect">
+                <option value="">Select person</option>
+                {% for report_user in available_report_users %}
+                  <option value="{{ report_user.id }}" data-active="{{ report_user.is_active|yesno:'true,false' }}" data-branch="{{ report_user.report_branch_label|default:'No branch assigned' }}" data-branch-ids="{{ report_user.report_branch_ids|default:'' }}">
+                    {{ report_user.get_full_name|default:report_user.username }} - {{ report_user.report_branch_label|default:'No branch assigned' }}{% if not report_user.is_active %} (Inactive){% endif %}
+                  </option>
+                {% empty %}
+                  <option value="" disabled>No available people found</option>
+                {% endfor %}
+              </select>
+              <div class="form-text">Required only when generating an Individual Report</div>
             </div>
 
             <!-- Format -->
@@ -400,7 +435,7 @@
             {% if available_branches %}
             <div class="col-md-6">
               <label class="form-label fw-medium">Branch</label>
-              <select name="branch_id" class="form-select">
+              <select name="branch_id" class="form-select" id="reportBranchSelect">
                 <option value="">All Branches</option>
                 {% for branch in available_branches %}
                   <option value="{{ branch.id }}">{{ branch.name }}</option>
@@ -411,7 +446,7 @@
 
             <!-- Asset Status -->
             <div class="col-md-6">
-              <label class="form-label fw-medium">Asset Status</label>
+              <label class="form-label fw-medium" id="assetStatusLabel">Asset Status</label>
               <select name="status" class="form-select">
                 <option value="">All Statuses</option>
                 {% for status_value, status_label in asset_status_choices %}
@@ -433,6 +468,7 @@
 
             <!-- Additional Options -->
             <div class="col-12">
+              <div id="reportPreviewPanel" class="alert alert-light border d-none" aria-live="polite"></div>
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="include_images" id="includeImages">
                 <label class="form-check-label" for="includeImages">
@@ -450,6 +486,9 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-outline-primary" id="previewReportBtn">
+            <i class="bi bi-eye me-1"></i> Preview
+          </button>
           <button type="submit" class="btn btn-primary">
             <i class="bi bi-file-earmark-arrow-down me-1"></i> Generate Report
           </button>
@@ -462,6 +501,6 @@
 
 {% block extra_scripts %}
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="{% static 'js/reports-dashboard.js' %}"></script>
+  <script src="{% static 'js/reports-dashboard.js' %}?v=individual-report-2"></script>
 {% endblock %}
 <iframe id="downloadFrame" name="downloadFrame" style="display:none;"></iframe>
