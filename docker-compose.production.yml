@@ -1,230 +1,221 @@
-version: '3.8'
+version: '3.9'
 
 services:
-  # Main Django Application
-  web:
-    build: 
-      context: .
-      dockerfile: Dockerfile.production
-    ports:
-      - "8000:8000"
-    environment:
-      - DEBUG=False
-      - DATABASE_URL=postgresql://assetms:${DB_PASSWORD}@db:5432/assetms_prod
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/1
-      - SECRET_KEY=${SECRET_KEY}
-      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
-      - USE_CLOUDINARY=true
-      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
-      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
-      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
-    depends_on:
-      - db
-      - redis
-    volumes:
-      - static_volume:/app/staticfiles
-      - media_volume:/app/media
-    networks:
-      - assetms_network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # PostgreSQL Database
+  # PostgreSQL database service
   db:
     image: postgres:15-alpine
+    container_name: assetms_db_prod
+    restart: unless-stopped
     environment:
-      - POSTGRES_DB=assetms_prod
-      - POSTGRES_USER=assetms
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+      POSTGRES_DB: ${DB_NAME:-assetms_prod}
+      POSTGRES_USER: ${DB_USER:-assetms}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-change-me}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
-    networks:
-      - assetms_network
-    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U assetms -d assetms_prod"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-assetms}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+    networks:
+      - assetms_network
 
-  # Redis for Caching and Celery
+  # Redis for caching and Celery broker
   redis:
     image: redis:7-alpine
+    container_name: assetms_redis
+    restart: unless-stopped
     command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
-    networks:
-      - assetms_network
-    restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 3s
       retries: 3
-
-  # Celery Worker
-  celery_worker:
-    build: 
-      context: .
-      dockerfile: Dockerfile.production
-    command: celery -A assetms worker --loglevel=info --concurrency=4
-    environment:
-      - DEBUG=False
-      - DATABASE_URL=postgresql://assetms:${DB_PASSWORD}@db:5432/assetms_prod
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/1
-      - SECRET_KEY=${SECRET_KEY}
-    depends_on:
-      - db
-      - redis
-    volumes:
-      - media_volume:/app/media
     networks:
       - assetms_network
+
+  # Django web application service
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: assetms_web_prod
     restart: unless-stopped
+    environment:
+      # Database configuration
+      DATABASE_URL: postgresql://${DB_USER:-assetms}:${DB_PASSWORD:-change-me}@db:5432/${DB_NAME:-assetms_prod}
+      
+      # Django core settings
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: ${DEBUG:-False}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://10.10.10.254:8001}
+      
+      # Server configuration
+      PORT: 8001
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-4}
+      GUNICORN_THREADS: ${GUNICORN_THREADS:-2}
+      
+      # Redis/Celery configuration
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+      CELERY_TASK_ALWAYS_EAGER: ${CELERY_TASK_ALWAYS_EAGER:-False}
+      
+      # Storage backend selection
+      USE_CLOUDINARY: ${USE_CLOUDINARY:-False}
+      USE_IMAGEKIT: ${USE_IMAGEKIT:-False}
+      USE_B2: ${USE_B2:-False}
+      
+      # Cloudinary configuration
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      
+      # Email configuration
+      EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
+      EMAIL_HOST: ${EMAIL_HOST:-}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-True}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-noreply@example.com}
+      
+      # Security settings
+      CSRF_COOKIE_SECURE: ${CSRF_COOKIE_SECURE:-True}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-True}
+      SECURE_SSL_REDIRECT: ${SECURE_SSL_REDIRECT:-True}
+      SECURE_HSTS_SECONDS: ${SECURE_HSTS_SECONDS:-31536000}
+      SECURE_HSTS_INCLUDE_SUBDOMAINS: ${SECURE_HSTS_INCLUDE_SUBDOMAINS:-True}
+      SECURE_HSTS_PRELOAD: ${SECURE_HSTS_PRELOAD:-True}
+    
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    
+    volumes:
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    
+    networks:
+      - assetms_network
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Celery worker for async tasks
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: assetms_celery_worker
+    restart: unless-stopped
+    command: celery -A assetms worker --loglevel=info --concurrency=4
+    environment:
+      # Database configuration
+      DATABASE_URL: postgresql://${DB_USER:-assetms}:${DB_PASSWORD:-change-me}@db:5432/${DB_NAME:-assetms_prod}
+      
+      # Django settings
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: ${DEBUG:-False}
+      
+      # Redis/Celery configuration
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+    
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    
+    volumes:
+      - media_data:/app/media
+    
+    networks:
+      - assetms_network
+    
     healthcheck:
       test: ["CMD", "celery", "-A", "assetms", "inspect", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-  # Celery Beat (Scheduler)
+  # Celery beat for periodic tasks
   celery_beat:
-    build: 
+    build:
       context: .
-      dockerfile: Dockerfile.production
+      dockerfile: Dockerfile
+    container_name: assetms_celery_beat
+    restart: unless-stopped
     command: celery -A assetms beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     environment:
-      - DEBUG=False
-      - DATABASE_URL=postgresql://assetms:${DB_PASSWORD}@db:5432/assetms_prod
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/1
-      - SECRET_KEY=${SECRET_KEY}
+      # Database configuration
+      DATABASE_URL: postgresql://${DB_USER:-assetms}:${DB_PASSWORD:-change-me}@db:5432/${DB_NAME:-assetms_prod}
+      
+      # Django settings
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: ${DEBUG:-False}
+      
+      # Redis/Celery configuration
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+    
     depends_on:
-      - db
-      - redis
-    volumes:
-      - media_volume:/app/media
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    
     networks:
       - assetms_network
-    restart: unless-stopped
 
-  # Nginx Reverse Proxy
+  # Nginx reverse proxy
   nginx:
     image: nginx:alpine
+    container_name: assetms_nginx
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./nginx/ssl:/etc/nginx/ssl
-      - static_volume:/var/www/static
-      - media_volume:/var/www/media
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - static_data:/var/www/static:ro
+      - media_data:/var/www/media:ro
     depends_on:
       - web
     networks:
       - assetms_network
-    restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health/"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-  # Monitoring with Prometheus
-  prometheus:
-    image: prom/prometheus:latest
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
-      - '--web.enable-lifecycle'
-    networks:
-      - assetms_network
-    restart: unless-stopped
-
-  # Grafana for Dashboards
-  grafana:
-    image: grafana/grafana:latest
-    ports:
-      - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
-      - GF_USERS_ALLOW_SIGN_UP=false
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
-    networks:
-      - assetms_network
-    restart: unless-stopped
-
-  # Log Aggregation with Loki
-  loki:
-    image: grafana/loki:latest
-    ports:
-      - "3100:3100"
-    volumes:
-      - ./monitoring/loki-config.yml:/etc/loki/local-config.yaml
-      - loki_data:/loki
-    command: -config.file=/etc/loki/local-config.yaml
-    networks:
-      - assetms_network
-    restart: unless-stopped
-
-  # Backup Service
-  backup:
-    build: 
-      context: .
-      dockerfile: Dockerfile.backup
-    environment:
-      - DATABASE_URL=postgresql://assetms:${DB_PASSWORD}@db:5432/assetms_prod
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - S3_BACKUP_BUCKET=${S3_BACKUP_BUCKET}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data:ro
-      - media_volume:/app/media:ro
-      - ./backups:/backups
-    depends_on:
-      - db
-    networks:
-      - assetms_network
-    restart: unless-stopped
-    # Run backup every day at 2 AM
-    command: crond -f
-
+# Named volumes for persistent data
 volumes:
   postgres_data:
     driver: local
   redis_data:
     driver: local
-  static_volume:
+  media_data:
     driver: local
-  media_volume:
-    driver: local
-  prometheus_data:
-    driver: local
-  grafana_data:
-    driver: local
-  loki_data:
+  static_data:
     driver: local
 
+# Custom network for service isolation
 networks:
   assetms_network:
     driver: bridge

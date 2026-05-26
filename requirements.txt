@@ -1,9 +1,9 @@
 # ASGI compatibility library for Python web apps
 asgiref==3.9.1
 # High performance Brotli compression library
-Brotli==1.1.0
+Brotli>=1.1.0
 # Foreign Function Interface for Python calling C code
-cffi==1.17.1
+cffi>=1.17.1
 # Cross-platform colored terminal text
 colorama==0.4.6
 # Bootstrap v5 theme for django-crispy-forms
@@ -14,8 +14,8 @@ cssselect2==0.8.0
 diff-match-patch==20241021
 # URL-style database configuration for Django
 dj-database-url==3.0.1 
-# High-level Python web framework (stick to LTS to satisfy celery-beat<5.2)
-Django==4.2.16
+# High-level Python web framework (Django 5.2 LTS, Python 3.14 compatible)
+Django==5.2.1
 # Forms styling using Bootstrap for Django
 django-crispy-forms==2.4
 # Debug toolbar for Django development
@@ -37,19 +37,19 @@ fonttools==4.59.1
 # Python WSGI HTTP Server for UNIX
 gunicorn==23.0.0
 # Package for scientific computing with Python
-numpy==2.3.2
+numpy>=2.3.2
 # Python library for reading/writing Excel files
 openpyxl==3.1.5
 # Core utilities for Python packages
 packaging==25.0
 # Data analysis and manipulation library
-pandas==2.3.2
+pandas>=2.3.2
 # Python Imaging Library
 pillow==11.3.0
 # PostgreSQL database adapter for Python
-psycopg2-binary==2.9.10
+psycopg2-binary>=2.9.10
 # C parser in Python
-pycparser==2.22
+pycparser>=2.22
 # PDF generation library
 pydyf==0.11.0
 # Hyphenation library
@@ -85,7 +85,7 @@ whitenoise==6.9.0
 # Excel XLSX file writer
 xlsxwriter==3.2.5
 # Zopfli compression algorithm implementation
-zopfli==0.2.3.post1
+zopfli>=0.2.3
 # Backblaze B2 storage
 django-storages==1.14.4
 # AWS SDK for Python
@@ -98,7 +98,7 @@ imagekitio==3.2.0
 cloudinary==1.41.0
 # Content Security Policy
 django-csp==3.8
-# CRITICAL: urllib3 must be <2.0 for imagekitio compatibility
+# urllib3 pinned for imagekitio compatibility
 urllib3>=1.26,<2.0
 # Celery for async task processing
 celery[redis]==5.4.0
@@ -107,10 +107,10 @@ redis==5.2.1
 # Kombu with SQLAlchemy for Django DB broker
 kombu[sqlalchemy]>=5.6.0
 # Database-backed periodic tasks
-django-celery-beat==2.7.0
+django-celery-beat==2.9.0
 # Store task results in Django DB
 django-celery-results==2.5.1
 # Celery monitoring UI (optional)
 flower==2.0.1
 # Fuzzy string matching for intelligent duplicate detection (world-class performance)
-rapidfuzz==3.10.1
+rapidfuzz>=3.10.1

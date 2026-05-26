@@ -20,7 +20,7 @@ This directory contains a production-ready Docker setup for the AssetMS Django a
    ```
 
 2. **Access the application:**
-   - Web app: http://localhost:8000
+   - Web app: http://localhost:8001
    - PostgreSQL: localhost:5432
 
 3. **Create a superuser (optional):**
@@ -37,7 +37,7 @@ This directory contains a production-ready Docker setup for the AssetMS Django a
 
 2. **Run with environment file:**
    ```bash
-   docker run --env-file .env -p 8000:8000 assetms:latest
+   docker run --env-file .env -p 8001:8001 assetms:latest
    ```
 
 ## Environment Variables
@@ -54,7 +54,7 @@ DEBUG=False
 ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
 
 # Application
-PORT=8000
+PORT=8001
 ```
 
 ### Optional Environment Variables

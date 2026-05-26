@@ -30,7 +30,12 @@ from .services import (
     validate_report_filters,
 )
 import pandas as pd
-from weasyprint import HTML
+
+
+def _get_weasyprint_html():
+    from weasyprint import HTML
+
+    return HTML
 
 def is_admin_or_manager(user):
     return user.is_authenticated and user.role in ('admin', 'manager')
@@ -452,7 +457,7 @@ def _generate_maintenance_report(company, branch, filters, fmt, request):
         </body>
         </html>
         """
-        file_bytes = HTML(string=html_string).write_pdf()
+        file_bytes = _get_weasyprint_html()(string=html_string).write_pdf()
         content_type = 'application/pdf'
         extension = 'pdf'
     
@@ -528,7 +533,7 @@ def _generate_custom_report(company, branch, filters, fmt, request):
         </body>
         </html>
         """
-        file_bytes = HTML(string=html_string).write_pdf()
+        file_bytes = _get_weasyprint_html()(string=html_string).write_pdf()
         content_type = 'application/pdf'
         extension = 'pdf'
     

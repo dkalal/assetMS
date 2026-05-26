@@ -1,0 +1,200 @@
+<div class="card shadow-sm border-0">
+  <div class="card-body">
+    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+      <div>
+        <h3 class="h5 mb-1">Internet Customer Sync</h3>
+        <p class="text-muted mb-0">Configure the source API, then manually sync customer references into AssetMS.</p>
+      </div>
+      <button type="button" class="btn btn-primary" id="runCustomerSyncBtn" onclick="runCustomerSync()">
+        <i class="bi bi-arrow-repeat me-1"></i>
+        Sync Customers
+      </button>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-6">
+        <label class="form-label" for="sourceBaseUrl">Source Base URL</label>
+        <input type="url" class="form-control" id="sourceBaseUrl" placeholder="https://internet.example.com">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="sourceTenantSlug">Source Tenant Slug</label>
+        <input type="text" class="form-control" id="sourceTenantSlug" placeholder="tenant-slug">
+      </div>
+      <div class="col-md-8">
+        <label class="form-label" for="sourceApiToken">Source API Token</label>
+        <input type="password" class="form-control" id="sourceApiToken" placeholder="Token">
+      </div>
+      <div class="col-md-4 d-flex align-items-end">
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" role="switch" id="syncEnabled" checked>
+          <label class="form-check-label" for="syncEnabled">Enable sync</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 mb-4">
+      <button type="button" class="btn btn-outline-primary" onclick="saveCustomerSyncConfig()">
+        Save Integration Config
+      </button>
+      <span class="text-muted small align-self-center" id="syncTimeoutHint"></span>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-md-3">
+        <div class="border rounded p-3 bg-light h-100">
+          <div class="text-muted small">Last Sync Time</div>
+          <div class="fw-semibold" id="customerSyncLastSynced">Never</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="border rounded p-3 bg-light h-100">
+          <div class="text-muted small">Sync Status</div>
+          <div class="fw-semibold text-capitalize" id="customerSyncStatus">never</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="border rounded p-3 bg-light h-100">
+          <div class="text-muted small">Last Success Count</div>
+          <div class="fw-semibold" id="customerSyncSuccessCount">0</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="border rounded p-3 bg-light h-100">
+          <div class="text-muted small">Last Failure Count</div>
+          <div class="fw-semibold" id="customerSyncFailureCount">0</div>
+        </div>
+      </div>
+      <div class="col-12">
+        <div class="border rounded p-3 bg-light">
+          <div class="text-muted small mb-1">Last Error Message</div>
+          <div id="customerSyncErrorMessage" class="small text-break">No errors recorded.</div>
+        </div>
+      </div>
+      <div class="col-12">
+        <div class="border rounded p-3">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="fw-semibold">Latest Sync Run</div>
+            <span class="badge bg-secondary text-uppercase" id="customerSyncRunStatus">N/A</span>
+          </div>
+          <div class="small text-muted" id="customerSyncRunSummary">No sync has been run yet.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function integrationCsrfToken() {
+  return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+}
+
+function formatIntegrationDate(value) {
+  if (!value) return 'Never';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+}
+
+function summarizeSyncRun(run) {
+  if (!run) return 'No sync has been run yet.';
+  return `Started ${formatIntegrationDate(run.started_at)}. Created ${run.records_created}, updated ${run.records_updated}, skipped ${run.records_skipped}, failed ${run.records_failed}.`;
+}
+
+function updateCustomerSyncUi(config) {
+  document.getElementById('sourceBaseUrl').value = config.source_base_url || '';
+  document.getElementById('sourceTenantSlug').value = config.source_tenant_slug || '';
+  document.getElementById('syncEnabled').checked = !!config.is_enabled;
+  document.getElementById('syncTimeoutHint').textContent = `Request timeout: ${config.timeout_seconds || 15}s`;
+  document.getElementById('customerSyncLastSynced').textContent = formatIntegrationDate(config.last_synced_at);
+  document.getElementById('customerSyncStatus').textContent = config.last_sync_status || 'never';
+  document.getElementById('customerSyncSuccessCount').textContent = config.last_success_count ?? 0;
+  document.getElementById('customerSyncFailureCount').textContent = config.last_failure_count ?? 0;
+  document.getElementById('customerSyncErrorMessage').textContent = config.last_error_message || 'No errors recorded.';
+}
+
+function updateCustomerSyncRun(run) {
+  document.getElementById('customerSyncRunStatus').textContent = run?.status || 'N/A';
+  document.getElementById('customerSyncRunSummary').textContent = summarizeSyncRun(run);
+}
+
+async function loadCustomerSyncConfig() {
+  try {
+    const response = await fetch('/integrations/api/customer-sync-config/');
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || 'Failed to load sync config.');
+    updateCustomerSyncUi(data.config);
+    updateCustomerSyncRun(data.config.latest_run);
+  } catch (error) {
+    if (typeof showToast === 'function') {
+      showToast(error.message || 'Failed to load integration config.', 'error');
+    }
+  }
+}
+
+async function saveCustomerSyncConfig() {
+  const payload = {
+    source_base_url: document.getElementById('sourceBaseUrl').value.trim(),
+    source_tenant_slug: document.getElementById('sourceTenantSlug').value.trim(),
+    api_token: document.getElementById('sourceApiToken').value.trim(),
+    is_enabled: document.getElementById('syncEnabled').checked,
+  };
+
+  try {
+    const response = await fetch('/integrations/api/customer-sync-config/update/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': integrationCsrfToken(),
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || 'Failed to save config.');
+    updateCustomerSyncUi(data.config);
+    if (typeof showToast === 'function') {
+      showToast('Customer integration config saved.', 'success');
+    }
+  } catch (error) {
+    if (typeof showToast === 'function') {
+      showToast(error.message || 'Failed to save config.', 'error');
+    }
+  }
+}
+
+async function runCustomerSync() {
+  const button = document.getElementById('runCustomerSyncBtn');
+  const originalHtml = button.innerHTML;
+  button.disabled = true;
+  button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Syncing...';
+
+  try {
+    const response = await fetch('/integrations/api/customer-sync/run/', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': integrationCsrfToken(),
+      },
+    });
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || 'Sync failed.');
+    updateCustomerSyncRun(data.sync);
+    await loadCustomerSyncConfig();
+    if (typeof showToast === 'function') {
+      showToast(`Customer sync completed with status: ${data.sync.status}`, data.sync.failed ? 'warning' : 'success');
+    }
+  } catch (error) {
+    if (typeof showToast === 'function') {
+      showToast(error.message || 'Customer sync failed.', 'error');
+    }
+  } finally {
+    button.disabled = false;
+    button.innerHTML = originalHtml;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  loadCustomerSyncConfig();
+  const integrationsTabBtn = document.getElementById('integrations-tab');
+  if (integrationsTabBtn) {
+    integrationsTabBtn.addEventListener('shown.bs.tab', loadCustomerSyncConfig);
+  }
+});
+</script>

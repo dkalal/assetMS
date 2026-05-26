@@ -1,11 +1,6 @@
 #!/bin/bash
-
-# Exit on any error
 set -e
-
 echo "🚀 Starting Django application..."
-
-# --- Database readiness check (only if DATABASE_URL is defined) ---
 echo "⏳ Waiting for database..."
 python - <<'EOF'
 import os, time
@@ -35,24 +30,14 @@ if 'DATABASE_URL' in os.environ:
 else:
     print("⚠️  No DATABASE_URL found, skipping database check")
 EOF
-
-# --- Django migrations ---
 echo "⚙️ Running database migrations..."
 python manage.py migrate --noinput
-
-# --- Ensure media directories exist ---
 echo "📁 Creating media directories..."
 mkdir -p media/qr_codes media/profile_images media/asset_images media/asset_docs media/reports
-
-# --- Collect static files ---
 echo "📦 Collecting static files..."
 python manage.py collectstatic --noinput --clear
-
-# --- Copy media to staticfiles for WhiteNoise ---
 echo "📋 Copying media files to static..."
 cp -r media/* staticfiles/media/ 2>/dev/null || true
-
-# --- Create superuser (if env vars provided) ---
 if [ "$DJANGO_SUPERUSER_USERNAME" ] && [ "$DJANGO_SUPERUSER_EMAIL" ] && [ "$DJANGO_SUPERUSER_PASSWORD" ]; then
     echo "👤 Ensuring superuser exists..."
     python manage.py shell -c "
@@ -69,16 +54,10 @@ else:
     print('ℹ️  Superuser already exists')
 "
 fi
-
-# --- Gunicorn start ---
-PORT=${PORT:-8000}
-
-# OOM-SAFE: Default to 2 workers, 4 threads unless overridden
+PORT=${PORT:-8001}
 WORKERS=${GUNICORN_WORKERS:-2}
 THREADS=${GUNICORN_THREADS:-4}
-
 echo "🚦 Starting Gunicorn with $WORKERS workers × $THREADS threads on port $PORT..."
-
 exec gunicorn assetms.wsgi:application \
     --bind 0.0.0.0:$PORT \
     --workers $WORKERS \

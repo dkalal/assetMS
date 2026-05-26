@@ -22,6 +22,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load environment variables from .env if available
 load_dotenv(BASE_DIR / '.env')
 
+def env_list(name: str, default: str = "") -> list[str]:
+    return [item.strip() for item in os.environ.get(name, default).split(",") if item.strip()]
+
+def env_bool(name: str, default: bool) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.lower() in {"1", "true", "yes", "on"}
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -34,8 +43,7 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
-# include your Railway app domain in the default ALLOWED_HOSTS fallback
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "10.10.10.254,localhost,127.0.0.1")
 
 TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
 
@@ -43,12 +51,12 @@ TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
 CSRF_TRUSTED_ORIGINS = [
     'https://*.railway.app',
     'https://assetms-production.up.railway.app',  # explicit trusted origin for Railway deployment
-]
+] + env_list("CSRF_TRUSTED_ORIGINS")
 
 # WORLD-CLASS: CSRF Cookie Configuration
 # Following Django's official documentation for AJAX requests
 CSRF_COOKIE_NAME = 'csrftoken'
-CSRF_COOKIE_SECURE = not DEBUG  # Only send over HTTPS in production
+CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", not DEBUG)  # Only send over HTTPS in production
 CSRF_COOKIE_HTTPONLY = False  # CRITICAL: Must be False so JavaScript can read the token
 CSRF_COOKIE_SAMESITE = 'Lax'  # Prevents CSRF attacks while allowing normal navigation
 CSRF_USE_SESSIONS = False  # Use cookies for better cross-tab compatibility
@@ -85,6 +93,7 @@ INSTALLED_APPS = [
     'audit',
     'reports',
     'settings',
+    'integrations',
 ]
 
 MIDDLEWARE = [
@@ -305,7 +314,7 @@ CSP_STYLE_SRC = None
 # - No session isolation needed - unified authentication is better!
 
 SESSION_COOKIE_NAME = 'sessionid'
-SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", not DEBUG)
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
@@ -396,7 +405,7 @@ if DEBUG:
     CELERY_TASK_EAGER_PROPAGATES = True
     CELERY_BROKER_URL = 'memory://'
     CELERY_RESULT_BACKEND = 'django-db'
-    print("ðŸ”§ Celery EAGER mode enabled - tasks execute synchronously (no worker needed)")
+    print("Celery EAGER mode enabled - tasks execute synchronously (no worker needed)")
 else:
     # Production: Use Redis broker for true async execution
     _broker_url = os.environ.get('CELERY_BROKER_URL') or os.environ.get('REDIS_URL')
@@ -443,6 +452,8 @@ CELERY_SEND_TASK_ERROR_EMAILS = not DEBUG  # Email on task errors in production
 # Security
 CELERY_TASK_REJECT_ON_WORKER_LOST = True  # Reject task if worker dies
 CELERY_TASK_IGNORE_RESULT = False  # Store task results
+
+EXTERNAL_CUSTOMER_SYNC_TIMEOUT_SECONDS = int(os.environ.get('EXTERNAL_CUSTOMER_SYNC_TIMEOUT_SECONDS', '15'))
 
 # Django Celery Beat (Database-backed periodic tasks)
 INSTALLED_APPS += [

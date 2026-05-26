@@ -10,6 +10,22 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RemoveIndex(
+            model_name='duplicatedetectionrule',
+            name='assets_dupl_company_active_idx',
+        ),
+        migrations.RemoveIndex(
+            model_name='duplicatedetectionrule',
+            name='assets_dupl_category_active_idx',
+        ),
+        migrations.RemoveIndex(
+            model_name='duplicatescanhistory',
+            name='assets_dupl_company_scan_idx',
+        ),
+        migrations.RemoveIndex(
+            model_name='duplicatedetection',
+            name='assets_dupl_company_status_idx',
+        ),
         migrations.RemoveField(
             model_name='duplicatedetection',
             name='asset1',

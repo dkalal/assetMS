@@ -354,3 +354,12 @@ class MultiStorageBackend:
             self.local_storage.delete(name)
         except Exception as e:
             logger.error(f"Local delete failed: {e}")
+
+
+def get_storage_backend(location=None):
+    """Factory helper to return a configured MultiStorageBackend instance.
+
+    Kept for backwards compatibility with tests and older code that
+    imports `get_storage_backend` from this module.
+    """
+    return MultiStorageBackend(location=location)

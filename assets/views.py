@@ -37,7 +37,6 @@ import csv
 import pandas as pd
 from django.conf import settings
 from django.template.loader import render_to_string
-from weasyprint import HTML
 import tempfile
 from datetime import datetime, date
 import openpyxl
@@ -55,6 +54,12 @@ from django.utils.timezone import localtime
 
 from users.utils import can
 from tenancy.mixins import BranchContextMixin, CompanyScopedQuerysetMixin, company_required
+
+
+def _get_weasyprint_html():
+    from weasyprint import HTML
+
+    return HTML
 
 # Permission check: only admin/manager
 def is_admin_or_manager(user):
@@ -1840,7 +1845,7 @@ def asset_export(request):
             fd, temp_path = tempfile.mkstemp(suffix='.pdf')
             os.close(fd)
             try:
-                HTML(string=html_string, base_url=request.build_absolute_uri('/')).write_pdf(temp_path)
+                _get_weasyprint_html()(string=html_string, base_url=request.build_absolute_uri('/')).write_pdf(temp_path)
                 with open(temp_path, 'rb') as f:
                     pdf = f.read()
             finally:

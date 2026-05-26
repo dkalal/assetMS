@@ -14,10 +14,14 @@ from django.db.models.functions import Coalesce
 from django.template.loader import render_to_string
 from django.utils.dateparse import parse_date
 from django.utils import timezone
-from weasyprint import HTML
-
 from assets.models import Asset, AssetTransfer, MaintenanceRecord
 from audit.models import AuditLog
+
+
+def _get_weasyprint_html():
+    from weasyprint import HTML
+
+    return HTML
 
 
 @dataclass
@@ -232,7 +236,7 @@ def build_pdf_bytes(assets: Iterable[Asset], metadata: Dict[str, object]) -> byt
     }
     html_string = render_to_string("reports/asset_summary_pdf.html", ctx)
     buffer = io.BytesIO()
-    HTML(string=html_string, base_url=metadata.get("base_url")).write_pdf(buffer)
+    _get_weasyprint_html()(string=html_string, base_url=metadata.get("base_url")).write_pdf(buffer)
     return buffer.getvalue()
 
 
@@ -451,5 +455,5 @@ def build_individual_pdf_bytes(report_data: Dict[str, object], metadata: Dict[st
     }
     html_string = render_to_string("reports/individual_report_pdf.html", context)
     buffer = io.BytesIO()
-    HTML(string=html_string, base_url=metadata.get("base_url")).write_pdf(buffer)
+    _get_weasyprint_html()(string=html_string, base_url=metadata.get("base_url")).write_pdf(buffer)
     return buffer.getvalue()

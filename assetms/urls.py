@@ -98,6 +98,7 @@ urlpatterns = [
     path('password_change/', auth_views.PasswordChangeView.as_view(), name='password_change'),
     path('password_change/done/', auth_views.PasswordChangeDoneView.as_view(), name='password_change_done'),
     path('settings/', include('settings.urls')),
+    path('integrations/', include('integrations.urls')),
     path('assets/', include('assets.urls')),
     path('categories/', include('categories.urls')),
     path('accounts/', include('accounts.urls')),

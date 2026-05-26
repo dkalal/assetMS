@@ -232,7 +232,7 @@ def validate_bulk_data(request):
                 duplicate_rows = serial_numbers_in_file[serial_number.lower()]
                 if len(duplicate_rows) > 1:
                     other_rows = [r for r in duplicate_rows if r != row_number]
-                    errors.append(f'Serial number "{serial_number}" duplicated in rows: {', '.join(map(str, other_rows))}')
+                    errors.append(f'Serial number "{serial_number}" duplicated in rows: {", ".join(map(str, other_rows))}')
             
             # Validate asset tag uniqueness (if provided)
             asset_tag = row.get('asset_tag', '').strip()
@@ -248,7 +248,7 @@ def validate_bulk_data(request):
                 duplicate_rows = asset_tags_in_file[asset_tag.lower()]
                 if len(duplicate_rows) > 1:
                     other_rows = [r for r in duplicate_rows if r != row_number]
-                    errors.append(f'Asset tag "{asset_tag}" duplicated in rows: {', '.join(map(str, other_rows))}')
+                    errors.append(f'Asset tag "{asset_tag}" duplicated in rows: {", ".join(map(str, other_rows))}')
             
             # Validate purchase value (if provided)
             purchase_value = row.get('purchase_value', '').strip()

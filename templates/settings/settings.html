@@ -113,6 +113,19 @@
             </button>
           </li>
           <li class="nav-item" role="presentation">
+            <button class="nav-link {% if active_tab == 'integrations' %}active{% endif %}" 
+                    id="integrations-tab" 
+                    data-bs-toggle="tab" 
+                    data-bs-target="#integrations" 
+                    type="button" 
+                    role="tab" 
+                    aria-controls="integrations" 
+                    aria-selected="{% if active_tab == 'integrations' %}true{% else %}false{% endif %}">
+              <i class="bi bi-arrow-left-right me-2"></i>
+              Integrations
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
             <button class="nav-link {% if active_tab == 'system' %}active{% endif %}" 
                     id="system-tab" 
                     data-bs-toggle="tab" 
@@ -181,6 +194,13 @@
                role="tabpanel" 
                aria-labelledby="assets-tab">
             {% include 'settings/partials/asset_settings.html' %}
+          </div>
+
+          <div class="tab-pane fade {% if active_tab == 'integrations' %}show active{% endif %}" 
+               id="integrations" 
+               role="tabpanel" 
+               aria-labelledby="integrations-tab">
+            {% include 'settings/partials/integration_settings.html' %}
           </div>
           {% endif %}
 
