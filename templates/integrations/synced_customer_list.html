@@ -1,0 +1,164 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}Synced Customers · Asset Management{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+  <div>
+    <h1 class="h2 mb-1">Synced Customers</h1>
+    <p class="text-muted mb-0">Search the customers imported from the source system and review how they are linked inside AssetMS.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'settings:settings_dashboard' %}?tab=integrations" class="btn btn-outline-secondary">
+      Back to Integration Settings
+    </a>
+    <a href="{% url 'integrations:synced_customer_list' %}" class="btn btn-primary">
+      Refresh
+    </a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="text-muted small">Total</div>
+        <div class="fs-3 fw-semibold">{{ summary.total|default:0 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="text-muted small">Synced</div>
+        <div class="fs-3 fw-semibold text-success">{{ summary.synced|default:0 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="text-muted small">Linked to Assets</div>
+        <div class="fs-3 fw-semibold text-primary">{{ summary.linked|default:0 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="text-muted small">Failed</div>
+        <div class="fs-3 fw-semibold text-danger">{{ summary.failed|default:0 }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-7">
+        <label for="search" class="form-label">Search</label>
+        <input id="search" name="search" value="{{ search }}" class="form-control" placeholder="Name, phone, email, or UUID">
+      </div>
+      <div class="col-md-3">
+        <label for="sync_status" class="form-label">Sync Status</label>
+        <select id="sync_status" name="sync_status" class="form-select">
+          <option value="">All statuses</option>
+          {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if sync_status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100">Filter</button>
+        <a href="{% url 'integrations:synced_customer_list' %}" class="btn btn-outline-secondary w-100">Clear</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Customer</th>
+          <th>Contact</th>
+          <th>Status</th>
+          <th class="text-center">Assets</th>
+          <th>Last Synced</th>
+          <th>Source UUID</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for customer in customers %}
+        <tr>
+          <td>
+            <div class="fw-semibold">
+              <a href="{% url 'integrations:synced_customer_detail' customer.external_uuid %}" class="text-decoration-none">
+                {{ customer.full_name }}
+              </a>
+            </div>
+            <div class="text-muted small">Imported customer reference</div>
+          </td>
+          <td>
+            <div class="small">
+              {% if customer.phone %}<div>{{ customer.phone }}</div>{% endif %}
+              {% if customer.email %}<div>{{ customer.email }}</div>{% endif %}
+              {% if not customer.phone and not customer.email %}<span class="text-muted">No contact details</span>{% endif %}
+            </div>
+          </td>
+          <td>
+            {% if customer.sync_status == 'synced' %}
+              <span class="badge bg-success">Synced</span>
+            {% elif customer.sync_status == 'failed' %}
+              <span class="badge bg-danger">Failed</span>
+            {% else %}
+              <span class="badge bg-secondary">{{ customer.sync_status|default:"Unknown"|title }}</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            <span class="badge bg-primary-subtle text-primary">{{ customer.asset_count|default:0 }}</span>
+          </td>
+          <td>
+            <div class="small text-muted">{{ customer.last_synced_at|date:"M d, Y H:i" }}</div>
+          </td>
+          <td>
+            <div class="small text-muted text-break">{{ customer.external_uuid }}</div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center py-5">
+            <div class="text-muted mb-2">No synced customers found.</div>
+            <div class="small text-muted">Try a broader search or sync customers from the integration settings page.</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if is_paginated %}
+<nav class="mt-4" aria-label="Synced customer pagination">
+  <ul class="pagination justify-content-center mb-0">
+    {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if sync_status %}&sync_status={{ sync_status|urlencode }}{% endif %}">Previous</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Previous</span></li>
+    {% endif %}
+    <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ paginator.num_pages }}</span></li>
+    {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search|urlencode }}{% endif %}{% if sync_status %}&sync_status={{ sync_status|urlencode }}{% endif %}">Next</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Next</span></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}

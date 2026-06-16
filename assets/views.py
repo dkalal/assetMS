@@ -312,6 +312,10 @@ class AssetCreateView(LoginRequiredMixin, BranchContextMixin, TemplateView):
                 assigned_to_id = request.POST.get('assigned_to_id')
                 if assigned_to_id:
                     asset_data['assigned_to_id'] = int(assigned_to_id)
+
+                customer_reference_id = request.POST.get('customer_reference')
+                if customer_reference_id:
+                    asset_data['customer_reference_id'] = int(customer_reference_id)
                 
                 # Create approval request
                 approval_request = ApprovalRequest.objects.create(

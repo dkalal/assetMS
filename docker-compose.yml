@@ -24,10 +24,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: assetms_web
-    command: >
-      sh -c "python manage.py migrate --noinput &&
-             python manage.py collectstatic --noinput &&
-             gunicorn assetms.wsgi:application --bind 0.0.0.0:8001 --workers 3"
+    entrypoint: ["/app/entrypoint.sh"]
     env_file:
       - .env
     environment:

@@ -4,10 +4,11 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
 
+from assets.models import Asset, AssetCategory
 from tenancy.models import Company
 
 from .models import CustomerSyncRun, ExternalCustomerReference, ExternalCustomerSyncConfig
-from .services import CustomerSyncService, SourceCustomerApiError
+from .services import CustomerSyncService, SourceCustomerApiError, normalize_source_base_url
 
 
 User = get_user_model()
@@ -104,6 +105,16 @@ class CustomerSyncServiceTests(TestCase):
         with self.assertRaises(SourceCustomerApiError):
             CustomerSyncService.sync_company_customers(company=self.company, initiated_by=self.user)
 
+    def test_normalize_source_base_url_strips_ui_path(self):
+        self.assertEqual(
+            normalize_source_base_url('http://127.0.0.1:8000/customers'),
+            'http://127.0.0.1:8000',
+        )
+        self.assertEqual(
+            normalize_source_base_url('https://example.com/customers/'),
+            'https://example.com',
+        )
+
 
 class CustomerSyncApiTests(TestCase):
     def setUp(self):
@@ -143,3 +154,52 @@ class CustomerSyncApiTests(TestCase):
         response = self.client.post('/integrations/api/customer-sync/run/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['sync']['created'], 3)
+
+
+class SyncedCustomerPageTests(TestCase):
+    def setUp(self):
+        self.company = Company.objects.create(name='Gamma')
+        self.user = User.objects.create_user(
+            username='gamma-admin',
+            password='pass',
+            company=self.company,
+            role=User.ADMIN,
+        )
+        self.client.force_login(self.user)
+        self.category = AssetCategory.objects.create(company=self.company, name='Laptops')
+        self.customer = ExternalCustomerReference.objects.create(
+            company=self.company,
+            full_name='PETER',
+            phone='+255700111222',
+            email='peter@example.com',
+            address='Dar es Salaam',
+            customer_status='active',
+            customer_type='internet',
+            source_created_at=timezone.now(),
+            last_synced_at=timezone.now(),
+            sync_status=ExternalCustomerReference.SyncStatus.SYNCED,
+        )
+        self.asset = Asset.objects.create(
+            company=self.company,
+            category=self.category,
+            customer_reference=self.customer,
+            status=Asset.STATUS_ACTIVE,
+            description='Linked test asset',
+        )
+
+    def test_customer_string_is_human_friendly(self):
+        self.assertEqual(str(self.customer), 'PETER (+255700111222, peter@example.com)')
+
+    def test_synced_customer_list_page_renders(self):
+        response = self.client.get('/integrations/customers/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Synced Customers')
+        self.assertContains(response, 'PETER')
+        self.assertContains(response, '+255700111222')
+        self.assertContains(response, 'peter@example.com')
+
+    def test_synced_customer_detail_page_shows_linked_asset(self):
+        response = self.client.get(f'/integrations/customers/{self.customer.external_uuid}/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Linked Assets')
+        self.assertContains(response, str(self.asset))

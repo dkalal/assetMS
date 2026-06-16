@@ -459,6 +459,38 @@
             {{ form.assigned_to.errors }}
         </div>
     </div>
+
+    <!-- Customer Reference Section -->
+    <div class="section-header">
+        <h5><i class="bi bi-people me-2"></i>Customer Reference (Optional)</h5>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-12">
+            <label for="id_customer_reference" class="form-label">
+                Synced Customer
+            </label>
+
+            {% if object and current_asset and current_asset.customer_reference %}
+            <div class="alert alert-info d-flex align-items-center mb-2 py-2" role="alert">
+                <i class="bi bi-person-badge me-2"></i>
+                <div class="small">
+                    <strong>Currently linked to:</strong>
+                    {{ current_asset.customer_reference.full_name }}
+                    {% if current_asset.customer_reference.phone %}
+                    <span class="badge bg-light text-dark ms-1">{{ current_asset.customer_reference.phone }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {{ form.customer_reference }}
+            <div class="form-text">
+                Link this asset to a synced customer so operators can see who it belongs to during register and transfer workflows.
+            </div>
+            {{ form.customer_reference.errors }}
+        </div>
+    </div>
     
     <!-- Dynamic Category Fields -->
     <div id="dynamic-fields-container" class="dynamic-fields-card" style="display: none;">

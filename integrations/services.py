@@ -4,6 +4,7 @@ import json
 import logging
 from dataclasses import dataclass
 from urllib import error, request
+from urllib.parse import urlsplit, urlunsplit
 
 from django.conf import settings
 from django.db import transaction
@@ -30,6 +31,25 @@ def get_sync_timeout_seconds() -> int:
     return int(getattr(settings, 'EXTERNAL_CUSTOMER_SYNC_TIMEOUT_SECONDS', 15))
 
 
+def normalize_source_base_url(raw_url: str) -> str:
+    """
+    Normalize the configured source URL to a host root.
+
+    The integration UI stores a "base URL" rather than a full endpoint.
+    If an operator pastes a UI path such as `/customers`, we strip that path
+    so the sync client always appends the API route to the real origin.
+    """
+    value = (raw_url or '').strip()
+    if not value:
+        return ''
+
+    parsed = urlsplit(value)
+    if not parsed.scheme or not parsed.netloc:
+        return value.rstrip('/')
+
+    return urlunsplit((parsed.scheme, parsed.netloc, '', '', ''))
+
+
 @dataclass
 class SyncOutcome:
     run: CustomerSyncRun
@@ -43,7 +63,7 @@ class SyncOutcome:
 
 class SourceCustomerApiClient:
     def __init__(self, *, base_url: str, api_token: str, timeout: int | None = None):
-        self.base_url = base_url.rstrip('/')
+        self.base_url = normalize_source_base_url(base_url).rstrip('/')
         self.api_token = api_token
         self.timeout = timeout or get_sync_timeout_seconds()
 

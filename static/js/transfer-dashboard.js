@@ -19,6 +19,14 @@
                '';
     }
 
+    function formatAssetContext(asset) {
+        const parts = [asset.category, asset.branch || 'No Branch'];
+        if (asset.customer_reference) {
+            parts.unshift(`Customer: ${asset.customer_reference}`);
+        }
+        return parts.filter(Boolean).join(' | ');
+    }
+
     function formatDate(isoString) {
         if (!isoString) return 'N/A';
         const date = new Date(isoString);
@@ -734,7 +742,7 @@
                 data.assets.forEach(asset => {
                     const option = document.createElement('option');
                     option.value = asset.id;
-                    option.textContent = `${asset.name} (${asset.category}) - ${asset.branch || 'No Branch'}`;
+                    option.textContent = `${asset.name} (${formatAssetContext(asset)})`;
                     option.dataset.assetId = asset.id;
                     select.appendChild(option);
                 });
@@ -770,8 +778,7 @@
                     div.innerHTML = `
                         <input class="form-check-input bulk-asset-checkbox" type="checkbox" value="${asset.id}" id="asset-${asset.id}">
                         <label class="form-check-label" for="asset-${asset.id}">
-                            <strong>${asset.name}</strong> - ${asset.category} 
-                            <span class="text-muted">(${asset.branch || 'No Branch'})</span>
+                            <strong>${asset.name}</strong> - ${formatAssetContext(asset)}
                         </label>
                     `;
                     container.appendChild(div);

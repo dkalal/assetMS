@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.http import QueryDict
 
 from .models import Asset, AssetCategory, AssetCategoryField, MaintenanceRecord
+from integrations.models import ExternalCustomerReference
 from users.fields import UserWithBranchChoiceField
 import json
 
@@ -24,6 +25,13 @@ class AssetForm(forms.ModelForm):
         required=False,
         empty_label="-- Not Assigned --",
         widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
+    customer_reference = forms.ModelChoiceField(
+        queryset=ExternalCustomerReference.objects.none(),
+        required=False,
+        empty_label="-- No Customer Linked --",
+        widget=forms.Select(attrs={'class': 'form-select'}),
     )
     
     def __init__(self, *args, **kwargs):
@@ -156,6 +164,16 @@ class AssetForm(forms.ModelForm):
                 assigned_field.queryset = assigned_qs
             else:
                 assigned_field.queryset = assigned_field.queryset.none()
+
+        customer_field = self.fields.get('customer_reference')
+        if customer_field:
+            if self.company:
+                customer_field.queryset = ExternalCustomerReference.objects.filter(
+                    company=self.company,
+                    sync_status=ExternalCustomerReference.SyncStatus.SYNCED,
+                ).order_by('full_name')
+            else:
+                customer_field.queryset = ExternalCustomerReference.objects.none()
         
         # WORLD-CLASS FIX: Detect if this is a status-only update
         # When editing an existing asset and only changing status, skip dynamic field requirements
@@ -462,7 +480,7 @@ class AssetForm(forms.ModelForm):
         model = Asset
         fields = [
             # Core fields
-            'company', 'category', 'branch', 'status', 'assigned_to', 'description',
+            'company', 'category', 'branch', 'status', 'assigned_to', 'customer_reference', 'description',
             # WORLD-CLASS DUPLICATE DETECTION FIELDS
             'serial_number', 'asset_tag', 'qr_string',
             # Maintenance fields

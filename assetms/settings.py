@@ -261,8 +261,7 @@ else:
     # Local storage fallback
     MEDIA_URL = "/media/"
     MEDIA_ROOT = BASE_DIR / "media"
-    STATICFILES_DIRS.append((str(BASE_DIR / "media"), "media"))
-    WHITENOISE_DIRECTORIES = [(str(BASE_DIR / "media"), "/media/")]
+WHITENOISE_DIRECTORIES = [(str(BASE_DIR / "media"), "/media/")]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

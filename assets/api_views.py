@@ -1498,7 +1498,7 @@ def api_asset_list(request):
     - status: Optional. Filter by status (active, in_maintenance, retired, etc.)
     - category: Optional. Filter by category ID
     - branch: Optional. Filter by branch ID
-    - search: Optional. Search by name, serial number, asset tag
+    - search: Optional. Search by name, serial number, asset tag, synced customer name
     - assigned: Optional. Filter by assignment status (true/false)
     - limit: Optional. Limit results (default: 100, max: 500)
     - offset: Optional. Pagination offset (default: 0)
@@ -1518,6 +1518,8 @@ def api_asset_list(request):
                 "status": "active",
                 "assigned_to": "John Doe",
                 "assigned_to_id": 10,
+                "customer_reference": "Acme Enterprises",
+                "customer_reference_id": 23,
                 "serial_number": "SN12345",
                 "asset_tag": "TAG-001"
             }
@@ -1587,7 +1589,8 @@ def api_asset_list(request):
             assets_qs = assets_qs.filter(
                 Q(name__icontains=search_term) |
                 Q(dynamic_data__serial_number__icontains=search_term) |
-                Q(dynamic_data__asset_tag__icontains=search_term)
+                Q(dynamic_data__asset_tag__icontains=search_term) |
+                Q(customer_reference__full_name__icontains=search_term)
             )
         
         # Assignment filter
@@ -1605,7 +1608,8 @@ def api_asset_list(request):
             'company',
             'category',
             'branch',
-            'assigned_to'
+            'assigned_to',
+            'customer_reference',
         ).order_by('-created_at')
         
         # Pagination
@@ -1647,6 +1651,15 @@ def api_asset_list(request):
             else:
                 asset_dict['assigned_to'] = None
                 asset_dict['assigned_to_id'] = None
+
+            if asset.customer_reference:
+                asset_dict['customer_reference'] = asset.customer_reference.full_name
+                asset_dict['customer_reference_id'] = asset.customer_reference_id
+                asset_dict['customer_reference_uuid'] = str(asset.customer_reference.external_uuid)
+            else:
+                asset_dict['customer_reference'] = None
+                asset_dict['customer_reference_id'] = None
+                asset_dict['customer_reference_uuid'] = None
             
             assets_data.append(asset_dict)
         

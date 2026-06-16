@@ -81,7 +81,17 @@ class ExternalCustomerReference(models.Model):
         ]
 
     def __str__(self):
-        return f'{self.full_name} ({self.external_uuid})'
+        contact_bits = [bit for bit in [self.phone, self.email] if bit]
+        if contact_bits:
+            return f'{self.full_name} ({", ".join(contact_bits)})'
+        return self.full_name
+
+    @property
+    def display_label(self):
+        contact_bits = [bit for bit in [self.phone, self.email] if bit]
+        if contact_bits:
+            return f'{self.full_name} ({", ".join(contact_bits)})'
+        return self.full_name
 
 
 class CustomerSyncRun(models.Model):
@@ -119,4 +129,3 @@ class CustomerSyncRun(models.Model):
 
     def __str__(self):
         return f'{self.company} sync at {self.started_at:%Y-%m-%d %H:%M:%S}'
-

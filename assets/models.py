@@ -209,6 +209,14 @@ class Asset(models.Model):
     images = models.ImageField(upload_to='asset_images/', blank=True, null=True)
     documents = models.FileField(upload_to='asset_docs/', blank=True, null=True)
     assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    customer_reference = models.ForeignKey(
+        'integrations.ExternalCustomerReference',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assets',
+        help_text='Synced customer linked to this asset.',
+    )
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -502,6 +510,8 @@ class Asset(models.Model):
         super().clean()
         if self.branch and self.branch.company_id != self.company_id:
             raise ValidationError('Asset branch must belong to the same company.')
+        if self.customer_reference and self.customer_reference.company_id != self.company_id:
+            raise ValidationError('Customer reference must belong to the same company.')
         if self.maintenance_enabled:
             if not self.maintenance_interval_days or self.maintenance_interval_days <= 0:
                 raise ValidationError('Maintenance interval must be a positive integer when maintenance tracking is enabled.')
