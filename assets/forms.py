@@ -30,7 +30,9 @@ class AssetForm(forms.ModelForm):
     customer_reference = forms.ModelChoiceField(
         queryset=ExternalCustomerReference.objects.none(),
         required=False,
+        label="Linked Internet Customer",
         empty_label="-- No Customer Linked --",
+        help_text="Operational customer link only; this does not assign the asset to a system user.",
         widget=forms.Select(attrs={'class': 'form-select'}),
     )
     

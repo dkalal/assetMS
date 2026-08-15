@@ -453,6 +453,10 @@ CELERY_TASK_REJECT_ON_WORKER_LOST = True  # Reject task if worker dies
 CELERY_TASK_IGNORE_RESULT = False  # Store task results
 
 EXTERNAL_CUSTOMER_SYNC_TIMEOUT_SECONDS = int(os.environ.get('EXTERNAL_CUSTOMER_SYNC_TIMEOUT_SECONDS', '15'))
+ASSETMS_PUBLIC_BASE_URL = os.environ.get(
+    'ASSETMS_PUBLIC_BASE_URL',
+    'http://127.0.0.1:8001' if DEBUG else '',
+).strip().rstrip('/')
 
 # Django Celery Beat (Database-backed periodic tasks)
 INSTALLED_APPS += [

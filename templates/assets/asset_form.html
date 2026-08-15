@@ -462,13 +462,13 @@
 
     <!-- Customer Reference Section -->
     <div class="section-header">
-        <h5><i class="bi bi-people me-2"></i>Customer Reference (Optional)</h5>
+        <h5><i class="bi bi-people me-2"></i>Internet Customer Link (Optional)</h5>
     </div>
 
     <div class="row g-3 mb-4">
         <div class="col-md-12">
             <label for="id_customer_reference" class="form-label">
-                Synced Customer
+                Linked Internet Customer
             </label>
 
             {% if object and current_asset and current_asset.customer_reference %}
@@ -486,7 +486,8 @@
 
             {{ form.customer_reference }}
             <div class="form-text">
-                Link this asset to a synced customer so operators can see who it belongs to during register and transfer workflows.
+                Link this asset to the Internet customer it supports. This is separate from <strong>Assigned To</strong> above:
+                it does not create a user assignment and does not make the customer a transfer recipient.
             </div>
             {{ form.customer_reference.errors }}
         </div>

@@ -79,6 +79,32 @@ class SourceCustomerApiClient:
             yield results
             next_url = payload.get('next')
 
+    def replace_customer_assets(self, *, customer_uuid, assets):
+        url = f'{self.base_url}/api/integrations/customers/{customer_uuid}/assets/'
+        req = request.Request(
+            url,
+            data=json.dumps({'assets': assets}).encode('utf-8'),
+            headers={
+                'Authorization': f'Token {self.api_token}',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            method='PUT',
+        )
+        try:
+            with request.urlopen(req, timeout=self.timeout) as response:
+                return json.loads(response.read().decode('utf-8'))
+        except error.HTTPError as exc:
+            if exc.code in {401, 403}:
+                raise SourceCustomerApiAuthError(f'Source API authentication failed with status {exc.code}.') from exc
+            raise SourceCustomerApiError(f'Asset projection request failed with status {exc.code}.') from exc
+        except error.URLError as exc:
+            raise SourceCustomerApiError(f'Source API connection failed: {exc.reason}') from exc
+        except TimeoutError as exc:
+            raise SourceCustomerApiError('Source API request timed out.') from exc
+        except json.JSONDecodeError as exc:
+            raise SourceCustomerApiError('Source API returned invalid JSON.') from exc
+
     def _get_json(self, url: str):
         req = request.Request(
             url,
@@ -215,6 +241,15 @@ class CustomerSyncService:
             error_summary=error_summary,
         )
 
+        def enqueue_projection_reconciliation():
+            try:
+                from .tasks import enqueue_company_asset_projections
+                enqueue_company_asset_projections.delay(company.id)
+            except Exception:
+                logger.exception('Unable to enqueue customer asset reconciliation for company=%s', company.id)
+
+        transaction.on_commit(enqueue_projection_reconciliation)
+
         return SyncOutcome(
             run=sync_run,
             created=created,
@@ -299,3 +334,79 @@ class CustomerSyncService:
                 'error_summary': error_summary,
             },
         )
+
+
+class CustomerAssetProjectionService:
+    """Publish authoritative customer-to-asset snapshots to the customer system."""
+
+    DISPLAY_NAME_KEYS = ('name', 'asset_name', 'title')
+    SENSITIVE_KEY_PARTS = ('password', 'secret', 'token', 'credential', 'private_key', 'pin')
+
+    @classmethod
+    def _display_name(cls, asset):
+        dynamic_data = asset.dynamic_data if isinstance(asset.dynamic_data, dict) else {}
+        for key in cls.DISPLAY_NAME_KEYS:
+            value = dynamic_data.get(key)
+            if value not in (None, ''):
+                return str(value).strip()[:200]
+        return (asset.asset_tag or asset.serial_number or f'{asset.category.name} asset')[:200]
+
+    @classmethod
+    def _custom_attributes(cls, asset):
+        dynamic_data = asset.dynamic_data if isinstance(asset.dynamic_data, dict) else {}
+        attributes = []
+        for definition in asset.category.fields.all():
+            key = definition.key
+            normalized_key = key.lower()
+            if key in cls.DISPLAY_NAME_KEYS or any(part in normalized_key for part in cls.SENSITIVE_KEY_PARTS):
+                continue
+            value = dynamic_data.get(key)
+            if value in (None, '') or isinstance(value, (dict, list)):
+                continue
+            if isinstance(value, bool):
+                value = 'Yes' if value else 'No'
+            attributes.append({'label': definition.label[:100], 'value': str(value)[:500]})
+            if len(attributes) >= 12:
+                break
+        return attributes
+
+    @classmethod
+    def _serialize_asset(cls, asset):
+        public_base_url = getattr(settings, 'ASSETMS_PUBLIC_BASE_URL', '')
+        return {
+            'external_uuid': str(asset.uuid),
+            'display_name': cls._display_name(asset),
+            'asset_tag': asset.asset_tag or '',
+            'serial_number': asset.serial_number or '',
+            'category_name': asset.category.name,
+            'branch_name': asset.branch.name if asset.branch else '',
+            'status': asset.status,
+            'description': asset.description or '',
+            'custom_attributes': cls._custom_attributes(asset),
+            'source_url': f'{public_base_url}/assets/{asset.uuid}/' if public_base_url else '',
+            'source_updated_at': asset.updated_at.isoformat(),
+        }
+
+    @classmethod
+    def sync_reference(cls, *, reference_id):
+        reference = ExternalCustomerReference.objects.select_related('company').get(pk=reference_id)
+        config = ExternalCustomerSyncConfig.objects.filter(company=reference.company, is_enabled=True).first()
+        if config is None:
+            raise SourceCustomerApiError('Customer sync is not configured for this company.')
+        assets = list(
+            reference.assets.select_related('category', 'branch')
+            .prefetch_related('category__fields')
+            .order_by('category__name', 'asset_tag', 'uuid')
+        )
+        client = SourceCustomerApiClient(base_url=config.source_base_url, api_token=config.api_token)
+        result = client.replace_customer_assets(
+            customer_uuid=reference.external_uuid,
+            assets=[cls._serialize_asset(asset) for asset in assets],
+        )
+        logger.info(
+            'Customer asset projection synced company=%s customer=%s assets=%s',
+            reference.company_id,
+            reference.external_uuid,
+            len(assets),
+        )
+        return result
