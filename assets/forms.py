@@ -273,12 +273,26 @@ class AssetForm(forms.ModelForm):
                             
                             populated_count += 1
                     
-                    if populated_count > 0:
-                        print(f"✅ FORM INIT: Pre-populated {populated_count} dynamic fields from instance")
-                        
-            except Exception as e:
-                # Don't fail form initialization if dynamic data has issues
-                print(f"⚠️ Warning: Could not pre-populate dynamic fields in form: {e}")
+            except (TypeError, ValueError):
+                # Invalid legacy JSON should not make the edit form unavailable.
+                pass
+
+        # Keep every visible Django widget aligned with the canonical Bootstrap
+        # form system. This also prevents long select options from defining the
+        # page's intrinsic width on compact screens.
+        for field in self.fields.values():
+            widget = field.widget
+            if isinstance(widget, forms.HiddenInput):
+                continue
+            if isinstance(widget, forms.CheckboxInput):
+                css_class = 'form-check-input'
+            elif isinstance(widget, forms.Select):
+                css_class = 'form-select'
+            else:
+                css_class = 'form-control'
+            existing_classes = widget.attrs.get('class', '').split()
+            if css_class not in existing_classes:
+                widget.attrs['class'] = ' '.join([*existing_classes, css_class]).strip()
 
     def _make_field(self, field):
         """
@@ -886,12 +900,6 @@ class AssetForm(forms.ModelForm):
         
         # Assign the built dynamic_data dict to instance
         instance.dynamic_data = dynamic_data
-        
-        # Log for debugging (remove in production)
-        if dynamic_data:
-            print(f"💾 SAVE: Persisting {len(dynamic_data)} dynamic fields to database")
-            for key, val in dynamic_data.items():
-                print(f"   - {key}: {val}")
         
         # CRITICAL FIX: Call full_clean() to trigger model-level validation
         # This ensures _validate_unique_fields() is called for duplicate detection

@@ -59,12 +59,14 @@ backup.*
 *.md
 !README.md
 !CHANGELOG.md
+!docs/UI_ARCHITECTURE_INVENTORY.md
 
 # Test files
 test_*.py
 *_test.py
 test_*.html
 test_*.js
+!assets/tests/test_ui_foundation.py
 
 # Backup files
 *.backup

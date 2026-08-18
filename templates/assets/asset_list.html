@@ -1,829 +1,167 @@
 {% extends 'base_dashboard.html' %}
-{% load asset_extras %}
-{% load static %}
-
-{% block title %}Asset Management · AssetPro{% endblock %}
-
-{% block extra_head %}
-<!-- World-Class Asset List Styling -->
-<link rel="stylesheet" href="{% static 'css/asset-list-worldclass.css' %}">
-{% endblock %}
-
+{% load static asset_extras %}
+{% block title %}Assets - Asset Management{% endblock %}
+{% block extra_styles %}<link rel='stylesheet' href='{% static 'css/asset-list.css' %}'>{% endblock %}
 {% block content %}
+<div class='asset-index'>
+  <header class='page-header'>
+    <div class='page-header__copy'>
+      <h1 class='page-header__title'>Assets</h1>
+      <p class='page-header__description'>{{ statistics.total|default:0 }} records available in your current workspace.</p>
+    </div>
+    <div class='page-header__actions'>
+      {% if user.role != 'user' or user.is_superuser %}
+      <a class='btn btn-primary' href='{% url 'asset_register' %}'><i class='bi bi-plus-lg me-2'></i>Register asset</a>
+      {% endif %}
+      <div class='dropdown'>
+        <button class='btn btn-outline-secondary' type='button' data-bs-toggle='dropdown' aria-expanded='false'><i class='bi bi-three-dots' aria-hidden='true'></i><span class='visually-hidden'>More asset actions</span></button>
+        <ul class='dropdown-menu dropdown-menu-end'>
+          <li><a class='dropdown-item' href='{% url 'asset_scan' %}'><i class='bi bi-upc-scan me-2'></i>Scan asset</a></li>
+          {% if user.role != 'user' or user.is_superuser %}
+          <li><a class='dropdown-item' href='{% url 'asset_bulk_import' %}'><i class='bi bi-upload me-2'></i>Import assets</a></li>
+          <li><button class='dropdown-item' type='button' data-export-preview data-report-type='assets' data-format='xlsx'><i class='bi bi-download me-2'></i>Export assets</button></li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </header>
 
-<!-- Hero Section -->
-<div class="asset-page-header">
-    <div class="row align-items-center">
-        <div class="col-md-8">
-            <h1>
-                <i class="bi bi-box-seam me-3"></i>Asset Management
-            </h1>
-            <p>
-                Manage your organization's assets, track assignments, and monitor asset lifecycle
-            </p>
-        </div>
-        <div class="col-md-4 text-md-end mt-3 mt-md-0">
-            <a href="{% url 'asset_register' %}" class="btn btn-light btn-lg me-2">
-                <i class="bi bi-plus-circle me-2"></i>Register Asset
-            </a>
-            <a href="{% url 'asset_scan' %}" class="btn btn-outline-light btn-lg">
-                <i class="bi bi-upc-scan me-2"></i>Scan
-            </a>
-        </div>
-    </div>
-</div>
-
-<!-- Metrics Row -->
-{% if statistics %}
-<div class="asset-metrics-grid">
-  <a href="?" class="asset-metric-card">
-    <div class="asset-metric-icon primary">
-        <i class="bi bi-boxes"></i>
-      </div>
-    <div class="asset-metric-value">{{ statistics.total|default:0 }}</div>
-    <div class="asset-metric-label">Total Assets</div>
-  </a>
-  <a href="?status=active" class="asset-metric-card">
-    <div class="asset-metric-icon success">
-        <i class="bi bi-check-circle"></i>
-      </div>
-    <div class="asset-metric-value">{{ statistics.active|default:0 }}</div>
-    <div class="asset-metric-label">Active</div>
-  </a>
-  <a href="?status=maintenance" class="asset-metric-card">
-    <div class="asset-metric-icon warning">
-        <i class="bi bi-tools"></i>
-      </div>
-    <div class="asset-metric-value">{{ statistics.in_maintenance|default:0 }}</div>
-    <div class="asset-metric-label">Maintenance</div>
-  </a>
-  <a href="?status=retired" class="asset-metric-card">
-    <div class="asset-metric-icon secondary">
-        <i class="bi bi-archive"></i>
-      </div>
-    <div class="asset-metric-value">{{ statistics.retired|default:0 }}</div>
-    <div class="asset-metric-label">Retired</div>
-  </a>
-  <a href="?assigned=yes" class="asset-metric-card">
-    <div class="asset-metric-icon info">
-        <i class="bi bi-person-check"></i>
-      </div>
-    <div class="asset-metric-value">{{ statistics.assigned|default:0 }}</div>
-    <div class="asset-metric-label">Assigned</div>
-  </a>
-  <a href="?assigned=no" class="asset-metric-card">
-    <div class="asset-metric-icon danger">
-        <i class="bi bi-person-x"></i>
-      </div>
-    <div class="asset-metric-value">{{ statistics.unassigned|default:0 }}</div>
-    <div class="asset-metric-label">Unassigned</div>
-  </a>
-</div>
-{% endif %}
-<!-- World-Class Search & Filter Bar -->
-<div class="asset-search-bar">
-<form method="get" id="assetFilterForm">
-<div class="row g-3 align-items-end">
-    <!-- Primary Search -->
-    <div class="col-md-5">
-        <label class="form-label fw-semibold">
-            <i class="bi bi-search me-1 text-secondary"></i>Search Assets
-        </label>
-        <input type="text" 
-               name="search" 
-               class="form-control form-control-lg" 
-               placeholder="Search by name, model, serial number, or description..." 
-               value="{{ request.GET.search|default:'' }}">
-    </div>
-    
-    <!-- Primary Filters -->
-    <div class="col-md-2">
-        <label class="form-label fw-semibold">
-            <i class="bi bi-folder2 me-1 text-primary"></i>Category
-        </label>
-        <select name="category" class="form-select" id="category-select">
-            <option value="">All Categories</option>
-            {% for cat in categories %}
-            <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:'s' %}selected{% endif %}>
-                {{ cat.name }}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
-    
-    <div class="col-md-2">
-        <label class="form-label fw-semibold">
-            <i class="bi bi-circle-fill me-1 text-success"></i>Status
-        </label>
-        <select name="status" class="form-select">
-            <option value="">All Statuses</option>
-            {% for val, label in statuses %}
-            <option value="{{ val }}" {% if request.GET.status == val %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    
-    {% if branches %}
-    <div class="col-md-2">
-        <label class="form-label fw-semibold">
-            <i class="bi bi-geo-alt me-1 text-info"></i>Branch
-        </label>
-        <select name="branch" class="form-select">
-            <option value="">All Branches</option>
-            {% for branch in branches %}
-            <option value="{{ branch.id }}" {% if request.GET.branch == branch.id|stringformat:'s' %}selected{% endif %}>
-                {{ branch.name }}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
-    {% endif %}
-    
-    <!-- Action Buttons -->
-    <div class="col-md-1">
-        <button type="submit" class="btn btn-primary w-100">
-            <i class="bi bi-funnel"></i>
-        </button>
-    </div>
-</div>
-
-<!-- Advanced Filters Toggle -->
-{% if dynamic_fields %}
-<div class="mt-3">
-    <div class="advanced-filters-toggle d-flex align-items-center gap-2" 
-         onclick="toggleAdvancedFilters()" 
-         role="button" 
-         aria-expanded="false"
-         aria-controls="advancedFiltersContent"
-         tabindex="0">
-        <i class="bi bi-sliders2 text-primary"></i>
-        <span class="fw-semibold text-primary">Advanced Filters</span>
-        <i class="bi bi-chevron-down text-primary" id="advancedFiltersIcon"></i>
-        <span class="badge bg-primary-subtle text-primary ms-2 d-none" id="advancedFiltersCount">0 active</span>
-    </div>
-    
-    <div class="advanced-filters-content" id="advancedFiltersContent">
-        <div class="row g-3 mt-2">
-            {% for field in dynamic_fields %}
-            {% with dyn_key='dyn_'|add:field.key %}
-            <div class="col-md-3">
-                <label class="form-label small fw-semibold">{{ field.label }}</label>
-                {% if field.type == 'text' %}
-                    <input type="text" 
-                           name="dyn_{{ field.key }}" 
-                           class="form-control form-control-sm advanced-filter-input" 
-                           placeholder="Enter {{ field.label|lower }}..." 
-                           value="{{ request.GET|get_item:dyn_key|default:'' }}">
-                {% elif field.type == 'number' %}
-                    <input type="number" 
-                           name="dyn_{{ field.key }}" 
-                           class="form-control form-control-sm advanced-filter-input" 
-                           placeholder="Enter {{ field.label|lower }}..." 
-                           value="{{ request.GET|get_item:dyn_key|default:'' }}">
-                {% elif field.type == 'date' %}
-                    <input type="date" 
-                           name="dyn_{{ field.key }}" 
-                           class="form-control form-control-sm advanced-filter-input" 
-                           value="{{ request.GET|get_item:dyn_key|default:'' }}">
-                {% endif %}
-            </div>
-            {% endwith %}
-            {% endfor %}
-        </div>
-    </div>
-</div>
-{% endif %}
-
-<!-- Active Filter Chips -->
-{% if request.GET.category or request.GET.status or request.GET.branch or request.GET.search or dynamic_fields %}
-<div class="mt-3 d-flex flex-wrap gap-2 align-items-center">
-    <span class="text-muted small fw-semibold">Active Filters:</span>
-    
-    {% if request.GET.category %}
-        {% for cat in categories %}
-            {% if request.GET.category == cat.id|stringformat:'s' %}
-            <span class="filter-chip">
-                <i class="bi bi-folder2"></i>
-                <span>{{ cat.name }}</span>
-                <i class="bi bi-x remove-filter" onclick="removeFilter('category')"></i>
-            </span>
-            {% endif %}
-        {% endfor %}
-    {% endif %}
-    
-    {% if request.GET.status %}
-    <span class="filter-chip">
-        <i class="bi bi-circle-fill"></i>
-        <span>{{ request.GET.status|title }}</span>
-        <i class="bi bi-x remove-filter" onclick="removeFilter('status')"></i>
-    </span>
-    {% endif %}
-    
-    {% if request.GET.branch %}
-        {% for branch in branches %}
-            {% if request.GET.branch == branch.id|stringformat:'s' %}
-            <span class="filter-chip">
-                <i class="bi bi-geo-alt"></i>
-                <span>{{ branch.name }}</span>
-                <i class="bi bi-x remove-filter" onclick="removeFilter('branch')"></i>
-            </span>
-            {% endif %}
-        {% endfor %}
-    {% endif %}
-    
-    {% if request.GET.search %}
-    <span class="filter-chip">
-        <i class="bi bi-search"></i>
-        <span>"{{ request.GET.search }}"</span>
-        <i class="bi bi-x remove-filter" onclick="removeFilter('search')"></i>
-    </span>
-    {% endif %}
-    
-    {% if dynamic_fields %}
-        {% for field in dynamic_fields %}
-            {% with key='dyn_'|add:field.key %}
-                {% if request.GET|get_item:key %}
-                <span class="filter-chip">
-                    <i class="bi bi-filter"></i>
-                    <span>{{ field.label }}: {{ request.GET|get_item:key }}</span>
-                    <i class="bi bi-x remove-filter" onclick="removeFilter('{{ key }}')"></i>
-                </span>
-                {% endif %}
-            {% endwith %}
-        {% endfor %}
-    {% endif %}
-    
-    <a href="?" class="btn btn-sm btn-outline-danger rounded-pill">
-        <i class="bi bi-x-circle me-1"></i>Clear All
+  {% if statistics %}
+  <section class='summary-strip' aria-label='Asset summary'>
+    <a class='summary-strip__item{% if not request.GET.status and not request.GET.assigned %} active{% endif %}' href='?'>
+      <span class='summary-strip__label'>Total</span><strong>{{ statistics.total|default:0 }}</strong>
     </a>
-</div>
-{% endif %}
-
-</form>
-</div>
-
-<script>
-function toggleAdvancedFilters(event) {
-    // Prevent event bubbling
-    if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-    }
-    
-    const content = document.getElementById('advancedFiltersContent');
-    const icon = document.getElementById('advancedFiltersIcon');
-    const toggle = event ? event.currentTarget : document.querySelector('.advanced-filters-toggle');
-    
-    console.log('🔍 Toggle Advanced Filters called');
-    console.log('  - Content element:', content);
-    console.log('  - Icon element:', icon);
-    console.log('  - Current show state:', content ? content.classList.contains('show') : 'N/A');
-    
-    if (!content) {
-        console.error('❌ advancedFiltersContent element not found! Check template IDs.');
-        return;
-    }
-    
-    // Toggle the show class
-    const isCurrentlyShown = content.classList.contains('show');
-    
-    if (isCurrentlyShown) {
-        console.log('  ➡️ Hiding filters');
-        content.classList.remove('show');
-        if (icon) {
-            icon.classList.remove('bi-chevron-up');
-            icon.classList.add('bi-chevron-down');
-        }
-        if (toggle) toggle.setAttribute('aria-expanded', 'false');
-    } else {
-        console.log('  ➡️ Showing filters');
-        content.classList.add('show');
-        if (icon) {
-            icon.classList.remove('bi-chevron-down');
-            icon.classList.add('bi-chevron-up');
-        }
-        if (toggle) toggle.setAttribute('aria-expanded', 'true');
-    }
-    
-    // CRITICAL: Force style recalculation for animation
-    content.offsetHeight; // Trigger reflow
-    
-    // Debug: Log computed styles after toggle
-    setTimeout(() => {
-        const computedStyle = window.getComputedStyle(content);
-        console.log('  - After toggle:');
-        console.log('    display:', computedStyle.display);
-        console.log('    maxHeight:', computedStyle.maxHeight);
-        console.log('    opacity:', computedStyle.opacity);
-        console.log('    visibility:', computedStyle.visibility);
-        console.log('    padding:', computedStyle.padding);
-        console.log('    classList:', content.classList.toString());
-    }, 50);
-}
-
-// Also add keyboard support (Enter key on toggle)
-document.addEventListener('DOMContentLoaded', function() {
-    const toggleEl = document.querySelector('.advanced-filters-toggle');
-    if (toggleEl) {
-        toggleEl.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                toggleAdvancedFilters(e);
-            }
-        });
-        
-        // CRITICAL: Initialize filters in hidden state
-        const content = document.getElementById('advancedFiltersContent');
-        if (content) {
-            // Ensure it starts hidden
-            content.classList.remove('show');
-            console.log('🔧 Advanced filters initialized in hidden state');
-        }
-    }
-    
-    // CRITICAL: Add click event listener with proper event handling
-    const toggleButton = document.querySelector('.advanced-filters-toggle');
-    if (toggleButton) {
-        // Remove any existing listeners to prevent duplicates
-        toggleButton.removeEventListener('click', toggleAdvancedFilters);
-        // Add fresh listener
-        toggleButton.addEventListener('click', function(e) {
-            console.log('🖱️ Advanced filters toggle clicked via event listener');
-            toggleAdvancedFilters(e);
-        });
-        console.log('🔧 Advanced filters click event listener attached');
-    }
-    console.log('✅ Advanced filters keyboard support initialized');
-});
-
-function removeFilter(filterName) {
-    const form = document.getElementById('assetFilterForm');
-    const input = form.querySelector(`[name="${filterName}"]`);
-    if (input) {
-        input.value = '';
-        form.submit();
-    }
-}
-
-// Count active advanced filters on page load
-document.addEventListener('DOMContentLoaded', function() {
-    const advancedInputs = document.querySelectorAll('.advanced-filter-input');
-    let activeCount = 0;
-    
-    advancedInputs.forEach(input => {
-        if (input.value && input.value.trim() !== '') {
-            activeCount++;
-        }
-    });
-    
-    if (activeCount > 0) {
-        const badge = document.getElementById('advancedFiltersCount');
-        badge.textContent = `${activeCount} active`;
-        badge.style.display = 'inline-block';
-        
-        // Auto-expand if filters are active
-        document.getElementById('advancedFiltersContent').classList.add('show');
-        document.getElementById('advancedFiltersIcon').classList.remove('bi-chevron-down');
-        document.getElementById('advancedFiltersIcon').classList.add('bi-chevron-up');
-    }
-});
-</script>
-
-<!-- Action Buttons Row -->
-  <div class="d-flex justify-content-between align-items-center mb-2">
-    <div class="d-flex align-items-center gap-2">
-      <a href="{% url 'asset_register' %}" class="btn btn-primary">Register New Asset</a>
-      <a href="{% url 'asset_scan' %}" class="btn btn-outline-secondary" aria-label="Scan asset via camera">
-        <i class="bi bi-upc-scan me-1"></i> Scan
-      </a>
-    </div>
-    <div class="d-flex align-items-center gap-2">
-      <span class="badge bg-secondary-subtle text-secondary" id="selected-count-badge" aria-live="polite" title="Selected assets count">0 selected</span>
-      <a href="{% url 'asset_bulk_import' %}" class="btn btn-outline-primary">Bulk Import</a>
-      <button data-export-preview 
-              data-report-type="assets" 
-              data-format="xlsx" 
-              class="btn btn-outline-success" 
-              type="button"
-              title="Export assets with preview">
-        <i class="bi bi-download me-1"></i>Export
-      </button>
-      {% if perms.assets.delete_asset %}
-      <button id="deleteSelectedAssets" class="btn btn-outline-danger" type="button" disabled>
-        <i class="bi bi-trash"></i> Delete Selected
-      </button>
-      {% endif %}
-    </div>
-  </div>
-  <!-- Asset List Scrollable Container -->
-  <div class="asset-list-scrollable">
-  <div class="position-relative">
-    <!-- Loading overlay (UI-only, hidden by default) -->
-    <div class="d-none" id="asset-table-loading-overlay" aria-hidden="true">
-      <div class="text-center">
-        <div class="spinner-border text-primary" role="status" aria-label="Loading"></div>
-        <div class="small text-muted mt-2">Loading assets…</div>
+    <a class='summary-strip__item{% if request.GET.assigned == 'yes' %} active{% endif %}' href='?assigned=yes'>
+      <span class='summary-strip__label'>Assigned</span><strong>{{ statistics.assigned|default:0 }}</strong>
+    </a>
+    <a class='summary-strip__item{% if request.GET.status == 'in_maintenance' %} active{% endif %}' href='?status=in_maintenance'>
+      <span class='summary-strip__label'>Maintenance</span><strong>{{ statistics.in_maintenance|default:0 }}</strong>
+    </a>
+    <a class='summary-strip__item{% if request.GET.assigned == 'no' %} active{% endif %}' href='?assigned=no'>
+      <span class='summary-strip__label'>Attention required</span><strong>{{ statistics.unassigned|default:0 }}</strong>
+    </a>
+  </section>
+  {% endif %}
+  <section class='filter-panel' aria-labelledby='asset-filter-title'>
+    <h2 class='visually-hidden' id='asset-filter-title'>Filter assets</h2>
+    <form method='get' id='asset-filter-form'>
+      <input type='hidden' name='page_size' value='{{ request.GET.page_size|default:20 }}'>
+      <div class='filter-panel__primary'>
+        <div class='filter-panel__search'>
+          <label class='visually-hidden' for='asset-search'>Search assets</label>
+          <div class='input-group'><span class='input-group-text'><i class='bi bi-search'></i></span><input class='form-control' id='asset-search' type='search' name='search' value='{{ request.GET.search|default:'' }}' placeholder='Search name, serial number or description'></div>
+        </div>
+        <button class='btn btn-outline-secondary d-lg-none' type='button' data-bs-toggle='offcanvas' data-bs-target='#assetFilterPanel' aria-controls='assetFilterPanel'>
+          <i class='bi bi-sliders me-2'></i>Filters{% if active_filter_count %}<span class='badge text-bg-primary ms-2'>{{ active_filter_count }}</span>{% endif %}
+        </button>
+        <button class='btn btn-primary d-none d-lg-inline-flex' type='submit'>Apply filters</button>
       </div>
-    </div>
-    <table class="enterprise-table asset-table">
-      <thead>
-        <tr>
-          <th><input type="checkbox" id="select-all-assets" aria-label="Select all assets"></th>
-          <th>Category</th>
-          <th>Status</th>
-          <th>Assigned To</th>
-          <th>Created</th>
-          {% for field in dynamic_fields %}
-            <th>{{ field.label }}</th>
-          {% endfor %}
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for asset in assets %}
-        <tr>
-          <td><input type="checkbox" class="asset-checkbox" name="asset_ids" value="{{ asset.pk }}" aria-label="Select asset {{ asset.pk }}"></td>
-          <td>{{ asset.category }}</td>
-          <td>{{ asset.status }}</td>
-          <td>{{ asset.assigned_to }}</td>
-          <td>{{ asset.created_at|date:'Y-m-d H:i' }}</td>
-          {% for field in dynamic_fields %}
-            <td>{{ asset.dynamic_data|get_item:field.key|default:'—' }}</td>
-          {% endfor %}
-          <td>
-            <div class="d-flex gap-1">
-              <a href="{% url 'asset_detail' asset.pk %}?internal=1" 
-                 class="btn btn-sm btn-outline-primary view-asset-btn" 
-                 title="View asset details"
-                 onclick="event.preventDefault(); window.location.href=this.href;">
-                <i class="bi bi-eye"></i>
-              </a>
-              {% if perms.assets.delete_asset %}
-              <button type="button" 
-                      class="btn btn-sm btn-outline-danger delete-asset" 
-                      data-asset-id="{{ asset.pk }}" 
-                      data-asset-name="{{ asset.dynamic_data.name|default:asset.pk }}"
-                      title="Delete asset">
-                <i class="bi bi-trash"></i>
-              </button>
-              {% endif %}
-            </div>
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="{{ dynamic_fields|length|add:'6' }}" class="p-4">
-            <div class="glass text-center p-4 rounded-3">
-              <div class="display-6 mb-2" aria-hidden="true">🤷</div>
-              <h5 class="mb-1">No assets found</h5>
-              <p class="text-muted mb-3">Try adjusting filters or clear all to view the full list.</p>
-              <div class="d-flex justify-content-center gap-2">
-                <a href="?" class="btn btn-outline-secondary btn-sm">Clear Filters</a>
-                <a href="{% url 'asset_register' %}" class="btn btn-primary btn-sm">Register Asset</a>
-              </div>
-            </div>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
 
-<!-- World-Class Pagination Controls -->
-{% if is_paginated %}
-<nav aria-label="Asset pagination" class="mt-4">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-    <div class="text-muted small">
-      Showing <strong>{{ page_obj.start_index }}</strong>-<strong>{{ page_obj.end_index }}</strong> of <strong>{{ paginator.count }}</strong> assets
+      <div class='offcanvas-lg offcanvas-end filter-panel__drawer' tabindex='-1' id='assetFilterPanel' aria-labelledby='assetFilterPanelTitle'>
+        <div class='offcanvas-header'><h2 class='offcanvas-title h5' id='assetFilterPanelTitle'>Filters</h2><button type='button' class='btn-close' data-bs-dismiss='offcanvas' data-bs-target='#assetFilterPanel' aria-label='Close filters'></button></div>
+        <div class='offcanvas-body'>
+          <div class='filter-panel__fields'>
+            <div><label class='form-label' for='category-filter'>Category</label><select class='form-select' id='category-filter' name='category'><option value=''>All categories</option>{% for category in categories %}<option value='{{ category.id }}'{% if request.GET.category == category.id|stringformat:'s' %} selected{% endif %}>{{ category.name }}</option>{% endfor %}</select></div>
+            <div><label class='form-label' for='status-filter'>Status</label><select class='form-select' id='status-filter' name='status'><option value=''>All statuses</option>{% for value, label in statuses %}<option value='{{ value }}'{% if request.GET.status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+            {% if branches %}<div><label class='form-label' for='branch-filter'>Branch</label><select class='form-select' id='branch-filter' name='branch'><option value=''>All branches</option>{% for branch in branches %}<option value='{{ branch.id }}'{% if request.GET.branch == branch.id|stringformat:'s' %} selected{% endif %}>{{ branch.name }}</option>{% endfor %}</select></div>{% endif %}
+          </div>
+
+          {% if advanced_filter_fields %}
+          <details class='filter-panel__advanced'{% for field in advanced_filter_fields %}{% with key='dyn_'|add:field.key %}{% if request.GET|get_item:key %} open{% endif %}{% endwith %}{% endfor %}>
+            <summary>Advanced filters <span class='text-muted'>for selected category</span></summary>
+            <div class='filter-panel__fields mt-3'>
+              {% for field in advanced_filter_fields %}{% with key='dyn_'|add:field.key %}
+              <div><label class='form-label' for='filter-{{ field.key }}'>{{ field.label }}</label><input class='form-control' id='filter-{{ field.key }}' type='{% if field.type == 'number' %}number{% elif field.type == 'date' %}date{% else %}text{% endif %}' name='dyn_{{ field.key }}' value='{{ request.GET|get_item:key|default:'' }}'></div>
+              {% endwith %}{% endfor %}
+            </div>
+          </details>
+          {% endif %}
+
+          <div class='filter-panel__mobile-actions d-lg-none'><button class='btn btn-primary' type='submit'>Show results</button>{% if has_active_filters %}<a class='btn btn-outline-secondary' href='{% url 'asset_list' %}'>Clear all</a>{% endif %}</div>
+        </div>
+      </div>
+    </form>
+
+    {% if has_active_filters %}
+    <div class='filter-chips' aria-label='Active filters'>
+      <span class='filter-chips__label'>Active:</span>
+      {% if request.GET.search %}<button class='filter-chip' type='button' data-remove-filter='search'>Search: {{ request.GET.search|truncatechars:28 }} <i class='bi bi-x-lg'></i></button>{% endif %}
+      {% if request.GET.category %}{% for category in categories %}{% if request.GET.category == category.id|stringformat:'s' %}<button class='filter-chip' type='button' data-remove-filter='category'>{{ category.name }} <i class='bi bi-x-lg'></i></button>{% endif %}{% endfor %}{% endif %}
+      {% if request.GET.status %}<button class='filter-chip' type='button' data-remove-filter='status'>{{ request.GET.status|title }} <i class='bi bi-x-lg'></i></button>{% endif %}
+      {% if request.GET.branch %}{% for branch in branches %}{% if request.GET.branch == branch.id|stringformat:'s' %}<button class='filter-chip' type='button' data-remove-filter='branch'>{{ branch.name }} <i class='bi bi-x-lg'></i></button>{% endif %}{% endfor %}{% endif %}
+      {% for field in advanced_filter_fields %}{% with key='dyn_'|add:field.key %}{% if request.GET|get_item:key %}<button class='filter-chip' type='button' data-remove-filter='{{ key }}'>{{ field.label }}: {{ request.GET|get_item:key|truncatechars:24 }} <i class='bi bi-x-lg'></i></button>{% endif %}{% endwith %}{% endfor %}
+      <a class='filter-chips__clear' href='{% url 'asset_list' %}'>Clear all</a>
     </div>
-    
-    <ul class="pagination mb-0">
-      {% if page_obj.has_previous %}
-        <li class="page-item">
-          <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page=1" aria-label="First" title="First page">
-            <i class="bi bi-chevron-double-left"></i>
-          </a>
-        </li>
-        <li class="page-item">
-          <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}" aria-label="Previous" title="Previous page">
-            <i class="bi bi-chevron-left"></i>
-          </a>
-        </li>
-      {% else %}
-        <li class="page-item disabled">
-          <span class="page-link"><i class="bi bi-chevron-double-left"></i></span>
-        </li>
-        <li class="page-item disabled">
-          <span class="page-link"><i class="bi bi-chevron-left"></i></span>
-        </li>
+    {% endif %}
+  </section>
+  <section class='record-panel' aria-labelledby='asset-records-title'>
+    <div class='record-panel__header'>
+      <div><h2 class='h5 mb-1' id='asset-records-title'>Asset records</h2>{% if is_paginated %}<p class='text-muted small mb-0'>Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ paginator.count }}</p>{% endif %}</div>
+      {% if user.role != 'user' or user.is_superuser %}
+      <div class='selection-toolbar' id='asset-selection-toolbar' hidden aria-live='polite'>
+        <strong id='asset-selection-count'>0 selected</strong>
+        <button class='btn btn-sm btn-outline-secondary' type='button' id='clear-asset-selection'>Clear</button>
+        <button class='btn btn-sm btn-primary' type='button' data-export-preview data-report-type='assets' data-format='xlsx'>Export selected</button>
+      </div>
       {% endif %}
-      
-      {% for num in paginator.page_range %}
-        {% if page_obj.number == num %}
-          <li class="page-item active" aria-current="page">
-            <span class="page-link">{{ num }}</span>
-          </li>
-        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-          <li class="page-item">
-            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a>
-          </li>
-        {% endif %}
+    </div>
+
+    {% if assets %}
+    <div class='asset-table-wrap d-none d-md-block'>
+      <table class='asset-table'>
+        <thead><tr>
+          {% if user.role != 'user' or user.is_superuser %}<th class='asset-table__select'><input class='form-check-input' id='select-all-assets' type='checkbox' aria-label='Select all assets on this page'></th>{% endif %}
+          <th class='asset-table__identifier'>Asset</th><th>Category</th><th>Status</th><th>Assignee</th><th>Created</th>
+          {% for field in table_dynamic_fields %}<th>{{ field.label }}</th>{% endfor %}<th class='asset-table__actions'><span class='visually-hidden'>Actions</span></th>
+        </tr></thead>
+        <tbody>
+          {% for asset in assets %}
+          <tr>
+            {% if user.role != 'user' or user.is_superuser %}<td class='asset-table__select'><input class='form-check-input asset-checkbox' type='checkbox' name='asset_ids' value='{{ asset.pk }}' data-asset-id='{{ asset.pk }}' aria-label='Select {{ asset.dynamic_data.name|default:asset.pk }}'></td>{% endif %}
+            <td class='asset-table__identifier'><a href='{% url 'asset_detail_by_uuid' asset.uuid %}?internal=1'>{{ asset.dynamic_data.name|default:'Asset' }}</a><span>#{{ asset.pk }}{% if asset.dynamic_data.serial_number %} · {{ asset.dynamic_data.serial_number }}{% endif %}</span></td>
+            <td>{{ asset.category.name|default:'Uncategorized' }}</td>
+            <td><span class='status-badge status-badge--{{ asset.status }}'>{{ asset.get_status_display }}</span></td>
+            <td>{% if asset.assigned_to %}{{ asset.assigned_to.get_full_name|default:asset.assigned_to.username }}{% else %}<span class='text-muted'>Unassigned</span>{% endif %}</td>
+            <td><time datetime='{{ asset.created_at|date:'c' }}'>{{ asset.created_at|date:'M j, Y' }}</time></td>
+            {% for field in table_dynamic_fields %}<td class='asset-table__truncate' title='{{ asset.dynamic_data|get_item:field.key|default:'' }}'>{{ asset.dynamic_data|get_item:field.key|default:'-' }}</td>{% endfor %}
+            <td class='asset-table__actions'>{% include 'assets/_asset_row_actions.html' with asset=asset %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class='asset-mobile-list d-md-none' aria-label='Asset records'>
+      {% for asset in assets %}
+      <article class='asset-record'>
+        <div class='asset-record__top'>
+          {% if user.role != 'user' or user.is_superuser %}<input class='form-check-input asset-checkbox' type='checkbox' name='asset_ids' value='{{ asset.pk }}' data-asset-id='{{ asset.pk }}' aria-label='Select {{ asset.dynamic_data.name|default:asset.pk }}'>{% endif %}
+          <div class='asset-record__identity'><h3>{{ asset.dynamic_data.name|default:'Asset' }}</h3><span>#{{ asset.pk }}{% if asset.dynamic_data.serial_number %} · {{ asset.dynamic_data.serial_number }}{% endif %}</span></div>
+          <span class='status-badge status-badge--{{ asset.status }}'>{{ asset.get_status_display }}</span>
+        </div>
+        <dl class='asset-record__meta'><div><dt>Category</dt><dd>{{ asset.category.name|default:'Uncategorized' }}</dd></div><div><dt>Assignee</dt><dd>{% if asset.assigned_to %}{{ asset.assigned_to.get_full_name|default:asset.assigned_to.username }}{% else %}Unassigned{% endif %}</dd></div></dl>
+        <div class='asset-record__actions'><a class='btn btn-sm btn-primary' href='{% url 'asset_detail_by_uuid' asset.uuid %}?internal=1'>View asset</a>{% include 'assets/_asset_row_actions.html' with asset=asset button_only=True %}</div>
+      </article>
       {% endfor %}
-      
-      {% if page_obj.has_next %}
-        <li class="page-item">
-          <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}" aria-label="Next" title="Next page">
-            <i class="bi bi-chevron-right"></i>
-          </a>
-        </li>
-        <li class="page-item">
-          <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ paginator.num_pages }}" aria-label="Last" title="Last page">
-            <i class="bi bi-chevron-double-right"></i>
-          </a>
-        </li>
-      {% else %}
-        <li class="page-item disabled">
-          <span class="page-link"><i class="bi bi-chevron-right"></i></span>
-        </li>
-        <li class="page-item disabled">
-          <span class="page-link"><i class="bi bi-chevron-double-right"></i></span>
-        </li>
-      {% endif %}
+    </div>
+    {% else %}
+    <div class='empty-state'><i class='bi bi-box-seam' aria-hidden='true'></i><h2>No assets found</h2><p>{% if has_active_filters %}No records match these filters. Clear filters or broaden your search.{% else %}There are no asset records in this workspace yet.{% endif %}</p><div>{% if has_active_filters %}<a class='btn btn-outline-secondary' href='{% url 'asset_list' %}'>Clear filters</a>{% endif %}{% if user.role != 'user' or user.is_superuser %}<a class='btn btn-primary' href='{% url 'asset_register' %}'>Register asset</a>{% endif %}</div></div>
+    {% endif %}
+  </section>
+  {% if is_paginated %}
+  <nav class='list-pagination' aria-label='Asset pagination'>
+    <p>Showing <strong>{{ page_obj.start_index }}-{{ page_obj.end_index }}</strong> of <strong>{{ paginator.count }}</strong></p>
+    <ul class='pagination pagination-sm mb-0'>
+      <li class='page-item{% if not page_obj.has_previous %} disabled{% endif %}'>{% if page_obj.has_previous %}<a class='page-link' href='?{% query_replace page=page_obj.previous_page_number %}' rel='prev'>Previous</a>{% else %}<span class='page-link'>Previous</span>{% endif %}</li>
+      {% for number in paginator.page_range %}{% if number == page_obj.number %}<li class='page-item active' aria-current='page'><span class='page-link'>{{ number }}</span></li>{% elif number > page_obj.number|add:'-3' and number < page_obj.number|add:'3' %}<li class='page-item d-none d-sm-block'><a class='page-link' href='?{% query_replace page=number %}'>{{ number }}</a></li>{% endif %}{% endfor %}
+      <li class='page-item{% if not page_obj.has_next %} disabled{% endif %}'>{% if page_obj.has_next %}<a class='page-link' href='?{% query_replace page=page_obj.next_page_number %}' rel='next'>Next</a>{% else %}<span class='page-link'>Next</span>{% endif %}</li>
     </ul>
-    
-    <div class="d-flex align-items-center gap-2">
-      <label for="page-size-select" class="text-muted small mb-0">Per page:</label>
-      <select id="page-size-select" class="form-select form-select-sm w-auto" onchange="changePageSize(this.value)">
-        <option value="20" {% if request.GET.page_size == '20' or not request.GET.page_size %}selected{% endif %}>20</option>
-        <option value="50" {% if request.GET.page_size == '50' %}selected{% endif %}>50</option>
-        <option value="100" {% if request.GET.page_size == '100' %}selected{% endif %}>100</option>
-        <option value="200" {% if request.GET.page_size == '200' %}selected{% endif %}>200</option>
-      </select>
-    </div>
-  </div>
-</nav>
-{% endif %}
-
-<!-- Mobile Scan FAB -->
-<a href="{% url 'asset_scan' %}" class="btn btn-primary rounded-circle position-fixed d-sm-none mobile-scan-fab"
-   aria-label="Open camera to scan asset">
-  <i class="bi bi-upc-scan"></i>
-</a>
-<!-- ⚠️ DEPRECATED: Old Custom Export Modal (Replaced by Unified Export Preview System) -->
-<!-- Kept for reference only. The new unified-export-preview.js handles all export functionality -->
-<!--
-<div id="exportModalCustom" class="custom-modal-overlay" tabindex="-1">
-  <div class="glass-modal" role="dialog" aria-modal="true" aria-labelledby="exportModalCustomLabel">
-    <div class="custom-modal-header d-flex align-items-center justify-content-between">
-      <h4 class="modal-title fw-bold mb-0" id="exportModalCustomLabel">
-        <i class="bi bi-box-arrow-up-right me-2 text-success"></i> Export Assets
-      </h4>
-      <button type="button" class="custom-modal-close" id="closeExportModal" aria-label="Close">
-        <span aria-hidden="true">&times;</span>
-      </button>
-    </div>
-    <div class="custom-modal-body">
-      <form id="export-form" method="post" action="{% url 'asset_export' %}">
-        {% csrf_token %}
-        <input type="hidden" name="selected_ids" id="selected-asset-ids">
-        <div class="alert alert-info py-2" id="export-summary">You are exporting all filtered assets.</div>
-        <div class="row g-3 align-items-end">
-          <div class="col-md-4">
-            <label class="form-label">Format</label>
-            <select name="format" class="form-select" required>
-              <option value="csv">CSV</option>
-              <option value="xlsx">Excel</option>
-              <option value="pdf">PDF</option>
-            </select>
-          </div>
-          <div class="col-md-8">
-            <label class="form-label">Columns to Export</label>
-            <div class="row" id="export-columns-list">
-              <div class="col-12"><em>Column selection coming soon...</em></div>
-            </div>
-          </div>
-        </div>
-        <div class="d-flex justify-content-end mt-3">
-          <button type="submit" class="btn btn-success">Export</button>
-        </div>
-      </form>
-    </div>
-  </div>
+    <form class='list-pagination__size' method='get'>
+      {% for key, value in request.GET.items %}{% if key != 'page' and key != 'page_size' %}<input type='hidden' name='{{ key }}' value='{{ value }}'>{% endif %}{% endfor %}
+      <label for='page-size'>Rows</label><select class='form-select form-select-sm' id='page-size' name='page_size'><option value='20'{% if request.GET.page_size == '20' or not request.GET.page_size %} selected{% endif %}>20</option><option value='50'{% if request.GET.page_size == '50' %} selected{% endif %}>50</option><option value='100'{% if request.GET.page_size == '100' %} selected{% endif %}>100</option></select><button class='btn btn-sm btn-outline-secondary' type='submit'>Apply</button>
+    </form>
+  </nav>
+  {% endif %}
 </div>
--->
-
-<!-- Include Delete Modal -->
-{% include 'components/delete_modal.html' %}
-
 {% endblock %}
-
-{% block extra_scripts %}
-<!-- World-Class Asset List JavaScript -->
-<script src="{% static 'js/asset-list-enhanced.js' %}"></script>
-<script src="{% static 'js/asset_list.js' %}"></script>
-<!-- WORLD-CLASS FIX: unified-export-preview.js is already loaded in base_dashboard.html -->
-<!-- Removed duplicate script include to prevent "Identifier already declared" error -->
-<script>
-(function() {
-    // Asset deletion handling
-    class AssetDeletion {
-        constructor() {
-            // Initialize elements
-            this.deleteModal = document.getElementById('deleteModalCustom');
-            this.deleteForm = document.getElementById('delete-form');
-            this.deleteAssetIds = document.getElementById('delete-asset-ids');
-            this.deleteMessage = document.getElementById('delete-message');
-            this.deleteSelectedBtn = document.getElementById('deleteSelectedAssets');
-            this.closeDeleteModal = document.getElementById('closeDeleteModal');
-            this.cancelDelete = document.getElementById('cancelDelete');
-            this.selectAllCheckbox = document.getElementById('select-all-assets');
-
-            if (!this.deleteModal) {
-                console.warn('Delete modal not found in the DOM');
-                return;
-            }
-
-            this.initializeEventListeners();
-            this.initializeDeleteButtons();
-            this.initializeCheckboxes();
-        }
-
-        initializeEventListeners() {
-            // Single asset delete buttons
-            document.querySelectorAll('.delete-asset').forEach(button => {
-                button.addEventListener('click', (e) => this.handleSingleDelete(e));
-            });
-
-            // Bulk delete
-            if (this.deleteSelectedBtn) {
-                this.deleteSelectedBtn.addEventListener('click', () => this.handleBulkDelete());
-            }
-
-            // Modal close handlers
-            if (this.closeDeleteModal) {
-                this.closeDeleteModal.addEventListener('click', () => this.hideModal());
-            }
-            if (this.cancelDelete) {
-                this.cancelDelete.addEventListener('click', () => this.hideModal());
-            }
-
-            // Form submission
-            if (this.deleteForm) {
-                this.deleteForm.addEventListener('submit', (e) => this.handleFormSubmit(e));
-            }
-        }
-
-        initializeDeleteButtons() {
-            // Initialize delete buttons state
-            if (this.deleteSelectedBtn) {
-                this.updateDeleteButton();
-            }
-        }
-
-        initializeCheckboxes() {
-            // Select all checkbox
-            if (this.selectAllCheckbox) {
-                this.selectAllCheckbox.addEventListener('change', (e) => this.handleSelectAll(e));
-            }
-
-            // Individual checkboxes
-            document.querySelectorAll('.asset-checkbox').forEach(checkbox => {
-                checkbox.addEventListener('change', () => this.updateDeleteButton());
-            });
-        }
-
-        handleSingleDelete(event) {
-            if (!this.deleteModal || !this.deleteAssetIds || !this.deleteMessage) return;
-
-            const assetId = event.currentTarget.dataset.assetId;
-            this.deleteAssetIds.value = assetId;
-            this.deleteMessage.textContent = 'Are you sure you want to delete this asset? This action cannot be undone.';
-            this.showModal();
-        }
-
-        handleBulkDelete() {
-            if (!this.deleteModal || !this.deleteAssetIds || !this.deleteMessage) return;
-
-            const selectedAssets = Array.from(document.querySelectorAll('.asset-checkbox:checked'))
-                .map(cb => cb.value);
-
-            if (selectedAssets.length > 0) {
-                this.deleteAssetIds.value = selectedAssets.join(',');
-                this.deleteMessage.textContent = `Are you sure you want to delete ${selectedAssets.length} selected assets? This action cannot be undone.`;
-                this.showModal();
-            }
-        }
-
-        handleSelectAll(event) {
-            const checked = event.target.checked;
-            document.querySelectorAll('.asset-checkbox').forEach(checkbox => {
-                checkbox.checked = checked;
-            });
-            this.updateDeleteButton();
-        }
-
-        updateDeleteButton() {
-            if (!this.deleteSelectedBtn) return;
-
-            const selectedCount = document.querySelectorAll('.asset-checkbox:checked').length;
-            this.deleteSelectedBtn.disabled = selectedCount === 0;
-
-            // Update selected count badge if it exists
-            const countBadge = document.getElementById('selected-count-badge');
-            if (countBadge) {
-                countBadge.textContent = `${selectedCount} selected`;
-            }
-        }
-
-        async handleFormSubmit(event) {
-            event.preventDefault();
-            
-            try {
-                const response = await fetch('{% url "assets:asset_bulk_delete" %}', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}',
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams(new FormData(event.target))
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    this.showSuccessToast(data.message);
-                    // Reload the page after successful deletion
-                    setTimeout(() => window.location.reload(), 1500);
-                } else {
-                    throw new Error(data.message || 'Delete operation failed');
-                }
-            } catch (error) {
-                this.showErrorToast(error.message);
-            } finally {
-                this.hideModal();
-            }
-        }
-
-        showSuccessToast(message) {
-            this.showToast(message, 'success');
-        }
-
-        showErrorToast(message) {
-            this.showToast(message, 'danger');
-        }
-
-        showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = `toast align-items-center text-white bg-${type} border-0`;
-            toast.setAttribute('role', 'alert');
-            toast.innerHTML = `
-                <div class="d-flex">
-                    <div class="toast-body">${message}</div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-                </div>
-            `;
-            document.body.appendChild(toast);
-            const bsToast = new bootstrap.Toast(toast);
-            bsToast.show();
-
-            // Remove toast after it's hidden
-            toast.addEventListener('hidden.bs.toast', () => {
-                document.body.removeChild(toast);
-            });
-        }
-
-        showModal() {
-            if (this.deleteModal) {
-                this.deleteModal.style.display = 'block';
-                setTimeout(() => {
-                    this.deleteModal.classList.add('show');
-                }, 10);
-            }
-        }
-
-        hideModal() {
-            if (this.deleteModal) {
-                this.deleteModal.classList.remove('show');
-                setTimeout(() => {
-                    this.deleteModal.style.display = 'none';
-                }, 150); // Match the CSS transition duration
-            }
-        }
-    }
-
-    // Initialize when DOM is loaded
-    document.addEventListener('DOMContentLoaded', () => {
-        new AssetDeletion();
-    });
-})();
-
-// Page size selector function
-function changePageSize(size) {
-    const url = new URL(window.location);
-    url.searchParams.set('page_size', size);
-    url.searchParams.delete('page'); // Reset to page 1
-    window.location = url;
-}
-</script>
-{% endblock %}
+{% block extra_scripts %}<script src='{% static 'js/asset-list.js' %}'></script>{% endblock %}

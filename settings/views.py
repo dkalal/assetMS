@@ -70,8 +70,8 @@ def settings_dashboard(request):
     total_assets = 0
     try:
         from assets.models import Asset
-        total_users = User.objects.count()
-        total_assets = Asset.objects.count()
+        total_users = User.objects.filter(company=request.user.company).count()
+        total_assets = Asset.objects.filter(company=request.user.company).count()
     except:
         pass
 
@@ -552,38 +552,32 @@ def session_management(request):
     from django.utils import timezone
     from datetime import timedelta
     
-    # Get basic session statistics
     context = {
-        'active_sessions': 1,  # Current user session
-        'unique_users': 1,
-        'concurrent_sessions': 1,
+        'sessions': UserSession.objects.none(),
+        'active_sessions': 0,
+        'unique_users': 0,
         'failed_logins': 0,
+        'current_session_key': request.session.session_key,
     }
-    
-    # Try to get real data if available
+
     try:
         now = timezone.now()
         last_hour = now - timedelta(hours=1)
         last_24h = now - timedelta(hours=24)
-        
-        # Count active sessions
-        if hasattr(request.user, 'usersession_set'):
-            active_sessions = request.user.usersession_set.filter(
-                is_active=True,
-                last_activity__gte=last_hour
-            ).count()
-            context['active_sessions'] = max(active_sessions, 1)
-        
-        # Count failed logins if AccessLog exists
-        try:
-            from users.models import AccessLog
-            failed_logins = AccessLog.objects.filter(
-                action='failed_login',
-                timestamp__gte=last_24h
-            ).count()
-            context['failed_logins'] = failed_logins
-        except (ImportError, AttributeError):
-            pass
+        company = request.company
+        sessions = UserSession.objects.filter(
+            user__company=company,
+            is_active=True,
+            last_activity__gte=last_hour,
+        ).select_related('user').order_by('-last_activity')
+        context['sessions'] = sessions
+        context['active_sessions'] = sessions.count()
+        context['unique_users'] = sessions.values('user_id').distinct().count()
+        context['failed_logins'] = AccessLog.objects.filter(
+            user__company=company,
+            action='failed_login',
+            timestamp__gte=last_24h,
+        ).count()
             
     except Exception as e:
         logger.warning(f"Could not get session statistics: {e}")
@@ -841,7 +835,9 @@ def api_users_management(request):
         role_filter = request.GET.get('role', '').strip()
         page = int(request.GET.get('page', 1))
         
-        users = User.objects.all().order_by('-date_joined')
+        # This directory feeds account and transfer actions, so its results
+        # must remain inside the active tenant.
+        users = User.objects.filter(company=request.company).order_by('-date_joined')
         
         # Apply search filter
         if search:
@@ -1043,7 +1039,7 @@ def api_delete_user(request):
         if not user_id:
             return JsonResponse({'success': False, 'error': 'User ID is required'})
 
-        user = User.objects.get(id=user_id)
+        user = User.objects.get(id=user_id, company=request.company)
 
         # Prevent self-deletion
         if user.id == request.user.id:
@@ -1051,7 +1047,11 @@ def api_delete_user(request):
 
         # Prevent deleting the last active admin
         if user.role == 'admin':
-            active_admins = User.objects.filter(role='admin', is_active=True).exclude(id=user.id).count()
+            active_admins = User.objects.filter(
+                company=request.company,
+                role='admin',
+                is_active=True,
+            ).exclude(id=user.id).count()
             if active_admins == 0:
                 return JsonResponse({'success': False, 'error': 'Cannot delete the last active admin user'})
 
@@ -1158,22 +1158,46 @@ def api_invite_user(request):
 
 @api_admin_or_manager_required
 def api_session_stats(request):
-    """Get session statistics - minimal implementation"""
+    """Get company-scoped session statistics."""
+    from datetime import timedelta
+    since = timezone.now() - timedelta(hours=24)
+    active = UserSession.objects.filter(
+        user__company=request.company,
+        is_active=True,
+        last_activity__gte=since,
+    )
+    role_breakdown = {
+        row['user__role']: row['count']
+        for row in active.values('user__role').annotate(count=Count('id'))
+    }
+    context_breakdown = {
+        row['session_context']: row['count']
+        for row in active.values('session_context').annotate(count=Count('id'))
+    }
+    max_concurrent = (
+        active.values('user_id').annotate(count=Count('id')).order_by('-count').first()
+    )
     return JsonResponse({
         'success': True,
-        'active_sessions': 1,
-        'unique_users_today': 1,
-        'max_concurrent_per_user': 1,
-        'failed_logins_24h': 0,
-        'role_breakdown': {getattr(request.user, 'role', 'admin'): 1},
-        'context_breakdown': {'web': 1, 'mobile': 0}
+        'active_sessions': active.count(),
+        'unique_users_today': active.values('user_id').distinct().count(),
+        'max_concurrent_per_user': max_concurrent['count'] if max_concurrent else 0,
+        'failed_logins_24h': AccessLog.objects.filter(
+            user__company=request.company,
+            action='failed_login',
+            timestamp__gte=since,
+        ).count(),
+        'role_breakdown': role_breakdown,
+        'context_breakdown': context_breakdown,
     })
 
 @api_admin_or_manager_required
 def api_access_logs(request):
     """Get access logs"""
     try:
-        logs = AccessLog.objects.select_related('user').order_by('-timestamp')[:50]
+        logs = AccessLog.objects.filter(
+            user__company=request.company,
+        ).select_related('user').order_by('-timestamp')[:50]
         logs_data = []
         
         for log in logs:
@@ -1195,22 +1219,27 @@ def api_access_logs(request):
 
 @api_admin_or_manager_required
 def api_session_details(request):
-    """Get session details - minimal implementation"""
+    """Get active company session details."""
+    from datetime import timedelta
+    sessions = UserSession.objects.filter(
+        user__company=request.company,
+        is_active=True,
+        last_activity__gte=timezone.now() - timedelta(hours=24),
+    ).select_related('user').order_by('-last_activity')
     return JsonResponse({
         'success': True,
         'sessions': [{
-            'id': 1,
-            'user': request.user.get_full_name() or request.user.username,
-            'user_role': getattr(request.user, 'role', 'admin'),
-            'ip_address': request.META.get('REMOTE_ADDR', '127.0.0.1'),
-            'browser': 'Chrome',
-            'created_at': timezone.now().isoformat(),
-            'last_activity': timezone.now().isoformat(),
-            'duration': '0:05:30',
-            'is_current': True,
-            'session_context': 'web'
-        }],
-        'total_active': 1
+            'id': session.id,
+            'user': session.user.get_full_name() or session.user.username,
+            'user_role': session.user.role,
+            'ip_address': session.ip_address,
+            'browser': session.user_agent,
+            'created_at': session.created_at.isoformat(),
+            'last_activity': session.last_activity.isoformat(),
+            'is_current': session.session_key == request.session.session_key,
+            'session_context': session.session_context,
+        } for session in sessions],
+        'total_active': sessions.count(),
     })
 
 def extract_browser_name(user_agent):
@@ -1311,7 +1340,7 @@ def api_toggle_user_status(request):
                 'error': 'Reason must not exceed 500 characters.'
             })
         
-        user = User.objects.get(id=user_id)
+        user = User.objects.get(id=user_id, company=request.company)
         
         # Prevent self-deactivation
         if user.id == request.user.id and not new_status:
@@ -1319,7 +1348,11 @@ def api_toggle_user_status(request):
         
         # Prevent deactivating the last admin
         if user.role == 'admin' and not new_status:
-            active_admins = User.objects.filter(role='admin', is_active=True).exclude(id=user.id).count()
+            active_admins = User.objects.filter(
+                company=request.company,
+                role='admin',
+                is_active=True,
+            ).exclude(id=user.id).count()
             if active_admins == 0:
                 return JsonResponse({'success': False, 'error': 'Cannot deactivate the last admin user'})
         
@@ -1375,7 +1408,7 @@ def api_update_user(request):
         if not user_id:
             return JsonResponse({'success': False, 'error': 'User ID is required'})
         
-        user = User.objects.get(id=user_id)
+        user = User.objects.get(id=user_id, company=request.company)
         
         # Prevent self-role change to non-admin
         if user.id == request.user.id and new_role != 'admin':
@@ -1383,7 +1416,11 @@ def api_update_user(request):
         
         # Prevent removing the last admin
         if user.role == 'admin' and new_role != 'admin':
-            active_admins = User.objects.filter(role='admin', is_active=True).exclude(id=user.id).count()
+            active_admins = User.objects.filter(
+                company=request.company,
+                role='admin',
+                is_active=True,
+            ).exclude(id=user.id).count()
             if active_admins == 0:
                 return JsonResponse({'success': False, 'error': 'Cannot remove the last admin user'})
         
@@ -1626,6 +1663,7 @@ def api_cleanup_sessions(request):
             
             cutoff_time = timezone.now() - timedelta(hours=24)
             expired_sessions = UserSession.objects.filter(
+                user__company=request.company,
                 is_active=True,
                 last_activity__lt=cutoff_time
             )
@@ -1688,14 +1726,17 @@ def api_security_metrics(request):
         last_24h = now - timedelta(hours=24)
         
         active_users = UserSession.objects.filter(
+            user__company=request.company,
             is_active=True, last_activity__gte=now - timedelta(hours=1)
         ).values('user').distinct().count()
         
         failed_logins = AccessLog.objects.filter(
+            user__company=request.company,
             action='failed_login', timestamp__gte=last_24h
         ).count()
         
         active_sessions = UserSession.objects.filter(
+            user__company=request.company,
             is_active=True, last_activity__gte=now - timedelta(hours=1)
         ).count()
         
@@ -1732,6 +1773,7 @@ def api_security_activities(request):
         since = now - timedelta(minutes=30)
         
         activities = AccessLog.objects.filter(
+            user__company=request.company,
             timestamp__gte=since
         ).select_related('user').order_by('-timestamp')[:20]
         

@@ -1,0 +1,47 @@
+.records-center { display: grid; gap: var(--ui-space-4); min-width: 0; }
+.records-center > .ui-page-header, .records-center > .ui-summary-strip { margin-bottom: 0; }
+.records-center .ui-panel { min-width: 0; }
+.records-filter-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--ui-space-3); align-items: end; }
+.records-filter-grid--audit { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.records-filter-grid > div { min-width: 0; }
+.records-filter-actions { display: flex; gap: var(--ui-space-2); }
+.report-type-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--ui-space-3); }
+.report-type-grid button { display: flex; align-items: flex-start; gap: var(--ui-space-3); min-height: 5rem; border: 1px solid var(--ui-border); border-radius: var(--ui-radius); background: var(--ui-surface); padding: var(--ui-space-3); color: var(--ui-text); text-align: left; }
+.report-type-grid button:hover { border-color: var(--ui-primary); background: var(--ui-primary-50); }
+.report-type-grid button:focus-visible { outline: .1875rem solid var(--ui-focus); outline-offset: .125rem; }
+.report-type-grid button > i { color: var(--ui-primary); font-size: 1.25rem; }
+.report-type-grid strong, .report-type-grid small { display: block; }
+.report-type-grid small { margin-top: .25rem; color: var(--ui-text-muted); }
+.records-desktop-table th, .records-desktop-table td { vertical-align: middle; }
+.records-desktop-table th[scope='row'] { font-weight: 400; }
+.record-primary, .records-desktop-table small, .records-desktop-table time small { display: block; }
+.record-primary { color: var(--ui-text); font-weight: 650; }
+.records-desktop-table small { margin-top: .1875rem; color: var(--ui-text-muted); }
+.audit-detail { display: block; max-width: 28rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.records-mobile-list { display: none; }
+.records-mobile-list .ui-record { display: grid; gap: var(--ui-space-3); }
+.records-mobile-list .ui-record > div { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--ui-space-3); }
+.records-mobile-list strong, .records-mobile-list small { display: block; }
+.records-mobile-list small { margin-top: .1875rem; color: var(--ui-text-muted); }
+.records-mobile-list dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ui-space-2); margin: 0; }
+.records-mobile-list dt { color: var(--ui-text-muted); font-size: .75rem; }
+.records-mobile-list dd { margin: 0; overflow-wrap: anywhere; }
+.records-mobile-list p { margin: 0; overflow-wrap: anywhere; }
+.records-mobile-list details { border-top: 1px solid var(--ui-border); padding-top: var(--ui-space-2); }
+.records-mobile-list summary { cursor: pointer; color: var(--ui-primary); font-weight: 600; }
+.records-mobile-list details p { margin-top: var(--ui-space-2); color: var(--ui-text-muted); }
+.records-preview { border: 1px solid var(--ui-border); border-radius: var(--ui-radius); background: var(--ui-surface-subtle); padding: var(--ui-space-3); }
+.records-preview--error { border-color: var(--ui-danger); color: var(--ui-danger); }
+.ui-pagination { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); margin-top: var(--ui-space-4); border-top: 1px solid var(--ui-border); padding-top: var(--ui-space-3); color: var(--ui-text-muted); }
+.ui-pagination > div { display: flex; gap: var(--ui-space-2); }
+@media (max-width: 1199.98px) { .report-type-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 991.98px) { .records-filter-grid, .records-filter-grid--audit { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 767.98px) { .records-desktop-table { display: none; } .records-mobile-list { display: grid; gap: var(--ui-space-3); } }
+@media (max-width: 575.98px) {
+  .records-filter-grid, .records-filter-grid--audit, .report-type-grid { grid-template-columns: 1fr; }
+  .records-filter-actions .btn { width: 100%; }
+  .records-mobile-list dl { grid-template-columns: 1fr; }
+  .ui-pagination { align-items: stretch; flex-direction: column; }
+  .ui-pagination .btn { flex: 1 1 auto; }
+}
+@media print { .app-navbar, .app-sidebar, .ui-page-header__actions, .records-filter-grid, .report-type-grid, .records-mobile-list { display: none; } .records-desktop-table { display: block; } }

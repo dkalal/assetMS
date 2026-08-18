@@ -41,7 +41,10 @@ if not SECRET_KEY:
     raise ValueError("SECRET_KEY not set! Define it in your environment (.env or Railway variables).")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
+# Prefer the project-specific name so unrelated tooling variables such as
+# DEBUG=release cannot silently force Django into production mode locally.
+# Keep DEBUG as a compatibility fallback for existing deployments.
+DEBUG = env_bool("DJANGO_DEBUG", env_bool("DEBUG", False))
 
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "10.10.10.254,localhost,127.0.0.1")
 

@@ -1,431 +1,314 @@
-/**
- * Asset Registration Form - World-Class Implementation
- * 
- * Features:
- * - Dynamic category fields loading via AJAX
- * - Branch-based user filtering
- * - Image preview
- * - Admin user creation modal
- * 
- * Multi-tenancy: All operations scoped to user's company
- * Security: CSRF protection, input sanitization
- * Performance: Efficient DOM manipulation, minimal reflows
- */
+(function () {
+  'use strict';
 
-// Wrap everything in DOMContentLoaded to ensure DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Asset Form JS - Initializing...');
-    
-    // ============================================================================
-    // HELPER FUNCTIONS
-    // ============================================================================
-    
-    function sanitizeHTML(str) {
-        const temp = document.createElement('div');
-        temp.textContent = str;
-        return temp.innerHTML;
+  const page = document.querySelector('.asset-form-page');
+  const form = document.getElementById('assetForm');
+  if (!page || !form) return;
+
+  const category = form.querySelector('#id_category');
+  const branch = form.querySelector('#id_branch');
+  const assignee = form.querySelector('#id_assigned_to');
+  const categoryContainer = document.getElementById('category-fields-container');
+  const categoryEmpty = document.getElementById('category-fields-empty');
+  const categoryStatus = document.getElementById('category-fields-status');
+  const duplicateResults = document.getElementById('duplicate-detection-results');
+  const submitButton = document.getElementById('asset-submit');
+  const dynamicCache = new Map();
+  let duplicateTimer = null;
+  let duplicateRequest = null;
+  let hasBlockingDuplicates = false;
+
+  function fieldValueMap() {
+    const values = {};
+    categoryContainer.querySelectorAll('[name^="dyn_"]').forEach((field) => {
+      if (field.type === 'file') return;
+      values[field.name] = field.value;
+    });
+    return values;
+  }
+
+  function createDynamicField(key, definition, value) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'ui-form-field';
+    const name = 'dyn_' + key;
+    const id = 'id_' + name;
+    const label = document.createElement('label');
+    label.className = 'form-label';
+    label.htmlFor = id;
+    label.textContent = definition.label || key.replaceAll('_', ' ');
+
+    if (definition.required) {
+      const required = document.createElement('span');
+      required.setAttribute('aria-hidden', 'true');
+      required.textContent = ' *';
+      label.appendChild(required);
     }
-    
-    function getInitialDynamicData() {
-        const script = document.getElementById('asset-initial-dyn');
-        if (!script) return null;
-        try {
-            return JSON.parse(script.textContent);
-        } catch (e) {
-            console.warn('Failed to parse initial dynamic data JSON', e);
-            return null;
-        }
-    }
-    
-    // ============================================================================
-    // IMAGE & DOCUMENT PREVIEW (WORLD-CLASS)
-    // ============================================================================
-    
-    const imageInput = document.getElementById('id_images');
-    const preview = document.getElementById('image-preview');
-    const documentInput = document.getElementById('id_documents');
-    const documentPreview = document.getElementById('document-preview');
-    const documentName = document.getElementById('document-name');
-    
-    // Image Preview with Enhanced Feedback
-    if (imageInput && preview) {
-        imageInput.addEventListener('change', function(e) {
-            const [file] = imageInput.files;
-            if (file) {
-                // Validate file type
-                if (!file.type.startsWith('image/')) {
-                    alert('❌ Please select a valid image file (JPG, PNG, GIF, etc.)');
-                    imageInput.value = '';
-                    preview.classList.add('d-none');
-                    return;
-                }
-                
-                // Validate file size (max 2MB)
-                const maxSize = 2 * 1024 * 1024; // 2MB
-                if (file.size > maxSize) {
-                    alert(`❌ Image file is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size is 2MB.`);
-                    imageInput.value = '';
-                    preview.classList.add('d-none');
-                    return;
-                }
-                
-                // Show preview
-                preview.src = URL.createObjectURL(file);
-                preview.classList.remove('d-none');
-                
-                // Add file info
-                const fileSize = (file.size / 1024).toFixed(2);
-                const fileInfo = preview.nextElementSibling;
-                if (fileInfo && fileInfo.classList.contains('file-info')) {
-                    fileInfo.textContent = `📷 ${file.name} (${fileSize} KB)`;
-                } else {
-                    const info = document.createElement('small');
-                    info.className = 'file-info text-success d-block mt-1';
-                    info.innerHTML = `<i class="bi bi-check-circle me-1"></i>${file.name} (${fileSize} KB)`;
-                    preview.after(info);
-                }
-                
-                console.log(`✅ Image preview loaded: ${file.name} (${fileSize} KB)`);
-            } else {
-                preview.classList.add('d-none');
-                const fileInfo = preview.nextElementSibling;
-                if (fileInfo && fileInfo.classList.contains('file-info')) {
-                    fileInfo.remove();
-                }
-            }
-        });
-        console.log('✅ Image preview initialized');
-    }
-    
-    // Document Preview with File Info
-    if (documentInput && documentPreview && documentName) {
-        documentInput.addEventListener('change', function(e) {
-            const [file] = documentInput.files;
-            if (file) {
-                // Validate file type
-                const allowedTypes = [
-                    'application/pdf',
-                    'application/msword',
-                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                    'application/vnd.ms-excel',
-                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                ];
-                
-                if (!allowedTypes.includes(file.type)) {
-                    alert('❌ Please select a valid document file (PDF, DOC, DOCX, XLS, XLSX)');
-                    documentInput.value = '';
-                    documentPreview.classList.add('d-none');
-                    return;
-                }
-                
-                // Validate file size (max 5MB)
-                const maxSize = 5 * 1024 * 1024; // 5MB
-                if (file.size > maxSize) {
-                    alert(`❌ Document file is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size is 5MB.`);
-                    documentInput.value = '';
-                    documentPreview.classList.add('d-none');
-                    return;
-                }
-                
-                // Show file info
-                const fileSize = (file.size / 1024).toFixed(2);
-                const fileIcon = file.type.includes('pdf') ? '📄' : '📝';
-                documentName.textContent = `${file.name} (${fileSize} KB)`;
-                documentPreview.classList.remove('d-none');
-                
-                console.log(`✅ Document selected: ${file.name} (${fileSize} KB)`);
-            } else {
-                documentPreview.classList.add('d-none');
-            }
-        });
-        console.log('✅ Document preview initialized');
-    }
-    
-    // ============================================================================
-    // DYNAMIC CATEGORY FIELDS
-    // ============================================================================
-    
-    const categorySelect = document.getElementById('id_category');
-    const dynamicFieldsContainer = document.getElementById('dynamic-fields-container');
-    
-    console.log('Category Select:', categorySelect);
-    console.log('Dynamic Fields Container:', dynamicFieldsContainer);
-    
-    function prefillDynamicFields() {
-        // ================================================================
-        // DEPRECATED: This function is no longer needed.
-        // Pre-filling now happens DURING field rendering in renderDynamicFields()
-        // This ensures values are set immediately when inputs are created.
-        // Keeping this function for backward compatibility but it does nothing.
-        // ================================================================
-        console.log('⚠️ prefillDynamicFields called but is deprecated (pre-fill happens during render)');
-        return;
-    }
-    
-    function showDynamicFieldsLoading() {
-        if (!dynamicFieldsContainer) return;
-        dynamicFieldsContainer.innerHTML = '<div class="d-flex align-items-center justify-content-center py-3"><div class="spinner-border text-primary me-2" role="status" aria-label="Loading"></div> <span>Loading fields...</span></div>';
-    }
-    
-    function renderDynamicFields(fields) {
-        if (!dynamicFieldsContainer) return;
-        
-        if (!fields || Object.keys(fields).length === 0) {
-            dynamicFieldsContainer.style.display = 'none';
-            dynamicFieldsContainer.innerHTML = '';
-            return;
-        }
-        
-        // ================================================================
-        // WORLD-CLASS FIX: Get initial data BEFORE rendering
-        // This ensures fields are populated with existing values immediately
-        // ================================================================
-        const initialData = getInitialDynamicData();
-        console.log('📋 Initial dynamic data for pre-fill:', initialData);
-        
-        // Show the container
-        dynamicFieldsContainer.style.display = 'block';
-        
-        let html = '<div class="section-header"><h5><i class="bi bi-sliders me-2"></i>Category-Specific Fields</h5></div><div class="row g-3">';
-        
-        for (const [key, field] of Object.entries(fields)) {
-            const fieldId = `id_dyn_${sanitizeHTML(key)}`;
-            const required = field.required ? 'required' : '';
-            const requiredMark = field.required ? ' <span class="text-danger">*</span>' : '';
-            
-            // ================================================================
-            // CRITICAL: Get the initial value for this field from saved data
-            // ================================================================
-            let initialValue = '';
-            if (initialData && initialData[key] !== undefined && initialData[key] !== null) {
-                initialValue = initialData[key];
-            }
-            
-            let input = '';
-            
-            // TEXT FIELD
-            if (field.type === 'text') {
-                const escapedValue = sanitizeHTML(String(initialValue));
-                input = `<input type="text" name="dyn_${sanitizeHTML(key)}" id="${fieldId}" class="form-control" ${required} autocomplete="off" placeholder="Enter ${sanitizeHTML(field.label).toLowerCase()}" value="${escapedValue}">`;
-            } 
-            // NUMBER FIELD
-            else if (field.type === 'number') {
-                const escapedValue = sanitizeHTML(String(initialValue));
-                input = `<input type="number" name="dyn_${sanitizeHTML(key)}" id="${fieldId}" class="form-control" ${required} step="any" autocomplete="off" placeholder="Enter ${sanitizeHTML(field.label).toLowerCase()}" value="${escapedValue}">`;
-            } 
-            // DATE FIELD
-            else if (field.type === 'date') {
-                // Format date properly (YYYY-MM-DD)
-                let dateValue = '';
-                if (initialValue) {
-                    if (typeof initialValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(initialValue)) {
-                        dateValue = initialValue;
-                    } else {
-                        const d = new Date(initialValue);
-                        if (!isNaN(d.getTime())) {
-                            const yyyy = d.getFullYear();
-                            const mm = String(d.getMonth() + 1).padStart(2, '0');
-                            const dd = String(d.getDate()).padStart(2, '0');
-                            dateValue = `${yyyy}-${mm}-${dd}`;
-                        }
-                    }
-                }
-                input = `<input type="date" name="dyn_${sanitizeHTML(key)}" id="${fieldId}" class="form-control" ${required} autocomplete="off" value="${dateValue}">`;
-            }
-            // SELECT FIELD (if field type is select)
-            else if (field.type === 'select' && field.options) {
-                const options = field.options.map(opt => {
-                    const selected = (opt === initialValue) ? 'selected' : '';
-                    return `<option value="${sanitizeHTML(opt)}" ${selected}>${sanitizeHTML(opt)}</option>`;
-                }).join('');
-                input = `<select name="dyn_${sanitizeHTML(key)}" id="${fieldId}" class="form-control" ${required}>
-                    <option value="">-- Select ${sanitizeHTML(field.label)} --</option>
-                    ${options}
-                </select>`;
-            }
-            // TEXTAREA FIELD
-            else if (field.type === 'textarea') {
-                const escapedValue = sanitizeHTML(String(initialValue));
-                input = `<textarea name="dyn_${sanitizeHTML(key)}" id="${fieldId}" class="form-control" ${required} rows="3" placeholder="Enter ${sanitizeHTML(field.label).toLowerCase()}">${escapedValue}</textarea>`;
-            }
-            // CHECKBOX FIELD
-            else if (field.type === 'checkbox') {
-                const checked = (initialValue === true || initialValue === 'true' || initialValue === 'on' || initialValue === '1') ? 'checked' : '';
-                input = `<div class="form-check">
-                    <input type="checkbox" name="dyn_${sanitizeHTML(key)}" id="${fieldId}" class="form-check-input" ${required} ${checked}>
-                    <label class="form-check-label" for="${fieldId}">${sanitizeHTML(field.label)}</label>
-                </div>`;
-            }
-            // DEFAULT: TEXT
-            else {
-                const escapedValue = sanitizeHTML(String(initialValue));
-                input = `<input type="text" name="dyn_${sanitizeHTML(key)}" id="${fieldId}" class="form-control" ${required} autocomplete="off" placeholder="Enter ${sanitizeHTML(field.label).toLowerCase()}" value="${escapedValue}">`;
-            }
-            
-            html += `<div class="col-md-6"><label for="${fieldId}" class="form-label">${sanitizeHTML(field.label)}${requiredMark}</label>${input}</div>`;
-        }
-        
-        html += '</div>';
-        dynamicFieldsContainer.innerHTML = html;
-        
-        // Log success
-        if (initialData && Object.keys(initialData).length > 0) {
-            console.log(`✅ RENDERED: ${Object.keys(fields).length} dynamic fields with initial values`);
-        } else {
-            console.log(`📝 RENDERED: ${Object.keys(fields).length} dynamic fields (empty form)`);
-        }
-    }
-    
-    function fetchAndRenderDynamicFields(categoryId) {
-        if (!categoryId) {
-            if (dynamicFieldsContainer) {
-                dynamicFieldsContainer.innerHTML = '';
-                dynamicFieldsContainer.style.display = 'none';
-            }
-            return;
-        }
-        
-        console.log('📡 Fetching dynamic fields for category:', categoryId);
-        showDynamicFieldsLoading();
-        
-        fetch(`/api/dynamic-fields/?category_id=${encodeURIComponent(categoryId)}`)
-            .then(res => res.json())
-            .then(data => {
-                console.log('✅ Dynamic fields API response:', data);
-                if (data.success) {
-                    renderDynamicFields(data.fields);
-                } else {
-                    if (dynamicFieldsContainer) {
-                        dynamicFieldsContainer.innerHTML = '<div class="alert alert-warning mb-0">No fields found for this category.</div>';
-                        dynamicFieldsContainer.style.display = 'block';
-                    }
-                }
-            })
-            .catch((err) => {
-                console.error('❌ Dynamic fields AJAX error:', err);
-                if (dynamicFieldsContainer) {
-                    dynamicFieldsContainer.innerHTML = '<div class="alert alert-danger mb-0">Error loading fields. Please try again.</div>';
-                    dynamicFieldsContainer.style.display = 'block';
-                }
-            });
-    }
-    
-    if (categorySelect) {
-        // Initial load (for edit forms)
-        if (categorySelect.value) {
-            console.log('📋 Initial category selected:', categorySelect.value);
-            fetchAndRenderDynamicFields(categorySelect.value);
-        }
-        
-        // Listen for changes
-        categorySelect.addEventListener('change', function() {
-            console.log('🔄 Category changed to:', this.value);
-            fetchAndRenderDynamicFields(this.value);
-        });
-        
-        console.log('✅ Dynamic fields initialized');
+
+    let control;
+    if (definition.type === 'textarea') {
+      control = document.createElement('textarea');
+      control.rows = 3;
+      control.className = 'form-control';
+    } else if (definition.type === 'select') {
+      control = document.createElement('select');
+      control.className = 'form-select';
+      const empty = document.createElement('option');
+      empty.value = '';
+      empty.textContent = '-- Select --';
+      control.appendChild(empty);
+      const options = Array.isArray(definition.options)
+        ? definition.options.map((option) => [option, option])
+        : Object.entries(definition.options || {});
+      options.forEach(([optionValue, optionLabel]) => {
+        const option = document.createElement('option');
+        option.value = optionValue;
+        option.textContent = optionLabel;
+        control.appendChild(option);
+      });
     } else {
-        console.warn('⚠️ Category select not found');
+      control = document.createElement('input');
+      control.type = definition.type === 'number' || definition.type === 'date'
+        ? definition.type
+        : definition.type === 'file' ? 'file' : 'text';
+      control.className = 'form-control';
     }
-    
-    // ============================================================================
-    // BRANCH-BASED USER FILTERING
-    // ============================================================================
-    
-    const branchSelect = document.getElementById('id_branch');
-    const assignedToSelect = document.getElementById('id_assigned_to');
-    
-    console.log('Branch Select:', branchSelect);
-    console.log('Assigned To Select:', assignedToSelect);
-    
-    if (branchSelect && assignedToSelect) {
-        assignedToSelect.setAttribute('autocomplete', 'off');
-        
-        // Store all user options on page load
-        const allUserOptions = Array.from(assignedToSelect.options).map(opt => ({
-            value: opt.value,
-            text: opt.textContent,
-            branchIds: opt.dataset.branchIds || '',
-            selected: opt.selected
-        }));
-        
-        console.log('👥 Loaded', allUserOptions.length, 'users');
-        
-        function filterUsersByBranch(branchId) {
-            console.log('🔍 Filtering users by branch:', branchId);
-            
-            // Clear current options except empty option
-            assignedToSelect.innerHTML = '<option value="">-- Not Assigned --</option>';
-            
-            if (!branchId) {
-                // No branch selected, show all users
-                allUserOptions.forEach(opt => {
-                    if (opt.value) {
-                        const option = new Option(opt.text, opt.value, false, opt.selected);
-                        option.dataset.branchIds = opt.branchIds;
-                        assignedToSelect.add(option);
-                    }
-                });
-                console.log('✅ Showing all users');
-                return;
-            }
-            
-            // Filter users by selected branch
-            let hasUsers = false;
-            allUserOptions.forEach(opt => {
-                if (!opt.value) return; // Skip empty option
-                
-                const userBranchIds = opt.branchIds ? opt.branchIds.split(',') : [];
-                
-                if (userBranchIds.includes(branchId)) {
-                    const option = new Option(opt.text, opt.value, false, opt.selected);
-                    option.dataset.branchIds = opt.branchIds;
-                    assignedToSelect.add(option);
-                    hasUsers = true;
-                }
-            });
-            
-            // If no users found for branch, show informative message
-            if (!hasUsers) {
-                const option = new Option('No users assigned to this branch', '');
-                option.disabled = true;
-                option.style.fontStyle = 'italic';
-                option.style.color = '#6b7280';
-                assignedToSelect.add(option);
-                console.log('⚠️ No users found for branch');
-            } else {
-                console.log('✅ Filtered users for branch');
-            }
-        }
-        
-        // Filter on branch change
-        branchSelect.addEventListener('change', function() {
-            console.log('🔄 Branch changed to:', this.value);
-            filterUsersByBranch(this.value);
-        });
-        
-        // Initial filter if branch is pre-selected
-        if (branchSelect.value) {
-            console.log('📋 Initial branch selected:', branchSelect.value);
-            filterUsersByBranch(branchSelect.value);
-        }
-        
-        console.log('✅ Branch filtering initialized');
-    } else {
-        console.warn('⚠️ Branch or Assigned To select not found');
+
+    control.id = id;
+    control.name = name;
+    control.required = Boolean(definition.required);
+    if (definition.max_length) control.maxLength = Number(definition.max_length);
+    if (definition.min_value !== null && definition.min_value !== undefined) control.min = definition.min_value;
+    if (definition.max_value !== null && definition.max_value !== undefined) control.max = definition.max_value;
+    if (value !== undefined && control.type !== 'file') control.value = value;
+
+    wrapper.append(label, control);
+    if (definition.help_text) {
+      const help = document.createElement('div');
+      help.className = 'form-text';
+      help.id = id + '_helptext';
+      help.textContent = definition.help_text;
+      control.setAttribute('aria-describedby', help.id);
+      wrapper.appendChild(help);
     }
-    
-    // ============================================================================
-    // USER CREATION MODAL
-    // ============================================================================
-    // Note: Using world-class reusable modal component from settings/partials/create_user_modal.html
-    // The UserCreationManager class is included with the modal partial
-    // No duplicate code needed here - following DRY principles
-    console.log('ℹ️ User creation handled by UserCreationManager (included in modal partial)');
-    
-    // ============================================================================
-    // INITIALIZATION COMPLETE
-    // ============================================================================
-    
-    console.log('✅ Asset Form JS - Initialization complete');
-});
+    return wrapper;
+  }
+
+  function appendWarrantyFields(values) {
+    if (!categoryContainer.querySelector('[name="dyn_warranty_expiry"]')) {
+      categoryContainer.appendChild(createDynamicField('warranty_expiry', {
+        type: 'date', label: 'Warranty Expiry (Optional)', required: false
+      }, values.dyn_warranty_expiry));
+    }
+    if (!categoryContainer.querySelector('[name="dyn_warranty_provider"]')) {
+      categoryContainer.appendChild(createDynamicField('warranty_provider', {
+        type: 'text', label: 'Warranty Provider (Optional)', required: false
+      }, values.dyn_warranty_provider));
+    }
+  }
+
+  async function loadCategoryFields() {
+    if (!category || !categoryContainer) return;
+    const previousCategory = category.dataset.previousValue || '';
+    if (previousCategory) dynamicCache.set(previousCategory, fieldValueMap());
+    const categoryId = category.value;
+    category.dataset.previousValue = categoryId;
+    hasBlockingDuplicates = false;
+    clearDuplicateFeedback();
+
+    if (!categoryId) {
+      categoryContainer.replaceChildren();
+      categoryEmpty.classList.remove('d-none');
+      categoryStatus.textContent = 'No category selected.';
+      return;
+    }
+
+    categoryStatus.textContent = 'Loading category fields.';
+    categoryContainer.setAttribute('aria-busy', 'true');
+    const savedValues = dynamicCache.get(categoryId) || {};
+    try {
+      const url = new URL(page.dataset.dynamicFieldsUrl, window.location.origin);
+      url.searchParams.set('category_id', categoryId);
+      const response = await fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}});
+      if (!response.ok) throw new Error('Unable to load category fields.');
+      const payload = await response.json();
+      if (!payload.success) throw new Error(payload.error || 'Unable to load category fields.');
+
+      categoryContainer.replaceChildren();
+      Object.entries(payload.fields || {}).forEach(([key, definition]) => {
+        categoryContainer.appendChild(createDynamicField(key, definition, savedValues['dyn_' + key]));
+      });
+      appendWarrantyFields(savedValues);
+      categoryEmpty.classList.toggle('d-none', categoryContainer.children.length > 0);
+      categoryStatus.textContent = 'Category fields updated.';
+    } catch (error) {
+      categoryStatus.textContent = 'Category fields could not be loaded. Select the category again or submit to see server validation.';
+      categoryEmpty.textContent = 'Additional fields are temporarily unavailable. Your core form remains usable.';
+      categoryEmpty.classList.remove('d-none');
+    } finally {
+      categoryContainer.removeAttribute('aria-busy');
+    }
+  }
+
+  function filterAssignees() {
+    if (!branch || !assignee) return;
+    const branchId = branch.value;
+    Array.from(assignee.options).forEach((option, index) => {
+      if (index === 0) return;
+      const branchIds = (option.dataset.branchIds || '').split(',').filter(Boolean);
+      const allowed = !branchId || branchIds.length === 0 || branchIds.includes(branchId);
+      option.hidden = !allowed;
+      option.disabled = !allowed;
+    });
+    if (assignee.selectedOptions[0] && assignee.selectedOptions[0].disabled) {
+      assignee.value = '';
+    }
+  }
+
+  function updateStatusPanels() {
+    const status = form.querySelector('#id_status');
+    if (!status || status.type === 'hidden') return;
+    form.querySelectorAll('[data-status-panel]').forEach((panel) => {
+      const visible = panel.dataset.statusPanel.split(',').includes(status.value);
+      panel.hidden = !visible;
+      panel.querySelectorAll('input, select, textarea').forEach((control) => {
+        control.disabled = !visible;
+      });
+    });
+  }
+
+  function updateMaintenanceState() {
+    const toggle = form.querySelector('#id_maintenance_enabled');
+    const interval = form.querySelector('#id_maintenance_interval_days');
+    if (!toggle || !interval) return;
+    interval.closest('.ui-form-field')?.classList.toggle('opacity-50', !toggle.checked);
+    interval.setAttribute('aria-disabled', String(!toggle.checked));
+  }
+
+  function clearDuplicateFeedback() {
+    duplicateResults.classList.add('d-none');
+    duplicateResults.classList.remove('asset-duplicate-results--danger');
+    duplicateResults.replaceChildren();
+    form.querySelectorAll('.is-invalid[data-duplicate-invalid]').forEach((field) => {
+      field.classList.remove('is-invalid');
+      delete field.dataset.duplicateInvalid;
+    });
+  }
+
+  function renderDuplicateFeedback(payload) {
+    clearDuplicateFeedback();
+    hasBlockingDuplicates = Boolean(payload.has_blocking_errors);
+    if (!hasBlockingDuplicates && !payload.has_warnings) return;
+
+    duplicateResults.classList.remove('d-none');
+    duplicateResults.classList.toggle('asset-duplicate-results--danger', hasBlockingDuplicates);
+    const heading = document.createElement('h2');
+    heading.textContent = hasBlockingDuplicates
+      ? 'Resolve duplicate identifiers before saving'
+      : 'Review possible matching assets';
+    duplicateResults.appendChild(heading);
+    const list = document.createElement('ul');
+
+    Object.entries(payload.hard_constraint_errors || {}).forEach(([fieldName, errors]) => {
+      const control = form.querySelector('[name="' + fieldName + '"]') ||
+        form.querySelector('[name="dyn_' + fieldName + '"]');
+      if (control) {
+        control.classList.add('is-invalid');
+        control.dataset.duplicateInvalid = 'true';
+      }
+      (Array.isArray(errors) ? errors : [errors]).forEach((message) => {
+        const item = document.createElement('li');
+        item.textContent = message;
+        list.appendChild(item);
+      });
+    });
+
+    (payload.potential_duplicates || []).slice(0, 5).forEach((match) => {
+      const item = document.createElement('li');
+      const identifier = match.asset_tag || match.serial_number || 'Existing asset';
+      item.textContent = identifier + ' — ' + match.category + ', ' + match.similarity_score + '% similarity';
+      list.appendChild(item);
+    });
+    duplicateResults.appendChild(list);
+  }
+
+  function duplicatePayload() {
+    const payload = {
+      serial_number: form.elements.serial_number?.value || '',
+      asset_tag: form.elements.asset_tag?.value || '',
+      qr_string: form.elements.qr_string?.value || '',
+      category_id: category?.value || '',
+      exclude_asset_id: page.dataset.excludeAssetId || ''
+    };
+    categoryContainer.querySelectorAll('[name^="dyn_"]').forEach((field) => {
+      if (field.type !== 'file') payload[field.name] = field.value;
+    });
+    return payload;
+  }
+
+  async function checkDuplicates() {
+    const payload = duplicatePayload();
+    if (!payload.serial_number && !payload.asset_tag && !payload.qr_string) {
+      hasBlockingDuplicates = false;
+      clearDuplicateFeedback();
+      return;
+    }
+    if (duplicateRequest) duplicateRequest.abort();
+    duplicateRequest = new AbortController();
+    try {
+      const response = await fetch(page.dataset.duplicateUrl, {
+        method: 'POST',
+        credentials: 'same-origin',
+        signal: duplicateRequest.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': form.elements.csrfmiddlewaretoken.value,
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) return;
+      renderDuplicateFeedback(await response.json());
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        hasBlockingDuplicates = false;
+        clearDuplicateFeedback();
+      }
+    }
+  }
+
+  function queueDuplicateCheck(event) {
+    if (!event.target.matches('[name="serial_number"], [name="asset_tag"], [name="qr_string"], [name^="dyn_"]')) return;
+    hasBlockingDuplicates = false;
+    window.clearTimeout(duplicateTimer);
+    duplicateTimer = window.setTimeout(checkDuplicates, 450);
+  }
+
+  function updateFileFeedback(event) {
+    if (!event.target.matches('#id_images, #id_documents')) return;
+    const files = Array.from(event.target.files || []);
+    const feedback = document.getElementById('asset-file-feedback');
+    feedback.textContent = files.length ? files.map((file) => file.name).join(', ') + ' selected.' : '';
+  }
+
+  category?.addEventListener('change', loadCategoryFields);
+  branch?.addEventListener('change', filterAssignees);
+  form.querySelector('#id_status')?.addEventListener('change', updateStatusPanels);
+  form.querySelector('#id_maintenance_enabled')?.addEventListener('change', updateMaintenanceState);
+  form.addEventListener('input', queueDuplicateCheck);
+  form.addEventListener('change', (event) => {
+    queueDuplicateCheck(event);
+    updateFileFeedback(event);
+  });
+  form.addEventListener('submit', (event) => {
+    if (!hasBlockingDuplicates) return;
+    event.preventDefault();
+    duplicateResults.focus();
+    submitButton?.removeAttribute('aria-disabled');
+  });
+
+  if (category) category.dataset.previousValue = category.value;
+  filterAssignees();
+  updateStatusPanels();
+  updateMaintenanceState();
+  document.querySelector('.form-error-summary')?.focus();
+})();

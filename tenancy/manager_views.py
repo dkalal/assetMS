@@ -229,8 +229,16 @@ class ManagerPerformanceView(LoginRequiredMixin, BranchContextMixin, TemplateVie
         company = getattr(self.request, "company", None)
         user = self.request.user
         
-        # Get period from query params (default 30 days)
-        period_days = int(self.request.GET.get('period', 30))
+        # Accept only the periods exposed by the UI. Invalid query strings
+        # should fall back safely instead of turning a presentation request
+        # into a server error.
+        available_periods = [7, 30, 90, 180, 365]
+        try:
+            period_days = int(self.request.GET.get('period', 30))
+        except (TypeError, ValueError):
+            period_days = 30
+        if period_days not in available_periods:
+            period_days = 30
         
         # Generate performance report
         report_generator = ManagerPerformanceReport(
@@ -244,7 +252,7 @@ class ManagerPerformanceView(LoginRequiredMixin, BranchContextMixin, TemplateVie
         context.update({
             'report': report_data,
             'period_days': period_days,
-            'available_periods': [7, 30, 90, 180, 365],
+            'available_periods': available_periods,
         })
         
         return context

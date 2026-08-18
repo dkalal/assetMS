@@ -1,746 +1,190 @@
 {% extends 'base_dashboard.html' %}
-{% load asset_extras %}
-{% load static %}
+{% load asset_extras static %}
 
-{% block title %}{% if object %}Edit Asset{% else %}Register Asset{% endif %} · AssetPro{% endblock %}
+{% block title %}{% if object %}Edit asset{% else %}Register asset{% endif %} · AssetPro{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-<!-- Intelligent Duplicate Detection - World-Class UI -->
-<link rel="stylesheet" href="{% static 'css/duplicate-detection.css' %}">
-<style>
-:root {
-    --accent-primary: #176B87;
-    --accent-secondary: #64CCC5;
-    --accent-success: #10b981;
-    --accent-warning: #f59e0b;
-    --accent-danger: #ef4444;
-}
-
-/* Hero Section */
-.register-hero {
-    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
-    border-radius: 20px;
-    padding: 2.5rem;
-    color: white;
-    margin-bottom: 2rem;
-    box-shadow: 0 10px 40px rgba(23, 107, 135, 0.3);
-}
-
-/* Form Container */
-.form-container {
-    background: white;
-    border-radius: 16px;
-    padding: 2.5rem;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-    border: 1px solid rgba(0,0,0,0.05);
-}
-
-/* Section Headers */
-.section-header {
-    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-    border-left: 4px solid var(--accent-primary);
-    padding: 1rem 1.5rem;
-    border-radius: 10px;
-    margin-bottom: 1.5rem;
-    margin-top: 2rem;
-}
-
-.section-header:first-of-type {
-    margin-top: 0;
-}
-
-.section-header h5 {
-    margin: 0;
-    font-weight: 600;
-    color: #374151;
-}
-
-/* Form Controls */
-.form-control, .form-select {
-    border-radius: 10px;
-    border: 2px solid #e5e7eb;
-    padding: 0.75rem 1rem;
-    transition: all 0.3s ease;
-}
-
-.form-control:focus, .form-select:focus {
-    border-color: var(--accent-primary);
-    box-shadow: 0 0 0 3px rgba(23, 107, 135, 0.1);
-}
-
-.form-label {
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 0.5rem;
-}
-
-/* Dynamic Fields Card */
-.dynamic-fields-card {
-    background: #f9fafb;
-    border-radius: 12px;
-    padding: 1.5rem;
-    border: 2px dashed #e5e7eb;
-    margin-top: 1rem;
-}
-
-/* Action Buttons */
-.btn-primary {
-    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
-    border: none;
-    border-radius: 10px;
-    padding: 0.75rem 2rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(23, 107, 135, 0.3);
-}
-
-.btn-outline-secondary {
-    border-radius: 10px;
-    border: 2px solid #e5e7eb;
-    padding: 0.75rem 2rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.btn-outline-secondary:hover {
-    background: #f3f4f6;
-    border-color: #d1d5db;
-}
-
-/* Image Preview */
-#image-preview {
-    max-width: 300px;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    margin-top: 1rem;
-}
-
-/* Alert Enhancements */
-.alert {
-    border-radius: 12px;
-    border: none;
-}
-
-/* Input Group Enhancements */
-.input-group .btn {
-    border-radius: 0 10px 10px 0;
-}
-</style>
+<link rel="stylesheet" href="{% static 'css/asset-form.css' %}">
 {% endblock %}
 
 {% block content %}
-{% include 'components/breadcrumbs.html' with root_label='Dashboard' root_url='/dashboard/' parent_label='Assets' parent_url='/assets/' current_label=object|yesno:'Edit Asset,Register Asset' %}
+{% include 'components/breadcrumbs.html' with root_label='Dashboard' root_url='/dashboard/' parent_label='Assets' parent_url='/assets/' current_label=object|yesno:'Edit asset,Register asset' %}
 
-<!-- User role for JS (CSP-compliant) -->
-<div id="user-role" data-role="{{ user_role|default:'' }}" style="display:none;"></div>
-
-<!-- Hero Section -->
-<div class="register-hero">
-    <div class="row align-items-center">
-        <div class="col-md-8">
-            <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">
-                <i class="bi bi-{% if object %}pencil-square{% else %}plus-circle{% endif %} me-3"></i>
-                {% if object %}Edit Asset{% else %}Register New Asset{% endif %}
-            </h1>
-            <p style="font-size: 1.1rem; opacity: 0.9; margin-bottom: 0;">
-                {% if object %}
-                Update asset information and track changes in audit trail
-                {% else %}
-                Add a new asset to your organization's inventory
-                {% endif %}
-            </p>
-        </div>
-        <div class="col-md-4 text-md-end mt-3 mt-md-0">
-            <a href="{% url 'asset_list' %}" class="btn btn-outline-light btn-lg" style="border-radius: 12px; padding: 0.75rem 1.5rem;">
-                <i class="bi bi-arrow-left me-2"></i>Back to Assets
-            </a>
-        </div>
+<main class="asset-form-page"
+      data-dynamic-fields-url="{% url 'get_dynamic_fields' %}"
+      data-duplicate-url="{% url 'assets:api_check_duplicates' %}"
+      data-exclude-asset-id="{% if object %}{{ object.pk }}{% endif %}">
+  <header class="ui-page-header">
+    <div class="ui-page-header__main">
+      <h1 class="ui-page-header__title">{% if object %}Edit asset{% else %}Register asset{% endif %}</h1>
+      <p class="ui-page-header__description">
+        {% if object %}Update operational details. Changes remain subject to the existing validation and audit rules.{% elif requires_approval %}Prepare an asset request for independent administrator review.{% else %}Add an asset to the current company inventory.{% endif %}
+      </p>
     </div>
-</div>
-
-{% if not object and workflow_message %}
-<!-- Workflow Mode Banner (Unified Asset Creation) -->
-<div class="alert {% if requires_approval %}alert-info{% else %}alert-success{% endif %} d-flex align-items-center mb-4" role="alert">
-    <i class="bi {% if requires_approval %}bi-info-circle-fill{% else %}bi-check-circle-fill{% endif %} fs-4 me-3"></i>
-    <div class="flex-grow-1">
-        <h6 class="alert-heading mb-1 fw-bold">
-            {% if requires_approval %}
-            Approval Required
-            {% else %}
-            Direct Creation
-            {% endif %}
-        </h6>
-        <p class="mb-0">{{ workflow_message }}</p>
-        {% if requires_approval %}
-        <small class="text-muted mt-1 d-block">
-            <i class="bi bi-lightbulb me-1"></i>
-            You'll need to provide justification for this request. An admin will review and approve it.
-        </small>
-        {% endif %}
+    <div class="ui-page-header__actions">
+      <a class="btn btn-outline-secondary" href="{% url 'asset_list' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Back to assets</a>
     </div>
-</div>
-{% endif %}
+  </header>
 
-{% if object and current_asset %}
-<!-- Current Asset Context Banner (Multi-Tenancy) -->
-<div class="alert alert-info d-flex align-items-center mb-4" role="alert">
-    <i class="bi bi-info-circle-fill fs-4 me-3"></i>
-    <div class="flex-grow-1">
-        <h6 class="alert-heading mb-2 fw-bold">Current Asset Location</h6>
-        <div class="d-flex flex-wrap gap-3">
-            {% if current_asset.company %}
-            <span>
-                <i class="bi bi-building me-1"></i>
-                <strong>Company:</strong> {{ current_asset.company.name }}
-            </span>
-            {% endif %}
-            {% if current_asset.branch %}
-            <span>
-                <i class="bi bi-geo-alt me-1"></i>
-                <strong>Branch:</strong> {{ current_asset.branch.name }}
-            </span>
-            {% else %}
-            <span class="text-warning">
-                <i class="bi bi-exclamation-triangle me-1"></i>
-                <strong>Branch:</strong> Not assigned
-            </span>
-            {% endif %}
-        </div>
-        <small class="text-muted mt-1 d-block">
-            <i class="bi bi-lightbulb me-1"></i>
-            You can change the branch below. Changes will be logged in the audit trail.
-        </small>
-    </div>
-</div>
-{% endif %}
-<!-- Robust error display block -->
-{% if form.errors %}
-  <div class="alert alert-danger">
-    <strong>There were errors in your submission. Please correct them below.</strong>
-    <ul class="mb-0">
-      {% for field in form %}
-        {% for error in field.errors %}
-          <li><strong>{{ field.label }}:</strong> {{ error }}</li>
-        {% endfor %}
-      {% endfor %}
-      {% for error in form.non_field_errors %}
-        <li>{{ error }}</li>
-      {% endfor %}
-    </ul>
+  {% if not object and workflow_message %}
+  <div class="ui-workflow-note {% if requires_approval %}ui-workflow-note--review{% else %}ui-workflow-note--direct{% endif %}" role="status">
+    <i class="bi {% if requires_approval %}bi-shield-check{% else %}bi-check-circle{% endif %}" aria-hidden="true"></i>
+    <div><strong>{% if requires_approval %}Approval required{% else %}Direct registration{% endif %}</strong><span>{{ workflow_message }}.</span></div>
   </div>
-{% endif %}
+  {% endif %}
 
-<!-- Form Container -->
-<div class="form-container">
-<form method="post" enctype="multipart/form-data" class="needs-validation" novalidate id="assetForm">
+  {% if object and current_asset %}
+  <div class="ui-context-strip" aria-label="Current asset context">
+    <span><strong>Current status:</strong> {{ current_asset.get_status_display }}</span>
+    <span><strong>Company:</strong> {{ current_asset.company.name }}</span>
+    <span><strong>Branch:</strong> {{ current_asset.branch.name|default:'Not assigned' }}</span>
+  </div>
+  {% endif %}
+
+  {% if form.errors %}
+  <section class="form-error-summary" role="alert" tabindex="-1" aria-labelledby="asset-form-errors-title">
+    <h2 id="asset-form-errors-title" class="h6">Please correct the following information</h2>
+    <ul class="mb-0">
+      {% for field in form %}{% for error in field.errors %}<li><a href="#{{ field.id_for_label }}">{{ field.label }}: {{ error }}</a></li>{% endfor %}{% endfor %}
+      {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" id="assetForm" class="asset-form" novalidate>
     {% csrf_token %}
-    {# CRITICAL: Company hidden field must be rendered for multi-tenancy validation #}
     {{ form.company }}
-    {{ form.non_field_errors }}
-    
-    <!-- Basic Information Section -->
-    <div class="section-header">
-        <h5><i class="bi bi-info-circle me-2"></i>Basic Information</h5>
-    </div>
-    
-    <div class="row g-3 mb-4">
-        <div class="col-md-6">
-            <label for="id_category" class="form-label">
-                <i class="bi bi-folder2 me-1 text-primary"></i>Category
-                <span class="text-danger">*</span>
-            </label>
-            {{ form.category }}
-            {{ form.category.errors }}
-        </div>
-        <div class="col-md-6">
-            <label for="id_branch" class="form-label">
-                <i class="bi bi-geo-alt me-1 text-info"></i>Branch
-                <span class="text-danger">*</span>
-            </label>
-            {{ form.branch }}
-            <small class="form-text text-muted">
-                {% if user.role == 'admin' %}
-                    <i class="bi bi-shield-check"></i> You can assign assets to any active branch.
-                {% elif user.role == 'manager' %}
-                    <i class="bi bi-people"></i> You can only assign assets to branches you manage.
-                {% else %}
-                    <i class="bi bi-person"></i> You can only assign assets to your assigned branches.
-                {% endif %}
-            </small>
-            {{ form.branch.errors }}
-        </div>
-    </div>
-    
-    <!-- Status Section (Always shown, different for Create vs Edit) -->
-    <div class="section-header">
-        <h5><i class="bi bi-circle-fill me-2"></i>Asset Status</h5>
-    </div>
-    
-    <div class="row g-3 mb-4">
-        <div class="col-md-12">
-            {% if object %}
-            <!-- EDIT MODE: Show status selector with current status display -->
-            <label for="id_status" class="form-label">
-                <i class="bi bi-circle-fill me-1"></i>Asset Status <span class="text-danger">*</span>
-            </label>
-            
-            <!-- Current Status Display -->
-            <div class="alert alert-sm {% if object.status == 'active' %}alert-success{% elif object.status == 'in_maintenance' %}alert-warning{% elif object.status == 'retired' %}alert-secondary{% else %}alert-danger{% endif %} d-flex align-items-center mb-2 py-2" role="alert">
-                <i class="bi bi-{% if object.status == 'active' %}check-circle-fill{% elif object.status == 'in_maintenance' %}tools{% elif object.status == 'retired' %}archive-fill{% elif object.status == 'lost' %}exclamation-triangle-fill{% elif object.status == 'deleted' %}trash-fill{% else %}arrow-left-right{% endif %} fs-5 me-2"></i>
-                <div class="small flex-grow-1">
-                    <strong>Current Status:</strong> 
-                    <span class="badge bg-{% if object.status == 'active' %}success{% elif object.status == 'in_maintenance' %}warning{% elif object.status == 'retired' %}secondary{% else %}danger{% endif %}">
-                        {{ object.get_status_display }}
-                    </span>
-                    <small class="text-muted d-block mt-1">
-                        <i class="bi bi-clock-history me-1"></i>Last updated: {{ object.updated_at|date:"M d, Y H:i" }}
-                    </small>
-                </div>
-            </div>
-            
-            {{ form.status }}
-            {% else %}
-            <!-- CREATE MODE: Status is automatically set to Active, show info message -->
-            <div class="alert alert-success d-flex align-items-center mb-2 py-2" role="alert">
-                <i class="bi bi-check-circle-fill fs-5 me-2"></i>
-                <div class="small flex-grow-1">
-                    <strong>Asset Status:</strong> 
-                    <span class="badge bg-success">Active</span>
-                    <small class="text-muted d-block mt-1">
-                        <i class="bi bi-info-circle me-1"></i>New assets are automatically set to Active status
-                    </small>
-                </div>
-            </div>
-            
-            <!-- Hidden status field with default value -->
-            <input type="hidden" name="status" value="active" id="id_status">
-            {% endif %}
-            
-            <!-- WORLD-CLASS: Legacy status change reason field removed -->
-            <!-- Dynamic status-specific fields are now handled by asset-status-fields.js -->
-            <!-- This eliminates duplicate fields and provides better UX -->
-            
-            <!-- Status Guidelines (collapsible) -->
-            <div class="mt-2">
-                <button type="button" class="btn btn-sm btn-link text-decoration-none p-0" 
-                        data-bs-toggle="collapse" data-bs-target="#statusGuidelines">
-                    <i class="bi bi-info-circle me-1"></i>Status Guidelines & Restrictions
-                </button>
-                <div class="collapse mt-2" id="statusGuidelines">
-                    <div class="card card-body small bg-light">
-                        <h6 class="fw-bold mb-2"><i class="bi bi-book me-1"></i>Status Definitions:</h6>
-                        <ul class="mb-2">
-                            <li><strong class="text-success">Active:</strong> Asset is operational and available for use</li>
-                            <li><strong class="text-warning">In Maintenance:</strong> Asset is temporarily unavailable for repairs or servicing</li>
-                            <li><strong class="text-secondary">Retired:</strong> Asset is permanently out of service (requires detailed reason)</li>
-                            <li><strong class="text-danger">Lost:</strong> Asset cannot be located (triggers investigation)</li>
-                            <li><strong class="text-danger">Deleted:</strong> Asset record will be archived (admin only)</li>
-                        </ul>
-                        <h6 class="fw-bold mb-2"><i class="bi bi-shield-check me-1"></i>Role Restrictions:</h6>
-                        <ul class="mb-0">
-                            <li><strong>Users:</strong> Can only set Active or In Maintenance</li>
-                            <li><strong>Managers:</strong> Can set all statuses except Deleted</li>
-                            <li><strong>Admins:</strong> Full access to all status changes</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            
-            {{ form.status.errors }}
-        </div>
-    </div>
-    
-    <div class="section-header">
-        <h5><i class="bi bi-tools me-2"></i>Maintenance Tracking</h5>
-    </div>
 
-    <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <div class="form-check form-switch">
-                {{ form.maintenance_enabled }}
-                <label class="form-check-label" for="id_maintenance_enabled">
-                    Enable Maintenance Tracking
-                </label>
-            </div>
-            <div class="form-text text-muted">
-                Assets with tracking enabled appear in the Maintenance Center for scheduling.
-            </div>
-            {{ form.maintenance_enabled.errors }}
-        </div>
-        <div class="col-md-4">
-            <label for="id_maintenance_interval_days" class="form-label">
-                Maintenance Interval (days)
-            </label>
-            {{ form.maintenance_interval_days }}
-            <div class="form-text text-muted">
-                Example: 90 for quarterly, 180 for semi-annual, 365 for annual.
-            </div>
-            {{ form.maintenance_interval_days.errors }}
-        </div>
-        <div class="col-md-12">
-            <label for="id_maintenance_notes" class="form-label">
-                Maintenance Notes
-            </label>
-            {{ form.maintenance_notes }}
-            {{ form.maintenance_notes.errors }}
-        </div>
-    </div>
-    
-    <!-- Assignment Section -->
-    <div class="section-header">
-        <h5><i class="bi bi-person-check me-2"></i>Assignment (Optional)</h5>
-    </div>
-    
-    <div class="row g-3 mb-4">
-        <div class="col-md-12">
-            <label for="id_assigned_to" class="form-label">
-                Assigned To
-                <i class="bi bi-info-circle text-muted ms-1" 
-                   data-bs-toggle="tooltip" 
-                   title="Select the user who will be responsible for this asset"></i>
-            </label>
-            
-            {% if object and current_asset and current_asset.assigned_to %}
-            <!-- Current Assignment Display -->
-            <div class="alert alert-sm alert-info d-flex align-items-center mb-2 py-2" role="alert">
-                <i class="bi bi-person-check-fill me-2"></i>
-                <div class="small">
-                    <strong>Currently assigned to:</strong> 
-                    {{ current_asset.assigned_to.get_full_name|default:current_asset.assigned_to.username }}
-                    {% if current_asset.assigned_to.primary_branch %}
-                    <span class="badge bg-light text-dark ms-1">
-                        <i class="bi bi-geo-alt-fill"></i> {{ current_asset.assigned_to.primary_branch.name }}
-                    </span>
-                    {% endif %}
-                </div>
-            </div>
-            {% endif %}
-            
-            <div class="input-group">
-                <select name="assigned_to" id="id_assigned_to" class="form-select">
-                    <option value="">-- Not Assigned --</option>
-                    {% for user in form.fields.assigned_to.queryset %}
-                    <option value="{{ user.id }}" 
-                            data-branch-ids="{% for ub in user.user_branches.all %}{{ ub.branch_id }}{% if not forloop.last %},{% endif %}{% endfor %}"
-                            {% if form.assigned_to.value == user.id|stringformat:'s' %}selected{% endif %}>
-                        {% if user.first_name or user.last_name %}
-                            {{ user.first_name }} {{ user.last_name }}
-                        {% else %}
-                            {{ user.username }}
-                        {% endif %}
-                        {% if user.user_branches.exists %}
-                        ({% for ub in user.user_branches.all %}{{ ub.branch.name }}{% if not forloop.last %}, {% endif %}{% endfor %})
-                        {% endif %}
-                    </option>
-                    {% endfor %}
-                </select>
-                {% if user.role == 'admin' %}
-                <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#createUserModal">
-                    <i class="bi bi-person-plus"></i> Add User
-                </button>
-                {% endif %}
-            </div>
-            
-            <div class="form-text">
-                {% if user_role == 'admin' %}
-                    <i class="bi bi-shield-check"></i> You can assign to any active user in your company.
-                {% elif user_role == 'manager' %}
-                    <i class="bi bi-people"></i> You can assign to users in branches you manage.
-                {% else %}
-                    <i class="bi bi-person"></i> You can assign to users in your branch.
-                {% endif %}
-            </div>
-            
-            {{ form.assigned_to.errors }}
-        </div>
-    </div>
+    <section class="form-section" aria-labelledby="asset-core-title">
+      <header class="form-section__header">
+        <h2 class="form-section__title" id="asset-core-title">Core information</h2>
+        <p class="form-section__description">Choose the inventory category and authorized branch before entering identifiers.</p>
+      </header>
+      <div class="form-grid">
+        {% include 'components/form_field.html' with field=form.category %}
+        {% include 'components/form_field.html' with field=form.branch %}
+        {% include 'components/form_field.html' with field=form.serial_number %}
+        {% include 'components/form_field.html' with field=form.asset_tag %}
+        <div class="form-grid__full">{% include 'components/form_field.html' with field=form.qr_string %}</div>
+      </div>
+    </section>
 
-    <!-- Customer Reference Section -->
-    <div class="section-header">
-        <h5><i class="bi bi-people me-2"></i>Internet Customer Link (Optional)</h5>
-    </div>
+    <section class="form-section" aria-labelledby="asset-category-title">
+      <header class="form-section__header">
+        <h2 class="form-section__title" id="asset-category-title">Category-specific details</h2>
+        <p class="form-section__description">Fields are controlled by the selected category. Existing values are preserved while editing.</p>
+      </header>
+      <div id="category-fields-status" class="visually-hidden" role="status" aria-live="polite"></div>
+      <div id="category-fields-container" class="form-grid">
+        {% for field in form %}
+          {% if field.name|startswith:'dyn_' %}{% include 'components/form_field.html' with field=field %}{% endif %}
+        {% endfor %}
+      </div>
+      <p id="category-fields-empty" class="ui-empty-inline{% if form.category.value %} d-none{% endif %}">Select a category to see its additional fields.</p>
+    </section>
 
-    <div class="row g-3 mb-4">
-        <div class="col-md-12">
-            <label for="id_customer_reference" class="form-label">
-                Linked Internet Customer
-            </label>
-
-            {% if object and current_asset and current_asset.customer_reference %}
-            <div class="alert alert-info d-flex align-items-center mb-2 py-2" role="alert">
-                <i class="bi bi-person-badge me-2"></i>
-                <div class="small">
-                    <strong>Currently linked to:</strong>
-                    {{ current_asset.customer_reference.full_name }}
-                    {% if current_asset.customer_reference.phone %}
-                    <span class="badge bg-light text-dark ms-1">{{ current_asset.customer_reference.phone }}</span>
-                    {% endif %}
-                </div>
-            </div>
-            {% endif %}
-
-            {{ form.customer_reference }}
-            <div class="form-text">
-                Link this asset to the Internet customer it supports. This is separate from <strong>Assigned To</strong> above:
-                it does not create a user assignment and does not make the customer a transfer recipient.
-            </div>
-            {{ form.customer_reference.errors }}
+    <section class="form-section" aria-labelledby="asset-assignment-title">
+      <header class="form-section__header">
+        <h2 class="form-section__title" id="asset-assignment-title">Assignment and customer link</h2>
+        <p class="form-section__description">Operational ownership and customer association are separate relationships.</p>
+      </header>
+      <div class="form-grid">
+        <div class="asset-assignee-field">
+          <label class="form-label" for="id_assigned_to">{{ form.assigned_to.label }}</label>
+          <div class="asset-assignee-control">
+            <select name="assigned_to" id="id_assigned_to" class="form-select"{% if form.assigned_to.field.required %} required{% endif %}>
+              <option value="">-- Not Assigned --</option>
+              {% for account in form.fields.assigned_to.queryset %}
+              <option value="{{ account.pk }}" data-branch-ids="{% for membership in account.user_branches.all %}{{ membership.branch_id }}{% if not forloop.last %},{% endif %}{% endfor %}"{% if form.assigned_to.value|stringformat:'s' == account.pk|stringformat:'s' %} selected{% endif %}>{{ account.get_full_name|default:account.username }}{% if account.user_branches.exists %} — {% for membership in account.user_branches.all %}{{ membership.branch.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}</option>
+              {% endfor %}
+            </select>
+            {% if user.role == 'admin' %}<button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#createUserModal"><i class="bi bi-person-plus" aria-hidden="true"></i><span>Add user</span></button>{% endif %}
+          </div>
+          {% for error in form.assigned_to.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
         </div>
-    </div>
-    
-    <!-- Dynamic Category Fields -->
-    <div id="dynamic-fields-container" class="dynamic-fields-card" style="display: none;">
-        <!-- Dynamic fields will be rendered here by JS -->
-    </div>
-    
-    <!-- Additional Information -->
-    <div class="section-header">
-        <h5><i class="bi bi-file-text me-2"></i>Additional Information</h5>
-    </div>
-    
-    <div class="row g-3 mb-4">
-        <div class="col-md-12">
-            <label for="id_description" class="form-label">
-                <i class="bi bi-card-text me-1 text-secondary"></i>Description
-            </label>
-            {{ form.description }}
-            {{ form.description.errors }}
-        </div>
-        <div class="col-md-12">
-            <label for="id_images" class="form-label">
-                <i class="bi bi-image me-1"></i>Asset Image (Optional)
-            </label>
-            {{ form.images }}
-            <div class="form-text">
-                <i class="bi bi-info-circle me-1"></i>Max 2MB. Supported: JPG, PNG, GIF
-            </div>
-            {{ form.images.errors }}
-            
-            <!-- Image Preview -->
-            {% if object and object.images %}
-            <div class="mt-2 p-2 border rounded bg-light">
-                <small class="text-muted d-block mb-1">Current Image:</small>
-                <img src="{{ object.images.url }}" alt="Current Asset Image" class="img-fluid rounded" style="max-width:150px; max-height:150px;"/>
-                <div class="form-check mt-2">
-                    <input class="form-check-input" type="checkbox" name="images-clear" id="images-clear">
-                    <label class="form-check-label small text-danger" for="images-clear">
-                        <i class="bi bi-trash me-1"></i>Remove current image
-                    </label>
-                </div>
-            </div>
-            {% endif %}
-            <img id="image-preview" src="#" alt="New Image Preview" class="img-fluid mt-2 d-none rounded border" style="max-width:150px; max-height:150px;"/>
-        </div>
-        <div class="col-md-6">
-            <label for="id_documents" class="form-label">
-                <i class="bi bi-file-earmark-pdf me-1"></i>Supporting Document (Optional)
-            </label>
-            {{ form.documents }}
-            <div class="form-text">
-                <i class="bi bi-info-circle me-1"></i>Max 5MB. Supported: PDF, Word (DOC, DOCX)
-            </div>
-            {{ form.documents.errors }}
-            
-            <!-- Document Preview -->
-            {% if object and object.documents %}
-            <div class="mt-2 p-2 border rounded bg-light">
-                <small class="text-muted d-block mb-1">Current Document:</small>
-                <a href="{{ object.documents.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-download me-1"></i>Download Current Document
-                </a>
-                <div class="form-check mt-2">
-                    <input class="form-check-input" type="checkbox" name="documents-clear" id="documents-clear">
-                    <label class="form-check-label small text-danger" for="documents-clear">
-                        <i class="bi bi-trash me-1"></i>Remove current document
-                    </label>
-                </div>
-            </div>
-            {% endif %}
-            <div id="document-preview" class="mt-2 d-none">
-                <small class="text-success">
-                    <i class="bi bi-check-circle me-1"></i>New document selected: <span id="document-name"></span>
-                </small>
-            </div>
-        </div>
-    </div>
-    
-    <!-- World-Class Duplicate Detection Results -->
-    <div id="duplicate-detection-results" class="mt-4" style="display: none;">
-        <!-- Duplicate detection results will be shown here -->
-    </div>
-    
-    <!-- Action Buttons -->
-    <div class="d-flex justify-content-between align-items-center pt-4 border-top">
-        <a href="{% url 'asset_list' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-x-circle me-2"></i>Cancel
-        </a>
-        <button type="submit" class="btn btn-primary">
-            <i class="bi bi-{% if object %}save{% else %}plus-circle{% endif %} me-2"></i>
-            {% if object %}Save Changes{% else %}Register Asset{% endif %}
-        </button>
-    </div>
-</form>
-</div>
+        {% include 'components/form_field.html' with field=form.customer_reference %}
+      </div>
+    </section>
 
-<!-- Hidden data for JavaScript -->
-{% if object and object.dynamic_data %}
-{{ object.dynamic_data|json_script:"asset-initial-dyn" }}
-{% endif %}
+    <section class="form-section" aria-labelledby="asset-maintenance-title">
+      <header class="form-section__header">
+        <h2 class="form-section__title" id="asset-maintenance-title">Maintenance planning</h2>
+        <p class="form-section__description">Enable scheduled maintenance only when this asset needs a recurring service interval.</p>
+      </header>
+      <div class="form-grid">
+        <div class="form-check form-switch asset-maintenance-toggle">
+          {{ form.maintenance_enabled }}
+          <label class="form-check-label" for="{{ form.maintenance_enabled.id_for_label }}">{{ form.maintenance_enabled.label }}</label>
+          {% if form.maintenance_enabled.help_text %}<div class="form-text">{{ form.maintenance_enabled.help_text }}</div>{% endif %}
+          {% for error in form.maintenance_enabled.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+        {% include 'components/form_field.html' with field=form.maintenance_interval_days %}
+        <div class="form-grid__full">{% include 'components/form_field.html' with field=form.maintenance_notes %}</div>
+      </div>
+    </section>
 
+    {% if object %}
+    <section class="form-section" aria-labelledby="asset-status-title">
+      <header class="form-section__header">
+        <h2 class="form-section__title" id="asset-status-title">Lifecycle status</h2>
+        <p class="form-section__description">Sensitive transitions use the existing service rules and require supporting details.</p>
+      </header>
+      <div class="form-grid">
+        <div class="form-grid__full">{% include 'components/form_field.html' with field=form.status %}</div>
+        <div class="form-grid__full" data-status-panel="retired,lost,deleted">{% include 'components/form_field.html' with field=form.status_change_reason %}</div>
+        <div data-status-panel="retired">{% include 'components/form_field.html' with field=form.disposal_method %}</div>
+        <div data-status-panel="lost">{% include 'components/form_field.html' with field=form.loss_date %}</div>
+        <div data-status-panel="lost">{% include 'components/form_field.html' with field=form.loss_reason %}</div>
+        <div class="form-grid__full" data-status-panel="lost">{% include 'components/form_field.html' with field=form.loss_details %}</div>
+        <div data-status-panel="lost">{% include 'components/form_field.html' with field=form.last_known_location %}</div>
+        <div data-status-panel="lost">{% include 'components/form_field.html' with field=form.police_report_number %}</div>
+      </div>
+    </section>
+    {% else %}
+      <input type="hidden" name="status" value="active" id="id_status">
+    {% endif %}
+
+    {% if requires_approval %}
+    <section class="form-section" aria-labelledby="asset-review-title">
+      <header class="form-section__header">
+        <h2 class="form-section__title" id="asset-review-title">Approval context</h2>
+        <p class="form-section__description">Give the reviewer enough context to make an independent decision.</p>
+      </header>
+      <div class="form-grid">
+        <div><label class="form-label" for="id_priority">Priority</label><select class="form-select" id="id_priority" name="priority"><option value="low"{% if request.POST.priority == 'low' %} selected{% endif %}>Low</option><option value="medium"{% if not request.POST.priority or request.POST.priority == 'medium' %} selected{% endif %}>Medium</option><option value="high"{% if request.POST.priority == 'high' %} selected{% endif %}>High</option><option value="urgent"{% if request.POST.priority == 'urgent' %} selected{% endif %}>Urgent</option></select></div>
+        <div class="form-grid__full"><label class="form-label" for="id_justification">Business justification <span aria-hidden="true">*</span></label><textarea class="form-control" id="id_justification" name="justification" rows="4" required aria-describedby="justification-help">{{ request.POST.justification }}</textarea><div class="form-text" id="justification-help">Explain the operational need and expected use of this asset.</div></div>
+      </div>
+    </section>
+    {% endif %}
+
+    <section class="form-section" aria-labelledby="asset-supporting-title">
+      <header class="form-section__header">
+        <h2 class="form-section__title" id="asset-supporting-title">Description and supporting files</h2>
+        <p class="form-section__description">Keep the description concise and attach only records needed for this asset.</p>
+      </header>
+      <div class="form-grid">
+        <div class="form-grid__full">{% include 'components/form_field.html' with field=form.description %}</div>
+        {% if not requires_approval %}
+          {% include 'components/form_field.html' with field=form.images %}
+          {% include 'components/form_field.html' with field=form.documents %}
+        {% endif %}
+      </div>
+      <div class="asset-file-feedback" id="asset-file-feedback" role="status" aria-live="polite"></div>
+    </section>
+
+    <section id="duplicate-detection-results" class="asset-duplicate-results d-none" role="status" aria-live="polite" aria-atomic="true"></section>
+
+    <div class="asset-form-actions">
+      <a href="{% url 'asset_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      <button type="submit" class="btn btn-primary" id="asset-submit">
+        <i class="bi {% if object %}bi-check-lg{% elif requires_approval %}bi-send{% else %}bi-plus-lg{% endif %}" aria-hidden="true"></i>
+        {% if object %}Save changes{% elif requires_approval %}Submit for approval{% else %}Register asset{% endif %}
+      </button>
+    </div>
+  </form>
+</main>
 {% endblock %}
 
-{% block modals %}
-<!-- Include World-Class Create User Modal (DRY - Reusable Component) -->
-{% if user.role == 'admin' %}
-{% include 'settings/partials/create_user_modal.html' %}
-{% endif %}
-{% endblock %}
+{% block modals %}{% if user.role == 'admin' %}{% include 'settings/partials/create_user_modal.html' %}{% endif %}{% endblock %}
 
-{% block extra_scripts %}
-<script src="{% static 'js/asset_form.js' %}"></script>
-{% if object %}
-<script src="{% static 'js/asset-status-fields.js' %}"></script>
-{% endif %}
-
-<!-- ========================================
-     WORLD-CLASS DUPLICATE DETECTION SYSTEM
-     Real-time Detection with Multi-layer Protection
-     ======================================== -->
-
-<!-- Load World-Class Duplicate Detection Component -->
-<script src="{% static 'js/duplicate-detection.js' %}"></script>
-
-<!-- Initialize Duplicate Detection System -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Initializing World-Class Duplicate Detection System...');
-    
-    // Get form element
-    const form = document.getElementById('assetForm');
-    if (!form) {
-        console.error('❌ Asset form not found!');
-        return;
-    }
-    
-    // Initialize duplicate detection
-    try {
-        // Check if our DuplicateDetector class is available
-        if (typeof DuplicateDetector === 'undefined') {
-            console.error('❌ DuplicateDetector not loaded! Check duplicate-detection.js');
-            return;
-        }
-        
-        // Initialize with correct API endpoints and asset context
-        const detector = new DuplicateDetector({
-            formSelector: '#assetForm',
-            apiUrl: '/assets/api/check-duplicates/',
-            {% if object %}
-            excludeAssetId: {{ object.id }},
-            {% endif %}
-            watchFields: ['serial_number', 'asset_tag', 'qr_string'],
-            debounceDelay: 300
-        });
-        
-        console.log('✅ World-Class Duplicate Detection System Initialized!');
-        console.log('🔍 Real-time validation active on fields: serial_number, asset_tag');
-        
-        // Make globally accessible for debugging
-        window.duplicateDetector = detector;
-        
-    } catch (error) {
-        console.error('❌ Failed to initialize duplicate detection:', error);
-        // System works without JS - graceful degradation
-        console.log('📝 Form will use server-side validation only');
-    }
-});
-</script>
-
-<!-- ========================================
-     PHASE 8: AUTO-SAVE & VALIDATION SYSTEM
-     World-Class Form Enhancement
-     ======================================== -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Phase 8: Initializing Auto-Save & Validation...');
-    
-    // Initialize Auto-Save Draft System
-    try {
-        if (typeof FormAutoSave !== 'undefined') {
-            const autoSave = new FormAutoSave('assetForm', {
-                saveInterval: 30000, // Save every 30 seconds
-                excludeFields: ['csrfmiddlewaretoken', 'images', 'documents'], // Exclude CSRF and file fields
-                showIndicator: true,
-                storageKeyPrefix: 'asset_form_draft',
-                onSave: function(draftData) {
-                    console.log('💾 Draft saved:', draftData.timestamp);
-                },
-                onRestore: function(draftData) {
-                    console.log('🔄 Draft restored:', draftData.timestamp);
-                }
-            });
-            
-            console.log('✅ Auto-Save System Initialized!');
-            window.formAutoSave = autoSave; // Make globally accessible
-        } else {
-            console.warn('⚠️ FormAutoSave not loaded');
-        }
-    } catch (error) {
-        console.error('❌ Auto-Save initialization failed:', error);
-    }
-    
-    // Initialize Real-Time Validation Engine
-    try {
-        if (typeof FormValidator !== 'undefined') {
-            const validator = new FormValidator('assetForm', {
-                fields: {
-                    category: {
-                        rules: ['required'],
-                        messages: {
-                            required: 'Category is required'
-                        }
-                    },
-                    branch: {
-                        rules: ['required'],
-                        messages: {
-                            required: 'Branch is required'
-                        }
-                    },
-                    status: {
-                        rules: ['required'],
-                        messages: {
-                            required: 'Status is required'
-                        }
-                    }
-                },
-                validateOnInput: true,
-                validateOnBlur: true,
-                showSuccessState: true,
-                scrollToError: true,
-                debounceDelay: 500
-            });
-            
-            console.log('✅ Validation Engine Initialized!');
-            window.formValidator = validator; // Make globally accessible
-        } else {
-            console.warn('⚠️ FormValidator not loaded');
-        }
-    } catch (error) {
-        console.error('❌ Validation initialization failed:', error);
-    }
-    
-    console.log('🎉 Phase 8 Form Enhancements Active!');
-});
-</script>
-
-<!-- ========================================
-     USER CREATION MODAL
-     Include modal for "Add User" button
-     ======================================== -->
-{% include 'settings/partials/create_user_modal.html' %}
-
-{% endblock %}
+{% block extra_scripts %}<script src="{% static 'js/asset_form.js' %}" defer></script>{% endblock %}
