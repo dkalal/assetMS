@@ -1,211 +1,121 @@
 {% extends 'base_dashboard.html' %}
 {% load static %}
 
-{% block title %}My Retirement Request - {{ company.name }}{% endblock %}
+{% block title %}My retirement request{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-<link rel="stylesheet" href="{% static 'css/retirement-worldclass.css' %}">
+{{ block.super }}
+<link rel='stylesheet' href='{% static "css/retirement-center.css" %}'>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid px-4 py-4">
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"><i class="bi bi-house-door"></i> Dashboard</a></li>
-            <li class="breadcrumb-item active" aria-current="page">My Retirement Request</li>
-        </ol>
-    </nav>
+<div class='ui-page retirement-page'
+     id='retirementEmployeePage'
+     data-status-url='{% url "api_retirement_my_request" %}'
+     data-submit-url='{% url "api_retirement_submit" %}'
+     data-cancel-url='{% url "api_retirement_cancel_mine" %}'>
+  <header class='ui-page-header'>
+    <div>
+      <h1 class='ui-page-header__title'>My retirement request</h1>
+      <p class='ui-page-header__description'>Submit or track an employment retirement request and its required asset handover.</p>
+    </div>
+  </header>
 
-    <!-- Status Card (shown if user has active request) -->
-    <div id="statusCard" style="display: none;">
-        <!-- Hero Section -->
-        <div class="retirement-hero">
-            <div class="d-flex align-items-start justify-content-between flex-wrap">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="retirement-icon-large">
-                        <i class="bi bi-person-badge"></i>
-                    </div>
-                    <div>
-                        <h2 class="mb-2">My Retirement Request</h2>
-                        <p class="mb-0" style="opacity: 0.9;">Track your retirement request status and progress</p>
-                    </div>
-                </div>
-                <div id="statusBadgeContainer"></div>
-            </div>
-        </div>
+  <div id='retirementFeedback' class='retirement-feedback' aria-live='polite'></div>
 
-        <!-- Metrics Row -->
-        <div class="row g-3 mb-4" id="metricsRow"></div>
+  <section id='retirementLoading' class='ui-panel retirement-loading' aria-label='Loading retirement request'>
+    <span class='spinner-border spinner-border-sm' aria-hidden='true'></span> Loading your request…
+  </section>
 
-        <!-- Main Content Row -->
-        <div class="row g-4">
-            <!-- Left Column: Request Details & Timeline -->
-            <div class="col-lg-8">
-                <!-- Request Details Card -->
-                <div class="info-card">
-                    <div class="info-card-header">
-                        <i class="bi bi-info-circle"></i>
-                        Request Details
-                    </div>
-                    <div id="requestDetails"></div>
-                </div>
-
-                <!-- Timeline Card -->
-                <div class="info-card">
-                    <div class="info-card-header">
-                        <i class="bi bi-clock-history"></i>
-                        Request Timeline
-                    </div>
-                    <div class="timeline-scrollable">
-                        <div id="timelineContainer" class="timeline"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Column: Assets & Actions -->
-            <div class="col-lg-4">
-                <!-- Assets Card -->
-                <div class="info-card" id="assetsCard" style="display: none;">
-                    <div class="info-card-header">
-                        <i class="bi bi-box-seam"></i>
-                        Your Assigned Assets
-                    </div>
-                    <div id="assetsList"></div>
-                </div>
-
-                <!-- Actions Card -->
-                <div class="info-card" id="actionsCard" style="display: none;">
-                    <div class="info-card-header">
-                        <i class="bi bi-gear"></i>
-                        Actions
-                    </div>
-                    <button type="button" class="action-btn action-btn-danger w-100" id="cancelRequestBtn">
-                        <i class="bi bi-x-circle"></i> Cancel Request
-                    </button>
-                </div>
-            </div>
-        </div>
+  <section id='retirementStatus' hidden>
+    <div class='ui-summary-strip' aria-label='Retirement request summary'>
+      <div><span class='ui-summary-strip__label'>Status</span><strong id='retirementStatusText'>—</strong></div>
+      <div><span class='ui-summary-strip__label'>Effective date</span><strong id='retirementEffectiveDate'>—</strong></div>
+      <div><span class='ui-summary-strip__label'>Assigned assets</span><strong id='retirementAssetCount'>0</strong></div>
+      <div><span class='ui-summary-strip__label'>Assets pending</span><strong id='retirementAssetsPending'>0</strong></div>
     </div>
 
-    <!-- Request Form Card (shown if no active request) -->
-    <div id="requestFormCard">
-        <!-- Hero Section -->
-        <div class="retirement-hero">
-            <div class="d-flex align-items-center gap-3">
-                <div class="retirement-icon-large">
-                    <i class="bi bi-person-badge"></i>
-                </div>
-                <div>
-                    <h2 class="mb-2">Submit Retirement Request</h2>
-                    <p class="mb-0" style="opacity: 0.9;">Request your account retirement with proper notice</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Form Card -->
-        <div class="info-card">
-            <div class="alert-modern alert-info">
-                <i class="bi bi-info-circle fs-4"></i>
-                <div>
-                    <strong>Important Information:</strong>
-                    <ul class="mb-0 mt-2">
-                        <li>Minimum 2 weeks notice required</li>
-                        <li>Your manager will review your request</li>
-                        <li>All assigned assets must be returned before completion</li>
-                        <li>You can cancel your request before it's approved</li>
-                    </ul>
-                </div>
-            </div>
-
-            <form id="retirementRequestForm">
-                {% csrf_token %}
-                
-                <div class="form-group-modern">
-                    <label for="effectiveDate">Effective Date (Last Working Day) *</label>
-                    <input type="date" id="effectiveDate" class="form-control" required min="{{ min_date }}">
-                    <div class="form-help-text">
-                        <i class="bi bi-calendar"></i>
-                        <span>Select your desired last working day (minimum 2 weeks from today)</span>
-                    </div>
-                </div>
-
-                <div class="form-group-modern">
-                    <label for="reasonCategory">Reason Category *</label>
-                    <select id="reasonCategory" class="form-select" required>
-                        <option value="">Select a category...</option>
-                        <option value="resignation">Resignation</option>
-                        <option value="retirement">Retirement</option>
-                        <option value="career_change">Career Change</option>
-                        <option value="relocation">Relocation</option>
-                        <option value="personal">Personal Reasons</option>
-                        <option value="contract_end">Contract End</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-
-                <div class="form-group-modern">
-                    <label for="reason">Detailed Reason *</label>
-                    <textarea id="reason" class="form-control" required placeholder="Please provide a detailed reason for your retirement request..." minlength="10"></textarea>
-                    <div class="form-help-text">
-                        <i class="bi bi-chat-left-text"></i>
-                        <span id="reasonCharCount">0 / 10 characters minimum</span>
-                    </div>
-                </div>
-
-                <div class="form-group-modern">
-                    <label for="notes">Additional Notes (Optional)</label>
-                    <textarea id="notes" class="form-control" placeholder="Any additional information you'd like to share..."></textarea>
-                </div>
-
-                <div class="d-flex gap-2">
-                    <button type="submit" class="action-btn action-btn-primary" id="submitBtn">
-                        <i class="bi bi-send"></i> Submit Retirement Request
-                    </button>
-                    <a href="{% url 'dashboard' %}" class="action-btn action-btn-secondary">
-                        <i class="bi bi-arrow-left"></i> Back to Dashboard
-                    </a>
-                </div>
-            </form>
-        </div>
+    <div class='retirement-detail-grid'>
+      <div class='d-grid gap-4 min-w-0'>
+        <section class='ui-panel' aria-labelledby='retirement-details-title'>
+          <div class='ui-panel__header'><div><h2 id='retirement-details-title'>Request details</h2><p>Your submitted dates, reason and review notes.</p></div></div>
+          <dl class='retirement-facts' id='retirementDetails'></dl>
+        </section>
+        <section class='ui-panel' aria-labelledby='retirement-timeline-title'>
+          <div class='ui-panel__header'><div><h2 id='retirement-timeline-title'>Progress history</h2></div></div>
+          <ol class='retirement-timeline' id='retirementTimeline'></ol>
+        </section>
+      </div>
+      <aside class='d-grid gap-4 align-content-start'>
+        <section class='ui-panel' id='retirementAssetsPanel' hidden aria-labelledby='retirement-assets-title'>
+          <div class='ui-panel__header'><div><h2 id='retirement-assets-title'>Assigned assets</h2><p>Assets that must be reconciled before completion.</p></div></div>
+          <div class='ui-record-list' id='retirementAssets'></div>
+        </section>
+        <section class='ui-panel' id='retirementActionsPanel' hidden aria-labelledby='retirement-actions-title'>
+          <div class='ui-panel__header'><div><h2 id='retirement-actions-title'>Request actions</h2></div></div>
+          <button type='button' class='btn btn-outline-danger w-100' data-bs-toggle='modal' data-bs-target='#cancelRetirementModal'>Cancel request</button>
+        </section>
+      </aside>
     </div>
+  </section>
+
+  <section id='retirementFormPanel' class='ui-panel retirement-form-panel' hidden aria-labelledby='retirement-form-title'>
+    <div class='ui-panel__header'>
+      <div><h2 id='retirement-form-title'>Submit a retirement request</h2><p>At least 14 days’ notice is required. All assigned assets must be returned before completion.</p></div>
+    </div>
+    <form id='retirementRequestForm' class='ui-form'>
+      {% csrf_token %}
+      <div class='form-grid'>
+        <div>
+          <label for='effectiveDate' class='form-label'>Last working day <span aria-hidden='true'>*</span></label>
+          <input type='date' id='effectiveDate' class='form-control' required min='{{ min_date }}' aria-describedby='effectiveDateHelp'>
+          <div id='effectiveDateHelp' class='form-text'>Choose a date at least two weeks from today.</div>
+        </div>
+        <div>
+          <label for='reasonCategory' class='form-label'>Reason category <span aria-hidden='true'>*</span></label>
+          <select id='reasonCategory' class='form-select' required>
+            <option value=''>Select a category</option>
+            <option value='resignation'>Resignation</option>
+            <option value='retirement'>Retirement</option>
+            <option value='career_change'>Career change</option>
+            <option value='relocation'>Relocation</option>
+            <option value='personal'>Personal reasons</option>
+            <option value='contract_end'>Contract end</option>
+            <option value='other'>Other</option>
+          </select>
+        </div>
+        <div class='form-grid__full'>
+          <label for='reason' class='form-label'>Detailed reason <span aria-hidden='true'>*</span></label>
+          <textarea id='reason' class='form-control' rows='4' required minlength='10' aria-describedby='reasonHelp'></textarea>
+          <div id='reasonHelp' class='form-text'><span id='reasonCharCount'>0</span> characters; minimum 10.</div>
+        </div>
+        <div class='form-grid__full'>
+          <label for='notes' class='form-label'>Additional notes <span class='text-muted'>(optional)</span></label>
+          <textarea id='notes' class='form-control' rows='3'></textarea>
+        </div>
+      </div>
+      <div class='form-actions'>
+        <a href='{% url "dashboard" %}' class='btn btn-outline-secondary'>Back to dashboard</a>
+        <button type='submit' class='btn btn-primary' id='submitRetirementButton'><i class='bi bi-send' aria-hidden='true'></i> Submit request</button>
+      </div>
+    </form>
+  </section>
 </div>
 
-<!-- Cancel Confirmation Modal -->
-<div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius: 16px; border: none;">
-            <div class="modal-header" style="border-bottom: 2px solid #e5e7eb;">
-                <h5 class="modal-title" id="cancelModalLabel">
-                    <i class="bi bi-exclamation-triangle text-warning"></i> Cancel Retirement Request
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p class="mb-3">Are you sure you want to cancel your retirement request? This action cannot be undone.</p>
-                <div class="form-group-modern">
-                    <label for="cancelReason">Cancellation Reason *</label>
-                    <textarea id="cancelReason" class="form-control" required placeholder="Please provide a reason for cancellation..." minlength="10"></textarea>
-                    <div class="form-help-text">
-                        <i class="bi bi-info-circle"></i>
-                        <span>Minimum 10 characters required</span>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer" style="border-top: 2px solid #e5e7eb;">
-                <button type="button" class="action-btn action-btn-secondary" data-bs-dismiss="modal">
-                    <i class="bi bi-x"></i> No, Keep It
-                </button>
-                <button type="button" class="action-btn action-btn-danger" id="confirmCancelBtn">
-                    <i class="bi bi-x-circle"></i> Yes, Cancel Request
-                </button>
-            </div>
-        </div>
+<div class='modal fade' id='cancelRetirementModal' tabindex='-1' aria-labelledby='cancelRetirementTitle' aria-hidden='true'>
+  <div class='modal-dialog modal-dialog-centered'><div class='modal-content'>
+    <div class='modal-header'><h2 class='modal-title fs-5' id='cancelRetirementTitle'>Cancel retirement request</h2><button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button></div>
+    <div class='modal-body'>
+      <label for='cancelReason' class='form-label'>Cancellation reason</label>
+      <textarea id='cancelReason' class='form-control' rows='3' required minlength='10' aria-describedby='cancelReasonHelp'></textarea>
+      <div class='form-text' id='cancelReasonHelp'>Provide at least 10 characters for the audit trail.</div>
     </div>
+    <div class='modal-footer'><button type='button' class='btn btn-outline-secondary' data-bs-dismiss='modal'>Keep request</button><button type='button' class='btn btn-danger' id='confirmCancelRetirement'>Cancel request</button></div>
+  </div></div>
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="{% static 'js/retirement-employee.js' %}"></script>
+{{ block.super }}
+<script src='{% static "js/retirement-employee.js" %}' defer></script>
 {% endblock %}

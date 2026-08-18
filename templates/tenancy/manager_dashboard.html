@@ -1,269 +1,35 @@
 {% extends 'base_dashboard.html' %}
 {% load static %}
-
-{% block title %}My Managed Branches · AssetPro{% endblock %}
-
-{% block extra_styles %}
-  {{ block.super }}
-  <link rel="stylesheet" href="{% static 'css/dashboard-blue-modern.css' %}">
-  <link rel="stylesheet" href="{% static 'css/manager-dashboard.css' %}">
-{% endblock %}
-
+{% block title %}Managed branches · AssetPro{% endblock %}
+{% block extra_styles %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/manager-center.css' %}">{% endblock %}
 {% block content %}
-      
-      <!-- Hero Section -->
-      <div class="hero-section shadow-sm">
-        <div class="row align-items-center">
-          <div class="col-md-8">
-            <h1 class="h2 mb-2 fw-bold">
-              <i class="bi bi-briefcase-fill me-2"></i>Welcome, {{ manager.get_full_name|default:manager.username }}
-            </h1>
-            <p class="mb-0 opacity-75">
-              You are managing {{ total_branches }} branch{{ total_branches|pluralize:"es" }} with {{ total_assets }} asset{{ total_assets|pluralize }} and {{ total_staff }} staff member{{ total_staff|pluralize }}
-            </p>
-          </div>
-          <div class="col-md-4 text-md-end mt-3 mt-md-0">
-            <a href="{% url 'branch_manager_performance' %}" class="btn btn-light btn-lg">
-              <i class="bi bi-graph-up me-2"></i>View Performance Report
-            </a>
-          </div>
+<div class="manager-center">
+  <header class="page-header">
+    <div><p class="page-header__eyebrow">Branch operations</p><h1 class="page-header__title">Managed branches</h1><p class="page-header__description">{{ manager.get_full_name|default:manager.username }}, monitor the people, assets and pending work within your assigned scope.</p></div>
+    <div class="page-header__actions"><a href="{% url 'branch_manager_performance' %}" class="btn btn-primary"><i class="bi bi-graph-up" aria-hidden="true"></i> Performance report</a></div>
+  </header>
+  <section class="manager-summary" aria-label="Managed branch summary">
+    <div class="manager-summary__item"><span class="manager-summary__value">{{ total_branches }}</span><span class="manager-summary__label">Branches</span></div>
+    <div class="manager-summary__item"><span class="manager-summary__value">{{ total_assets }}</span><span class="manager-summary__label">Assets</span></div>
+    <div class="manager-summary__item"><span class="manager-summary__value">{{ total_staff }}</span><span class="manager-summary__label">Staff</span></div>
+    <div class="manager-summary__item"><span class="manager-summary__value">{{ total_pending }}</span><span class="manager-summary__label">Pending approvals</span></div>
+  </section>
+  {% if total_maintenance_due > 0 %}<div class="alert alert-warning" role="status"><strong>Maintenance required:</strong> {{ total_maintenance_due }} asset{{ total_maintenance_due|pluralize }} require attention within seven days.</div>{% endif %}
+  <section class="manager-panel" aria-labelledby="managed-branches-title">
+    <div class="manager-panel__header"><h2 id="managed-branches-title" class="h5 mb-0">Your branch scope</h2><span class="badge text-bg-light">{{ total_branches }} branch{{ total_branches|pluralize:"es" }}</span></div>
+    {% for branch_data in managed_branches %}
+      <article class="manager-branch">
+        <div><h3 class="h6 mb-1">{{ branch_data.branch.name }}</h3><p class="small text-muted mb-0">Code {{ branch_data.branch.code }}{% if branch_data.branch.is_head_office %} · Head office{% endif %}</p>{% if branch_data.assigned_at %}<p class="small text-muted mb-0">Assigned {{ branch_data.assigned_at|date:"M j, Y" }}</p>{% endif %}</div>
+        <div class="manager-branch__metrics" aria-label="{{ branch_data.branch.name }} metrics">
+          <div class="manager-branch__metric"><strong>{{ branch_data.asset_count }}</strong><span>Assets</span></div>
+          <div class="manager-branch__metric"><strong>{{ branch_data.staff_count }}</strong><span>Staff</span></div>
+          <div class="manager-branch__metric"><strong>{{ branch_data.pending_approvals }}</strong><span>Pending</span></div>
+          <div class="manager-branch__metric"><strong>{{ branch_data.recent_activity }}</strong><span>30-day activity</span></div>
         </div>
-      </div>
-
-      <!-- Summary Stats -->
-      <div class="row g-3 mb-4">
-        <div class="col-md-3">
-          <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-              <div class="d-flex align-items-center">
-                <div class="metric-icon bg-primary-subtle text-primary me-3">
-                  <i class="bi bi-building"></i>
-                </div>
-                <div>
-                  <div class="stat-value text-primary">{{ total_branches }}</div>
-                  <div class="stat-label">Branches</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-              <div class="d-flex align-items-center">
-                <div class="metric-icon bg-success-subtle text-success me-3">
-                  <i class="bi bi-box-seam"></i>
-                </div>
-                <div>
-                  <div class="stat-value text-success">{{ total_assets }}</div>
-                  <div class="stat-label">Assets</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-              <div class="d-flex align-items-center">
-                <div class="metric-icon bg-info-subtle text-info me-3">
-                  <i class="bi bi-people"></i>
-                </div>
-                <div>
-                  <div class="stat-value text-info">{{ total_staff }}</div>
-                  <div class="stat-label">Staff</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-              <div class="d-flex align-items-center">
-                <div class="metric-icon bg-warning-subtle text-warning me-3">
-                  <i class="bi bi-exclamation-triangle"></i>
-                </div>
-                <div>
-                  <div class="stat-value text-warning">{{ total_pending }}</div>
-                  <div class="stat-label">Pending</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Maintenance Alerts -->
-      {% if total_maintenance_due > 0 %}
-        <div class="alert alert-warning alert-dismissible fade show" role="alert">
-          <div class="d-flex align-items-center">
-            <i class="bi bi-exclamation-triangle-fill fs-3 me-3"></i>
-            <div>
-              <h5 class="alert-heading mb-1">Maintenance Required</h5>
-              <p class="mb-0">
-                <strong>{{ total_maintenance_due }}</strong> asset{{ total_maintenance_due|pluralize }} 
-                require{{ total_maintenance_due|pluralize:",s" }} maintenance within the next 7 days across your branches.
-              </p>
-            </div>
-          </div>
-          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-      {% endif %}
-
-      <!-- Managed Branches -->
-      <div class="card shadow-sm border-0">
-        <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-3">
-          <h4 class="mb-0 fw-bold">
-            <i class="bi bi-building me-2 text-primary"></i>Your Managed Branches
-          </h4>
-          <span class="badge bg-primary-subtle text-primary fs-6">{{ total_branches }} branch{{ total_branches|pluralize:"es" }}</span>
-        </div>
-        <div class="card-body p-0">
-          {% if managed_branches %}
-            <div class="list-group list-group-flush">
-              {% for branch_data in managed_branches %}
-                <div class="list-group-item branch-card">
-                  <div class="row align-items-center">
-                    <!-- Branch Info -->
-                    <div class="col-md-3">
-                      <div class="d-flex align-items-center">
-                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3"
-                             style="width: 56px; height: 56px; font-size: 1.5rem;">
-                          <i class="bi bi-building"></i>
-                        </div>
-                        <div>
-                          <div class="fw-bold h5 mb-1">{{ branch_data.branch.name }}</div>
-                          <small class="text-muted">Code: {{ branch_data.branch.code }}</small>
-                          {% if branch_data.branch.is_head_office %}
-                            <div class="mt-1">
-                              <span class="badge bg-info-subtle text-info">
-                                <i class="bi bi-star-fill me-1"></i>Head Office
-                              </span>
-                            </div>
-                          {% endif %}
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Branch Metrics -->
-                    <div class="col-md-6">
-                      <div class="stats-grid">
-                        <div class="stat-box">
-                          <div class="stat-value text-primary">{{ branch_data.asset_count }}</div>
-                          <div class="stat-label">Assets</div>
-                        </div>
-                        <div class="stat-box">
-                          <div class="stat-value text-success">{{ branch_data.staff_count }}</div>
-                          <div class="stat-label">Staff</div>
-                        </div>
-                        <div class="stat-box">
-                          <div class="stat-value text-warning">{{ branch_data.pending_approvals }}</div>
-                          <div class="stat-label">Pending</div>
-                        </div>
-                        <div class="stat-box">
-                          <div class="stat-value text-info">{{ branch_data.recent_activity }}</div>
-                          <div class="stat-label">Activity</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Actions -->
-                    <div class="col-md-3 text-end">
-                      <div class="btn-group" role="group">
-                        <a href="{% url 'asset_list' %}?branch={{ branch_data.branch.pk }}" 
-                           class="btn btn-outline-primary">
-                          <i class="bi bi-box-seam me-1"></i>Assets
-                        </a>
-                        <a href="{% url 'audit_dashboard' %}?branch={{ branch_data.branch.pk }}" 
-                           class="btn btn-outline-secondary">
-                          <i class="bi bi-clock-history me-1"></i>Activity
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Alerts -->
-                  {% if branch_data.maintenance_due > 0 or branch_data.pending_approvals > 0 %}
-                    <div class="mt-3 pt-3 border-top">
-                      <div class="d-flex flex-wrap gap-2">
-                        {% if branch_data.maintenance_due > 0 %}
-                          <div class="alert-badge">
-                            <i class="bi bi-wrench"></i>
-                            <span>{{ branch_data.maintenance_due }} maintenance due</span>
-                          </div>
-                        {% endif %}
-                        {% if branch_data.pending_approvals > 0 %}
-                          <div class="alert-badge">
-                            <i class="bi bi-clock"></i>
-                            <span>{{ branch_data.pending_approvals }} pending approval{{ branch_data.pending_approvals|pluralize }}</span>
-                          </div>
-                        {% endif %}
-                      </div>
-                    </div>
-                  {% endif %}
-
-                  <!-- Assignment Info -->
-                  <div class="mt-3 pt-3 border-top">
-                    <small class="text-muted">
-                      <i class="bi bi-info-circle me-1"></i>
-                      Assigned as manager on {{ branch_data.assigned_at|date:"M d, Y" }}
-                      {% if branch_data.assigned_by %}
-                        by {{ branch_data.assigned_by.get_full_name|default:branch_data.assigned_by.username }}
-                      {% endif %}
-                    </small>
-                  </div>
-                </div>
-              {% endfor %}
-            </div>
-          {% else %}
-            <div class="text-center py-5">
-              <i class="bi bi-building display-1 text-muted"></i>
-              <p class="text-muted mt-3">You are not currently managing any branches.</p>
-              <small class="text-muted">Contact your administrator to be assigned as a branch manager.</small>
-            </div>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- Quick Actions -->
-      <div class="row g-3 mt-4">
-        <div class="col-md-4">
-          <div class="card border-0 shadow-sm h-100">
-            <div class="card-body text-center">
-              <i class="bi bi-graph-up display-4 text-primary mb-3"></i>
-              <h5 class="fw-bold">Performance Report</h5>
-              <p class="text-muted">View detailed analytics and performance metrics</p>
-              <a href="{% url 'branch_manager_performance' %}" class="btn btn-outline-primary">
-                View Report
-              </a>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="card border-0 shadow-sm h-100">
-            <div class="card-body text-center">
-              <i class="bi bi-check-circle display-4 text-success mb-3"></i>
-              <h5 class="fw-bold">Pending Approvals</h5>
-              <p class="text-muted">Review and approve pending requests</p>
-              <a href="{% url 'approval_dashboard' %}" class="btn btn-outline-success">
-                View Approvals
-              </a>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="card border-0 shadow-sm h-100">
-            <div class="card-body text-center">
-              <i class="bi bi-people display-4 text-info mb-3"></i>
-              <h5 class="fw-bold">Staff Management</h5>
-              <p class="text-muted">Manage staff in your branches</p>
-              <a href="{% url 'users:profile' %}" class="btn btn-outline-info">
-                Manage Staff
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-
+        <div class="manager-actions"><a href="{% url 'asset_list' %}?branch={{ branch_data.branch.pk }}" class="btn btn-outline-primary">Assets<span class="visually-hidden"> for {{ branch_data.branch.name }}</span></a><a href="{% url 'audit_dashboard' %}?branch={{ branch_data.branch.pk }}" class="btn btn-outline-secondary">Activity<span class="visually-hidden"> for {{ branch_data.branch.name }}</span></a></div>
+      </article>
+    {% empty %}<div class="p-5 text-center text-muted"><i class="bi bi-building fs-2" aria-hidden="true"></i><p class="mb-0 mt-2">No managed branches are currently assigned.</p></div>{% endfor %}
+  </section>
+  <nav class="manager-actions" aria-label="Manager shortcuts"><a href="{% url 'approval_dashboard' %}" class="btn btn-outline-primary"><i class="bi bi-check2-circle" aria-hidden="true"></i> Review approvals</a><a href="{% url 'users:profile' %}" class="btn btn-outline-secondary"><i class="bi bi-people" aria-hidden="true"></i> Staff profile</a></nav>
+</div>
 {% endblock %}

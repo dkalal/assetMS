@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base_auth.html' %}
 {% load static %}
 
 {% block title %}Verify Your Email - Asset Management System{% endblock %}
@@ -43,7 +43,7 @@
                                     <button class="btn btn-primary" 
                                             type="button" 
                                             id="copyLinkBtn"
-                                            onclick="copyVerificationLink()"
+                                            data-copy-target="verificationLink"
                                             aria-label="Copy verification link">
                                         <i class="bi bi-clipboard me-2"></i>Copy Link
                                     </button>
@@ -131,50 +131,8 @@
     </div>
 </div>
 
-<script>
-function copyVerificationLink() {
-    const linkInput = document.getElementById('verificationLink');
-    const copyBtn = document.getElementById('copyLinkBtn');
-    
-    // Select and copy
-    linkInput.select();
-    linkInput.setSelectionRange(0, 99999); // For mobile devices
-    
-    try {
-        document.execCommand('copy');
-        
-        // Visual feedback
-        const originalHTML = copyBtn.innerHTML;
-        copyBtn.innerHTML = '<i class="bi bi-check me-2"></i>Copied!';
-        copyBtn.classList.remove('btn-primary');
-        copyBtn.classList.add('btn-success');
-        
-        // Reset after 2 seconds
-        setTimeout(() => {
-            copyBtn.innerHTML = originalHTML;
-            copyBtn.classList.remove('btn-success');
-            copyBtn.classList.add('btn-primary');
-        }, 2000);
-        
-        // Show toast notification if available
-        if (typeof showToast === 'function') {
-            showToast('Verification link copied to clipboard!', 'success');
-        }
-    } catch (err) {
-        console.error('Failed to copy:', err);
-        alert('Failed to copy link. Please select and copy manually.');
-    }
-}
-
-// Auto-focus email field if present
-document.addEventListener('DOMContentLoaded', function() {
-    const emailInput = document.getElementById('{{ form.email.id_for_label }}');
-    if (emailInput && !emailInput.value) {
-        emailInput.focus();
-    }
-});
-</script>
 {% endblock %}
+{% block extra_scripts %}{{ block.super }}<script src="{% static 'js/auth-actions.js' %}" defer></script>{% endblock %}
 
 
 

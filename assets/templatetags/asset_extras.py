@@ -2,6 +2,18 @@ from django import template
 import json
 
 register = template.Library()
+
+
+@register.simple_tag(takes_context=True)
+def query_replace(context, **changes):
+    '''Return the current query string with selected keys replaced or removed.'''
+    query = context['request'].GET.copy()
+    for key, value in changes.items():
+        if value is None or value == '':
+            query.pop(key, None)
+        else:
+            query[key] = value
+    return query.urlencode()
  
 @register.filter
 def get_item(dictionary, key):
@@ -35,4 +47,4 @@ def to_json(value):
         return json.dumps(value, ensure_ascii=False, separators=(',', ':'))
     except (TypeError, ValueError) as e:
         # Fallback for non-serializable data
-        return '{}' 
+        return '{}'

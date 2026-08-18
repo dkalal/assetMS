@@ -673,6 +673,9 @@ def api_user_update(request, user_id):
                     'error': 'Email already exists'
                 }, status=400)
             user.email = email
+
+        if 'phone_number' in data:
+            user.phone_number = str(data['phone_number']).strip()
         
         if 'username' in data:
             username = data['username'].strip()

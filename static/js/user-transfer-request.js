@@ -58,7 +58,6 @@ class UserTransferRequestModal {
         // Get modal element
         const modalElement = document.getElementById('userTransferRequestModal');
         if (!modalElement) {
-            console.warn('User transfer request modal not found');
             return;
         }
         
@@ -74,7 +73,6 @@ class UserTransferRequestModal {
         this.characterCounter = modalElement.querySelector('#reasonCharCount');
         
         if (!this.form) {
-            console.error('Transfer request form not found');
             return;
         }
         
@@ -265,7 +263,6 @@ class UserTransferRequestModal {
                 this.setLoading(false);
             }
         } catch (error) {
-            console.error('Transfer request error:', error);
             this.showToast('An error occurred. Please try again.', 'danger');
             this.setLoading(false);
         }

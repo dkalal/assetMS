@@ -16,11 +16,21 @@ from django.template import TemplateSyntaxError
 from django.template.loader import get_template
 
 TEMPLATES_TO_CHECK = [
+    'base_dashboard.html',
+    'base_auth.html',
     'components/profile_avatar.html',
-    'components/topbar.html',
-    'components/auth_navbar.html',
+    'components/auth_navbar_enhanced.html',
+    'components/sidebar_enhanced.html',
     'users/user_permissions.html',
     'users/profile.html',
+    'users/my_transfer_requests.html',
+    'system_admin/dashboard.html',
+    'system_admin/company_list.html',
+    'system_admin/create_company.html',
+    'system_admin/company_detail.html',
+    'system_admin/impersonate_confirm.html',
+    'system_admin/role_permissions.html',
+    'assets/asset_scan_enterprise.html',
 ]
 
 

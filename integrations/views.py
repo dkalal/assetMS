@@ -1,12 +1,81 @@
 import json
+import uuid
 
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Count, Q
 from django.http import JsonResponse
+from django.views.generic import DetailView, ListView
 from django.views.decorators.http import require_GET, require_POST
 
 from users.decorators import api_admin_required
+from tenancy.mixins import CompanyRequiredMixin
 
 from .models import CustomerSyncRun, ExternalCustomerSyncConfig
-from .services import CustomerSyncService, SourceCustomerApiError, get_sync_timeout_seconds
+from .models import ExternalCustomerReference
+from .services import (
+    CustomerSyncService,
+    SourceCustomerApiError,
+    get_sync_timeout_seconds,
+    normalize_source_base_url,
+)
+
+
+class SyncedCustomerListView(LoginRequiredMixin, CompanyRequiredMixin, ListView):
+    template_name = 'integrations/synced_customer_list.html'
+    context_object_name = 'customers'
+    paginate_by = 25
+
+    def get_queryset(self):
+        queryset = (
+            ExternalCustomerReference.objects.filter(company=self.request.company)
+            .annotate(asset_count=Count('assets', distinct=True))
+            .order_by('full_name')
+        )
+        search = (self.request.GET.get('search') or '').strip()
+        sync_status = (self.request.GET.get('sync_status') or '').strip()
+        if search:
+            search_filter = (
+                Q(full_name__icontains=search)
+                | Q(phone__icontains=search)
+                | Q(email__icontains=search)
+            )
+            try:
+                search_filter |= Q(external_uuid=uuid.UUID(search))
+            except (ValueError, TypeError):
+                pass
+            queryset = queryset.filter(search_filter)
+        if sync_status:
+            queryset = queryset.filter(sync_status=sync_status)
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        queryset = self.get_queryset()
+        context['search'] = (self.request.GET.get('search') or '').strip()
+        context['sync_status'] = (self.request.GET.get('sync_status') or '').strip()
+        context['summary'] = {
+            'total': queryset.count(),
+            'synced': queryset.filter(sync_status=ExternalCustomerReference.SyncStatus.SYNCED).count(),
+            'failed': queryset.filter(sync_status=ExternalCustomerReference.SyncStatus.FAILED).count(),
+            'linked': queryset.filter(asset_count__gt=0).count(),
+        }
+        context['status_choices'] = ExternalCustomerReference.SyncStatus.choices
+        return context
+
+
+class SyncedCustomerDetailView(LoginRequiredMixin, CompanyRequiredMixin, DetailView):
+    template_name = 'integrations/synced_customer_detail.html'
+    context_object_name = 'customer'
+    slug_field = 'external_uuid'
+    slug_url_kwarg = 'external_uuid'
+
+    def get_queryset(self):
+        return (
+            ExternalCustomerReference.objects.filter(company=self.request.company)
+            .annotate(asset_count=Count('assets', distinct=True))
+            .prefetch_related('assets__category', 'assets__branch')
+            .order_by('full_name')
+        )
 
 
 def _config_payload(config):
@@ -55,7 +124,7 @@ def customer_sync_config_update(request):
     except json.JSONDecodeError:
         return JsonResponse({'success': False, 'error': 'Invalid JSON payload.'}, status=400)
 
-    source_base_url = (data.get('source_base_url') or '').strip().rstrip('/')
+    source_base_url = normalize_source_base_url(data.get('source_base_url') or '')
     source_tenant_slug = (data.get('source_tenant_slug') or '').strip()
     api_token = (data.get('api_token') or '').strip()
     is_enabled = bool(data.get('is_enabled', True))

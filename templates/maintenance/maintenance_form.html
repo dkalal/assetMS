@@ -1,50 +1,64 @@
-{% extends "base.html" %}
-
-{% block title %}{% if action == 'schedule' %}Schedule Maintenance{% else %}Maintenance{% endif %}{% endblock %}
-
+{% extends "base_dashboard.html" %}
+{% load static %}
+{% block title %}Schedule maintenance · AssetPro{% endblock %}
+{% block extra_styles %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/maintenance-center.css' %}">{% endblock %}
 {% block content %}
-<div class="container py-4">
-  <div class="row justify-content-center">
-    <div class="col-lg-6">
-      <div class="card shadow-sm">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <div>
-            <h1 class="h4 mb-0">{% if action == 'schedule' %}Schedule maintenance{% else %}Maintenance{% endif %}</h1>
-            <small class="text-muted">Asset: {{ asset.description|default:asset.category.name }}</small>
-          </div>
-          <a href="{% url 'maintenance:list' %}" class="btn btn-link">Back</a>
-        </div>
-        <div class="card-body">
+<div class="maintenance-center">
+  <header class="page-header">
+    <div><p class="page-header__eyebrow">Maintenance</p><h1 class="page-header__title">Schedule maintenance</h1><p class="page-header__description">Create a planned maintenance record for this eligible asset.</p></div>
+    <div class="page-header__actions"><a href="{% url 'maintenance:list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left" aria-hidden="true"></i> Maintenance center</a></div>
+  </header>
+
+  <div class="row g-4">
+    <div class="col-12 col-lg-8">
+      <section class="ui-panel" aria-labelledby="maintenance-form-title">
+        <div class="ui-panel__header"><div><h2 id="maintenance-form-title" class="h5 mb-1">Schedule details</h2><p class="small text-muted mb-0">Fields marked required must be completed.</p></div></div>
+        <div class="ui-panel__body">
           <form method="post" novalidate>
             {% csrf_token %}
-            {% if form.non_field_errors %}
-            <div class="alert alert-danger">
-              {% for error in form.non_field_errors %}
-              <div>{{ error }}</div>
-              {% endfor %}
+            {% if form.errors %}
+            <div class="alert alert-danger" role="alert" tabindex="-1">
+              <h3 class="h6">Please correct the errors below.</h3>
+              {% if form.non_field_errors %}<ul class="mb-2">{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+              <ul class="mb-0">{% for field in form %}{% for error in field.errors %}<li><a href="#{{ field.id_for_label }}">{{ field.label }}: {{ error }}</a></li>{% endfor %}{% endfor %}</ul>
             </div>
             {% endif %}
 
-            {% for field in form %}
-            <div class="mb-3">
-              <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span class="text-danger">*</span>{% endif %}</label>
-              {{ field }}
-              {% if field.help_text %}
-              <div class="form-text">{{ field.help_text }}</div>
-              {% endif %}
-              {% for error in field.errors %}
-              <div class="invalid-feedback d-block">{{ error }}</div>
+            <div class="row g-3">
+              {% for field in form %}
+              <div class="{% if field.name == 'description' %}col-12{% else %}col-12 col-md-6{% endif %}">
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span aria-hidden="true">*</span><span class="visually-hidden"> required</span>{% endif %}</label>
+                {{ field }}
+                {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                {% for error in field.errors %}<div class="invalid-feedback d-block" id="{{ field.id_for_label }}-error">{{ error }}</div>{% endfor %}
+              </div>
               {% endfor %}
             </div>
-            {% endfor %}
 
-            <div class="d-flex justify-content-end gap-2">
+            <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 mt-4">
               <a href="{% url 'maintenance:list' %}" class="btn btn-outline-secondary">Cancel</a>
-              <button type="submit" class="btn btn-primary">Submit</button>
+              <button type="submit" class="btn btn-primary"><i class="bi bi-calendar-check" aria-hidden="true"></i> Schedule maintenance</button>
             </div>
           </form>
         </div>
-      </div>
+      </section>
+    </div>
+
+    <div class="col-12 col-lg-4">
+      <aside class="ui-panel" aria-labelledby="maintenance-asset-title">
+        <div class="ui-panel__header"><h2 id="maintenance-asset-title" class="h5 mb-0">Asset context</h2></div>
+        <div class="ui-panel__body">
+          <p class="fw-semibold mb-1">{{ asset.description|default:asset.category.name }}</p>
+          <dl class="asset-facts">
+            {% if asset.asset_tag %}<div><dt>Asset tag</dt><dd>{{ asset.asset_tag }}</dd></div>{% endif %}
+            {% if asset.serial_number %}<div><dt>Serial number</dt><dd>{{ asset.serial_number }}</dd></div>{% endif %}
+            <div><dt>Category</dt><dd>{{ asset.category.name }}</dd></div>
+            <div><dt>Branch</dt><dd>{{ asset.branch.name|default:"Unassigned" }}</dd></div>
+            <div><dt>Status</dt><dd>{{ asset.get_status_display }}</dd></div>
+          </dl>
+          <p class="small text-muted mb-0 mt-3">Submitting creates a scheduled record; it does not mark maintenance as started.</p>
+        </div>
+      </aside>
     </div>
   </div>
 </div>

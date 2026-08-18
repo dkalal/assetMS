@@ -1,49 +1,9 @@
-{% extends 'base.html' %}
+{% extends 'base_auth.html' %}
 {% load static %}
 
 {% block title %}Create Account - Asset Management System{% endblock %}
 
-{% block extra_styles %}
-<style>
-    .registration-container {
-        min-height: 80vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 2rem;
-    }
-    
-    .registration-card {
-        max-width: 500px;
-        width: 100%;
-    }
-    
-    .password-strength {
-        margin-top: 0.5rem;
-        height: 4px;
-        background: #e9ecef;
-        border-radius: 2px;
-        overflow: hidden;
-    }
-    
-    .password-strength-bar {
-        height: 100%;
-        transition: width 0.3s, background-color 0.3s;
-        width: 0%;
-    }
-    
-    .password-strength-weak { background-color: #dc3545; }
-    .password-strength-fair { background-color: #ffc107; }
-    .password-strength-good { background-color: #17a2b8; }
-    .password-strength-strong { background-color: #28a745; }
-    
-    .password-strength-label {
-        font-size: 0.75rem;
-        margin-top: 0.25rem;
-        color: #6c757d;
-    }
-</style>
-{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="{% static 'css/registration.css' %}">{% endblock %}
 
 {% block content %}
 <div class="registration-container">
@@ -175,36 +135,7 @@
 </div>
 {% endblock %}
 
-{% block extra_scripts %}
-<script>
-    // Password strength indicator
-    const passwordInput = document.getElementById('{{ form.password.id_for_label }}');
-    const strengthBar = document.getElementById('passwordStrengthBar');
-    const strengthLabel = document.getElementById('passwordStrengthLabel');
-    
-    if (passwordInput && strengthBar && strengthLabel) {
-        passwordInput.addEventListener('input', function() {
-            const password = this.value;
-            let strength = 0;
-            
-            if (password.length >= 8) strength++;
-            if (password.length >= 12) strength++;
-            if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
-            if (/\d/.test(password)) strength++;
-            if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) strength++;
-            
-            const percentages = [0, 25, 50, 75, 100];
-            const labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
-            const classes = ['', 'password-strength-weak', 'password-strength-fair', 'password-strength-good', 'password-strength-strong'];
-            
-            strength = Math.min(strength, 4);
-            strengthBar.style.width = percentages[strength] + '%';
-            strengthBar.className = 'password-strength-bar ' + classes[strength];
-            strengthLabel.textContent = labels[strength] || '';
-        });
-    }
-</script>
-{% endblock %}
+{% block extra_scripts %}<script src="{% static 'js/registration.js' %}" defer></script>{% endblock %}
 
 
 

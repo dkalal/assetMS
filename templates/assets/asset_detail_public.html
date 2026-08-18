@@ -1,0 +1,22 @@
+{% extends 'base_dashboard.html' %}
+{% load asset_extras static %}
+
+{% block title %}{{ public_data.name }} - Asset{% endblock %}
+{% block extra_styles %}<link rel='stylesheet' href='{% static 'css/asset-detail.css' %}'>{% endblock %}
+
+{% block public_content %}
+<article class='asset-public card mx-auto' data-asset-uuid='{{ asset.uuid }}'>
+  <div class='card-body p-4 p-sm-5'>
+    <div class='asset-public__mark' aria-hidden='true'><i class='bi bi-box-seam'></i></div>
+    <p class='text-uppercase text-muted small fw-semibold mb-2'>Verified asset record</p>
+    <h1 class='h2 mb-2'>{{ public_data.name }}</h1>
+    <p class='text-muted mb-4'>{{ public_data.category }}</p>
+    <dl class='asset-facts mb-4'>
+      <div><dt>Status</dt><dd><span class='status-badge status-badge--{{ asset.status }}'>{{ public_data.status }}</span></dd></div>
+      <div><dt>Asset reference</dt><dd><code>{{ asset.uuid }}</code></dd></div>
+    </dl>
+    <div class='alert alert-info mb-4' role='note'>Sign in to view assignment, financial, maintenance, transfer, and audit information.</div>
+    <a class='btn btn-primary w-100' href='{% url 'users:login' %}?next={{ request.path|urlencode }}'>Sign in to view details</a>
+  </div>
+</article>
+{% endblock %}

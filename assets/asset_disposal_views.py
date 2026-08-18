@@ -59,7 +59,7 @@ class AssetDisposalRequestView(LoginRequiredMixin, BranchContextMixin, CreateVie
         # Check if asset is already disposed
         if self.asset.status in [Asset.STATUS_RETIRED, Asset.STATUS_DELETED, Asset.STATUS_LOST]:
             messages.warning(request, f"Asset is already {self.asset.get_status_display()}.")
-            return redirect('asset_detail', uuid=asset_uuid)
+            return redirect('asset_detail_by_uuid', uuid=asset_uuid)
         
         # Admins can dispose directly (skip approval)
         if user.role == 'admin' and request.GET.get('from') != 'delete':

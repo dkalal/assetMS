@@ -19,6 +19,14 @@
                '';
     }
 
+    function formatAssetContext(asset) {
+        const parts = [asset.category, asset.branch || 'No Branch'];
+        if (asset.customer_reference) {
+            parts.unshift(`Customer: ${asset.customer_reference}`);
+        }
+        return parts.filter(Boolean).join(' | ');
+    }
+
     function formatDate(isoString) {
         if (!isoString) return 'N/A';
         const date = new Date(isoString);
@@ -55,6 +63,34 @@
         
         // Fallback to alert
         alert(message);
+    }
+
+    function escapeHTML(value) {
+        return String(value ?? '').replace(/[&<>'"]/g, character => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+        })[character]);
+    }
+
+    function sanitizeTransfer(transfer) {
+        const safeParty = party => party ? { ...party, name: escapeHTML(party.name) } : null;
+        const safeBranch = branch => branch ? { ...branch, name: escapeHTML(branch.name) } : null;
+        return {
+            ...transfer,
+            asset: transfer.asset ? {
+                ...transfer.asset,
+                name: escapeHTML(transfer.asset.name),
+                category: escapeHTML(transfer.asset.category),
+            } : null,
+            initiator: safeParty(transfer.initiator),
+            from_user: safeParty(transfer.from_user),
+            to_user: safeParty(transfer.to_user),
+            approved_by: safeParty(transfer.approved_by),
+            from_branch: safeBranch(transfer.from_branch),
+            to_branch: safeBranch(transfer.to_branch),
+            reason: escapeHTML(transfer.reason),
+            receiver_comment: escapeHTML(transfer.receiver_comment),
+            admin_comment: escapeHTML(transfer.admin_comment),
+        };
     }
 
     // Transfer Dashboard Manager
@@ -134,6 +170,16 @@
             document.getElementById('clearFilters')?.addEventListener('click', 
                 () => this.clearFilters());
 
+            document.querySelector('.transfer-center .tab-content')?.addEventListener('click', (event) => {
+                const decisionButton = event.target.closest('[data-transfer-decision]');
+                if (decisionButton) {
+                    this.handleDecision(Number(decisionButton.dataset.transferId), decisionButton.dataset.transferDecision);
+                    return;
+                }
+                const detailButton = event.target.closest('[data-transfer-detail]');
+                if (detailButton) this.showDetail(Number(detailButton.dataset.transferDetail));
+            });
+
             // Tab switching
             document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
                 tab.addEventListener('shown.bs.tab', (e) => {
@@ -161,7 +207,6 @@
                 this.updateStatistics();
                 this.renderTab('#pending'); // Render initial tab
             } catch (error) {
-                console.error('Failed to load transfers:', error);
                 showToast('Failed to load transfers. Please refresh the page.', 'danger');
             }
         }
@@ -181,7 +226,7 @@
             }
 
             const data = await response.json();
-            this.transfers = data.transfers || [];
+            this.transfers = (data.transfers || []).map(sanitizeTransfer);
             this.filteredTransfers = [...this.transfers];
         }
 
@@ -349,7 +394,7 @@
             const canReject = this.canReject(transfer);
 
             return `
-                <div class="transfer-card">
+                <article class="transfer-card" aria-label="Transfer ${transfer.id}">
                     <div class="row align-items-start">
                         <div class="col-md-8">
                             <div class="d-flex align-items-start gap-3 mb-3">
@@ -397,27 +442,27 @@
                             ${showActions && (canApprove || canReject) ? `
                                 <div class="action-buttons">
                                     ${canApprove ? `
-                                        <button class="btn btn-success btn-action" 
-                                                onclick="transferDashboard.handleDecision(${transfer.id}, 'approved')">
+                                        <button class="btn btn-success btn-action" type="button"
+                                                data-transfer-id="${transfer.id}" data-transfer-decision="approved">
                                             <i class="bi bi-check-circle me-1"></i>Approve
                                         </button>
                                     ` : ''}
                                     ${canReject ? `
-                                        <button class="btn btn-danger btn-action"
-                                                onclick="transferDashboard.handleDecision(${transfer.id}, 'rejected')">
+                                        <button class="btn btn-outline-danger btn-action" type="button"
+                                                data-transfer-id="${transfer.id}" data-transfer-decision="rejected">
                                             <i class="bi bi-x-circle me-1"></i>Reject
                                         </button>
                                     ` : ''}
                                 </div>
                             ` : ''}
                             
-                            <button class="btn btn-outline-secondary btn-sm w-100 mt-2"
-                                    onclick="transferDashboard.showDetail(${transfer.id})">
+                            <button class="btn btn-outline-secondary btn-sm w-100 mt-2" type="button"
+                                    data-transfer-detail="${transfer.id}">
                                 <i class="bi bi-eye me-1"></i>View Details
                             </button>
                         </div>
                     </div>
-                </div>
+                </article>
             `;
         }
 
@@ -666,6 +711,29 @@
     // Initialize on DOM ready
     document.addEventListener('DOMContentLoaded', () => {
         window.transferDashboard = new TransferDashboard();
+
+        document.getElementById('openInitiateTransfer')?.addEventListener('click', () => window.openInitiateTransferModal());
+        document.getElementById('openBulkTransfer')?.addEventListener('click', () => window.openBulkTransferModal());
+        document.getElementById('refreshTransfers')?.addEventListener('click', async (event) => {
+            const button = event.currentTarget;
+            button.disabled = true;
+            button.setAttribute('aria-busy', 'true');
+            try {
+                await window.transferDashboard.fetchTransfers();
+                window.transferDashboard.updateStatistics();
+                window.transferDashboard.renderCurrentTab();
+                showToast('Transfers refreshed.', 'success');
+            } catch {
+                showToast('Unable to refresh transfers.', 'danger');
+            } finally {
+                button.disabled = false;
+                button.removeAttribute('aria-busy');
+            }
+        });
+        document.getElementById('initBranchSelect')?.addEventListener('change', () => window.loadUsersForInitTransfer());
+        document.getElementById('bulkBranchSelect')?.addEventListener('change', () => window.loadUsersForBulkTransfer());
+        document.getElementById('executeInitTransferBtn')?.addEventListener('click', () => window.executeInitiateTransfer());
+        document.getElementById('executeBulkTransferBtn')?.addEventListener('click', () => window.executeBulkTransfer());
         
         // Character counters
         const initReasonTextarea = document.getElementById('initTransferReason');
@@ -734,7 +802,7 @@
                 data.assets.forEach(asset => {
                     const option = document.createElement('option');
                     option.value = asset.id;
-                    option.textContent = `${asset.name} (${asset.category}) - ${asset.branch || 'No Branch'}`;
+                    option.textContent = `${asset.name} (${formatAssetContext(asset)})`;
                     option.dataset.assetId = asset.id;
                     select.appendChild(option);
                 });
@@ -770,8 +838,7 @@
                     div.innerHTML = `
                         <input class="form-check-input bulk-asset-checkbox" type="checkbox" value="${asset.id}" id="asset-${asset.id}">
                         <label class="form-check-label" for="asset-${asset.id}">
-                            <strong>${asset.name}</strong> - ${asset.category} 
-                            <span class="text-muted">(${asset.branch || 'No Branch'})</span>
+                            <strong>${escapeHTML(asset.name)}</strong> - ${escapeHTML(formatAssetContext(asset))}
                         </label>
                     `;
                     container.appendChild(div);

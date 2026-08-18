@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.http import QueryDict
 
 from .models import Asset, AssetCategory, AssetCategoryField, MaintenanceRecord
+from integrations.models import ExternalCustomerReference
 from users.fields import UserWithBranchChoiceField
 import json
 
@@ -24,6 +25,15 @@ class AssetForm(forms.ModelForm):
         required=False,
         empty_label="-- Not Assigned --",
         widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
+    customer_reference = forms.ModelChoiceField(
+        queryset=ExternalCustomerReference.objects.none(),
+        required=False,
+        label="Linked Internet Customer",
+        empty_label="-- No Customer Linked --",
+        help_text="Operational customer link only; this does not assign the asset to a system user.",
+        widget=forms.Select(attrs={'class': 'form-select'}),
     )
     
     def __init__(self, *args, **kwargs):
@@ -156,6 +166,16 @@ class AssetForm(forms.ModelForm):
                 assigned_field.queryset = assigned_qs
             else:
                 assigned_field.queryset = assigned_field.queryset.none()
+
+        customer_field = self.fields.get('customer_reference')
+        if customer_field:
+            if self.company:
+                customer_field.queryset = ExternalCustomerReference.objects.filter(
+                    company=self.company,
+                    sync_status=ExternalCustomerReference.SyncStatus.SYNCED,
+                ).order_by('full_name')
+            else:
+                customer_field.queryset = ExternalCustomerReference.objects.none()
         
         # WORLD-CLASS FIX: Detect if this is a status-only update
         # When editing an existing asset and only changing status, skip dynamic field requirements
@@ -253,12 +273,26 @@ class AssetForm(forms.ModelForm):
                             
                             populated_count += 1
                     
-                    if populated_count > 0:
-                        print(f"✅ FORM INIT: Pre-populated {populated_count} dynamic fields from instance")
-                        
-            except Exception as e:
-                # Don't fail form initialization if dynamic data has issues
-                print(f"⚠️ Warning: Could not pre-populate dynamic fields in form: {e}")
+            except (TypeError, ValueError):
+                # Invalid legacy JSON should not make the edit form unavailable.
+                pass
+
+        # Keep every visible Django widget aligned with the canonical Bootstrap
+        # form system. This also prevents long select options from defining the
+        # page's intrinsic width on compact screens.
+        for field in self.fields.values():
+            widget = field.widget
+            if isinstance(widget, forms.HiddenInput):
+                continue
+            if isinstance(widget, forms.CheckboxInput):
+                css_class = 'form-check-input'
+            elif isinstance(widget, forms.Select):
+                css_class = 'form-select'
+            else:
+                css_class = 'form-control'
+            existing_classes = widget.attrs.get('class', '').split()
+            if css_class not in existing_classes:
+                widget.attrs['class'] = ' '.join([*existing_classes, css_class]).strip()
 
     def _make_field(self, field):
         """
@@ -462,7 +496,7 @@ class AssetForm(forms.ModelForm):
         model = Asset
         fields = [
             # Core fields
-            'company', 'category', 'branch', 'status', 'assigned_to', 'description',
+            'company', 'category', 'branch', 'status', 'assigned_to', 'customer_reference', 'description',
             # WORLD-CLASS DUPLICATE DETECTION FIELDS
             'serial_number', 'asset_tag', 'qr_string',
             # Maintenance fields
@@ -866,12 +900,6 @@ class AssetForm(forms.ModelForm):
         
         # Assign the built dynamic_data dict to instance
         instance.dynamic_data = dynamic_data
-        
-        # Log for debugging (remove in production)
-        if dynamic_data:
-            print(f"💾 SAVE: Persisting {len(dynamic_data)} dynamic fields to database")
-            for key, val in dynamic_data.items():
-                print(f"   - {key}: {val}")
         
         # CRITICAL FIX: Call full_clean() to trigger model-level validation
         # This ensures _validate_unique_fields() is called for duplicate detection

@@ -77,6 +77,23 @@ class AssetCreationRequestView(LoginRequiredMixin, BranchContextMixin, CreateVie
         
         # Priority choices
         context['priority_choices'] = ApprovalRequest.PRIORITY_CHOICES
+
+        selected_category_id = self.request.POST.get('category_id')
+        context['initial_dynamic_fields'] = []
+        if selected_category_id:
+            fields = AssetCategoryField.objects.for_company(company).filter(
+                category_id=selected_category_id
+            )
+            context['initial_dynamic_fields'] = [
+                {
+                    'name': f'field_{field.key}',
+                    'label': field.label,
+                    'type': field.type,
+                    'required': field.required,
+                    'value': self.request.POST.get(f'field_{field.key}', ''),
+                }
+                for field in fields
+            ]
         
         return context
     
