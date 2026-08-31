@@ -1426,34 +1426,43 @@ def api_update_user(request):
         
         old_role = user.role
         old_status = user.is_active
-        
+
         user.role = new_role
         user.is_active = new_status
+
+        # Granular permissions (sent as 'true'/'false' strings)
+        perm_fields = ('can_manage_customers', 'can_transfer_assets', 'can_schedule_maintenance')
+        for field in perm_fields:
+            if field in request.POST:
+                setattr(user, field, request.POST.get(field) == 'true')
+
         user.save()
-        
+
         # Create access log entry
         changes = []
         if old_role != new_role:
             changes.append(f'role: {old_role} → {new_role}')
         if old_status != new_status:
             changes.append(f'status: {"active" if old_status else "inactive"} → {"active" if new_status else "inactive"}')
-        
+        for field in perm_fields:
+            if field in request.POST:
+                changes.append(f'{field}: {getattr(user, field)}')
+
         AccessLog.objects.create(
             user=user,
             action='profile_updated',
             ip_address=request.META.get('REMOTE_ADDR', '127.0.0.1'),
             user_agent=request.META.get('HTTP_USER_AGENT', ''),
-            details=f'Profile updated by {request.user.get_full_name()}: {";".join(changes)}'
+            details=f'Profile updated by {request.user.get_full_name()}: {"; ".join(changes)}'
         )
-        
-        # Audit log
+
         log_audit(
-            request.user, 
-            'edit', 
-            None, 
-            f'Updated user {user.get_full_name()}: {";".join(changes)}'
+            request.user,
+            'edit',
+            None,
+            f'Updated user {user.get_full_name()}: {"; ".join(changes)}'
         )
-        
+
         return JsonResponse({
             'success': True,
             'message': 'User updated successfully',
@@ -1461,10 +1470,13 @@ def api_update_user(request):
                 'id': user.id,
                 'role': user.role,
                 'is_active': user.is_active,
-                'full_name': user.get_full_name()
+                'full_name': user.get_full_name(),
+                'can_manage_customers': user.can_manage_customers,
+                'can_transfer_assets': user.can_transfer_assets,
+                'can_schedule_maintenance': user.can_schedule_maintenance,
             }
         })
-        
+
     except User.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'User not found'})
     except Exception as e:

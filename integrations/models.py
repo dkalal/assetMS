@@ -66,6 +66,16 @@ class ExternalCustomerReference(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # Branch assignment — set during sync or manually by admin/manager
+    branch = models.ForeignKey(
+        'tenancy.Branch',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='customers',
+        help_text='Branch responsible for this customer.',
+    )
+
     class Meta:
         ordering = ['full_name']
         constraints = [
@@ -78,6 +88,7 @@ class ExternalCustomerReference(models.Model):
             models.Index(fields=['company', 'full_name'], name='extcust_company_name'),
             models.Index(fields=['company', 'phone'], name='extcust_company_phone'),
             models.Index(fields=['company', 'email'], name='extcust_company_email'),
+            models.Index(fields=['company', 'branch'], name='extcust_company_branch'),
         ]
 
     def __str__(self):
@@ -92,6 +103,39 @@ class ExternalCustomerReference(models.Model):
         if contact_bits:
             return f'{self.full_name} ({", ".join(contact_bits)})'
         return self.full_name
+
+
+class CustomerNote(models.Model):
+    """Threaded internal notes on a synced customer — visible only inside AssetMS."""
+
+    customer = models.ForeignKey(
+        ExternalCustomerReference,
+        on_delete=models.CASCADE,
+        related_name='notes',
+    )
+    company = models.ForeignKey(
+        'tenancy.Company',
+        on_delete=models.CASCADE,
+        related_name='customer_notes',
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='customer_notes',
+    )
+    body = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['customer', 'created_at'], name='custnote_customer_created'),
+        ]
+
+    def __str__(self):
+        return f'Note by {self.author} on {self.customer} @ {self.created_at:%Y-%m-%d}'
 
 
 class CustomerSyncRun(models.Model):

@@ -63,6 +63,33 @@
     <div class='col-md-6'><label class='form-label' for='editRole'>Role</label><select class='form-select' id='editRole' name='role' required><option value='user'{% if staff.role == 'user' %} selected{% endif %}>User</option><option value='manager'{% if staff.role == 'manager' %} selected{% endif %}>Manager</option><option value='admin'{% if staff.role == 'admin' %} selected{% endif %}>Administrator</option></select></div>
     <div class='col-md-6 d-flex align-items-end'><div class='form-check form-switch mb-2'><input class='form-check-input' id='editIsActive' name='is_active' type='checkbox'{% if staff.is_active %} checked{% endif %}><label class='form-check-label' for='editIsActive'>Active account</label></div></div>
     <div class='col-12 d-none' data-status-reason><label class='form-label' for='statusChangeReason'>Reason for status change</label><textarea class='form-control' id='statusChangeReason' name='status_change_reason' rows='3' minlength='10'></textarea><div class='form-text'>At least 10 characters. This is recorded in the audit trail.</div></div>
+    <div class='col-12'>
+      <hr class='my-1'>
+      <h6 class='fw-semibold mb-2 text-muted small text-uppercase letter-spacing-1'>Delegated Permissions</h6>
+      <div class='d-flex flex-column gap-2'>
+        <div class='form-check form-switch'>
+          <input class='form-check-input' id='permManageCustomers' name='can_manage_customers' type='checkbox'{% if staff.can_manage_customers %} checked{% endif %}>
+          <label class='form-check-label' for='permManageCustomers'>
+            <strong>Manage Customers</strong>
+            <small class='d-block text-muted'>View customers, link/unlink assets, add notes (branch-scoped)</small>
+          </label>
+        </div>
+        <div class='form-check form-switch'>
+          <input class='form-check-input' id='permTransferAssets' name='can_transfer_assets' type='checkbox'{% if staff.can_transfer_assets %} checked{% endif %}>
+          <label class='form-check-label' for='permTransferAssets'>
+            <strong>Transfer Assets</strong>
+            <small class='d-block text-muted'>Initiate branch-to-branch and customer-to-customer transfers</small>
+          </label>
+        </div>
+        <div class='form-check form-switch'>
+          <input class='form-check-input' id='permScheduleMaintenance' name='can_schedule_maintenance' type='checkbox'{% if staff.can_schedule_maintenance %} checked{% endif %}>
+          <label class='form-check-label' for='permScheduleMaintenance'>
+            <strong>Schedule Maintenance</strong>
+            <small class='d-block text-muted'>Schedule and manage maintenance for customer assets</small>
+          </label>
+        </div>
+      </div>
+    </div>
   </div></form></div>
   <div class='modal-footer'><button class='btn btn-outline-secondary' type='button' data-bs-dismiss='modal'>Cancel</button><button class='btn btn-primary' id='saveProfileButton' type='submit' form='editProfileForm'><span class='button-label'>Save changes</span></button></div>
 </div></div></div>

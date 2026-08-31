@@ -23,6 +23,11 @@
       <a class='app-sidebar__link{% if request.resolver_match.url_name == 'my_retirement' %} active{% endif %}' href='{% url 'users:my_retirement' %}'{% if request.resolver_match.url_name == 'my_retirement' %} aria-current='page'{% endif %}>
         <i class='bi bi-archive'></i><span>My retirement</span>
       </a>
+      {% if user.role == 'admin' or user.is_superuser or user.can_manage_customers %}
+      <a class='app-sidebar__link{% if '/integrations/customers' in request.path %} active{% endif %}' href='{% url 'integrations:synced_customer_list' %}'{% if '/integrations/customers' in request.path %} aria-current='page'{% endif %}>
+        <i class='bi bi-people'></i><span>Customers</span>
+      </a>
+      {% endif %}
     </section>
     {% if user.role != 'user' or user.is_superuser %}
     <section class='app-sidebar__group' aria-labelledby='nav-control'>

@@ -17,7 +17,7 @@
     async function saveProfile(event){
       event.preventDefault();syncReason();
       if(!editForm.checkValidity()){editForm.classList.add('was-validated');editForm.reportValidity();return;}
-      const payload={first_name:document.getElementById('editFirstName').value.trim(),last_name:document.getElementById('editLastName').value.trim(),email:document.getElementById('editEmail').value.trim(),phone_number:document.getElementById('editPhone').value.trim(),role:document.getElementById('editRole').value,is_active:active.checked};
+      const payload={first_name:document.getElementById('editFirstName').value.trim(),last_name:document.getElementById('editLastName').value.trim(),email:document.getElementById('editEmail').value.trim(),phone_number:document.getElementById('editPhone').value.trim(),role:document.getElementById('editRole').value,is_active:active.checked,can_manage_customers:document.getElementById('permManageCustomers')?.checked?'true':'false',can_transfer_assets:document.getElementById('permTransferAssets')?.checked?'true':'false',can_schedule_maintenance:document.getElementById('permScheduleMaintenance')?.checked?'true':'false'};
       if(active.checked!==originalStatus)payload.status_change_reason=reason.value.trim();
       button.disabled=true;button.querySelector('.button-label').textContent='Saving…';
       try{const response=await fetch(root.dataset.updateUrl,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrf,'X-Requested-With':'XMLHttpRequest'},credentials:'same-origin',body:JSON.stringify(payload)});const result=await response.json();if(!response.ok||!result.success)throw new Error(result.error||'Unable to update user.');window.location.reload();}
