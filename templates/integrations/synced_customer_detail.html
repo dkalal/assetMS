@@ -1,0 +1,136 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}{{ customer.full_name }} · Synced Customer{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+  <div>
+    <div class="small text-muted mb-1">
+      <a href="{% url 'integrations:synced_customer_list' %}" class="text-decoration-none">Synced Customers</a>
+      <span class="mx-1">/</span>
+      <span>{{ customer.full_name }}</span>
+    </div>
+    <h1 class="h2 mb-1">{{ customer.full_name }}</h1>
+    <p class="text-muted mb-0">Review the synced customer profile and the assets that reference it.</p>
+  </div>
+  <div>
+    <a href="{% url 'integrations:synced_customer_list' %}" class="btn btn-outline-secondary">Back to list</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="text-muted small">Sync Status</div>
+        <div class="fw-semibold text-capitalize">{{ customer.sync_status }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="text-muted small">Linked Assets</div>
+        <div class="fw-semibold">{{ customer.asset_count|default:0 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="text-muted small">Last Synced</div>
+        <div class="fw-semibold">{{ customer.last_synced_at|date:"M d, Y H:i" }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="text-muted small">Source UUID</div>
+        <div class="fw-semibold text-break">{{ customer.external_uuid }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h2 class="h5 mb-3">Customer Details</h2>
+        <dl class="row mb-0">
+          <dt class="col-sm-4 text-muted">Full name</dt>
+          <dd class="col-sm-8">{{ customer.full_name }}</dd>
+
+          <dt class="col-sm-4 text-muted">Phone</dt>
+          <dd class="col-sm-8">{{ customer.phone|default:"-" }}</dd>
+
+          <dt class="col-sm-4 text-muted">Email</dt>
+          <dd class="col-sm-8">{{ customer.email|default:"-" }}</dd>
+
+          <dt class="col-sm-4 text-muted">Address</dt>
+          <dd class="col-sm-8">{{ customer.address|default:"-" }}</dd>
+
+          <dt class="col-sm-4 text-muted">Status</dt>
+          <dd class="col-sm-8">{{ customer.customer_status|title }}</dd>
+
+          <dt class="col-sm-4 text-muted">Type</dt>
+          <dd class="col-sm-8">{{ customer.customer_type|title }}</dd>
+
+          <dt class="col-sm-4 text-muted">Source Created</dt>
+          <dd class="col-sm-8">{{ customer.source_created_at|date:"M d, Y H:i" }}</dd>
+
+          <dt class="col-sm-4 text-muted">Synced At</dt>
+          <dd class="col-sm-8">{{ customer.last_synced_at|date:"M d, Y H:i" }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h2 class="h5 mb-0">Linked Assets</h2>
+          <span class="badge bg-primary-subtle text-primary">{{ customer.asset_count|default:0 }}</span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Asset</th>
+                <th>Category</th>
+                <th>Branch</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for asset in customer.assets.all %}
+              <tr>
+                <td>
+                  <div class="fw-semibold">
+                    <a href="{% url 'asset_detail_by_uuid' asset.uuid %}" class="text-decoration-none">{{ asset }}</a>
+                  </div>
+                  <div class="small text-muted">
+                    {% if asset.asset_tag %}Tag: {{ asset.asset_tag }}{% endif %}
+                    {% if asset.serial_number %}{% if asset.asset_tag %} · {% endif %}Serial: {{ asset.serial_number }}{% endif %}
+                  </div>
+                </td>
+                <td>{{ asset.category.name }}</td>
+                <td>{{ asset.branch.name|default:"-" }}</td>
+                <td>{{ asset.get_status_display }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center py-4 text-muted">No assets are linked to this customer yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

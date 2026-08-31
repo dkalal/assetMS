@@ -67,4 +67,7 @@ urlpatterns = [
     path('api/transfer/<int:transfer_id>/manager-approve/', api_transfer_views.manager_approve_transfer, name='manager_approve_transfer'),
     path('api/transfer/<int:transfer_id>/manager-reject/', api_transfer_views.manager_reject_transfer, name='manager_reject_transfer'),
     path('api/transfer/my-requests/', api_transfer_views.my_transfer_requests, name='my_transfer_requests'),
+    # Unambiguous UI reverse name; the historical page and API names above
+    # remain unchanged for backward compatibility.
+    path('my-transfers/', views.my_transfer_requests, name='my_transfer_requests_page'),
 ]

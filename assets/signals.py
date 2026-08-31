@@ -11,7 +11,8 @@ Following best practices from ServiceNow ITAM, IBM Maximo, SAP EAM
 """
 
 import logging
-from django.db.models.signals import post_save, pre_delete, post_delete
+from django.db import transaction
+from django.db.models.signals import post_save, pre_delete, post_delete, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 
@@ -25,6 +26,44 @@ logger = logging.getLogger(__name__)
 # Asset Signals
 # ==========================
 
+PROJECTION_FIELDS = (
+    'customer_reference_id', 'asset_tag', 'serial_number', 'category_id',
+    'branch_id', 'status', 'description', 'dynamic_data',
+)
+
+
+@receiver(pre_save, sender=Asset)
+def asset_projection_pre_save_handler(sender, instance, **kwargs):
+    if not instance.pk:
+        instance._projection_changed = True
+        instance._previous_customer_reference_id = None
+        return
+    previous = Asset.objects.filter(pk=instance.pk).values(*PROJECTION_FIELDS).first()
+    if previous is None:
+        instance._projection_changed = True
+        instance._previous_customer_reference_id = None
+        return
+    instance._previous_customer_reference_id = previous['customer_reference_id']
+    instance._projection_changed = any(
+        previous[field] != getattr(instance, field) for field in PROJECTION_FIELDS
+    )
+
+
+def _queue_asset_projection(reference_ids):
+    reference_ids = {reference_id for reference_id in reference_ids if reference_id}
+    if not reference_ids:
+        return
+
+    def enqueue():
+        from integrations.tasks import sync_customer_asset_projection
+        for reference_id in reference_ids:
+            try:
+                sync_customer_asset_projection.delay(reference_id)
+            except Exception:
+                logger.exception('Unable to enqueue asset projection for customer reference=%s', reference_id)
+
+    transaction.on_commit(enqueue)
+
 @receiver(post_save, sender=Asset)
 def asset_post_save_handler(sender, instance, created, **kwargs):
     """
@@ -37,6 +76,11 @@ def asset_post_save_handler(sender, instance, created, **kwargs):
     - Cache invalidation
     """
     try:
+        if created or getattr(instance, '_projection_changed', False):
+            _queue_asset_projection({
+                getattr(instance, '_previous_customer_reference_id', None),
+                instance.customer_reference_id,
+            })
         if created:
             # Asset created
             logger.info(f"Asset created: {instance.uuid} - {instance.category.name if instance.category else 'No category'}")
@@ -69,6 +113,11 @@ def asset_post_save_handler(sender, instance, created, **kwargs):
                 
     except Exception as e:
         logger.error(f"Error in asset_post_save_handler: {e}", exc_info=True)
+
+
+@receiver(post_delete, sender=Asset)
+def asset_projection_post_delete_handler(sender, instance, **kwargs):
+    _queue_asset_projection({instance.customer_reference_id})
 
 
 @receiver(pre_delete, sender=Asset)

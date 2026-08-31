@@ -50,6 +50,10 @@ class MyTransferRequests {
      * Setup page elements and load data
      */
     setup() {
+        const root = document.querySelector('[data-transfer-list]');
+        if (!root) return;
+        this.apiUrl = root.dataset.apiUrl;
+
         // Get DOM elements
         this.loadingState = document.getElementById('loadingState');
         this.requestsContainer = document.getElementById('requestsContainer');
@@ -69,7 +73,7 @@ class MyTransferRequests {
         try {
             this.showLoading();
             
-            const response = await fetch('/users/api/transfer/my-requests/');
+            const response = await fetch(this.apiUrl);
             const data = await response.json();
             
             if (data.success) {
@@ -80,7 +84,6 @@ class MyTransferRequests {
                 this.showError('Failed to load transfer requests');
             }
         } catch (error) {
-            console.error('Load requests error:', error);
             this.showError('An error occurred while loading your requests');
         }
     }
@@ -378,7 +381,6 @@ class MyTransferRequests {
                 this.showToast(data.error || 'Failed to cancel request', 'danger');
             }
         } catch (error) {
-            console.error('Cancel request error:', error);
             this.showToast('An error occurred', 'danger');
         }
     }

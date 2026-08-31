@@ -1,0 +1,25 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+{% block title %}Confirm impersonation · System administration{% endblock %}
+{% block extra_head %}<link rel='stylesheet' href='{% static "css/system-admin.css" %}'>{% endblock %}
+{% block content %}
+<div class='system-admin-page' data-system-admin>
+  <header class='system-admin-header'>
+    <div><h1>Confirm impersonation</h1><p class='text-muted mb-0'>Enter the selected company workspace as this user for support.</p></div>
+  </header>
+  <section class='system-admin-card system-admin-form' aria-labelledby='impersonation-title'>
+    <div class='system-admin-card__body'>
+      <h2 class='h5' id='impersonation-title'>{{ target_user.get_full_name|default:target_user.username }}</h2>
+      <p>{{ target_user.email }} · {{ target_user.company.name }}</p>
+      <div class='alert alert-warning' role='note'>Your session identity will change. Only continue for an authorized support task.</div>
+      <form method='post'>
+        {% csrf_token %}
+        <div class='system-admin-form-actions'>
+          <a class='btn btn-outline-secondary' href='{% url "system_admin:company_detail" target_user.company_id %}'>Cancel</a>
+          <button class='btn btn-warning' type='submit'>Start impersonation</button>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}

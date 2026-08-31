@@ -387,6 +387,13 @@ class ApprovalRequest(CompanyScopedModel):
                 status=asset_data.get('status', Asset.STATUS_ACTIVE),
                 dynamic_data=asset_data.get('dynamic_data', {}),
                 assigned_to_id=asset_data.get('assigned_to_id'),
+                customer_reference_id=asset_data.get('customer_reference_id'),
+                serial_number=asset_data.get('serial_number'),
+                asset_tag=asset_data.get('asset_tag'),
+                qr_string=asset_data.get('qr_string'),
+                maintenance_enabled=asset_data.get('maintenance_enabled', False),
+                maintenance_interval_days=asset_data.get('maintenance_interval_days'),
+                maintenance_notes=asset_data.get('maintenance_notes', ''),
             )
             
             # Generate QR code

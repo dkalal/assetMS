@@ -55,7 +55,9 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       DEBUG: ${DEBUG:-False}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS}
-      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://10.10.10.254:8001}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://assetms.home.arpa:8001,http://10.10.10.254:8001}
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-assetms_sessionid}
+      CSRF_COOKIE_NAME: ${CSRF_COOKIE_NAME:-assetms_csrftoken}
       
       # Server configuration
       PORT: 8001

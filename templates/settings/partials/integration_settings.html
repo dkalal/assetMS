@@ -15,6 +15,7 @@
       <div class="col-md-6">
         <label class="form-label" for="sourceBaseUrl">Source Base URL</label>
         <input type="url" class="form-control" id="sourceBaseUrl" placeholder="https://internet.example.com">
+        <div class="form-text">Use the source site root only. Do not include `/customers` or `/api/...`.</div>
       </div>
       <div class="col-md-6">
         <label class="form-label" for="sourceTenantSlug">Source Tenant Slug</label>
@@ -36,6 +37,9 @@
       <button type="button" class="btn btn-outline-primary" onclick="saveCustomerSyncConfig()">
         Save Integration Config
       </button>
+      <a href="{% url 'integrations:synced_customer_list' %}" class="btn btn-outline-secondary">
+        Synced Customers
+      </a>
       <span class="text-muted small align-self-center" id="syncTimeoutHint"></span>
     </div>
 

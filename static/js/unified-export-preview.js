@@ -57,7 +57,6 @@ class UnifiedExportPreviewManager {
      * Initialize the preview system
      */
     init() {
-        console.log('🚀 Initializing Unified Export Preview System...');
         
         // Create modal
         this.createModal();
@@ -68,7 +67,6 @@ class UnifiedExportPreviewManager {
         // Keyboard shortcuts
         this.setupKeyboardShortcuts();
         
-        console.log('✅ Unified Export Preview System Ready!');
     }
     
     /**
@@ -312,7 +310,6 @@ class UnifiedExportPreviewManager {
             });
         });
         
-        console.log(`✅ Attached preview listeners to ${document.querySelectorAll('[data-export-preview]').length} buttons`);
     }
     
     /**
@@ -361,7 +358,9 @@ class UnifiedExportPreviewManager {
         // Check for selected assets (bulk export)
         const selectedCheckboxes = document.querySelectorAll('input[name="asset_ids"]:checked');
         if (selectedCheckboxes.length > 0) {
-            filters.selected_ids = Array.from(selectedCheckboxes).map(cb => cb.value).join(',');
+            filters.selected_ids = Array.from(new Set(
+                Array.from(selectedCheckboxes).map(cb => cb.value)
+            )).join(',');
         }
         
         return filters;
@@ -384,7 +383,6 @@ class UnifiedExportPreviewManager {
         const cacheKey = this.getCacheKey(config);
         const cached = this.getFromCache(cacheKey);
         if (cached) {
-            console.log('📦 Using cached preview');
             this.renderPreview(cached);
             return;
         }

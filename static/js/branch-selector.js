@@ -26,7 +26,7 @@
   // Utility: Debug logger
   function debug(...args) {
     if (CONFIG.debugMode) {
-      console.log('[BranchSelector]', ...args);
+      void args;
     }
   }
 
@@ -198,11 +198,9 @@
   window.BranchSelector = {
     enableDebug: function() {
       CONFIG.debugMode = true;
-      console.log('[BranchSelector] Debug mode enabled');
     },
     disableDebug: function() {
       CONFIG.debugMode = false;
-      console.log('[BranchSelector] Debug mode disabled');
     },
     getConfig: function() {
       return { ...CONFIG };

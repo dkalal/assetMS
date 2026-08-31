@@ -225,7 +225,6 @@
       applyRoleToUI();
       setLoading(false);
     } catch (err) {
-      console.error('Failed to load RolePermissionMatrix:', err);
       setFeedback('Failed to load role permissions. Ensure you are signed in as a system admin or superuser.', 'danger');
       setLoading(false);
     }
@@ -262,7 +261,6 @@
       STATE.matrix = data.matrix || STATE.matrix;
       setFeedback('Role permissions updated successfully.', 'success');
     } catch (err) {
-      console.error('Failed to save RolePermissionMatrix:', err);
       setFeedback('Failed to save role permissions: ' + (err.message || 'Unknown error'), 'danger');
     } finally {
       setSaveBusy(false);

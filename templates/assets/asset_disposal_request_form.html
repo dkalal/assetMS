@@ -1,187 +1,42 @@
-{% extends 'base.html' %}
+{% extends 'base_dashboard.html' %}
 {% load static %}
 
-{% block title %}Request Asset Disposal - {{ block.super }}{% endblock %}
+{% block title %}Request asset disposal · AssetPro{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/asset-request-forms.css' %}">{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb" class="mb-4">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'asset_list' %}">Assets</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'asset_detail_by_uuid' uuid=asset.uuid %}">{{ asset }}</a></li>
-      <li class="breadcrumb-item active" aria-current="page">Request Disposal</li>
-    </ol>
-  </nav>
+{% include 'components/breadcrumbs.html' with root_label='Dashboard' root_url='/dashboard/' parent_label='Assets' parent_url='/assets/' current_label='Request disposal' %}
+<main class="asset-request-page">
+  <header class="ui-page-header">
+    <div class="ui-page-header__main"><h1 class="ui-page-header__title">Request asset disposal</h1><p class="ui-page-header__description">Submit a controlled lifecycle request for independent administrator review.</p></div>
+    <div class="ui-page-header__actions"><a class="btn btn-outline-secondary" href="{% url 'asset_detail_by_uuid' uuid=asset.uuid %}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Back to asset</a></div>
+  </header>
 
-  <!-- Page Header -->
-  <section class="mb-4">
-    <div class="d-flex justify-content-between align-items-center">
-      <div>
-        <h1 class="h3 mb-2">
-          <i class="bi bi-trash3 text-danger me-2" aria-hidden="true"></i>Request Asset Disposal
-        </h1>
-        <p class="text-muted mb-0">Submit a request to dispose of this asset. Admin approval required.</p>
-      </div>
-      <a href="{% url 'asset_detail_by_uuid' uuid=asset.uuid %}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Back to Asset
-      </a>
-    </div>
+  <section class="form-section" aria-labelledby="disposal-asset-title">
+    <header class="form-section__header"><h2 class="form-section__title" id="disposal-asset-title">Asset under review</h2></header>
+    <dl class="asset-request-summary">
+      <div><dt>Asset</dt><dd>{{ asset }}</dd></div>
+      <div><dt>Category</dt><dd>{{ asset.category.name }}</dd></div>
+      <div><dt>Branch</dt><dd>{{ asset.branch.name|default:'Head Office' }}</dd></div>
+      <div><dt>Current status</dt><dd><span class="status-badge status-badge--{{ asset.status }}">{{ asset.get_status_display }}</span></dd></div>
+    </dl>
   </section>
 
-  <!-- Asset Information Card -->
-  <section class="glass p-4 mb-4" aria-labelledby="asset-info-title">
-    <h2 class="h5 mb-3" id="asset-info-title">
-      <i class="bi bi-info-circle text-primary me-2" aria-hidden="true"></i>Asset Information
-    </h2>
-    <div class="row g-3">
-      <div class="col-md-6">
-        <div class="d-flex align-items-start">
-          <i class="bi bi-box-seam text-muted me-2 mt-1" aria-hidden="true"></i>
-          <div>
-            <small class="text-muted d-block">Asset</small>
-            <strong>{{ asset }}</strong>
-          </div>
-        </div>
+  <form method="post" class="asset-request-form">
+    {% csrf_token %}
+    <section class="form-section" aria-labelledby="disposal-details-title">
+      <header class="form-section__header"><h2 class="form-section__title" id="disposal-details-title">Disposal request details</h2><p class="form-section__description">Describe the evidence and intended lifecycle outcome clearly.</p></header>
+      <div class="form-grid">
+        <div class="ui-form-field"><label class="form-label" for="title">Request title <span aria-hidden="true">*</span></label><input class="form-control" id="title" name="title" type="text" maxlength="255" value="{{ request.POST.title }}" required aria-describedby="disposal-title-help"><div class="form-text" id="disposal-title-help">Briefly identify the asset and reason.</div></div>
+        <div class="ui-form-field"><label class="form-label" for="priority">Priority</label><select class="form-select" id="priority" name="priority">{% for value, label in priority_choices %}<option value="{{ value }}"{% if request.POST.priority == value or not request.POST.priority and value == 'medium' %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="ui-form-field"><label class="form-label" for="disposal_method">Requested outcome <span aria-hidden="true">*</span></label><select class="form-select" id="disposal_method" name="disposal_method" required>{% for value, label in disposal_methods %}<option value="{{ value }}"{% if request.POST.disposal_method == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="ui-form-field form-grid__full"><label class="form-label" for="reason">Disposal reason <span aria-hidden="true">*</span></label><textarea class="form-control" id="reason" name="reason" rows="5" required aria-describedby="reason-help">{{ request.POST.reason }}</textarea><div class="form-text" id="reason-help">Include condition, end-of-life evidence or loss details as applicable.</div></div>
       </div>
-      <div class="col-md-6">
-        <div class="d-flex align-items-start">
-          <i class="bi bi-tag text-muted me-2 mt-1" aria-hidden="true"></i>
-          <div>
-            <small class="text-muted d-block">Category</small>
-            <strong>{{ asset.category.name }}</strong>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="d-flex align-items-start">
-          <i class="bi bi-building text-muted me-2 mt-1" aria-hidden="true"></i>
-          <div>
-            <small class="text-muted d-block">Branch</small>
-            <strong>{{ asset.branch.name|default:"Head Office" }}</strong>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="d-flex align-items-start">
-          <i class="bi bi-circle-fill text-muted me-2 mt-1" style="font-size: 0.5rem;" aria-hidden="true"></i>
-          <div>
-            <small class="text-muted d-block">Current Status</small>
-            <span class="badge bg-{{ asset.status }}-subtle text-{{ asset.status }}">
-              {{ asset.get_status_display }}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+      <div class="ui-risk-note" role="note"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i><div><strong>This is a lifecycle-sensitive request.</strong><span>Approval can change the asset's operational status. Verify the asset and supporting details before submitting.</span></div></div>
+    </section>
+    <div class="asset-form-actions"><a class="btn btn-outline-secondary" href="{% url 'asset_detail_by_uuid' uuid=asset.uuid %}">Cancel</a><button class="btn btn-danger" type="submit"><i class="bi bi-send" aria-hidden="true"></i> Submit disposal request</button></div>
+  </form>
 
-  <!-- Disposal Request Form -->
-  <section class="glass p-4" aria-labelledby="disposal-form-title">
-    <h2 class="h5 mb-3" id="disposal-form-title">
-      <i class="bi bi-file-earmark-text text-primary me-2" aria-hidden="true"></i>Disposal Request Details
-    </h2>
-
-    <form method="post" novalidate>
-      {% csrf_token %}
-
-      <!-- Title -->
-      <div class="mb-3">
-        <label for="title" class="form-label">Request Title <span class="text-danger">*</span></label>
-        <input 
-          type="text" 
-          class="form-control" 
-          id="title" 
-          name="title" 
-          required
-          maxlength="255"
-          placeholder="e.g., Dispose Laptop - End of Life"
-          aria-describedby="title-help"
-        >
-        <div id="title-help" class="form-text">Brief title describing the disposal request.</div>
-      </div>
-
-      <!-- Disposal Method -->
-      <div class="mb-3">
-        <label for="disposal_method" class="form-label">Disposal Method <span class="text-danger">*</span></label>
-        <select class="form-select" id="disposal_method" name="disposal_method" required aria-describedby="method-help">
-          {% for value, label in disposal_methods %}
-          <option value="{{ value }}">{{ label }}</option>
-          {% endfor %}
-        </select>
-        <div id="method-help" class="form-text">Select the reason for disposal.</div>
-      </div>
-
-      <!-- Reason -->
-      <div class="mb-3">
-        <label for="reason" class="form-label">Disposal Reason <span class="text-danger">*</span></label>
-        <textarea 
-          class="form-control" 
-          id="reason" 
-          name="reason" 
-          rows="4" 
-          required
-          placeholder="Provide detailed reason for disposal (e.g., hardware failure, obsolete, damaged beyond repair)"
-          aria-describedby="reason-help"
-        ></textarea>
-        <div id="reason-help" class="form-text">Explain why this asset should be disposed. Be specific and detailed.</div>
-      </div>
-
-      <!-- Priority -->
-      <div class="mb-3">
-        <label for="priority" class="form-label">Priority</label>
-        <select class="form-select" id="priority" name="priority" aria-describedby="priority-help">
-          {% for value, label in priority_choices %}
-          <option value="{{ value }}" {% if value == 'medium' %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-        <div id="priority-help" class="form-text">Set priority based on urgency.</div>
-      </div>
-
-      <!-- Warning Alert -->
-      <div class="alert alert-warning d-flex align-items-start" role="alert">
-        <i class="bi bi-exclamation-triangle-fill me-2 mt-1" aria-hidden="true"></i>
-        <div>
-          <strong>Important:</strong> This request will be sent to an admin for approval. 
-          Once approved, the asset status will be changed and cannot be easily reversed. 
-          Please ensure all information is accurate.
-        </div>
-      </div>
-
-      <!-- Form Actions -->
-      <div class="d-flex gap-2 justify-content-end">
-        <a href="{% url 'asset_detail_by_uuid' uuid=asset.uuid %}" class="btn btn-outline-secondary">
-          <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cancel
-        </a>
-        <button type="submit" class="btn btn-danger">
-          <i class="bi bi-send me-1" aria-hidden="true"></i>Submit Disposal Request
-        </button>
-      </div>
-    </form>
-  </section>
-
-  <!-- Information Section -->
-  <section class="glass p-4 mt-4" aria-labelledby="info-title">
-    <h2 class="h5 mb-3" id="info-title">
-      <i class="bi bi-lightbulb text-warning me-2" aria-hidden="true"></i>What Happens Next?
-    </h2>
-    <ol class="mb-0">
-      <li class="mb-2">Your disposal request will be sent to an admin for review</li>
-      <li class="mb-2">The admin will evaluate the request and may contact you for more information</li>
-      <li class="mb-2">If approved, the asset status will be updated automatically</li>
-      <li class="mb-2">You will receive a notification when the request is approved or rejected</li>
-      <li class="mb-0">You can track the status of your request in the <a href="{% url 'approval_dashboard' %}">Approvals Dashboard</a></li>
-    </ol>
-  </section>
-</div>
-
-<style>
-  .badge.bg-active-subtle { background-color: #d1e7dd !important; color: #0f5132 !important; }
-  .badge.bg-in_maintenance-subtle { background-color: #fff3cd !important; color: #856404 !important; }
-  .badge.bg-retired-subtle { background-color: #f8d7da !important; color: #842029 !important; }
-  .badge.bg-lost-subtle { background-color: #f8d7da !important; color: #842029 !important; }
-  .badge.bg-deleted-subtle { background-color: #e2e3e5 !important; color: #41464b !important; }
-  .badge.bg-transferred-subtle { background-color: #cfe2ff !important; color: #084298 !important; }
-</style>
+  <section class="form-section asset-request-next" aria-labelledby="disposal-next-title"><header class="form-section__header"><h2 class="form-section__title" id="disposal-next-title">What happens next</h2></header><ol><li>An administrator reviews the asset, reason and requested outcome.</li><li>The request may be approved, rejected or returned for more context.</li><li>You receive a notification and the decision remains in the approval history.</li></ol></section>
+</main>
 {% endblock %}

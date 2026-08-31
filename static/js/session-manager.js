@@ -138,9 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (isAuthenticated && typeof window.sessionManager === 'undefined') {
         window.sessionManager = new window.EnterpriseSessionManager();
-        console.log('✅ Session manager initialized for authenticated user');
     } else if (!isAuthenticated) {
-        console.log('ℹ️ Session manager skipped - user not authenticated');
     }
 });
 } // End guard clause

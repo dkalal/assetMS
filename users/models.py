@@ -36,6 +36,20 @@ class User(AbstractUser):
     # System roles (multi-tenant SaaS)
     is_system_admin = models.BooleanField(default=False, help_text="Super admin (not tied to company)")
     onboarding_completed = models.BooleanField(default=False, help_text="User completed onboarding wizard")
+
+    # Granular delegated permissions (admin grants to manager/user)
+    can_manage_customers = models.BooleanField(
+        default=False,
+        help_text="Can view customers, link/unlink assets, and add notes (branch-scoped).",
+    )
+    can_transfer_assets = models.BooleanField(
+        default=False,
+        help_text="Can initiate asset transfers (branch-to-branch and customer-to-customer).",
+    )
+    can_schedule_maintenance = models.BooleanField(
+        default=False,
+        help_text="Can schedule and manage maintenance for assets of assigned customers.",
+    )
     
     # WORLD-CLASS: User Retirement Fields (ServiceNow ITAM, IBM Maximo, SAP EAM pattern)
     retired_at = models.DateTimeField(null=True, blank=True, help_text="When user was retired/deactivated")

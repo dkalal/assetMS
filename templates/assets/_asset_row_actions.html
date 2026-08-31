@@ -1,0 +1,10 @@
+<div class='dropdown'>
+  <button class='btn btn-sm btn-outline-secondary' type='button' data-bs-toggle='dropdown' data-bs-boundary='viewport' aria-expanded='false'>
+    <i class='bi bi-three-dots' aria-hidden='true'></i><span class='visually-hidden'>More actions for {{ asset.dynamic_data.name|default:asset.pk }}</span>
+  </button>
+  <ul class='dropdown-menu dropdown-menu-end'>
+    <li><a class='dropdown-item' href='{% url 'asset_detail_by_uuid' asset.uuid %}?internal=1'><i class='bi bi-eye me-2'></i>View details</a></li>
+    {% if perms.assets.change_asset %}<li><a class='dropdown-item' href='{% url 'assets:asset_update' asset.uuid %}'><i class='bi bi-pencil me-2'></i>Edit asset</a></li>{% endif %}
+    {% if perms.assets.delete_asset %}<li><hr class='dropdown-divider'></li><li><a class='dropdown-item text-danger' href='{% url 'assets:asset_disposal_request' asset.uuid %}'><i class='bi bi-archive me-2'></i>Request disposal</a></li>{% endif %}
+  </ul>
+</div>

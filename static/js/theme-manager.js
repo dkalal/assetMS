@@ -53,7 +53,6 @@ window.EnterpriseThemeManager = class EnterpriseThemeManager {
                 }
             }).catch((error) => {
                 // Silent fail - theme still works locally via localStorage
-                console.debug('Theme saved locally only (API unavailable)');
             });
         }
         */
@@ -140,22 +139,11 @@ window.EnterpriseThemeManager = class EnterpriseThemeManager {
         // Update meta theme-color for mobile browsers
         this.updateMetaThemeColor(theme);
         
-        // Force style recalculation for all elements
-        const allElements = document.querySelectorAll('*');
-        allElements.forEach(el => {
-            if (el.style) {
-                el.style.transition = 'none';
-                el.offsetHeight; // Trigger reflow
-                el.style.transition = '';
-            }
-        });
-        
         // Dispatch custom event for other components
         window.dispatchEvent(new CustomEvent('themeChanged', {
             detail: { theme, previousTheme: this.currentTheme }
         }));
 
-        if (THEME_DEBUG) console.log(`🎨 Theme switched to: ${theme}`);
     }
 
     updateMetaThemeColor(theme) {
@@ -242,14 +230,12 @@ window.EnterpriseThemeManager = class EnterpriseThemeManager {
     };
     applyToBody();
     
-    if (THEME_DEBUG) console.log(`🎨 Theme pre-initialized: ${savedTheme}`);
 })();
 
 // Initialize theme manager when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     if (!window.enterpriseThemeManager && window.EnterpriseThemeManager) {
         window.enterpriseThemeManager = new window.EnterpriseThemeManager();
-        if (THEME_DEBUG) console.log('🎨 Enterprise Theme Manager initialized');
     }
 });
 

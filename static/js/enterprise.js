@@ -17,9 +17,6 @@ function telemetryEvent(evt) {
       vis: document.visibilityState,
       ua: navigator.userAgent.slice(0, 80)
     };
-    // Console log for local dev
-    // eslint-disable-next-line no-console
-    console.debug('[telemetry]', payload);
     // Optional backend collection if defined globally
     if (window.CLIENT_TELEMETRY_ENDPOINT) {
       navigator.sendBeacon?.(window.CLIENT_TELEMETRY_ENDPOINT, new Blob([
@@ -512,9 +509,8 @@ window.EnterpriseFramework = class EnterpriseFramework {
   }
 
   telemetryEvent(event) {
-    if (window.console && console.log) {
-      console.log('Telemetry Event:', event);
-    }
+    // Hook reserved for a production telemetry provider.
+    void event;
   }
 };
 } // End guard clause

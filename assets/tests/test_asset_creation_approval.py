@@ -136,7 +136,7 @@ class AssetCreationApprovalTests(TestCase):
 
         # Admin can see every pending request in company scope
         self.client.force_login(self.admin)
-        response = self.client.get(reverse("api_pending_asset_creation_requests"))
+        response = self.client.get(reverse("assets:api_pending_asset_creation_requests"))
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertTrue(data["success"])
@@ -147,7 +147,7 @@ class AssetCreationApprovalTests(TestCase):
         # Branch manager only sees requests for branches they manage
         self.client.logout()
         self.client.force_login(self.manager)
-        manager_response = self.client.get(reverse("api_pending_asset_creation_requests"))
+        manager_response = self.client.get(reverse("assets:api_pending_asset_creation_requests"))
         self.assertEqual(manager_response.status_code, 200)
         manager_data = manager_response.json()
         self.assertTrue(manager_data["success"])
@@ -157,7 +157,7 @@ class AssetCreationApprovalTests(TestCase):
         # Regular employee lacks permission
         self.client.logout()
         self.client.force_login(self.regular_user)
-        denied_response = self.client.get(reverse("api_pending_asset_creation_requests"))
+        denied_response = self.client.get(reverse("assets:api_pending_asset_creation_requests"))
         self.assertEqual(denied_response.status_code, 403)
 
     def test_quick_approve_flow_creates_asset_and_logs_audit(self):
@@ -169,7 +169,7 @@ class AssetCreationApprovalTests(TestCase):
         )
 
         self.client.force_login(self.admin)
-        url = reverse("api_quick_approve_asset_creation", args=[approval_request.id])
+        url = reverse("assets:api_quick_approve_asset_creation", args=[approval_request.id])
         response = self.client.post(url, data={"notes": "Approved instantly"})
         self.assertEqual(response.status_code, 200)
         payload = response.json()

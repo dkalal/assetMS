@@ -41,9 +41,12 @@ if not SECRET_KEY:
     raise ValueError("SECRET_KEY not set! Define it in your environment (.env or Railway variables).")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
+# Prefer the project-specific name so unrelated tooling variables such as
+# DEBUG=release cannot silently force Django into production mode locally.
+# Keep DEBUG as a compatibility fallback for existing deployments.
+DEBUG = env_bool("DJANGO_DEBUG", env_bool("DEBUG", False))
 
-ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "10.10.10.254,localhost,127.0.0.1")
+ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "assetms.home.arpa,10.10.10.254,localhost,127.0.0.1")
 
 TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
 
@@ -55,7 +58,7 @@ CSRF_TRUSTED_ORIGINS = [
 
 # WORLD-CLASS: CSRF Cookie Configuration
 # Following Django's official documentation for AJAX requests
-CSRF_COOKIE_NAME = 'csrftoken'
+CSRF_COOKIE_NAME = os.environ.get('CSRF_COOKIE_NAME', 'assetms_csrftoken')
 CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", not DEBUG)  # Only send over HTTPS in production
 CSRF_COOKIE_HTTPONLY = False  # CRITICAL: Must be False so JavaScript can read the token
 CSRF_COOKIE_SAMESITE = 'Lax'  # Prevents CSRF attacks while allowing normal navigation
@@ -261,8 +264,7 @@ else:
     # Local storage fallback
     MEDIA_URL = "/media/"
     MEDIA_ROOT = BASE_DIR / "media"
-    STATICFILES_DIRS.append((str(BASE_DIR / "media"), "media"))
-    WHITENOISE_DIRECTORIES = [(str(BASE_DIR / "media"), "/media/")]
+WHITENOISE_DIRECTORIES = [(str(BASE_DIR / "media"), "/media/")]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -313,7 +315,7 @@ CSP_STYLE_SRC = None
 # - Simpler, more reliable, follows Django best practices
 # - No session isolation needed - unified authentication is better!
 
-SESSION_COOKIE_NAME = 'sessionid'
+SESSION_COOKIE_NAME = os.environ.get('SESSION_COOKIE_NAME', 'assetms_sessionid')
 SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", not DEBUG)
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
@@ -454,6 +456,10 @@ CELERY_TASK_REJECT_ON_WORKER_LOST = True  # Reject task if worker dies
 CELERY_TASK_IGNORE_RESULT = False  # Store task results
 
 EXTERNAL_CUSTOMER_SYNC_TIMEOUT_SECONDS = int(os.environ.get('EXTERNAL_CUSTOMER_SYNC_TIMEOUT_SECONDS', '15'))
+ASSETMS_PUBLIC_BASE_URL = os.environ.get(
+    'ASSETMS_PUBLIC_BASE_URL',
+    'http://127.0.0.1:8001' if DEBUG else '',
+).strip().rstrip('/')
 
 # Django Celery Beat (Database-backed periodic tasks)
 INSTALLED_APPS += [

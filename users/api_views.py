@@ -673,7 +673,22 @@ def api_user_update(request, user_id):
                     'error': 'Email already exists'
                 }, status=400)
             user.email = email
+
+        if 'phone_number' in data:
+            user.phone_number = str(data['phone_number']).strip()
         
+
+        # Granular delegated permissions
+        for perm in ('can_manage_customers', 'can_transfer_assets', 'can_schedule_maintenance'):
+            if perm in data:
+                value = data[perm]
+                if isinstance(value, bool):
+                    enabled = value
+                elif isinstance(value, str):
+                    enabled = value.strip().lower() in {'true', '1', 'yes', 'on'}
+                else:
+                    enabled = False
+                setattr(user, perm, enabled)
         if 'username' in data:
             username = data['username'].strip()
             # Check username uniqueness within company (multi-tenancy)

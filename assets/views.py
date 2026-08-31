@@ -15,6 +15,7 @@ from django.db.models import Count, Q
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie, csrf_protect
 from django.utils.decorators import method_decorator
 import re
+import logging
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
 from django.urls import reverse_lazy
@@ -54,6 +55,8 @@ from django.utils.timezone import localtime
 
 from users.utils import can
 from tenancy.mixins import BranchContextMixin, CompanyScopedQuerysetMixin, company_required
+
+logger = logging.getLogger(__name__)
 
 
 def _get_weasyprint_html():
@@ -205,8 +208,8 @@ class AssetCreateView(LoginRequiredMixin, BranchContextMixin, TemplateView):
             buffer = BytesIO()
             qr_img.save(buffer, 'PNG')
             asset.qr_code.save(f"asset_{asset.uuid}.png", ContentFile(buffer.getvalue()), save=False)
-        except Exception as e:
-            print(f"QR code generation failed: {e}")
+        except Exception:
+            logger.warning("QR code generation failed for asset %s.", asset.pk, exc_info=True)
             # Continue without QR code - not critical for asset creation
         
         asset.save()
@@ -240,11 +243,19 @@ class AssetCreateView(LoginRequiredMixin, BranchContextMixin, TemplateView):
         from tenancy.approval_models import ApprovalRequest
         from tenancy.models import Alert, Branch
         from .models import AssetCategory, AssetCategoryField
+        from .forms import AssetForm
         
         try:
             with transaction.atomic():
                 company = getattr(request, 'company', None)
                 user = request.user
+
+                form = AssetForm(request.POST, request.FILES, request=request)
+                if not form.is_valid():
+                    messages.error(request, "Please correct the errors below.")
+                    context = self.get_context_data()
+                    context['form'] = form
+                    return self.render_to_response(context)
                 
                 # Extract form data
                 title = request.POST.get('title', '').strip()
@@ -253,6 +264,11 @@ class AssetCreateView(LoginRequiredMixin, BranchContextMixin, TemplateView):
                 branch_id = request.POST.get('branch')
                 justification = request.POST.get('justification', '').strip()
                 priority = request.POST.get('priority', ApprovalRequest.PRIORITY_MEDIUM)
+                if not justification:
+                    messages.error(request, "Business justification is required for approval.")
+                    context = self.get_context_data()
+                    context['form'] = form
+                    return self.render_to_response(context)
                 
                 # Validate required fields
                 # NOTE: The unified /assets/register/ form does not expose a
@@ -287,6 +303,12 @@ class AssetCreateView(LoginRequiredMixin, BranchContextMixin, TemplateView):
                     'description': description,
                     'status': request.POST.get('status', 'active'),
                     'dynamic_data': {},
+                    'serial_number': form.cleaned_data.get('serial_number'),
+                    'asset_tag': form.cleaned_data.get('asset_tag'),
+                    'qr_string': form.cleaned_data.get('qr_string'),
+                    'maintenance_enabled': form.cleaned_data.get('maintenance_enabled', False),
+                    'maintenance_interval_days': form.cleaned_data.get('maintenance_interval_days'),
+                    'maintenance_notes': form.cleaned_data.get('maintenance_notes', ''),
                 }
                 
                 # Extract dynamic fields
@@ -309,9 +331,13 @@ class AssetCreateView(LoginRequiredMixin, BranchContextMixin, TemplateView):
                         return self.render_to_response(context)
                 
                 # Check for assigned_to
-                assigned_to_id = request.POST.get('assigned_to_id')
+                assigned_to_id = request.POST.get('assigned_to') or request.POST.get('assigned_to_id')
                 if assigned_to_id:
                     asset_data['assigned_to_id'] = int(assigned_to_id)
+
+                customer_reference_id = request.POST.get('customer_reference')
+                if customer_reference_id:
+                    asset_data['customer_reference_id'] = int(customer_reference_id)
                 
                 # Create approval request
                 approval_request = ApprovalRequest.objects.create(
@@ -462,7 +488,6 @@ class AssetUpdateView(UserPassesTestMixin, UpdateView):
         if obj.ensure_dynamic_data_integrity():
             # Save if data was updated (prevents data loss)
             obj.save(update_fields=['dynamic_data'])
-            print(f"✅ INTEGRITY FIX: Updated dynamic_data for asset {obj.uuid}")
         
         return obj
 
@@ -486,10 +511,6 @@ class AssetUpdateView(UserPassesTestMixin, UpdateView):
         from assets.services.status_changes import AssetStatusChangeService
         from django.contrib import messages
         from django.db import transaction
-        
-        # DEBUG: Log form submission
-        print(f"✅ FORM_VALID called for asset {self.get_object().uuid}")
-        print(f"✅ Form data: {form.cleaned_data.keys()}")
         
         # Capture original state from database for audit trail
         old_obj = self.get_object()
@@ -603,18 +624,8 @@ class AssetUpdateView(UserPassesTestMixin, UpdateView):
                     # NORMAL EDIT WORKFLOW (No status change)
                     # ============================================================
                     
-                    # DEBUG: Log normal edit path
-                    print(f"📝 NORMAL EDIT: Saving asset without status change")
-                    print(f"📝 assigned_to in form: {form.cleaned_data.get('assigned_to')}")
-                    print(f"📝 branch in form: {form.cleaned_data.get('branch')}")
-                    
                     # Save asset with all form changes
                     asset = form.save()
-                    
-                    # DEBUG: Verify save
-                    print(f"✅ SAVED: assigned_to = {asset.assigned_to}")
-                    print(f"✅ SAVED: branch = {asset.branch}")
-                    print(f"✅ SAVED: dynamic_data = {asset.dynamic_data}")
                     
                     # Build change summary for user feedback
                     changes = []
@@ -708,9 +719,6 @@ class AssetUpdateView(UserPassesTestMixin, UpdateView):
         # This prevents stale data issues when redirecting
         asset.refresh_from_db()
         
-        # DEBUG: Verify final state
-        print(f"✅ FINAL STATE: status={asset.status}, assigned_to={asset.assigned_to}")
-        
         # Return redirect to success URL with cache-busting
         response = HttpResponseRedirect(self.get_success_url())
         # Prevent browser caching of the redirect to ensure fresh data
@@ -745,12 +753,6 @@ class AssetUpdateView(UserPassesTestMixin, UpdateView):
             messages.error(self.request, error_msg)
         else:
             messages.error(self.request, "❌ Please correct the errors in the form.")
-        
-        # Log to console for debugging
-        print(f"🔴 FORM VALIDATION FAILED for asset {self.get_object().uuid}")
-        print(f"🔴 Errors: {form.errors}")
-        if hasattr(form, 'cleaned_data'):
-            print(f"🔴 Cleaned data: {form.cleaned_data}")
         
         return super().form_invalid(form)
 
@@ -835,19 +837,15 @@ class AssetUpdateView(UserPassesTestMixin, UpdateView):
                     if value is not None and value != '':
                         initial[field_name] = value
                         
-                print(f"✅ PRE-POPULATED {len(dynamic_data)} dynamic fields for asset {asset.uuid}")
-                
-            except Exception as e:
-                # Don't fail the entire form if dynamic data has issues
-                print(f"⚠️ Warning: Could not pre-populate dynamic fields: {e}")
+            except (TypeError, ValueError):
+                # Invalid legacy JSON should not make the edit form unavailable.
+                pass
         
         # ============================================================
         # FILE FIELDS (Images, Documents, QR Codes)
         # ============================================================
         # Note: File fields are handled differently - they show current file with option to replace
         # The template handles display of existing files
-        
-        print(f"✅ EDIT FORM: Pre-populated {len(initial)} fields for asset {asset.uuid}")
         
         return initial
 
@@ -882,6 +880,11 @@ def get_dynamic_fields(request):
                 'type': f.type,
                 'label': f.label,
                 'required': f.required,
+                'help_text': getattr(f, 'help_text', ''),
+                'options': getattr(f, 'options', []),
+                'min_value': getattr(f, 'min_value', None),
+                'max_value': getattr(f, 'max_value', None),
+                'max_length': getattr(f, 'max_length', None),
             }
         return JsonResponse({'success': True, 'fields': schema})
     except Exception:
@@ -959,14 +962,18 @@ class AssetListView(CompanyScopedQuerysetMixin, BranchContextMixin, LoginRequire
                         except ValueError:
                             pass
                     elif field.type == 'date':
-                        # Parse mm/dd/yyyy and convert to yyyy-MM-dd
+                        # Native date inputs submit ISO values. Retain the
+                        # legacy mm/dd/yyyy parser for bookmarked URLs.
                         import datetime
-                        try:
-                            dt = datetime.datetime.strptime(val, '%m/%d/%Y')
-                            iso_val = dt.strftime('%Y-%m-%d')
-                            qs = qs.filter(**{f'dynamic_data__{field.key}': iso_val})
-                        except ValueError:
-                            pass  # Invalid date format, ignore filter
+                        for date_format in ('%Y-%m-%d', '%m/%d/%Y'):
+                            try:
+                                dt = datetime.datetime.strptime(val, date_format)
+                                qs = qs.filter(**{
+                                    f'dynamic_data__{field.key}': dt.strftime('%Y-%m-%d')
+                                })
+                                break
+                            except ValueError:
+                                continue
         
         return qs.order_by('-created_at')
 
@@ -1030,10 +1037,18 @@ class AssetListView(CompanyScopedQuerysetMixin, BranchContextMixin, LoginRequire
         context['is_admin'] = role == 'admin'
         context['is_manager'] = role == 'manager'
         
-        # Dynamic fields logic
+        # Keep advanced filters category-specific and cap table columns to a
+        # predictable set. The complete schema remains available to forms and
+        # detail pages; this only controls list presentation.
         selected_category = self.request.GET.get('category')
         if selected_category:
-            context['dynamic_fields'] = AssetCategoryField.objects.for_company(company).filter(category_id=selected_category)
+            dynamic_fields = list(
+                AssetCategoryField.objects.for_company(company)
+                .filter(category_id=selected_category)
+                .order_by('id')
+            )
+            context['advanced_filter_fields'] = dynamic_fields
+            context['table_dynamic_fields'] = dynamic_fields[:3]
         else:
             all_fields = AssetCategoryField.objects.for_company(company)
             seen = set()
@@ -1043,7 +1058,16 @@ class AssetListView(CompanyScopedQuerysetMixin, BranchContextMixin, LoginRequire
                 if dedup_key not in seen:
                     unique_fields.append(f)
                     seen.add(dedup_key)
-            context['dynamic_fields'] = unique_fields
+            context['advanced_filter_fields'] = []
+            context['table_dynamic_fields'] = unique_fields[:3]
+
+        ignored_query_keys = {'page', 'page_size'}
+        active_filters = [
+            key for key, value in self.request.GET.items()
+            if key not in ignored_query_keys and value
+        ]
+        context['active_filter_count'] = len(active_filters)
+        context['has_active_filters'] = bool(active_filters)
         
         return context
     
@@ -1060,7 +1084,6 @@ class AssetListView(CompanyScopedQuerysetMixin, BranchContextMixin, LoginRequire
 
 class AssetDetailView(BranchContextMixin, CompanyScopedQuerysetMixin, LoginRequiredMixin, DetailView):
     model = Asset
-    template_name = 'assets/asset_detail.html'
     context_object_name = 'asset'
     
     def get_queryset(self):
@@ -1103,7 +1126,8 @@ class AssetDetailView(BranchContextMixin, CompanyScopedQuerysetMixin, LoginRequi
     def get(self, request, *args, **kwargs):
         asset = self.get_object()
         log_audit(request.user, 'view', asset, 'Asset viewed via dashboard')
-        # Redirect to UUID-based URL if accessed by PK
+        # Backward-compatible integer URL: resolve with the same RBAC rules,
+        # then redirect to the canonical UUID detail route.
         return redirect('asset_detail_by_uuid', uuid=asset.uuid)
 
 class AssetScanView(TemplateView):
@@ -1162,6 +1186,12 @@ class AssetDetailByUUIDView(DetailView):
     context_object_name = 'asset'
     slug_field = 'uuid'
     slug_url_kwarg = 'uuid'
+
+    def get_template_names(self):
+        """Keep the public QR view separate from the authenticated app shell."""
+        if self.request.user.is_authenticated:
+            return [self.template_name]
+        return ['assets/asset_detail_public.html']
     
     def get_queryset(self):
         """

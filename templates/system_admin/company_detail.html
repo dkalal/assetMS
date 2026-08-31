@@ -2,9 +2,10 @@
 {% load static %}
 
 {% block title %}{{ company.name }} - System Admin{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/system-admin.css' %}">{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="system-admin-page" data-system-admin>
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>
             <i class="bi bi-building me-2"></i>{{ company.name }}
@@ -125,8 +126,8 @@
                     {% else %}
                         <form method="post" action="{% url 'system_admin:suspend_company' company.id %}" class="mb-2">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-danger w-100" 
-                                    onclick="return confirm('Are you sure you want to suspend this company? All users will be deactivated.')">
+                            <button type="submit" class="btn btn-danger w-100"
+                                    data-confirm="Suspend this company and deactivate all of its users?">
                                 <i class="bi bi-x-circle me-2"></i>Suspend Company
                             </button>
                         </form>
@@ -148,7 +149,7 @@
         </div>
         <div class="card-body">
             {% if recent_users %}
-                <div class="table-responsive">
+                <div class="table-responsive system-admin-desktop-records">
                     <table class="table table-hover">
                         <thead>
                             <tr>
@@ -184,6 +185,18 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="system-admin-mobile-records">
+                  {% for user in recent_users %}
+                  <article class="system-admin-record">
+                    <div class="system-admin-record__body">
+                      <strong>{{ user.get_full_name|default:user.username }}</strong>
+                      <small>{{ user.email }}</small>
+                      <small>{{ user.get_role_display }} · {% if user.is_active %}Active{% else %}Inactive{% endif %}</small>
+                    </div>
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'system_admin:impersonate' user.id %}">Impersonate</a>
+                  </article>
+                  {% endfor %}
+                </div>
             {% else %}
                 <p class="text-muted text-center">No users found.</p>
             {% endif %}
@@ -191,6 +204,7 @@
     </div>
 </div>
 {% endblock %}
+{% block extra_scripts %}<script src="{% static 'js/system-admin.js' %}"></script>{% endblock %}
 
 
 

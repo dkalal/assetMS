@@ -48,13 +48,6 @@ def system_dashboard_view(request):
     # Recent companies (last 10)
     recent_companies = Company.objects.select_related('registration').order_by('-created_at')[:10]
     
-    # System health (placeholder - can be enhanced with actual metrics)
-    system_health = {
-        'status': 'healthy',
-        'database': 'connected',
-        'celery': 'running',
-    }
-    
     context = {
         'total_companies': total_companies,
         'total_users': total_users,
@@ -62,7 +55,6 @@ def system_dashboard_view(request):
         'active_subscriptions': active_subscriptions,
         'companies_by_plan': companies_by_plan,
         'recent_companies': recent_companies,
-        'system_health': system_health,
     }
     
     return render(request, 'system_admin/dashboard.html', context)

@@ -11,16 +11,19 @@ __pycache__/
 # Virtual environments
 venv/
 .env*/
+.env.*
 .venv/
 .env
+!.env.example
+!.env.*.example
 
 # Django specific
 staticfiles/
 # Media files (keep directory structure, ignore files)
-media/*
+media/**
 !media/.gitkeep
-!media/*/
-!media/*/.gitkeep
+!media/**/
+!media/**/.gitkeep
 logs/
 *.sqlite3
 local_settings.py
@@ -59,12 +62,14 @@ backup.*
 *.md
 !README.md
 !CHANGELOG.md
+!docs/UI_ARCHITECTURE_INVENTORY.md
 
 # Test files
 test_*.py
 *_test.py
 test_*.html
 test_*.js
+!assets/tests/test_ui_foundation.py
 
 # Backup files
 *.backup

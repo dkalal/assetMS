@@ -1,386 +1,44 @@
 {% extends 'base_dashboard.html' %}
 {% load static %}
-
-{% block title %}Branch Manager Management · AssetPro{% endblock %}
-
-{% block extra_styles %}
-  {{ block.super }}
-  <style>
-    .branch-card {
-      transition: all 0.3s ease;
-      border-left: 4px solid transparent;
-    }
-    .branch-card:hover {
-      border-left-color: var(--bs-primary);
-      transform: translateX(2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    .branch-card.no-manager {
-      border-left-color: var(--bs-warning);
-      background: #fff3cd15;
-    }
-    .manager-badge {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 2rem;
-      font-size: 0.875rem;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .no-manager-badge {
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-      color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 2rem;
-      font-size: 0.875rem;
-      font-weight: 600;
-    }
-    .stats-card {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border-radius: 1rem;
-      padding: 1.5rem;
-      margin-bottom: 2rem;
-    }
-    .form-section {
-      background: #f8f9fa;
-      border-radius: 1rem;
-      padding: 2rem;
-      margin-bottom: 2rem;
-    }
-    .manager-stat-card {
-      background: white;
-      border-radius: 0.75rem;
-      padding: 1rem;
-      border: 1px solid #dee2e6;
-      transition: all 0.3s ease;
-    }
-    .manager-stat-card:hover {
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      transform: translateY(-2px);
-    }
-    .metric-badge {
-      background: #e7f3ff;
-      color: #0066cc;
-      padding: 0.25rem 0.75rem;
-      border-radius: 1rem;
-      font-size: 0.875rem;
-      font-weight: 600;
-    }
-  </style>
-{% endblock %}
-
-{% block dashboard_content %}
-<div class="container-fluid py-4">
-  <div class="row justify-content-center">
-    <div class="col-12 col-xl-11">
-      <!-- Header -->
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h1 class="h3 mb-1 fw-bold">
-            <i class="bi bi-person-badge me-2 text-primary"></i>Branch Manager Management
-          </h1>
-          <p class="text-muted mb-0">Assign and manage branch managers across your organization</p>
-        </div>
-        <a href="{% url 'users:profile' %}" class="btn btn-outline-secondary">
-          <i class="bi bi-arrow-left me-1"></i>Back to Profile
-        </a>
-      </div>
-
-      <!-- Stats Card -->
-      <div class="stats-card shadow-sm">
-        <div class="row align-items-center">
-          <div class="col-md-3 text-center border-end border-white border-opacity-25">
-            <div class="display-4 fw-bold">{{ total_branches }}</div>
-            <div class="text-white-50">Total Branches</div>
-          </div>
-          <div class="col-md-3 text-center border-end border-white border-opacity-25">
-            <div class="display-4 fw-bold text-success">{{ branches_with_managers }}</div>
-            <div class="text-white-50">With Managers</div>
-          </div>
-          <div class="col-md-3 text-center border-end border-white border-opacity-25">
-            <div class="display-4 fw-bold text-warning">{{ branches_without_managers }}</div>
-            <div class="text-white-50">Need Manager</div>
-          </div>
-          <div class="col-md-3 text-center">
-            <div class="display-4 fw-bold">{{ available_managers|length }}</div>
-            <div class="text-white-50">Available Managers</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Assignment Form -->
-      <div class="form-section shadow-sm">
-        <h4 class="mb-3 fw-bold">
-          <i class="bi bi-person-plus-fill me-2 text-primary"></i>Assign Branch Manager
-        </h4>
-        <form method="post" class="row g-3">
-          {% csrf_token %}
-          
-          {% if form.errors %}
-            <div class="col-12">
-              <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                <strong>Please correct the following errors:</strong>
-                <ul class="mb-0 mt-2">
-                  {% for field, errors in form.errors.items %}
-                    {% for error in errors %}
-                      <li>{{ field|title }}: {{ error }}</li>
-                    {% endfor %}
-                  {% endfor %}
-                </ul>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-              </div>
-            </div>
-          {% endif %}
-
-          <div class="col-md-4">
-            <label for="{{ form.branch.id_for_label }}" class="form-label fw-semibold">
-              {{ form.branch.label }}
-              <span class="text-danger">*</span>
-            </label>
-            {{ form.branch }}
-            {% if form.branch.help_text %}
-              <small class="form-text text-muted">{{ form.branch.help_text }}</small>
-            {% endif %}
-          </div>
-
-          <div class="col-md-4">
-            <label for="{{ form.manager.id_for_label }}" class="form-label fw-semibold">
-              {{ form.manager.label }}
-            </label>
-            {{ form.manager }}
-            {% if form.manager.help_text %}
-              <small class="form-text text-muted">{{ form.manager.help_text }}</small>
-            {% endif %}
-          </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Options</label>
-            <div class="form-check">
-              {{ form.notify_users }}
-              <label class="form-check-label" for="{{ form.notify_users.id_for_label }}">
-                {{ form.notify_users.label }}
-              </label>
-            </div>
-            <button type="submit" class="btn btn-primary w-100 mt-2 fw-bold">
-              <i class="bi bi-check-circle me-1"></i>Assign Manager
-            </button>
-          </div>
-
-          <div class="col-12">
-            <label for="{{ form.notes.id_for_label }}" class="form-label fw-semibold">
-              {{ form.notes.label }}
-            </label>
-            {{ form.notes }}
-            {% if form.notes.help_text %}
-              <small class="form-text text-muted">{{ form.notes.help_text }}</small>
-            {% endif %}
-          </div>
-        </form>
-      </div>
-
-      <!-- Branches List -->
-      <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-3">
-          <h4 class="mb-0 fw-bold">
-            <i class="bi bi-building me-2 text-primary"></i>Branches & Their Managers
-          </h4>
-          <span class="badge bg-primary-subtle text-primary fs-6">{{ total_branches }} branches</span>
-        </div>
-        <div class="card-body p-0">
-          {% if branches_data %}
-            <div class="list-group list-group-flush">
-              {% for branch_data in branches_data %}
-                <div class="list-group-item branch-card {% if not branch_data.has_manager %}no-manager{% endif %}">
-                  <div class="row align-items-center">
-                    <!-- Branch Info -->
-                    <div class="col-md-3">
-                      <div class="d-flex align-items-center">
-                        <div class="me-3">
-                          <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
-                               style="width: 48px; height: 48px; font-size: 1.25rem; font-weight: bold;">
-                            <i class="bi bi-building"></i>
-                          </div>
-                        </div>
-                        <div>
-                          <div class="fw-bold">{{ branch_data.branch.name }}</div>
-                          <small class="text-muted">Code: {{ branch_data.branch.code }}</small>
-                          {% if branch_data.branch.is_head_office %}
-                            <div class="mt-1">
-                              <span class="badge bg-info-subtle text-info">
-                                <i class="bi bi-star-fill me-1"></i>Head Office
-                              </span>
-                            </div>
-                          {% endif %}
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Manager Info -->
-                    <div class="col-md-4">
-                      <div class="text-muted small mb-1">Branch Manager</div>
-                      {% if branch_data.manager %}
-                        <div class="manager-badge">
-                          <i class="bi bi-person-check-fill"></i>
-                          <div>
-                            <div class="fw-semibold">{{ branch_data.manager.get_full_name|default:branch_data.manager.username }}</div>
-                            <small style="opacity: 0.9;">@{{ branch_data.manager.username }}</small>
-                          </div>
-                        </div>
-                        {% if branch_data.manager_assigned_at %}
-                          <div class="mt-2">
-                            <small class="text-muted">
-                              <i class="bi bi-clock me-1"></i>
-                              Assigned: {{ branch_data.manager_assigned_at|date:"M d, Y" }}
-                              {% if branch_data.manager_assigned_by %}
-                                by {{ branch_data.manager_assigned_by.username }}
-                              {% endif %}
-                            </small>
-                          </div>
-                        {% endif %}
-                      {% else %}
-                        <div class="no-manager-badge">
-                          <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                          No Manager Assigned
-                        </div>
-                      {% endif %}
-                    </div>
-
-                    <!-- Branch Metrics -->
-                    <div class="col-md-3">
-                      <div class="text-muted small mb-1">Branch Metrics</div>
-                      <div class="d-flex flex-wrap gap-2">
-                        <span class="metric-badge">
-                          <i class="bi bi-box-seam me-1"></i>
-                          {{ branch_data.asset_count }} Assets
-                        </span>
-                        <span class="metric-badge">
-                          <i class="bi bi-people me-1"></i>
-                          {{ branch_data.staff_count }} Staff
-                        </span>
-                      </div>
-                    </div>
-
-                    <!-- Actions -->
-                    <div class="col-md-2 text-end">
-                      {% if branch_data.manager %}
-                        <button class="btn btn-sm btn-outline-primary" 
-                                onclick="prefillForm('{{ branch_data.branch.pk }}', '{{ branch_data.manager.pk }}')">
-                          <i class="bi bi-pencil me-1"></i>Change
-                        </button>
-                      {% else %}
-                        <button class="btn btn-sm btn-warning" 
-                                onclick="prefillForm('{{ branch_data.branch.pk }}', '')">
-                          <i class="bi bi-person-plus me-1"></i>Assign
-                        </button>
-                      {% endif %}
-                    </div>
-                  </div>
-                </div>
-              {% endfor %}
-            </div>
-          {% else %}
-            <div class="text-center py-5">
-              <i class="bi bi-building display-1 text-muted"></i>
-              <p class="text-muted mt-3">No branches found in your company.</p>
-            </div>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- Manager Statistics -->
-      {% if manager_stats %}
-        <div class="card shadow-sm border-0">
-          <div class="card-header bg-transparent py-3">
-            <h4 class="mb-0 fw-bold">
-              <i class="bi bi-graph-up me-2 text-primary"></i>Manager Performance Overview
-            </h4>
-          </div>
-          <div class="card-body">
-            <div class="row g-3">
-              {% for stats in manager_stats %}
-                <div class="col-md-6 col-lg-4">
-                  <div class="manager-stat-card">
-                    <div class="d-flex align-items-center mb-2">
-                      <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2"
-                           style="width: 40px; height: 40px;">
-                        {{ stats.manager.username|slice:":1"|upper }}
-                      </div>
-                      <div>
-                        <div class="fw-bold">{{ stats.manager.get_full_name|default:stats.manager.username }}</div>
-                        <small class="text-muted">@{{ stats.manager.username }}</small>
-                      </div>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mt-3">
-                      <div class="text-center">
-                        <div class="h5 mb-0 fw-bold text-primary">{{ stats.branch_count }}</div>
-                        <small class="text-muted">Branches</small>
-                      </div>
-                      <div class="text-center">
-                        <div class="h5 mb-0 fw-bold text-success">{{ stats.total_assets }}</div>
-                        <small class="text-muted">Assets</small>
-                      </div>
-                      <div class="text-center">
-                        <div class="h5 mb-0 fw-bold text-info">{{ stats.total_staff }}</div>
-                        <small class="text-muted">Staff</small>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              {% endfor %}
-            </div>
-          </div>
-        </div>
-      {% endif %}
-
-      <!-- Help Section -->
-      <div class="alert alert-info mt-4" role="alert">
-        <h5 class="alert-heading">
-          <i class="bi bi-info-circle me-2"></i>How It Works
-        </h5>
-        <ul class="mb-0">
-          <li><strong>Branch Manager:</strong> The person responsible for managing a branch's assets and staff.</li>
-          <li><strong>Assignment:</strong> Select a branch and manager above, then click "Assign Manager".</li>
-          <li><strong>Removal:</strong> Select "No Manager" from the dropdown to remove the current manager.</li>
-          <li><strong>Notifications:</strong> Managers receive alerts when assigned or removed from branches.</li>
-          <li><strong>Audit Trail:</strong> All changes are logged for compliance and security.</li>
-          <li><strong>Permissions:</strong> Only users with 'manager' or 'admin' roles can be assigned as branch managers.</li>
-        </ul>
-      </div>
-    </div>
-  </div>
+{% block title %}Branch managers · AssetPro{% endblock %}
+{% block extra_styles %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/organization-admin.css' %}">{% endblock %}
+{% block content %}
+<div class="org-admin">
+  <header class="page-header">
+    <div><p class="page-header__eyebrow">Administration</p><h1 class="page-header__title">Branch managers</h1><p class="page-header__description">Assign accountable managers to active branches.</p></div>
+    <div class="page-header__actions"><a href="{% url 'users:profile' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left" aria-hidden="true"></i> Back to profile</a></div>
+  </header>
+  <section class="org-admin__summary" aria-label="Branch manager summary">
+    <div class="org-admin__metric"><span class="org-admin__metric-value">{{ total_branches }}</span><span class="org-admin__metric-label">Active branches</span></div>
+    <div class="org-admin__metric"><span class="org-admin__metric-value">{{ branches_with_managers }}</span><span class="org-admin__metric-label">Assigned</span></div>
+    <div class="org-admin__metric"><span class="org-admin__metric-value">{{ branches_without_managers }}</span><span class="org-admin__metric-label">Need a manager</span></div>
+    <div class="org-admin__metric"><span class="org-admin__metric-value">{{ available_managers|length }}</span><span class="org-admin__metric-label">Eligible managers</span></div>
+  </section>
+  <section id="branch-manager-assignment" class="org-admin__form" aria-labelledby="manager-assignment-title">
+    <h2 id="manager-assignment-title" class="h5 mb-3">Update manager assignment</h2>
+    <form method="post" class="row g-3">
+      {% csrf_token %}
+      {% if form.errors %}<div class="col-12"><div class="alert alert-danger" role="alert"><h3 class="h6">Please correct the errors below.</h3>{{ form.non_field_errors }}<ul class="mb-0">{% for field in form %}{% for error in field.errors %}<li><a href="#{{ field.id_for_label }}">{{ field.label }}: {{ error }}</a></li>{% endfor %}{% endfor %}</ul></div></div>{% endif %}
+      <div class="col-12 col-lg-4"><label for="{{ form.branch.id_for_label }}" class="form-label">{{ form.branch.label }} <span aria-hidden="true">*</span><span class="visually-hidden">required</span></label>{{ form.branch }}{% if form.branch.help_text %}<div class="form-text">{{ form.branch.help_text }}</div>{% endif %}</div>
+      <div class="col-12 col-lg-4"><label for="{{ form.manager.id_for_label }}" class="form-label">{{ form.manager.label }}</label>{{ form.manager }}{% if form.manager.help_text %}<div class="form-text">{{ form.manager.help_text }}</div>{% endif %}</div>
+      <div class="col-12 col-lg-4"><span class="form-label d-block">Notification</span><div class="form-check">{{ form.notify_users }}<label class="form-check-label" for="{{ form.notify_users.id_for_label }}">{{ form.notify_users.label }}</label></div></div>
+      <div class="col-12"><label for="{{ form.notes.id_for_label }}" class="form-label">{{ form.notes.label }}</label>{{ form.notes }}{% if form.notes.help_text %}<div class="form-text">{{ form.notes.help_text }}</div>{% endif %}</div>
+      <div class="col-12 d-flex justify-content-end"><button type="submit" class="btn btn-primary"><i class="bi bi-check2" aria-hidden="true"></i> Save assignment</button></div>
+    </form>
+  </section>
+  <section class="org-admin__panel" aria-labelledby="branches-title">
+    <div class="org-admin__panel-header"><h2 id="branches-title" class="h5 mb-0">Active branches</h2><span class="badge text-bg-light">{{ total_branches }} branches</span></div>
+    {% if branches_data %}<div class="org-admin__list">
+      {% for branch_data in branches_data %}<article class="org-admin__record"><div class="org-admin__record-grid">
+        <div class="org-admin__identity"><span class="org-admin__avatar" aria-hidden="true"><i class="bi bi-building"></i></span><div><div class="org-admin__name">{{ branch_data.branch.name }}</div><div class="org-admin__meta">Code {{ branch_data.branch.code }}{% if branch_data.branch.is_head_office %} · Head office{% endif %}</div></div></div>
+        <div><span class="org-admin__label">Manager</span>{% if branch_data.manager %}<strong>{{ branch_data.manager.get_full_name|default:branch_data.manager.username }}</strong><div class="org-admin__meta">@{{ branch_data.manager.username }}{% if branch_data.manager_assigned_at %} · since {{ branch_data.manager_assigned_at|date:"M j, Y" }}{% endif %}</div>{% else %}<span class="badge text-bg-warning">Not assigned</span>{% endif %}</div>
+        <div><span class="org-admin__label">Branch scope</span><div class="org-admin__chips"><span class="org-admin__chip">{{ branch_data.asset_count }} assets</span><span class="org-admin__chip">{{ branch_data.staff_count }} staff</span></div></div>
+        <div class="org-admin__actions"><button type="button" class="btn btn-outline-primary" data-prefill-assignment data-branch-id="{{ branch_data.branch.pk }}" data-manager-id="{% if branch_data.manager %}{{ branch_data.manager.pk }}{% endif %}">{% if branch_data.manager %}Change{% else %}Assign{% endif %}<span class="visually-hidden"> manager for {{ branch_data.branch.name }}</span></button></div>
+      </div></article>{% endfor %}
+    </div>{% else %}<div class="org-admin__empty"><i class="bi bi-building fs-2" aria-hidden="true"></i><p class="mb-0 mt-2">No active branches were found.</p></div>{% endif %}
+  </section>
+  {% if manager_stats %}<section class="org-admin__panel" aria-labelledby="manager-stats-title"><div class="org-admin__panel-header"><h2 id="manager-stats-title" class="h5 mb-0">Manager coverage</h2></div><div class="row g-3 p-3">{% for stats in manager_stats %}<div class="col-12 col-md-6 col-xl-4"><article class="border rounded p-3 h-100"><div class="org-admin__name">{{ stats.manager.get_full_name|default:stats.manager.username }}</div><div class="org-admin__meta mb-3">@{{ stats.manager.username }}</div><div class="org-admin__chips"><span class="org-admin__chip">{{ stats.branch_count }} branches</span><span class="org-admin__chip">{{ stats.total_assets }} assets</span><span class="org-admin__chip">{{ stats.total_staff }} staff</span></div></article></div>{% endfor %}</div></section>{% endif %}
+  <aside class="org-admin__help"><p class="mb-0 small">Selecting “No manager” removes an assignment. Existing notification, audit and eligibility rules remain applied by the server.</p></aside>
 </div>
-
-<script>
-function prefillForm(branchId, managerId) {
-  // Scroll to form
-  document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
-  
-  // Prefill branch
-  const branchSelect = document.getElementById('{{ form.branch.id_for_label }}');
-  if (branchSelect) {
-    branchSelect.value = branchId;
-    branchSelect.focus();
-  }
-  
-  // Prefill manager if provided
-  if (managerId) {
-    const managerSelect = document.getElementById('{{ form.manager.id_for_label }}');
-    if (managerSelect) {
-      managerSelect.value = managerId;
-    }
-  }
-  
-  // Highlight form
-  const formSection = document.querySelector('.form-section');
-  formSection.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
-  setTimeout(() => {
-    formSection.style.boxShadow = '';
-  }, 2000);
-}
-</script>
 {% endblock %}
+{% block extra_scripts %}{{ block.super }}<script src="{% static 'js/organization-admin.js' %}" defer></script>{% endblock %}
