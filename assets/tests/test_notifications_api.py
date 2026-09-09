@@ -77,7 +77,10 @@ class NotificationsApiTests(TestCase):
         data = resp.json()
         items = data['items']
         # Should NOT include user2 on asset2 (unrelated)
-        bodies = '\n'.join([str(i) for i in items])
+        bodies = '\n'.join(
+            f"{item.get('title', '')} {item.get('message', '')}"
+            for item in items
+        )
         self.assertIn('a1', bodies.lower())  # has logs for asset1
         self.assertNotIn('a2', bodies.lower())  # should not include asset2 log
 
@@ -101,6 +104,9 @@ class NotificationsApiTests(TestCase):
         resp = self.client.get('/notifications-api/?limit=10')
         self.assertEqual(resp.status_code, 200)
         items = resp.json().get('items', [])
-        bodies = '\n'.join([str(i) for i in items])
+        bodies = '\n'.join(
+            f"{item.get('title', '')} {item.get('message', '')}"
+            for item in items
+        )
         self.assertIn('a1', bodies.lower())  # should include logs related to asset1 via user1 assignment
         self.assertNotIn('a2', bodies.lower())  # should NOT include unrelated asset2 log

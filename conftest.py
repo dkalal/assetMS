@@ -557,28 +557,3 @@ def performance_timer():
             return 0
     
     return PerformanceTimer
-
-
-# ============================================================================
-# CLEANUP HOOKS
-# ============================================================================
-
-@pytest.fixture(autouse=True)
-def reset_sequences(db):
-    """
-    Reset database sequences after each test for consistency.
-    This ensures predictable IDs in tests.
-    """
-    yield
-    # Cleanup happens after test
-    from django.core.management import call_command
-    from django.db import connection
-    
-    if connection.vendor == 'postgresql':
-        # Reset PostgreSQL sequences
-        with connection.cursor() as cursor:
-            cursor.execute("""
-                SELECT setval(pg_get_serial_sequence('"' || table_name || '"', 'id'), 1, false)
-                FROM information_schema.tables
-                WHERE table_schema = 'public' AND table_name NOT LIKE '%_pkey';
-            """)
