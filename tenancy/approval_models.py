@@ -200,32 +200,56 @@ class ApprovalRequest(CompanyScopedModel):
             notes: Optional approval notes
         """
         with transaction.atomic():
-            self.status = self.STATUS_APPROVED
-            self.approved_by = approved_by
-            self.approved_at = timezone.now()
+            locked = type(self).objects.select_for_update().get(pk=self.pk)
+            if locked.status not in {self.STATUS_PENDING, self.STATUS_ESCALATED}:
+                raise ValidationError("Only pending or escalated requests can be approved.")
+            if locked.requested_by_id == approved_by.pk:
+                raise ValidationError("Requesters cannot approve their own requests.")
+            if approved_by.company_id != locked.company_id:
+                raise ValidationError("Approver must belong to the same company.")
+            has_authority = (
+                approved_by.role == 'admin'
+                or locked.assigned_to_id == approved_by.pk
+                or (
+                    approved_by.role == 'manager'
+                    and locked.branch.manager_id == approved_by.pk
+                )
+            )
+            if not has_authority:
+                raise ValidationError("User does not have authority to approve this request.")
+
+            locked.status = self.STATUS_APPROVED
+            locked.approved_by = approved_by
+            locked.approved_at = timezone.now()
             
             if notes:
-                if 'approval_notes' not in self.metadata:
-                    self.metadata['approval_notes'] = []
-                self.metadata['approval_notes'].append({
+                metadata = dict(locked.metadata or {})
+                metadata.setdefault('approval_notes', [])
+                metadata['approval_notes'] = list(metadata['approval_notes'])
+                metadata['approval_notes'].append({
                     'approved_by': approved_by.username,
                     'approved_at': timezone.now().isoformat(),
                     'notes': notes,
                 })
+                locked.metadata = metadata
             
-            self.save()
+            locked.save()
+            self.status = locked.status
+            self.approved_by = locked.approved_by
+            self.approved_at = locked.approved_at
+            self.metadata = locked.metadata
             
             # Create notification for requester
             from tenancy.models import Alert
             Alert.objects.create(
-                company=self.company,
-                branch=self.branch,
-                recipient=self.requested_by,
+                company=locked.company,
+                branch=locked.branch,
+                recipient=locked.requested_by,
                 level=Alert.LEVEL_SUCCESS,
                 message=f"Your request '{self.title}' has been approved by {approved_by.get_full_name() or approved_by.username}.",
                 context={
-                    'request_id': self.pk,
-                    'request_type': self.request_type,
+                    'request_id': locked.pk,
+                    'request_type': locked.request_type,
                     'approved_by': approved_by.pk,
                     'approved_at': timezone.now().isoformat(),
                 }
@@ -237,13 +261,13 @@ class ApprovalRequest(CompanyScopedModel):
                 approved_by,
                 "approval_request_approved",
                 details=f"Approved request: {self.title}",
-                company=self.company,
-                branch=self.branch,
-                related_user=self.requested_by,
+                company=locked.company,
+                branch=locked.branch,
+                related_user=locked.requested_by,
                 metadata={
-                    'request_id': self.pk,
-                    'request_type': self.request_type,
-                    'title': self.title,
+                    'request_id': locked.pk,
+                    'request_type': locked.request_type,
+                    'title': locked.title,
                 }
             )
     
@@ -255,24 +279,49 @@ class ApprovalRequest(CompanyScopedModel):
             rejected_by: User rejecting the request
             reason: Reason for rejection
         """
+        if not reason or not reason.strip():
+            raise ValidationError("A rejection reason is required.")
+
         with transaction.atomic():
-            self.status = self.STATUS_REJECTED
-            self.approved_by = rejected_by  # Store who made the decision
-            self.approved_at = timezone.now()
-            self.rejection_reason = reason
-            self.save()
+            locked = type(self).objects.select_for_update().get(pk=self.pk)
+            if locked.status not in {self.STATUS_PENDING, self.STATUS_ESCALATED}:
+                raise ValidationError("Only pending or escalated requests can be rejected.")
+            if locked.requested_by_id == rejected_by.pk:
+                raise ValidationError("Requesters cannot reject their own requests.")
+            if rejected_by.company_id != locked.company_id:
+                raise ValidationError("Reviewer must belong to the same company.")
+            has_authority = (
+                rejected_by.role == 'admin'
+                or locked.assigned_to_id == rejected_by.pk
+                or (
+                    rejected_by.role == 'manager'
+                    and locked.branch.manager_id == rejected_by.pk
+                )
+            )
+            if not has_authority:
+                raise ValidationError("User does not have authority to reject this request.")
+
+            locked.status = self.STATUS_REJECTED
+            locked.approved_by = rejected_by  # Store who made the decision
+            locked.approved_at = timezone.now()
+            locked.rejection_reason = reason.strip()
+            locked.save()
+            self.status = locked.status
+            self.approved_by = locked.approved_by
+            self.approved_at = locked.approved_at
+            self.rejection_reason = locked.rejection_reason
             
             # Create notification for requester
             from tenancy.models import Alert
             Alert.objects.create(
-                company=self.company,
-                branch=self.branch,
-                recipient=self.requested_by,
+                company=locked.company,
+                branch=locked.branch,
+                recipient=locked.requested_by,
                 level=Alert.LEVEL_WARNING,
                 message=f"Your request '{self.title}' has been rejected. Reason: {reason}",
                 context={
-                    'request_id': self.pk,
-                    'request_type': self.request_type,
+                    'request_id': locked.pk,
+                    'request_type': locked.request_type,
                     'rejected_by': rejected_by.pk,
                     'reason': reason,
                 }
@@ -284,13 +333,13 @@ class ApprovalRequest(CompanyScopedModel):
                 rejected_by,
                 "approval_request_rejected",
                 details=f"Rejected request: {self.title}. Reason: {reason}",
-                company=self.company,
-                branch=self.branch,
-                related_user=self.requested_by,
+                company=locked.company,
+                branch=locked.branch,
+                related_user=locked.requested_by,
                 metadata={
-                    'request_id': self.pk,
-                    'request_type': self.request_type,
-                    'title': self.title,
+                    'request_id': locked.pk,
+                    'request_type': locked.request_type,
+                    'title': locked.title,
                     'reason': reason,
                 }
             )
@@ -298,34 +347,40 @@ class ApprovalRequest(CompanyScopedModel):
     def escalate(self):
         """Escalate the request to a higher authority."""
         with transaction.atomic():
-            self.status = self.STATUS_ESCALATED
-            self.escalated_at = timezone.now()
-            self.save()
+            locked = type(self).objects.select_for_update().get(pk=self.pk)
+            if locked.status != self.STATUS_PENDING:
+                raise ValidationError("Only pending requests can be escalated.")
+            locked.status = self.STATUS_ESCALATED
+            locked.escalated_at = timezone.now()
+            locked.save()
+            self.status = locked.status
+            self.escalated_at = locked.escalated_at
             
             # Find admin to escalate to
             from django.contrib.auth import get_user_model
             User = get_user_model()
             admin = User.objects.filter(
-                company=self.company,
+                company=locked.company,
                 role='admin',
                 is_active=True
             ).first()
             
             if admin:
+                locked.assigned_to = admin
+                locked.save(update_fields=['assigned_to', 'updated_at'])
                 self.assigned_to = admin
-                self.save()
                 
                 # Notify admin
                 from tenancy.models import Alert
                 Alert.objects.create(
-                    company=self.company,
-                    branch=self.branch,
+                    company=locked.company,
+                    branch=locked.branch,
                     recipient=admin,
                     level=Alert.LEVEL_WARNING,
                     message=f"Request '{self.title}' has been escalated to you for review.",
                     context={
-                        'request_id': self.pk,
-                        'request_type': self.request_type,
+                        'request_id': locked.pk,
+                        'request_type': locked.request_type,
                         'escalated_at': timezone.now().isoformat(),
                     }
                 )
@@ -359,6 +414,15 @@ class ApprovalRequest(CompanyScopedModel):
         
         # Import here to avoid circular dependency
         from assets.models import Asset, AssetCategory
+
+        existing_asset_id = self.metadata.get('created_asset_id')
+        if existing_asset_id:
+            try:
+                return Asset.objects.get(pk=existing_asset_id, company=self.company)
+            except Asset.DoesNotExist as exc:
+                raise ValidationError(
+                    "Approval metadata references an asset that no longer exists."
+                ) from exc
         
         with transaction.atomic():
             # Validate category

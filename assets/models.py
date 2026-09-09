@@ -843,7 +843,7 @@ class MaintenanceRecord(models.Model):
             models.Index(fields=['asset', 'status'], name='maint_asset_status_idx'),
         ]
         constraints = [
-            models.CheckConstraint(check=models.Q(cost__gte=0), name='maintenance_cost_non_negative'),
+            models.CheckConstraint(condition=models.Q(cost__gte=0), name='maintenance_cost_non_negative'),
         ]
 
     def clean(self):

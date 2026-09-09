@@ -128,7 +128,7 @@ class UserBranchManagementViewTests(TestCase):
         self.client.force_login(self.admin1)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "User Branch Management")
+        self.assertContains(response, "User branch assignments")
 
     def test_view_displays_company_users_only(self):
         """Test that view only displays users from the admin's company."""

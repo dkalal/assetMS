@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from assets.models import Asset, AssetCategory
 from audit.models import AuditLog
+from tenancy.models import Company
 
 User = get_user_model()
 
@@ -10,16 +11,39 @@ User = get_user_model()
 class NotificationsApiTests(TestCase):
     def setUp(self):
         self.client = Client()
+        self.company = Company.objects.create(name='Notifications Test Company')
         # Create users with roles
-        self.admin = User.objects.create_user(username='admin', password='pass', role='admin')
-        self.manager = User.objects.create_user(username='manager', password='pass', role='manager')
-        self.user1 = User.objects.create_user(username='user1', password='pass', role='user')
-        self.user2 = User.objects.create_user(username='user2', password='pass', role='user')
+        self.admin = User.objects.create_user(
+            username='admin', password='pass', role='admin', company=self.company
+        )
+        self.manager = User.objects.create_user(
+            username='manager', password='pass', role='manager', company=self.company
+        )
+        self.user1 = User.objects.create_user(
+            username='user1', password='pass', role='user', company=self.company
+        )
+        self.user2 = User.objects.create_user(
+            username='user2', password='pass', role='user', company=self.company
+        )
         # Minimal category required to create assets
-        self.cat = AssetCategory.objects.create(name='Laptops')
+        self.cat = AssetCategory.objects.create(company=self.company, name='Laptops')
         # Assets
-        self.asset1 = Asset.objects.create(category=self.cat, status='active', description='A1', assigned_to=self.user1, dynamic_data={})
-        self.asset2 = Asset.objects.create(category=self.cat, status='active', description='A2', assigned_to=None, dynamic_data={})
+        self.asset1 = Asset.objects.create(
+            company=self.company,
+            category=self.cat,
+            status='active',
+            description='A1',
+            assigned_to=self.user1,
+            dynamic_data={},
+        )
+        self.asset2 = Asset.objects.create(
+            company=self.company,
+            category=self.cat,
+            status='active',
+            description='A2',
+            assigned_to=None,
+            dynamic_data={},
+        )
 
         # Logs for visibility rules
         now = timezone.now()

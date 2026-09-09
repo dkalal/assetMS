@@ -17,8 +17,8 @@ from django.test import Client
 from django.utils import timezone
 from datetime import timedelta
 
-from tenancy.models import Company, Branch
-from assets.models import Asset, AssetCategory, AssetTransfer
+from tenancy.models import Company, Branch, UserBranch
+from assets.models import Asset, AssetCategory, AssetCategoryField, AssetTransfer
 from users.models import RolePermissionMatrix
 
 User = get_user_model()
@@ -184,7 +184,7 @@ def admin_user(db, company, head_office):
         is_staff=True,
         is_superuser=True
     )
-    user.branches.add(head_office)
+    UserBranch.ensure_primary(user, company, head_office)
     return user
 
 
@@ -207,7 +207,7 @@ def manager_user(db, company, branch):
         company=company,
         role='manager'
     )
-    user.branches.add(branch)
+    UserBranch.ensure_primary(user, company, branch)
     
     # Set as branch manager
     branch.manager = user
@@ -237,7 +237,7 @@ def regular_user(db, company, branch):
         company=company,
         role='user'
     )
-    user.branches.add(branch)
+    UserBranch.ensure_primary(user, company, branch)
     return user
 
 
@@ -260,7 +260,7 @@ def user2(db, company, branch2):
         company=company,
         role='user'
     )
-    user.branches.add(branch2)
+    UserBranch.ensure_primary(user, company, branch2)
     return user
 
 
@@ -279,31 +279,40 @@ def category(db, company):
     Returns:
         AssetCategory: Category instance with dynamic fields
     """
-    return AssetCategory.objects.create(
+    category = AssetCategory.objects.create(
         company=company,
         name='Laptops',
         description='Laptop computers',
-        dynamic_fields=[
-            {
-                'name': 'serial_number',
-                'label': 'Serial Number',
-                'type': 'text',
-                'required': True
-            },
-            {
-                'name': 'model',
-                'label': 'Model',
-                'type': 'text',
-                'required': True
-            },
-            {
-                'name': 'ram',
-                'label': 'RAM (GB)',
-                'type': 'number',
-                'required': False
-            }
-        ]
+        dynamic_fields={},
     )
+    AssetCategoryField.objects.bulk_create([
+        AssetCategoryField(
+            company=company,
+            category=category,
+            key='serial_number',
+            label='Serial Number',
+            type='text',
+            required=True,
+            is_unique=True,
+        ),
+        AssetCategoryField(
+            company=company,
+            category=category,
+            key='model',
+            label='Model',
+            type='text',
+            required=True,
+        ),
+        AssetCategoryField(
+            company=company,
+            category=category,
+            key='ram',
+            label='RAM (GB)',
+            type='number',
+            required=False,
+        ),
+    ])
+    return category
 
 
 @pytest.fixture
@@ -324,7 +333,8 @@ def asset(db, company, branch, category, regular_user):
         company=company,
         branch=branch,
         category=category,
-        name='Test Laptop',
+        asset_tag='TEST-LAPTOP-001',
+        description='Test Laptop',
         status=Asset.STATUS_ACTIVE,
         assigned_to=regular_user,
         dynamic_data={
@@ -354,7 +364,8 @@ def assets_bulk(db, company, branch, category):
             company=company,
             branch=branch,
             category=category,
-            name=f'Asset {i+1}',
+            asset_tag=f'TEST-ASSET-{i+1:04d}',
+            description=f'Asset {i+1}',
             status=Asset.STATUS_ACTIVE,
             dynamic_data={
                 'serial_number': f'SN{i+1:06d}',
@@ -390,8 +401,8 @@ def transfer(db, company, asset, regular_user, user2):
         initiator=regular_user,
         from_user=regular_user,
         to_user=user2,
-        from_branch=regular_user.branches.first(),
-        to_branch=user2.branches.first(),
+        from_branch=regular_user.primary_branch,
+        to_branch=user2.primary_branch,
         state=AssetTransfer.TransferState.PENDING_RECEIVER,
         reason='Equipment upgrade'
     )
@@ -472,24 +483,7 @@ def permission_matrix(db):
     Returns:
         RolePermissionMatrix: Permission matrix instance
     """
-    matrix, created = RolePermissionMatrix.objects.get_or_create(
-        role='admin',
-        defaults={
-            'permissions': {
-                'view_assets': True,
-                'create_assets': True,
-                'edit_assets': True,
-                'delete_assets': True,
-                'transfer_assets': True,
-                'approve_transfers': True,
-                'view_reports': True,
-                'manage_users': True,
-                'manage_branches': True,
-                'manage_categories': True,
-            }
-        }
-    )
-    return matrix
+    return RolePermissionMatrix.load()
 
 
 # ============================================================================
