@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 
@@ -205,3 +206,92 @@ class AssetCreationApprovalTests(TestCase):
         # API response contains created asset details for follow-up flows
         self.assertEqual(payload["asset"]["id"], created_asset.id)
         self.assertEqual(payload["asset"]["uuid"], str(created_asset.uuid))
+
+    def test_quick_approve_is_single_decision_and_does_not_duplicate_asset(self):
+        approval_request = self.create_asset_creation_request(
+            branch=self.branch,
+            requested_by=self.manager,
+            assigned_to=self.admin,
+        )
+        self.client.force_login(self.admin)
+        url = reverse("assets:api_quick_approve_asset_creation", args=[approval_request.id])
+
+        first = self.client.post(url, data={"notes": "Approved once"})
+        self.assertEqual(first.status_code, 200)
+        created_asset_id = first.json()["asset"]["id"]
+
+        second = self.client.post(url, data={"notes": "Duplicate decision"})
+        self.assertEqual(second.status_code, 409)
+        self.assertEqual(Asset.objects.filter(company=self.company).count(), 1)
+
+        approval_request.refresh_from_db()
+        self.assertEqual(approval_request.metadata["created_asset_id"], created_asset_id)
+        self.assertEqual(
+            AuditLog.objects.filter(
+                action="approval_request_approved",
+                metadata__request_id=approval_request.pk,
+            ).count(),
+            1,
+        )
+
+    def test_failed_asset_creation_rolls_back_approval_decision(self):
+        approval_request = self.create_asset_creation_request(
+            branch=self.branch,
+            requested_by=self.manager,
+            assigned_to=self.admin,
+        )
+        approval_request.metadata["asset_data"]["category_id"] = 999999
+        approval_request.save(update_fields=["metadata", "updated_at"])
+
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse("assets:api_quick_approve_asset_creation", args=[approval_request.id]),
+            data={"notes": "Invalid request must roll back"},
+        )
+
+        self.assertEqual(response.status_code, 409)
+        approval_request.refresh_from_db()
+        self.assertEqual(approval_request.status, ApprovalRequest.STATUS_PENDING)
+        self.assertIsNone(approval_request.approved_by)
+        self.assertFalse(
+            AuditLog.objects.filter(
+                action="approval_request_approved",
+                metadata__request_id=approval_request.pk,
+            ).exists()
+        )
+
+    def test_quick_approve_blocks_requester_self_approval(self):
+        approval_request = self.create_asset_creation_request(
+            branch=self.branch,
+            requested_by=self.manager,
+            assigned_to=self.manager,
+        )
+        self.client.force_login(self.manager)
+
+        response = self.client.post(
+            reverse("assets:api_quick_approve_asset_creation", args=[approval_request.id])
+        )
+
+        self.assertEqual(response.status_code, 403)
+        approval_request.refresh_from_db()
+        self.assertEqual(approval_request.status, ApprovalRequest.STATUS_PENDING)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action="security_violation",
+                user=self.manager,
+                metadata__request_id=approval_request.pk,
+            ).exists()
+        )
+
+    def test_model_rejects_reviewer_without_request_authority(self):
+        approval_request = self.create_asset_creation_request(
+            branch=self.branch,
+            requested_by=self.regular_user,
+            assigned_to=self.admin,
+        )
+
+        with self.assertRaises(ValidationError):
+            approval_request.approve(self.other_manager)
+
+        approval_request.refresh_from_db()
+        self.assertEqual(approval_request.status, ApprovalRequest.STATUS_PENDING)

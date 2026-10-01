@@ -399,27 +399,13 @@ class ApprovalActionView(LoginRequiredMixin, BranchContextMixin, View):
                         metadata = approval_request.metadata or {}
                         asset_data = metadata.get('asset_data')
                         if asset_data:
-                            try:
-                                asset = approval_request.create_asset_from_approval()
-                                messages.success(
-                                    request,
-                                    f"Request approved. Asset '{asset}' created successfully. "
-                                    f"<a href='/assets/{asset.uuid}/' class='alert-link'>View Asset</a>",
-                                    extra_tags='safe'
-                                )
-                            except Exception as e:
-                                # Log detailed error
-                                import logging
-                                import traceback
-                                logger = logging.getLogger(__name__)
-                                logger.error(f"Asset creation failed for request {approval_request.pk}: {str(e)}")
-                                logger.error(traceback.format_exc())
-                                
-                                messages.error(
-                                    request,
-                                    f"Request approved but asset creation failed: {str(e)}. "
-                                    f"Please check the logs or contact support."
-                                )
+                            asset = approval_request.create_asset_from_approval()
+                            messages.success(
+                                request,
+                                f"Request approved. Asset '{asset}' created successfully. "
+                                f"<a href='/assets/{asset.uuid}/' class='alert-link'>View Asset</a>",
+                                extra_tags='safe'
+                            )
                         else:
                             logger.warning(
                                 "Asset creation request %s has no 'asset_data' in metadata. "
@@ -438,24 +424,11 @@ class ApprovalActionView(LoginRequiredMixin, BranchContextMixin, View):
                         metadata = approval_request.metadata or {}
                         asset_id = metadata.get('asset_id')
                         if asset_id:
-                            try:
-                                asset = approval_request.execute_asset_disposal()
-                                messages.success(
-                                    request,
-                                    f"Request approved. Asset '{asset}' has been disposed successfully."
-                                )
-                            except Exception as e:
-                                import logging
-                                import traceback
-                                logger = logging.getLogger(__name__)
-                                logger.error(f"Asset disposal failed for request {approval_request.pk}: {str(e)}")
-                                logger.error(traceback.format_exc())
-                                
-                                messages.error(
-                                    request,
-                                    f"Request approved but asset disposal failed: {str(e)}. "
-                                    f"Please check the logs or contact support."
-                                )
+                            asset = approval_request.execute_asset_disposal()
+                            messages.success(
+                                request,
+                                f"Request approved. Asset '{asset}' has been disposed successfully."
+                            )
                         else:
                             logger.warning(
                                 "Asset disposal request %s has no 'asset_id' in metadata. "

@@ -1482,8 +1482,8 @@ class AssetDetailByUUIDView(DetailView):
             # Asset utilization (based on audit logs) with error handling
             try:
                 from django.db.models import Count
-                from datetime import datetime, timedelta
-                thirty_days_ago = datetime.now() - timedelta(days=30)
+                from datetime import timedelta
+                thirty_days_ago = timezone.now() - timedelta(days=30)
                 context['utilization_stats'] = {
                     'scans_30_days': asset.auditlog_set.filter(
                         action='scan',
@@ -1869,7 +1869,7 @@ def asset_export(request):
                 'tenant_name': getattr(getattr(request, 'company', None), 'name', ''),
                 'generated_by': (request.user.get_full_name() or request.user.username) if request.user.is_authenticated else 'System',
                 'logo_url': settings.STATIC_URL + 'img/logo.png',
-                'export_date': datetime.now(),
+                'export_date': timezone.now(),
             })
             import os
             fd, temp_path = tempfile.mkstemp(suffix='.pdf')

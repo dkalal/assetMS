@@ -48,7 +48,11 @@ DEBUG = env_bool("DJANGO_DEBUG", env_bool("DEBUG", False))
 
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "assetms.home.arpa,10.10.10.254,localhost,127.0.0.1")
 
-TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
+TESTING = (
+    env_bool("DJANGO_TESTING", False)
+    or (len(sys.argv) > 1 and sys.argv[1] == "test")
+    or "pytest" in Path(sys.argv[0]).name
+)
 
 # CSRF Settings for Enterprise Security
 CSRF_TRUSTED_ORIGINS = [
@@ -292,6 +296,7 @@ X_FRAME_OPTIONS = 'DENY'
 SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", 31536000)) if not DEBUG else 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
+SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", False)
 
 # Disable Django's default CSP to use our custom one
 SECURE_CONTENT_SECURITY_POLICY = None
@@ -470,7 +475,5 @@ INSTALLED_APPS += [
 # Store task results in Django database
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_CACHE_BACKEND = 'django-cache'
-
-
 
 
