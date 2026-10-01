@@ -15,7 +15,7 @@ class AssetTransferApiTests(TestCase):
     def setUp(self):
         self.company = Company.objects.create(name="Acme Corp")
         self.branch = Branch.objects.create(company=self.company, name="HQ", code="HQ", is_head_office=True)
-        self.category = AssetCategory.objects.create(name="Laptops")
+        self.category = AssetCategory.objects.create(company=self.company, name="Laptops")
 
         self.admin = User.objects.create_user(
             username="admin",
@@ -53,7 +53,7 @@ class AssetTransferApiTests(TestCase):
             "initiator_comment": "Please approve",
         }
         initiate_resp = self.client.post(
-            reverse("asset_transfer_initiate"),
+            reverse("assets:asset_transfer_initiate"),
             data=json.dumps(payload),
             content_type="application/json",
         )
@@ -71,7 +71,7 @@ class AssetTransferApiTests(TestCase):
         self.client.logout()
         self.client.force_login(self.receiver)
 
-        alerts_resp = self.client.get(reverse("asset_transfer_alerts"))
+        alerts_resp = self.client.get(reverse("assets:asset_transfer_alerts"))
         self.assertEqual(alerts_resp.status_code, 200)
         alerts_payload = alerts_resp.json()
         self.assertTrue(alerts_payload["success"])
@@ -79,7 +79,7 @@ class AssetTransferApiTests(TestCase):
         self.assertGreater(len(alert_ids), 0)
 
         mark_resp = self.client.post(
-            reverse("asset_transfer_alerts"),
+            reverse("assets:asset_transfer_alerts"),
             data=json.dumps({"alert_ids": alert_ids, "action": "mark_read"}),
             content_type="application/json",
         )
@@ -87,7 +87,7 @@ class AssetTransferApiTests(TestCase):
         self.assertTrue(mark_resp.json()["success"])
 
         receiver_decision_resp = self.client.post(
-            reverse("asset_transfer_receiver_decision"),
+            reverse("assets:asset_transfer_receiver_decision"),
             data=json.dumps({
                 "transfer_id": transfer_id,
                 "decision": AssetTransfer.Decision.APPROVED,
@@ -102,7 +102,7 @@ class AssetTransferApiTests(TestCase):
         self.client.logout()
         self.client.force_login(self.admin)
         admin_review_resp = self.client.post(
-            reverse("asset_transfer_admin_review"),
+            reverse("assets:asset_transfer_admin_review"),
             data=json.dumps({
                 "transfer_id": transfer_id,
                 "decision": AssetTransfer.Decision.APPROVED,
@@ -116,17 +116,17 @@ class AssetTransferApiTests(TestCase):
         self.asset.refresh_from_db()
         self.assertEqual(transfer.state, AssetTransfer.TransferState.COMPLETED)
         self.assertEqual(self.asset.assigned_to, self.receiver)
-        self.assertEqual(self.asset.status, Asset.STATUS_TRANSFERRED)
+        self.assertEqual(self.asset.status, Asset.STATUS_ACTIVE)
 
-    def test_initiate_requires_elevated_permissions(self):
+    def test_assigned_holder_can_initiate_transfer(self):
         self.client.force_login(self.holder)
         response = self.client.post(
-            reverse("asset_transfer_initiate"),
+            reverse("assets:asset_transfer_initiate"),
             data=json.dumps({
                 "asset_id": self.asset.id,
                 "to_user_id": self.receiver.id,
             }),
             content_type="application/json",
         )
-        self.assertEqual(response.status_code, 403)
-        self.assertFalse(AssetTransfer.objects.exists())
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(AssetTransfer.objects.filter(initiator=self.holder, asset=self.asset).exists())

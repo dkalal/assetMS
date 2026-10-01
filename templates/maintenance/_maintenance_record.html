@@ -1,0 +1,20 @@
+<article class='maintenance-record{% if overdue %} maintenance-record--overdue{% endif %}' data-maintenance-record data-search='{{ record.asset.description|default:record.asset.category.name }} {{ record.asset.category.name }} {{ record.asset.branch.name|default:'Head Office' }} {{ record.description }}'>
+  <div class='maintenance-record__body'>
+    <div class='maintenance-record__heading'>
+      <h3>{{ record.asset.description|default:record.asset.category.name }}</h3>
+      <span class='status-badge status-badge--{{ record.status }}'>{{ record.get_status_display }}</span>
+    </div>
+    <div class='maintenance-record__meta'>
+      <span><i class='bi bi-building' aria-hidden='true'></i> {{ record.asset.branch.name|default:'Head Office' }}</span>
+      <span><i class='bi bi-calendar-event' aria-hidden='true'></i> {{ record.scheduled_for|date:'M d, Y' }}</span>
+      {% if record.started_at %}<span><i class='bi bi-play-circle' aria-hidden='true'></i> Started {{ record.started_at|date:'M d, Y H:i' }}</span>{% endif %}
+      {% if record.performed_by %}<span><i class='bi bi-person' aria-hidden='true'></i> {{ record.performed_by.get_full_name|default:record.performed_by.username }}</span>{% endif %}
+    </div>
+    {% if record.description %}<p>{{ record.description }}</p>{% endif %}
+  </div>
+  <div class='maintenance-record__actions'>
+    {% if allow_start %}<button type='button' class='btn btn-sm btn-outline-primary maintenance-action-trigger' data-bs-toggle='modal' data-bs-target='#maintenanceStartModal' data-action-url='{% url 'maintenance:start' pk=record.pk %}' data-asset='{{ record.asset.description|default:record.asset.category.name }}' data-branch='{{ record.asset.branch.name|default:'Head Office' }}' data-scheduled-for='{{ record.scheduled_for|date:'M d, Y' }}'><i class='bi bi-play-circle' aria-hidden='true'></i> Start</button>{% endif %}
+    {% if allow_complete %}<button type='button' class='btn btn-sm btn-primary maintenance-action-trigger' data-bs-toggle='modal' data-bs-target='#maintenanceCompleteModal' data-action-url='{% url 'maintenance:complete' pk=record.pk %}' data-asset='{{ record.asset.description|default:record.asset.category.name }}' data-branch='{{ record.asset.branch.name|default:'Head Office' }}' data-scheduled-for='{{ record.scheduled_for|date:'M d, Y' }}'><i class='bi bi-check2-circle' aria-hidden='true'></i> Complete</button>{% endif %}
+    {% if allow_cancel %}<button type='button' class='btn btn-sm btn-outline-danger maintenance-action-trigger' data-bs-toggle='modal' data-bs-target='#maintenanceCancelModal' data-action-url='{% url 'maintenance:cancel' pk=record.pk %}' data-asset='{{ record.asset.description|default:record.asset.category.name }}' data-branch='{{ record.asset.branch.name|default:'Head Office' }}' data-scheduled-for='{{ record.scheduled_for|date:'M d, Y' }}'><i class='bi bi-x-circle' aria-hidden='true'></i> Cancel</button>{% endif %}
+  </div>
+</article>

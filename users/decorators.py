@@ -113,3 +113,54 @@ def api_manager_or_admin_required(view_func):
 
         return view_func(request, *args, **kwargs)
     return wrapper
+
+
+def _has_permission(user, perm_field):
+    """Return True if user is admin OR has the named granular permission field set."""
+    if not getattr(user, 'is_authenticated', False):
+        return False
+    if _is_admin(user):
+        return True
+    return bool(getattr(user, perm_field, False))
+
+
+def require_customer_permission(view_func):
+    """Require can_manage_customers or admin role."""
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            from django.shortcuts import redirect
+            return redirect('login')
+        if not _has_permission(request.user, 'can_manage_customers'):
+            from django.http import HttpResponseForbidden
+            return HttpResponseForbidden('Customer management permission required.')
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+def require_transfer_permission(view_func):
+    """Require can_transfer_assets or admin role."""
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            from django.shortcuts import redirect
+            return redirect('login')
+        if not _has_permission(request.user, 'can_transfer_assets'):
+            from django.http import HttpResponseForbidden
+            return HttpResponseForbidden('Asset transfer permission required.')
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+def require_maintenance_permission(view_func):
+    """Require can_schedule_maintenance or admin role."""
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            from django.shortcuts import redirect
+            return redirect('login')
+        if not _has_permission(request.user, 'can_schedule_maintenance'):
+            from django.http import HttpResponseForbidden
+            return HttpResponseForbidden('Maintenance scheduling permission required.')
+        return view_func(request, *args, **kwargs)
+    return wrapper

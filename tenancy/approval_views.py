@@ -332,17 +332,9 @@ class ApprovalActionView(LoginRequiredMixin, BranchContextMixin, View):
         import logging
         logger = logging.getLogger(__name__)
         
-        logger.info(f"=== APPROVAL ACTION STARTED ===")
-        logger.info(f"Request ID: {pk}")
-        logger.info(f"User: {request.user.username}")
-        logger.info(f"POST data: {request.POST}")
-        
         company = getattr(request, "company", None)
         user = request.user
         user_role = getattr(user, 'role', None)
-        
-        logger.info(f"Company: {company}")
-        logger.info(f"User role: {user_role}")
         
         # Get approval request
         try:
@@ -351,17 +343,11 @@ class ApprovalActionView(LoginRequiredMixin, BranchContextMixin, View):
                 pk=pk,
                 company=company
             )
-            logger.info(f"Found approval request: {approval_request.title}")
-            logger.info(f"Request status: {approval_request.status}")
-            logger.info(f"Request type: {approval_request.request_type}")
         except Exception as e:
             logger.error(f"Error getting approval request: {e}")
             raise
         
         # CRITICAL: Separation of Duties - Requester cannot approve their own request
-        logger.info(f"Checking separation of duties...")
-        logger.info(f"Requested by: {approval_request.requested_by.username}")
-        logger.info(f"Current user: {user.username}")
         
         if approval_request.requested_by == user:
             logger.warning(f"SECURITY VIOLATION: User {user.username} attempted to approve own request")
@@ -385,72 +371,41 @@ class ApprovalActionView(LoginRequiredMixin, BranchContextMixin, View):
             )
             return redirect('approval_request_detail', pk=pk)
         
-        logger.info(f"✅ Separation of duties check passed")
-        
         # Check approval authority
-        logger.info(f"Checking approval authority...")
         has_approval_authority = (
             user_role == 'admin' or
             approval_request.assigned_to == user or
             (user_role == 'manager' and approval_request.branch.manager == user)
         )
-        logger.info(f"Has approval authority: {has_approval_authority}")
         
         if not has_approval_authority:
             logger.warning(f"User {user.username} does not have approval authority")
             messages.error(request, "You do not have permission to take action on this request.")
             return redirect('approval_dashboard')
         
-        logger.info(f"✅ Approval authority check passed")
-        
         # Get action and normalize for robust handling
         raw_action = request.POST.get('action')
         action = (raw_action or '').strip().lower()
-        logger.info(f"Action requested: raw={raw_action!r}, normalized={action!r}")
-        
         if action == 'approve':
-            logger.info(f"Processing APPROVE action...")
             notes = request.POST.get('notes', '')
-            logger.info(f"Notes: {notes[:100] if notes else 'None'}")
             
             try:
                 with transaction.atomic():
-                    logger.info(f"Starting transaction...")
-                    
                     # Approve the request
-                    logger.info(f"Calling approval_request.approve()...")
                     approval_request.approve(approved_by=user, notes=notes)
-                    logger.info(f"✅ Request approved successfully")
                     
                     # If this is an asset creation request, create the asset
                     if approval_request.request_type == approval_request.TYPE_ASSET_CREATION:
-                        logger.info(f"Request type is ASSET_CREATION, creating asset...")
                         metadata = approval_request.metadata or {}
                         asset_data = metadata.get('asset_data')
                         if asset_data:
-                            try:
-                                asset = approval_request.create_asset_from_approval()
-                                logger.info(f"✅ Asset created: {asset.uuid}")
-                                messages.success(
-                                    request,
-                                    f"✅ Request approved! Asset '{asset}' created successfully. "
-                                    f"<a href='/assets/{asset.uuid}/' class='alert-link'>View Asset</a>",
-                                    extra_tags='safe'
-                                )
-                                logger.info(f"Asset {asset.uuid} created from approval request {approval_request.pk}")
-                            except Exception as e:
-                                # Log detailed error
-                                import logging
-                                import traceback
-                                logger = logging.getLogger(__name__)
-                                logger.error(f"Asset creation failed for request {approval_request.pk}: {str(e)}")
-                                logger.error(traceback.format_exc())
-                                
-                                messages.error(
-                                    request,
-                                    f"Request approved but asset creation failed: {str(e)}. "
-                                    f"Please check the logs or contact support."
-                                )
+                            asset = approval_request.create_asset_from_approval()
+                            messages.success(
+                                request,
+                                f"Request approved. Asset '{asset}' created successfully. "
+                                f"<a href='/assets/{asset.uuid}/' class='alert-link'>View Asset</a>",
+                                extra_tags='safe'
+                            )
                         else:
                             logger.warning(
                                 "Asset creation request %s has no 'asset_data' in metadata. "
@@ -469,24 +424,11 @@ class ApprovalActionView(LoginRequiredMixin, BranchContextMixin, View):
                         metadata = approval_request.metadata or {}
                         asset_id = metadata.get('asset_id')
                         if asset_id:
-                            try:
-                                asset = approval_request.execute_asset_disposal()
-                                messages.success(
-                                    request,
-                                    f"✅ Request approved! Asset '{asset}' has been disposed successfully."
-                                )
-                            except Exception as e:
-                                import logging
-                                import traceback
-                                logger = logging.getLogger(__name__)
-                                logger.error(f"Asset disposal failed for request {approval_request.pk}: {str(e)}")
-                                logger.error(traceback.format_exc())
-                                
-                                messages.error(
-                                    request,
-                                    f"Request approved but asset disposal failed: {str(e)}. "
-                                    f"Please check the logs or contact support."
-                                )
+                            asset = approval_request.execute_asset_disposal()
+                            messages.success(
+                                request,
+                                f"Request approved. Asset '{asset}' has been disposed successfully."
+                            )
                         else:
                             logger.warning(
                                 "Asset disposal request %s has no 'asset_id' in metadata. "
@@ -500,7 +442,7 @@ class ApprovalActionView(LoginRequiredMixin, BranchContextMixin, View):
                             )
                     
                     else:
-                        messages.success(request, f"✅ Request '{approval_request.title}' approved successfully.")
+                        messages.success(request, f"Request '{approval_request.title}' approved successfully.")
                         
             except Exception as e:
                 # Catch any approval errors
@@ -519,12 +461,12 @@ class ApprovalActionView(LoginRequiredMixin, BranchContextMixin, View):
             # Get reason from notes field (same field used for both approve and reject)
             reason = request.POST.get('notes', '') or request.POST.get('reason', '')
             if not reason or not reason.strip():
-                messages.error(request, "❌ Rejection reason is required. Please provide a reason in the Notes field.")
+                messages.error(request, "Rejection reason is required. Please provide a reason in the notes field.")
                 return redirect('approval_request_detail', pk=pk)
             
             try:
                 approval_request.reject(rejected_by=user, reason=reason)
-                messages.warning(request, f"⚠️ Request '{approval_request.title}' has been rejected.")
+                messages.warning(request, f"Request '{approval_request.title}' has been rejected.")
             except Exception as e:
                 import logging
                 logger = logging.getLogger(__name__)
@@ -532,9 +474,7 @@ class ApprovalActionView(LoginRequiredMixin, BranchContextMixin, View):
                 messages.error(request, f"Rejection failed: {str(e)}")
         
         elif action == 'escalate':
-            logger.info(f"Processing ESCALATE action...")
             approval_request.escalate()
-            logger.info(f"✅ Request escalated")
             messages.info(request, f"Request '{approval_request.title}' escalated to admin.")
         
         else:
@@ -542,6 +482,4 @@ class ApprovalActionView(LoginRequiredMixin, BranchContextMixin, View):
             logger.warning(f"Invalid action received: raw={raw_action!r}, normalized={action!r}")
             messages.error(request, "Invalid action.")
         
-        logger.info(f"=== APPROVAL ACTION COMPLETED ===")
-        logger.info(f"Redirecting to approval_dashboard")
         return redirect('approval_dashboard')

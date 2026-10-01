@@ -1,8 +1,9 @@
 from django.urls import path
+from django.views.generic import RedirectView
 
 from . import api_views, views, asset_creation_views, asset_disposal_views, bulk_import_views
 from reports import preview_views
-from .views import AssetUpdateView, asset_delete, asset_bulk_delete, regenerate_qr_code, bulk_regenerate_qr_codes, AssetRegistrationWizardView
+from .views import AssetUpdateView, asset_delete, asset_bulk_delete, regenerate_qr_code, bulk_regenerate_qr_codes
 from .asset_creation_views import AssetCreationRequestView, api_pending_asset_creation_requests, api_quick_approve_asset_creation
 from .asset_disposal_views import AssetDisposalRequestView, api_pending_disposal_requests
 
@@ -15,8 +16,12 @@ urlpatterns = [
     # Asset List View
     path('', views.AssetListView.as_view(), name='list'),
     
-    # Phase 8: World-Class Asset Registration Wizard
-    path('register/wizard/', AssetRegistrationWizardView.as_view(), name='asset_register_wizard'),
+    # Historical bookmarks now enter the canonical permission-aware workflow.
+    path(
+        'register/wizard/',
+        RedirectView.as_view(pattern_name='asset_register', permanent=False),
+        name='asset_register_wizard',
+    ),
     
     path('<uuid:uuid>/edit/', AssetUpdateView.as_view(), name='asset_update'),
     path('<int:asset_id>/delete/', asset_delete, name='asset_delete'),  # DEPRECATED - redirects to disposal

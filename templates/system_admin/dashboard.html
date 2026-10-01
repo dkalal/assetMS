@@ -2,9 +2,10 @@
 {% load static %}
 
 {% block title %}System Dashboard - Asset Management System{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/system-admin.css' %}">{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="system-admin-page" data-system-admin>
     <h2 class="mb-4">
         <i class="bi bi-speedometer2 me-2"></i>System Dashboard
     </h2>
@@ -81,25 +82,15 @@
             </div>
         </div>
         
-        <!-- System Health -->
+        <!-- Administration scope -->
         <div class="col-md-6">
-            <div class="card shadow-lg border-0">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">System Health</h5>
+            <div class="system-admin-card h-100">
+                <div class="system-admin-card__header">
+                    <h5 class="mb-0">Administration scope</h5>
                 </div>
-                <div class="card-body">
-                    <div class="mb-2">
-                        <strong>Status:</strong> 
-                        <span class="badge bg-success">{{ system_health.status|title }}</span>
-                    </div>
-                    <div class="mb-2">
-                        <strong>Database:</strong> 
-                        <span class="badge bg-success">{{ system_health.database|title }}</span>
-                    </div>
-                    <div>
-                        <strong>Celery:</strong> 
-                        <span class="badge bg-success">{{ system_health.celery|title }}</span>
-                    </div>
+                <div class="system-admin-card__body">
+                    <p class="mb-3">Manage company workspaces and subscription access. Runtime health is intentionally not inferred from page availability.</p>
+                    <a class="btn btn-outline-primary" href="{% url 'system_admin:role_permissions' %}">Review global role matrix</a>
                 </div>
             </div>
         </div>
@@ -115,7 +106,7 @@
         </div>
         <div class="card-body">
             {% if recent_companies %}
-                <div class="table-responsive">
+                <div class="table-responsive system-admin-desktop-records">
                     <table class="table table-hover">
                         <thead>
                             <tr>
@@ -156,6 +147,17 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                </div>
+                <div class="system-admin-mobile-records">
+                  {% for company in recent_companies %}
+                  <article class="system-admin-record">
+                    <div><strong>{{ company.name }}</strong><small>{{ company.created_at|date:"M d, Y" }}</small></div>
+                    <div class="d-flex align-items-center gap-2">
+                      {% if company.registration %}<span class="badge bg-secondary">{{ company.registration.get_subscription_status_display }}</span>{% endif %}
+                      <a class="btn btn-sm btn-outline-primary" href="{% url 'system_admin:company_detail' company.id %}">View</a>
+                    </div>
+                  </article>
+                  {% endfor %}
                 </div>
             {% else %}
                 <p class="text-muted text-center">No companies yet.</p>

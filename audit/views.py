@@ -54,7 +54,9 @@ def audit_dashboard(request):
     if search:
         logs = logs.filter(
             Q(details__icontains=search) | 
-            Q(asset__name__icontains=search) |
+            Q(asset__asset_tag__icontains=search) |
+            Q(asset__serial_number__icontains=search) |
+            Q(asset__category__name__icontains=search) |
             Q(user__username__icontains=search)
         )
     
@@ -90,6 +92,8 @@ def audit_dashboard(request):
     paginator = Paginator(logs, 25)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+    filter_query = request.GET.copy()
+    filter_query.pop('page', None)
     
     context = {
         'page_obj': page_obj,
@@ -98,6 +102,10 @@ def audit_dashboard(request):
         'actions': actions,
         'stats': stats,
         'action_counts_json': json.dumps(action_counts),  # JSON for JavaScript
+        'filter_query': filter_query.urlencode(),
+        'active_filter_count': sum(
+            bool(value) for value in [user_id, action, asset_id, date_from, date_to, search]
+        ),
         'request': request,
     }
     

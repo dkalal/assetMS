@@ -71,6 +71,11 @@ app.conf.beat_schedule = {
         'schedule': crontab(day_of_month=1, hour=0, minute=0),  # 1st of month
         'options': {'queue': 'cleanup'},
     },
+    'reconcile-customer-asset-projections': {
+        'task': 'integrations.tasks.enqueue_all_asset_projections',
+        'schedule': crontab(hour=1, minute=30),
+        'options': {'queue': 'default'},
+    },
 }
 
 
@@ -92,6 +97,8 @@ app.conf.task_routes = {
     # Maintenance tasks
     'assets.tasks.check_overdue_maintenance': {'queue': 'maintenance'},
     'assets.tasks.send_maintenance_reminders': {'queue': 'maintenance'},
+    'integrations.tasks.sync_customer_asset_projection': {'queue': 'default'},
+    'integrations.tasks.enqueue_company_asset_projections': {'queue': 'default'},
 }
 
 

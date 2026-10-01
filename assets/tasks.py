@@ -12,7 +12,7 @@ Following best practices from ServiceNow ITAM, IBM Maximo, SAP EAM
 """
 
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from celery import shared_task
@@ -90,12 +90,12 @@ def send_transfer_notification(self, transfer_id, company_id, recipient_role, st
     try:
         # Get transfer with company validation
         transfer = AssetTransfer.objects.select_related(
-            'asset', 'company', 'from_branch', 'to_branch', 'initiated_by'
+            'asset', 'company', 'from_branch', 'to_branch', 'initiator', 'to_user'
         ).get(id=transfer_id, company_id=company_id)
         
         # Determine recipients
         if recipient_role == 'receiver':
-            recipients = [transfer.assigned_to] if transfer.assigned_to else []
+            recipients = [transfer.to_user] if transfer.to_user else []
         elif recipient_role == 'admin':
             recipients = User.objects.filter(company_id=company_id, role='admin')
         else:
@@ -109,10 +109,10 @@ def send_transfer_notification(self, transfer_id, company_id, recipient_role, st
             # Create in-app alert
             Alert.objects.create(
                 company_id=company_id,
-                user=user,
+                branch=transfer.to_branch or transfer.asset.branch,
+                recipient=user,
                 level=Alert.LEVEL_INFO,
-                title=f"Asset Transfer: {transfer.asset.category.name if transfer.asset.category else 'Asset'}",
-                message=f"Transfer from {transfer.from_branch.name} to {transfer.to_branch.name} - {state}",
+                message=f"Asset transfer {state}: {transfer.asset.category.name if transfer.asset.category else 'Asset'}",
                 context={
                     'transfer_id': transfer.id,
                     'asset_id': transfer.asset.id,
@@ -142,20 +142,20 @@ def send_transfer_completion_notification(self, transfer_id, company_id):
     """Send notification when transfer is completed"""
     try:
         transfer = AssetTransfer.objects.select_related(
-            'asset', 'company', 'initiated_by', 'assigned_to'
+            'asset', 'company', 'initiator', 'to_user', 'to_branch'
         ).get(id=transfer_id, company_id=company_id)
         
         # Notify initiator and receiver
-        recipients = [transfer.initiated_by]
-        if transfer.assigned_to:
-            recipients.append(transfer.assigned_to)
+        recipients = [transfer.initiator]
+        if transfer.to_user:
+            recipients.append(transfer.to_user)
         
-        for user in recipients:
+        for user in {recipient.pk: recipient for recipient in recipients}.values():
             Alert.objects.create(
                 company_id=company_id,
-                user=user,
+                branch=transfer.to_branch or transfer.asset.branch,
+                recipient=user,
                 level=Alert.LEVEL_SUCCESS,
-                title="Transfer Completed",
                 message=f"Transfer of {transfer.asset.category.name if transfer.asset.category else 'Asset'} completed successfully",
                 context={'transfer_id': transfer.id}
             )
@@ -169,14 +169,14 @@ def send_transfer_rejection_notification(self, transfer_id, company_id, state):
     """Send notification when transfer is rejected/cancelled"""
     try:
         transfer = AssetTransfer.objects.select_related(
-            'asset', 'company', 'initiated_by'
+            'asset', 'company', 'initiator', 'from_branch'
         ).get(id=transfer_id, company_id=company_id)
         
         Alert.objects.create(
             company_id=company_id,
-            user=transfer.initiated_by,
+            branch=transfer.from_branch or transfer.asset.branch,
+            recipient=transfer.initiator,
             level=Alert.LEVEL_WARNING,
-            title="Transfer Rejected",
             message=f"Transfer of {transfer.asset.category.name if transfer.asset.category else 'Asset'} was {state}",
             context={'transfer_id': transfer.id, 'state': state}
         )
@@ -214,13 +214,13 @@ def send_maintenance_notification(self, maintenance_id, company_id, event_type):
         
         # Send notifications
         level = Alert.LEVEL_WARNING if event_type == 'overdue' else Alert.LEVEL_INFO
-        for user in recipients:
+        for user in {recipient.pk: recipient for recipient in recipients}.values():
             Alert.objects.create(
                 company_id=company_id,
-                user=user,
+                branch=maintenance.branch,
+                recipient=user,
                 level=level,
-                title=f"Maintenance {event_type.title()}",
-                message=f"Maintenance for {maintenance.asset.category.name if maintenance.asset.category else 'Asset'} - {event_type}",
+                message=f"Maintenance {event_type}: {maintenance.asset.category.name if maintenance.asset.category else 'Asset'}",
                 context={'maintenance_id': maintenance.id, 'event_type': event_type}
             )
         
@@ -234,7 +234,7 @@ def send_maintenance_notification(self, maintenance_id, company_id, event_type):
 def send_asset_creation_notification(self, asset_id, company_id):
     """Notify admins of new asset creation"""
     try:
-        asset = Asset.objects.select_related('company', 'category').get(
+        asset = Asset.objects.select_related('company', 'category', 'branch').get(
             id=asset_id, company_id=company_id
         )
         
@@ -243,9 +243,9 @@ def send_asset_creation_notification(self, asset_id, company_id):
         for admin in admins:
             Alert.objects.create(
                 company_id=company_id,
-                user=admin,
+                branch=asset.branch,
+                recipient=admin,
                 level=Alert.LEVEL_INFO,
-                title="New Asset Created",
                 message=f"New {asset.category.name if asset.category else 'Asset'} added to inventory",
                 context={'asset_id': asset.id}
             )
@@ -258,7 +258,7 @@ def send_asset_creation_notification(self, asset_id, company_id):
 def send_asset_status_change_notification(self, asset_id, company_id, old_status, new_status):
     """Notify stakeholders of asset status change"""
     try:
-        asset = Asset.objects.select_related('company', 'assigned_to').get(
+        asset = Asset.objects.select_related('company', 'assigned_to', 'branch').get(
             id=asset_id, company_id=company_id
         )
         
@@ -266,9 +266,9 @@ def send_asset_status_change_notification(self, asset_id, company_id, old_status
         if asset.assigned_to:
             Alert.objects.create(
                 company_id=company_id,
-                user=asset.assigned_to,
+                branch=asset.branch,
+                recipient=asset.assigned_to,
                 level=Alert.LEVEL_INFO,
-                title="Asset Status Changed",
                 message=f"Asset status changed from {old_status} to {new_status}",
                 context={'asset_id': asset.id, 'old_status': old_status, 'new_status': new_status}
             )
@@ -406,14 +406,14 @@ def schedule_maintenance_reminder(self, maintenance_id, company_id):
             id=maintenance_id, company_id=company_id
         )
         
-        if maintenance.scheduled_date:
-            reminder_date = maintenance.scheduled_date - timedelta(days=7)
+        if maintenance.scheduled_for:
+            reminder_date = maintenance.scheduled_for - timedelta(days=7)
             
             if reminder_date >= timezone.now().date():
                 # Schedule reminder task
                 send_maintenance_notification.apply_async(
                     args=[maintenance_id, company_id, 'reminder'],
-                    eta=timezone.make_aware(timezone.datetime.combine(reminder_date, timezone.datetime.min.time()))
+                    eta=timezone.make_aware(datetime.combine(reminder_date, datetime.min.time()))
                 )
                 logger.info(f"Scheduled reminder for maintenance {maintenance_id}")
         

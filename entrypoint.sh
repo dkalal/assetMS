@@ -36,8 +36,6 @@ echo "📁 Creating media directories..."
 mkdir -p media/qr_codes media/profile_images media/asset_images media/asset_docs media/reports
 echo "📦 Collecting static files..."
 python manage.py collectstatic --noinput --clear
-echo "📋 Copying media files to static..."
-cp -r media/* staticfiles/media/ 2>/dev/null || true
 if [ "$DJANGO_SUPERUSER_USERNAME" ] && [ "$DJANGO_SUPERUSER_EMAIL" ] && [ "$DJANGO_SUPERUSER_PASSWORD" ]; then
     echo "👤 Ensuring superuser exists..."
     python manage.py shell -c "

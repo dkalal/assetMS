@@ -1,596 +1,65 @@
-{% extends 'base.html' %}
+{% extends 'base_dashboard.html' %}
 {% load static %}
 
-{% block title %}Asset Scanner - Enterprise Asset Management{% endblock %}
+{% block title %}Asset scanner · Asset management{% endblock %}
+{% block extra_head %}<link rel='stylesheet' href='{% static "css/asset-scanner.css" %}'>{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <div>
-    <h1 class="h2 font-bold mb-2">
-      <i class="bi bi-upc-scan text-primary me-2"></i>
-      Asset Scanner
-    </h1>
-    <p class="text-muted">Scan QR codes or search assets by ID for instant access</p>
-  </div>
-  <div class="d-flex gap-2">
-    <button class="btn btn-outline-secondary btn-sm" id="scanHistory">
-      <i class="bi bi-clock-history me-1"></i>History
-    </button>
-    <button class="btn btn-outline-info btn-sm" id="helpBtn">
-      <i class="bi bi-question-circle me-1"></i>Help
-    </button>
+<div class='asset-scanner' data-asset-scanner data-lookup-url='{% url "asset_by_code" %}' data-detail-base='{% url "asset_list" %}'>
+  <header class='page-header'>
+    <div><h1>Asset scanner</h1><p>Scan a QR code or enter an asset code to open its record.</p></div>
+    <div class='page-header__actions'>
+      <button class='btn btn-outline-secondary' type='button' data-scan-history><i class='bi bi-clock-history me-2' aria-hidden='true'></i>History</button>
+      <button class='btn btn-outline-secondary' type='button' data-bs-toggle='modal' data-bs-target='#scannerHelp'><i class='bi bi-question-circle me-2' aria-hidden='true'></i>Help</button>
+    </div>
+  </header>
+  <div class='asset-scanner__layout'>
+    <section class='panel asset-scanner__capture' aria-labelledby='scanner-capture-title'>
+      <div class='panel__body'>
+        <h2 class='h5' id='scanner-capture-title'>QR camera</h2>
+        <div class='asset-scanner__preview' id='scanner-preview' aria-label='Camera preview'>
+          <div class='asset-scanner__placeholder' data-scan-placeholder><i class='bi bi-qr-code' aria-hidden='true'></i><p>Start the scanner, then place the QR code inside the camera view.</p></div>
+        </div>
+        <div class='asset-scanner__controls'>
+          <button class='btn btn-primary' type='button' data-scan-start><i class='bi bi-camera me-2' aria-hidden='true'></i>Start scanner</button>
+          <button class='btn btn-outline-danger d-none' type='button' data-scan-stop>Stop scanner</button>
+        </div>
+        <form class='asset-scanner__manual' data-manual-form>
+          <label class='form-label' for='manual-asset-code'>Manual asset lookup</label>
+          <div class='input-group'>
+            <input class='form-control' id='manual-asset-code' type='search' autocomplete='off' placeholder='Asset code, QR value, or numeric ID' required>
+            <button class='btn btn-outline-primary' type='submit'><i class='bi bi-search me-2' aria-hidden='true'></i>Search</button>
+          </div>
+        </form>
+      </div>
+    </section>
+    <aside class='asset-scanner__aside'>
+      <section class='panel' aria-labelledby='scanner-status-title'><div class='panel__body'><h2 class='h5' id='scanner-status-title'>Scanner status</h2><p class='mb-0' data-scan-status role='status' aria-live='polite'>Ready to scan.</p></div></section>
+      <section class='panel d-none' data-scan-result aria-labelledby='scanner-result-title'>
+        <div class='panel__body'>
+          <h2 class='h5' id='scanner-result-title'>Asset found</h2>
+          <dl class='asset-scanner__details'>
+            <div><dt>Asset</dt><dd data-result-name></dd></div>
+            <div><dt>Category</dt><dd data-result-category></dd></div>
+            <div><dt>Status</dt><dd><span class='status-badge' data-result-status></span></dd></div>
+            <div><dt>Model</dt><dd data-result-model></dd></div>
+          </dl>
+          <div class='d-grid gap-2'><a class='btn btn-primary' data-result-link>View asset details</a><button class='btn btn-outline-secondary' type='button' data-scan-reset>Scan another</button></div>
+        </div>
+      </section>
+      <section class='panel' id='scan-history-panel' tabindex='-1' aria-labelledby='scan-history-title'><div class='panel__body'><h2 class='h5' id='scan-history-title'>Recent lookups</h2><div data-recent-scans><p class='text-muted mb-0'>No recent lookups on this device.</p></div></div></section>
+    </aside>
   </div>
 </div>
-
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-  <!-- Scanner Section -->
-  <div class="lg:col-span-2">
-    <div class="card">
-      <div class="card-header">
-        <div class="d-flex align-items-center justify-content-between">
-          <h5 class="mb-0">
-            <i class="bi bi-camera me-2"></i>QR Code Scanner
-          </h5>
-          <div class="d-flex gap-2">
-            <button class="btn btn-sm btn-outline-primary" id="switchCamera" style="display: none;">
-              <i class="bi bi-arrow-repeat"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-secondary" id="toggleFlash" style="display: none;">
-              <i class="bi bi-lightbulb"></i>
-            </button>
-          </div>
-        </div>
-      </div>
-      <div class="card-body">
-        <!-- QR Scanner Container -->
-        <div class="scanner-container mb-4">
-          <div id="scanner-preview-container" class="position-relative" style="width: 100%; max-width: 500px; height: 400px; background: #f8f9fa; border-radius: 8px; overflow: hidden;">
-            <div id="scanner-overlay" class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(0,0,0,0.1); border-radius: 8px; z-index: 10;">
-              <div class="text-center text-white">
-                <i class="bi bi-qr-code display-1 mb-3"></i>
-                <h5>Click "Start Scanner" to begin</h5>
-                <p class="mb-0">Position QR code within the camera view</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Scanner Controls -->
-        <div class="d-flex gap-2 mb-4">
-          <button id="start-scan" class="btn btn-primary flex-fill">
-            <i class="bi bi-play-circle me-2"></i>Start Scanner
-          </button>
-          <button id="stop-scan" class="btn btn-outline-danger" style="display: none;">
-            <i class="bi bi-stop-circle me-2"></i>Stop
-          </button>
-        </div>
-
-        <!-- Manual Input -->
-        <div class="border-top pt-4">
-          <h6 class="mb-3">
-            <i class="bi bi-keyboard me-2"></i>Manual Asset Lookup
-          </h6>
-          <form id="manual-form" class="d-flex gap-2">
-            <div class="flex-fill">
-              <input type="text" id="manual-code" class="form-control" placeholder="Enter Asset Code, Serial Number, or ID" autocomplete="off">
-            </div>
-            <button type="submit" class="btn btn-outline-primary">
-              <i class="bi bi-search me-1"></i>Search
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- Scan Instructions -->
-    <div class="card mt-4">
-      <div class="card-body">
-        <h6 class="mb-3">
-          <i class="bi bi-info-circle text-info me-2"></i>Scanning Instructions
-        </h6>
-        <div class="row text-sm">
-          <div class="col-md-6">
-            <ul class="list-unstyled">
-              <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Hold device steady</li>
-              <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Ensure good lighting</li>
-              <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Position QR code in frame</li>
-            </ul>
-          </div>
-          <div class="col-md-6">
-            <ul class="list-unstyled">
-              <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Keep QR code flat</li>
-              <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Avoid reflections</li>
-              <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Clean camera lens</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Results Section -->
-  <div class="lg:col-span-1">
-    <!-- Scan Status -->
-    <div class="card mb-4">
-      <div class="card-body text-center">
-        <div id="scan-status">
-          <i class="bi bi-qr-code display-4 text-muted mb-3"></i>
-          <h6 class="text-muted">Ready to Scan</h6>
-          <p class="text-sm text-muted mb-0">Start scanner or enter asset code manually</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Asset Details -->
-    <div id="scan-result" class="card" style="display: none;">
-      <div class="card-header bg-success text-white">
-        <h6 class="mb-0">
-          <i class="bi bi-check-circle me-2"></i>Asset Found
-        </h6>
-      </div>
-      <div class="card-body">
-        <div id="asset-details"></div>
-      </div>
-    </div>
-
-    <!-- Error Display -->
-    <div id="scan-error" class="card border-danger" style="display: none;">
-      <div class="card-header bg-danger text-white">
-        <h6 class="mb-0">
-          <i class="bi bi-exclamation-triangle me-2"></i>Scan Error
-        </h6>
-      </div>
-      <div class="card-body">
-        <div id="error-message"></div>
-        <button class="btn btn-outline-primary btn-sm mt-2" onclick="resetScanner()">
-          <i class="bi bi-arrow-clockwise me-1"></i>Try Again
-        </button>
-      </div>
-    </div>
-
-    <!-- Recent Scans -->
-    <div class="card mt-4">
-      <div class="card-header">
-        <h6 class="mb-0">
-          <i class="bi bi-clock-history me-2"></i>Recent Scans
-        </h6>
-      </div>
-      <div class="card-body">
-        <div id="recent-scans">
-          <p class="text-muted text-sm mb-0">No recent scans</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Help Modal -->
-<div class="modal fade" id="helpModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Scanner Help</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <h6>Camera Requirements:</h6>
-        <ul class="mb-3">
-          <li>Modern browser (Chrome, Firefox, Safari, Edge)</li>
-          <li>HTTPS connection or localhost</li>
-          <li>Camera permissions granted</li>
-        </ul>
-        
-        <h6>Troubleshooting:</h6>
-        <ul class="mb-3">
-          <li>Ensure camera is not being used by another app</li>
-          <li>Check browser permissions for camera access</li>
-          <li>Try refreshing the page</li>
-          <li>Use manual input if camera fails</li>
-        </ul>
-        
-        <h6>Supported Formats:</h6>
-        <ul>
-          <li>QR Codes</li>
-          <li>Asset IDs</li>
-          <li>Serial Numbers</li>
-        </ul>
-      </div>
-    </div>
-  </div>
+<div class='modal fade' id='scannerHelp' tabindex='-1' aria-labelledby='scannerHelpTitle' aria-hidden='true'>
+  <div class='modal-dialog modal-dialog-centered'><div class='modal-content'>
+    <div class='modal-header'><h2 class='modal-title h5' id='scannerHelpTitle'>Scanner help</h2><button class='btn-close' type='button' data-bs-dismiss='modal' aria-label='Close'></button></div>
+    <div class='modal-body'><p>Camera scanning requires a modern browser, camera permission, and HTTPS or localhost.</p><ul class='mb-0'><li>Use the rear camera on a phone or tablet.</li><li>Hold the QR code steady in good light.</li><li>If camera access is unavailable, use manual lookup.</li></ul></div>
+  </div></div>
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
-{% load static %}
-<script>
-// Load camera diagnostics first, then Html5Qrcode
-(function() {
-  const diagnosticsScript = document.createElement('script');
-  diagnosticsScript.src = '{% static "js/camera-diagnostics.js" %}';
-  diagnosticsScript.onload = function() {
-    // Load enhanced scanner
-    const enhancedScript = document.createElement('script');
-    enhancedScript.src = '{% static "js/qr-scanner-enhanced.js" %}';
-    enhancedScript.onload = function() {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js';
-      script.onerror = function() {
-      // Load fallback if CDN fails
-      const fallbackScript = document.createElement('script');
-      fallbackScript.src = '{% static "js/qr-fallback.js" %}';
-      fallbackScript.onload = function() {
-        console.log('Html5Qrcode fallback loaded - manual input available');
-      };
-      document.head.appendChild(fallbackScript);
-      };
-      document.head.appendChild(script);
-    };
-    document.head.appendChild(enhancedScript);
-  };
-  document.head.appendChild(diagnosticsScript);
-})();
-</script>
-<script>
-class EnterpriseAssetScanner {
-  constructor() {
-    this.isScanning = false;
-    this.stream = null;
-    this.qrScanner = null;
-    this.recentScans = JSON.parse(localStorage.getItem('recentScans') || '[]');
-    this.init();
-  }
-
-  init() {
-    this.bindEvents();
-    this.updateRecentScans();
-    this.checkCameraSupport();
-  }
-
-  bindEvents() {
-    const startBtn = document.getElementById('start-scan');
-    const stopBtn = document.getElementById('stop-scan');
-    const manualForm = document.getElementById('manual-form');
-    const helpBtn = document.getElementById('helpBtn');
-    
-    if (startBtn) startBtn.addEventListener('click', () => this.startScanning());
-    if (stopBtn) stopBtn.addEventListener('click', () => this.stopScanning());
-    if (manualForm) manualForm.addEventListener('submit', (e) => this.handleManualSearch(e));
-    if (helpBtn) {
-      helpBtn.addEventListener('click', () => {
-        const helpModal = document.getElementById('helpModal');
-        if (helpModal && window.bootstrap) {
-          const modal = new bootstrap.Modal(helpModal);
-          modal.show();
-        }
-      });
-    }
-  }
-
-  checkCameraSupport() {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      this.showError('Camera not supported in this browser. Please use manual input.');
-      const startBtn = document.getElementById('start-scan');
-      if (startBtn) startBtn.disabled = true;
-    }
-  }
-
-  async startScanning() {
-    if (this.isScanning) return;
-
-    try {
-      this.updateStatus('Checking camera access...', 'info');
-      
-      if (!window.CameraDiagnostics) {
-        this.showError('Camera diagnostics not available. Please refresh the page.');
-        return;
-      }
-
-      // Run comprehensive camera diagnostics
-      const diagnostics = await window.CameraDiagnostics.checkCameraAccess();
-      
-      if (!diagnostics.cameraAccessible) {
-        const errorMsg = window.CameraDiagnostics.getErrorMessage(diagnostics);
-        
-        // Try to request permission if it's a permission issue
-        if (diagnostics.permissions === 'prompt' || diagnostics.cameraError?.includes('NotAllowedError')) {
-          this.updateStatus('Requesting camera permission...', 'info');
-          const permissionResult = await window.CameraDiagnostics.requestCameraPermission();
-          
-          if (!permissionResult.success) {
-            this.showError(`Camera permission required: ${permissionResult.message}`);
-            return;
-          }
-          
-          // Retry diagnostics after permission granted
-          const retryDiagnostics = await window.CameraDiagnostics.checkCameraAccess();
-          if (!retryDiagnostics.cameraAccessible) {
-            this.showError(window.CameraDiagnostics.getErrorMessage(retryDiagnostics));
-            return;
-          }
-        } else {
-          this.showError(errorMsg);
-          return;
-        }
-      }
-      
-      this.updateStatus('Initializing QR scanner...', 'info');
-      await this.initQRScanner();
-      this.isScanning = true;
-      this.updateUI(true);
-      this.updateStatus('Scanning... Position QR code in frame', 'success');
-
-    } catch (error) {
-      this.showError(`Scanner error: ${error.message || error}. Please check permissions and try again.`);
-    }
-  }
-
-  async initQRScanner() {
-    if (!window.Html5Qrcode) {
-      this.showError('QR scanner library not available. Please use manual input.');
-      return;
-    }
-    
-    const scannerId = 'scanner-preview-container';
-    this.qrScanner = new Html5Qrcode(scannerId);
-    
-    try {
-      const cameras = await Html5Qrcode.getCameras();
-      
-      if (!cameras || cameras.length === 0) {
-        this.showError('No cameras available. Please connect a camera and try again.');
-        return;
-      }
-      
-      // Prefer back camera for QR scanning
-      const backCamera = cameras.find(camera => 
-        camera.label.toLowerCase().includes('back') || 
-        camera.label.toLowerCase().includes('rear') ||
-        camera.label.toLowerCase().includes('environment')
-      );
-      
-      const cameraId = backCamera ? backCamera.id : cameras[0].id;
-      
-      // Use enhanced scanner if available
-      if (window.EnhancedQRScanner) {
-        const enhancedScanner = new window.EnhancedQRScanner(scannerId);
-        this.qrScanner = enhancedScanner;
-        
-        await enhancedScanner.start(
-          (decodedText) => {
-            this.handleScanResult(decodedText);
-          },
-          (error) => {
-            this.showError(`Enhanced scanner error: ${error.message}`);
-          }
-        );
-      } else {
-        // Fallback to basic scanner with enhanced settings
-        await this.qrScanner.start(
-          cameraId,
-          {
-            fps: 15,
-            qrbox: function(viewfinderWidth, viewfinderHeight) {
-              const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-              const qrboxSize = Math.floor(minEdge * 0.7);
-              return { width: qrboxSize, height: qrboxSize };
-            },
-            disableFlip: false,
-            videoConstraints: {
-              facingMode: { ideal: "environment" },
-              focusMode: { ideal: "continuous" }
-            }
-          },
-          (decodedText) => {
-            this.handleScanResult(decodedText);
-          },
-          (errorMessage) => {
-            // Ignore continuous scanning errors
-          }
-        );
-      }
-      
-      console.log('QR Scanner started successfully');
-      
-    } catch (err) {
-      this.showError(`Scanner initialization failed: ${err.message || err}`);
-    }
-  }
-
-  stopScanning() {
-    if (!this.isScanning) return;
-
-    if (this.qrScanner) {
-      this.qrScanner.stop().then(() => {
-        this.qrScanner.clear();
-      }).catch(err => console.error('Stop error:', err));
-    }
-    
-    if (this.stream) {
-      this.stream.getTracks().forEach(track => track.stop());
-      this.stream = null;
-    }
-
-    this.isScanning = false;
-    this.updateUI(false);
-    this.updateStatus('Scanner stopped', 'secondary');
-  }
-
-  updateUI(scanning) {
-    const startBtn = document.getElementById('start-scan');
-    const stopBtn = document.getElementById('stop-scan');
-    const overlay = document.getElementById('scanner-overlay');
-    
-    if (startBtn) startBtn.style.display = scanning ? 'none' : 'block';
-    if (stopBtn) stopBtn.style.display = scanning ? 'block' : 'none';
-    if (overlay) overlay.style.display = scanning ? 'none' : 'flex';
-  }
-
-  updateStatus(message, type = 'info') {
-    const statusEl = document.getElementById('scan-status');
-    if (!statusEl) return;
-    
-    const icons = {
-      info: 'bi-info-circle',
-      success: 'bi-check-circle',
-      error: 'bi-exclamation-triangle',
-      secondary: 'bi-qr-code'
-    };
-    
-    statusEl.innerHTML = `
-      <i class="bi ${icons[type]} display-4 text-${type} mb-3"></i>
-      <h6 class="text-${type}">${this.escapeHtml(message)}</h6>
-    `;
-  }
-
-  async handleScanResult(code) {
-    this.stopScanning();
-    this.updateStatus('Processing scan result...', 'info');
-    await this.fetchAssetByCode(code);
-    this.addToRecentScans(code);
-  }
-
-  async handleManualSearch(e) {
-    e.preventDefault();
-    const codeInput = document.getElementById('manual-code');
-    if (!codeInput) return;
-    
-    const code = codeInput.value.trim();
-    if (code) {
-      this.updateStatus('Searching...', 'info');
-      await this.fetchAssetByCode(code);
-      this.addToRecentScans(code);
-    }
-  }
-
-  async fetchAssetByCode(code) {
-    try {
-      const response = await fetch(`/api/asset-by-code/?code=${encodeURIComponent(code)}`);
-      const data = await response.json();
-      
-      if (data.success) {
-        this.showAssetDetails(data.asset);
-      } else {
-        this.showError('Asset not found. Please verify the code and try again.');
-      }
-    } catch (error) {
-      this.showError('Network error. Please check your connection and try again.');
-    }
-  }
-
-  showAssetDetails(asset) {
-    const resultEl = document.getElementById('scan-result');
-    const detailsEl = document.getElementById('asset-details');
-    const errorEl = document.getElementById('scan-error');
-    
-    if (!resultEl || !detailsEl) return;
-    
-    detailsEl.innerHTML = `
-      <div class="mb-3">
-        <h6 class="font-bold">${asset.dynamic_data.name || 'Unnamed Asset'}</h6>
-        <p class="text-muted mb-0">${asset.category_name || 'No Category'}</p>
-      </div>
-      
-      <div class="table-responsive">
-        <table class="table table-sm">
-          <tr><td class="font-medium">Status</td><td><span class="status status-${asset.status === 'active' ? 'success' : 'warning'}">${asset.status}</span></td></tr>
-          <tr><td class="font-medium">Model</td><td>${asset.dynamic_data.model || 'N/A'}</td></tr>
-          <tr><td class="font-medium">Location</td><td>${asset.dynamic_data.location || 'N/A'}</td></tr>
-          <tr><td class="font-medium">Assigned To</td><td>${asset.assigned_to || 'Unassigned'}</td></tr>
-        </table>
-      </div>
-      
-      <div class="d-grid gap-2 mt-3">
-        <a href="/assets/${asset.id}/" class="btn btn-primary btn-sm">
-          <i class="bi bi-eye me-1"></i>View Details
-        </a>
-        <button class="btn btn-outline-secondary btn-sm" onclick="scanner.resetScanner()">
-          <i class="bi bi-arrow-clockwise me-1"></i>Scan Another
-        </button>
-      </div>
-    `;
-    
-    resultEl.style.display = 'block';
-    if (errorEl) errorEl.style.display = 'none';
-    this.updateStatus('Asset found successfully!', 'success');
-  }
-
-  showError(message) {
-    const errorEl = document.getElementById('scan-error');
-    const messageEl = document.getElementById('error-message');
-    const resultEl = document.getElementById('scan-result');
-    
-    if (!errorEl || !messageEl) {
-      console.error('Scanner error:', message);
-      return;
-    }
-    
-    messageEl.innerHTML = `<p class="mb-0">${this.escapeHtml(message)}</p>`;
-    errorEl.style.display = 'block';
-    if (resultEl) resultEl.style.display = 'none';
-    this.updateStatus('Scan failed', 'error');
-  }
-
-  resetScanner() {
-    const resultEl = document.getElementById('scan-result');
-    const errorEl = document.getElementById('scan-error');
-    const codeInput = document.getElementById('manual-code');
-    
-    if (resultEl) resultEl.style.display = 'none';
-    if (errorEl) errorEl.style.display = 'none';
-    if (codeInput) codeInput.value = '';
-    this.updateStatus('Ready to scan', 'secondary');
-  }
-
-  addToRecentScans(code) {
-    const scan = {
-      code: code,
-      timestamp: new Date().toISOString(),
-      id: Date.now()
-    };
-    
-    this.recentScans.unshift(scan);
-    this.recentScans = this.recentScans.slice(0, 5); // Keep only 5 recent scans
-    localStorage.setItem('recentScans', JSON.stringify(this.recentScans));
-    this.updateRecentScans();
-  }
-
-  updateRecentScans() {
-    const container = document.getElementById('recent-scans');
-    if (!container) return;
-    
-    if (this.recentScans.length === 0) {
-      container.innerHTML = '<p class="text-muted text-sm mb-0">No recent scans</p>';
-      return;
-    }
-    
-    const html = this.recentScans.map(scan => `
-      <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
-        <div>
-          <div class="font-medium text-sm">${scan.code}</div>
-          <div class="text-xs text-muted">${new Date(scan.timestamp).toLocaleString()}</div>
-        </div>
-        <button class="btn btn-outline-primary btn-sm" onclick="scanner.fetchAssetByCode('${scan.code}')">
-          <i class="bi bi-search"></i>
-        </button>
-      </div>
-    `).join('');
-    
-    container.innerHTML = html;
-  }
-  
-  escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-}
-
-// Initialize scanner
-const scanner = new EnterpriseAssetScanner();
-
-// Global functions for template access
-function resetScanner() {
-  scanner.resetScanner();
-}
-</script>
+<script src='{% static "js/asset-scanner.js" %}' defer></script>
+<script src='https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js' defer></script>
 {% endblock %}

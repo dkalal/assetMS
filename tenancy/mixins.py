@@ -52,82 +52,32 @@ class CompanyScopedQuerysetMixin(CompanyRequiredMixin):
         else:
             qs = qs.filter(company=company)
         
-        # Branch scoping - enforce policy-driven multi-tenancy
+        # Branch-scoped roles fail closed. The future Asset Manager and Tenant
+        # Admin roles are explicitly tenant-wide; legacy `manager` is not.
         has_branch_field = any(field.name == "branch" for field in qs.model._meta.get_fields())
         if has_branch_field and user and user.is_authenticated:
-            from tenancy.policy_service import policy_service
-            
+            from tenancy.access import TENANT_WIDE_ROLES, accessible_branch_ids
+
             role = getattr(user, 'role', 'user')
-            
-            # Admins always see all company assets (bypass branch restrictions)
-            if role == 'admin':
-                # If a specific branch is selected, filter by it
+
+            if role in TENANT_WIDE_ROLES:
                 if branch:
                     if hasattr(qs, "for_branch"):
                         qs = qs.for_branch(branch)
                     else:
                         qs = qs.filter(branch=branch)
-            # Managers and users: check if branch-level access is enforced
             else:
-                # Check company policy for branch-level access enforcement
-                should_enforce = policy_service.should_enforce_branch_scoping(user, company)
-                
-                if should_enforce:
-                    # Enforce branch-level access control
-                    from tenancy.models import UserBranch, Branch
-                    user_branches = UserBranch.objects.filter(
-                        user=user, 
-                        company=company,
-                        branch__is_active=True
-                    ).values_list('branch_id', flat=True)
-                    
-                    if user_branches:
-                        # If a specific branch is selected and user has access to it, use it
-                        if branch and branch.id in user_branches:
-                            qs = qs.filter(branch=branch)
-                        else:
-                            # Otherwise, show assets from all branches user has access to
-                            qs = qs.filter(branch_id__in=user_branches)
+                authorized_branch_ids = accessible_branch_ids(user, company)
+                if branch:
+                    if (
+                        branch.company_id != getattr(company, 'pk', None)
+                        or branch.id not in authorized_branch_ids
+                    ):
+                        qs = qs.none()
                     else:
-                        # WORLD-CLASS FIX: Intelligent fallback when UserBranch not configured
-                        # This prevents "No assets found" errors for all user roles
-                        
-                        # Try primary_branch first
-                        primary_branch = getattr(user, 'primary_branch', None)
-                        
-                        # For managers: try branches they manage
-                        managed_branches = None
-                        if role == 'manager':
-                            managed_branches = Branch.objects.filter(
-                                company=company,
-                                manager=user,
-                                is_active=True
-                            )
-                        
-                        if primary_branch:
-                            # User has primary branch - filter by it
-                            qs = qs.filter(branch=primary_branch)
-                        elif managed_branches and managed_branches.exists():
-                            # Manager manages branches - filter by managed branches
-                            qs = qs.filter(branch__in=managed_branches)
-                        elif branch:
-                            # Use selected branch from request
-                            qs = qs.filter(branch=branch)
-                        elif role == 'user':
-                            # SECURITY: Users without branch assignment see nothing
-                            # This is intentional for security - users must be assigned
-                            qs = qs.none()
-                        else:
-                            # Managers without any assignment: show all company data
-                            # Better UX than hiding everything
-                            pass  # No additional filter
+                        qs = qs.filter(branch_id=branch.id)
                 else:
-                    # Branch-level access disabled: managers/users see all company data
-                    if branch:
-                        if hasattr(qs, "for_branch"):
-                            qs = qs.for_branch(branch)
-                        else:
-                            qs = qs.filter(branch=branch)
+                    qs = qs.filter(branch_id__in=authorized_branch_ids)
         
         if self.queryset_select_related:
             qs = qs.select_related(*self.queryset_select_related)

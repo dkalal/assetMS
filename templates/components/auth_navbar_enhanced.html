@@ -1,292 +1,123 @@
 {% load static %}
-<!-- WORLD-CLASS NAVIGATION BAR -->
-<nav class="navbar navbar-expand-lg enterprise-navbar shadow-sm" aria-label="Main navigation" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0,0,0,0.08); position: sticky; top: 0; z-index: 1030;">
-  <div class="container-fluid px-3 px-md-4">
-    
-    <!-- Brand / Logo with Company Branding -->
-    {% if user.is_authenticated %}
-    <a class="navbar-brand d-flex align-items-center me-3 me-lg-4" href="{% url 'dashboard' %}" aria-label="Dashboard Home">
-      {% if user.company.logo and user.company.logo.url %}
-        <img src="{{ user.company.logo.url }}"
-             alt="{{ user.company.name }} Logo"
-             style="height: 40px; width: auto; max-width: 50px; object-fit: contain; margin-right: 12px; border-radius: 4px;"
-             data-fallback="{% static 'img/logo.png' %}"
-             onerror="this.onerror=null; this.src=this.dataset.fallback; console.warn('Company logo failed to load, using fallback');">
-      {% else %}
-        <img src="{% static 'img/logo.png' %}"
-             alt="Default Company Logo"
-             style="height: 40px; width: auto; max-width: 50px; object-fit: contain; margin-right: 12px; border-radius: 4px;">
-      {% endif %}
-      <div class="d-flex flex-column d-none d-md-flex">
-        <span class="fw-bold" style="color: #0066cc; font-size: 0.95rem; line-height: 1.2;">{{ user.company.name|truncatechars:25 }}</span>
-        <span class="text-muted" style="font-size: 0.7rem; line-height: 1;">Asset Management</span>
+<header class='app-navbar'>
+  <nav class='app-navbar__inner' aria-label='Application toolbar'>
+    <div class='app-navbar__start'>
+      <button class='app-icon-button' id='mobile-sidebar-toggle' type='button' aria-label='Open navigation' aria-controls='app-sidebar' aria-expanded='false'>
+        <i class='bi bi-list' aria-hidden='true'></i>
+      </button>
+      <a class='app-navbar__brand' href='{% url 'dashboard' %}'>
+        {% if user.company.logo %}
+        <img class='app-navbar__logo' src='{{ user.company.logo.url }}' alt='' data-fallback='{% static 'img/logo.png' %}'>
+        {% else %}
+        <img class='app-navbar__logo' src='{% static 'img/logo.png' %}' alt=''>
+        {% endif %}
+        <span class='app-navbar__identity'>
+          <span class='app-navbar__company'>{{ user.company.name|default:'Asset Management' }}</span>
+          <span class='app-navbar__product'>Asset workspace</span>
+        </span>
+      </a>
+    </div>
+
+    <form class='app-navbar__search' role='search' method='get' action='{% url 'asset_list' %}'>
+      <div class='input-group'>
+        <span class='input-group-text'><i class='bi bi-search' aria-hidden='true'></i></span>
+        <input id='global-asset-search' class='form-control' type='search' name='search' value='{{ request.GET.search|default:'' }}' placeholder='Search assets, people and categories' aria-label='Search assets, people and categories' autocomplete='off'>
       </div>
-    </a>
-    {% else %}
-    <span class="navbar-brand d-flex align-items-center">
-      <i class="bi bi-layers me-2" style="font-size: 1.75rem; color: #0066cc;"></i>
-      <span class="fw-bold">AssetPro Enterprise</span>
-    </span>
-    {% endif %}
+    </form>
 
-    <!-- Mobile Sidebar Toggle (Shows on mobile screens) -->
-    <button class="btn btn-outline-secondary btn-sm d-lg-none me-2" 
-            type="button" 
-            id="mobile-sidebar-toggle" 
-            aria-label="Toggle sidebar"
-            aria-expanded="false"
-            aria-controls="sidebar">
-      <i class="bi bi-list" style="font-size: 1.25rem;"></i>
-    </button>
+    <div class='app-navbar__actions'>
+      <button class='app-icon-button d-lg-none' type='button' data-bs-toggle='offcanvas' data-bs-target='#mobileSearchPanel' aria-controls='mobileSearchPanel' aria-label='Open search'>
+        <i class='bi bi-search' aria-hidden='true'></i>
+      </button>
 
-    <!-- Mobile Navbar Toggle (For collapsing navbar items) -->
-    <button class="navbar-toggler border-0 d-lg-none" 
-            type="button" 
-            data-bs-toggle="collapse" 
-            data-bs-target="#mainNavbar" 
-            aria-controls="mainNavbar" 
-            aria-expanded="false" 
-            aria-label="Toggle navigation menu">
-      <i class="bi bi-three-dots-vertical" style="font-size: 1.25rem;"></i>
-    </button>
-
-    <!-- Collapsible Navigation -->
-    <div class="collapse navbar-collapse" id="mainNavbar">
-      
-      <!-- Global Search (Center) -->
-      <form class="d-flex mx-auto my-2 my-lg-0" role="search" aria-label="Asset search" method="get" action="{% url 'asset_list' %}" style="max-width: 500px; flex: 1;">
-        {% for k, v in request.GET.items %}
-          {% if k != 'search' and k != 'page' %}
-            <input type="hidden" name="{{ k }}" value="{{ v }}">
-          {% endif %}
-        {% endfor %}
-        <div class="input-group input-group-sm">
-          <span class="input-group-text bg-white border-end-0">
-            <i class="bi bi-search text-muted"></i>
-          </span>
-          <input type="search" name="search" class="form-control border-start-0 ps-0" placeholder="Search assets, categories, users..." aria-label="Search" value="{{ request.GET.search|default:'' }}" style="box-shadow: none;">
-        </div>
+      {% if available_branches %}
+      <form class='app-navbar__branch-wrap' action='{% url 'switch_branch' %}' method='post' id='branch-switch-form'>
+        {% csrf_token %}<input type='hidden' name='next' value='{{ request.get_full_path }}'>
+        <label class='visually-hidden' for='branch-select-topbar'>Active branch</label>
+        <select class='form-select app-navbar__branch' id='branch-select-topbar' name='branch_id' aria-label='Switch active branch'>
+          {% for membership in available_branches %}{% if membership.branch %}
+          <option value='{{ membership.branch.id }}'{% if active_branch and membership.branch.id == active_branch.id %} selected{% endif %}>{{ membership.branch.name|truncatechars:24 }}</option>
+          {% endif %}{% endfor %}
+        </select>
       </form>
+      {% endif %}
 
-      <!-- Right Side Actions -->
-      <div class="d-flex align-items-center gap-2 gap-lg-3 ms-lg-3">
-        
-        <!-- Branch Selector (Multi-tenancy) -->
-        {% if user.is_authenticated %}
-          {% if available_branches %}
-          <form class="d-inline" action="{% url 'switch_branch' %}" method="post" id="branch-switch-form">
-            {% csrf_token %}
-            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <div class="input-group input-group-sm">
-              <label class="input-group-text bg-light border-end-0" for="branch-select-topbar" title="Switch Branch">
-                <i class="bi bi-building"></i>
-              </label>
-              <select class="form-select border-start-0 ps-2" 
-                      id="branch-select-topbar" 
-                      name="branch_id" 
-                      onchange="this.form.submit()" 
-                      style="max-width: 180px;"
-                      aria-label="Select branch">
-                {% for membership in available_branches %}
-                  {% if membership.branch and membership.branch.id and membership.branch.name %}
-                  <option value="{{ membership.branch.id }}" 
-                          {% if active_branch and membership.branch.id == active_branch.id %}selected{% endif %}
-                          data-branch-id="{{ membership.branch.id }}"
-                          data-is-hq="{{ membership.branch.is_head_office|yesno:'true,false' }}">
-                    {{ membership.branch.name|truncatechars:20 }}{% if membership.branch.is_head_office %} 🏢{% endif %}
-                  </option>
-                  {% endif %}
-                {% endfor %}
-              </select>
-            </div>
-          </form>
-          {% else %}
-          <!-- No branches available - show info badge -->
-          <div class="badge bg-warning text-dark" title="No branches assigned" style="font-size: 0.75rem;">
-            <i class="bi bi-exclamation-triangle me-1"></i>No Branches
-          </div>
-          {% endif %}
-        {% endif %}
-
-        <!-- Quick Actions -->
-        {% if user.is_authenticated and user.role != 'user' %}
-        <div class="btn-group btn-group-sm" role="group" aria-label="Quick actions">
-          <a href="{% url 'asset_register' %}" class="btn btn-outline-primary" title="Add New Asset">
-            <i class="bi bi-plus-lg"></i>
-            <span class="d-none d-xl-inline ms-1">Add</span>
-          </a>
-          <a href="{% url 'asset_scan' %}" class="btn btn-outline-secondary" title="Scan Asset QR Code">
-            <i class="bi bi-upc-scan"></i>
-            <span class="d-none d-xl-inline ms-1">Scan</span>
-          </a>
-          <a href="{% url 'asset_bulk_import' %}" class="btn btn-outline-secondary" title="Import Assets">
-            <i class="bi bi-file-earmark-arrow-up"></i>
-            <span class="d-none d-xl-inline ms-1">Import</span>
-          </a>
-          <button data-export-preview 
-                  data-report-type="assets" 
-                  data-format="xlsx" 
-                  class="btn btn-outline-secondary" 
-                  type="button"
-                  title="Export assets with preview">
-            <i class="bi bi-file-earmark-arrow-down"></i>
-            <span class="d-none d-xl-inline ms-1">Export</span>
-          </button>
-        </div>
-        {% elif user.is_authenticated %}
-        <a href="{% url 'asset_scan' %}" class="btn btn-sm btn-outline-secondary" title="Scan Asset">
-          <i class="bi bi-upc-scan"></i>
-          <span class="d-none d-sm-inline ms-1">Scan</span>
-        </a>
-        {% endif %}
-
-        <!-- Transfer Alerts (All Users - can receive and approve transfers) -->
-        {% if user.is_authenticated %}
-        <div class="dropdown">
-          <button class="btn btn-outline-secondary btn-sm position-relative" type="button" id="transferAlertsToggle" data-bs-toggle="dropdown" aria-expanded="false" title="Transfer Alerts">
-            <i class="bi bi-arrow-left-right"></i>
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" id="transferAlertsBadge" aria-live="polite" style="font-size: 0.6rem;">0</span>
-          </button>
-          <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="transferAlertsToggle" style="min-width: 320px; max-width: 400px;">
-            <li class="dropdown-header d-flex align-items-center justify-content-between">
-              <span><i class="bi bi-arrow-left-right me-1"></i>Transfer Requests</span>
-              <span class="badge bg-primary">Live</span>
-            </li>
-            <li><hr class="dropdown-divider"></li>
-            <li>
-              <div id="transferAlertsList" class="list-group list-group-flush small" style="max-height: 300px; overflow-y: auto;">
-                <div class="px-3 py-2 text-muted"><i class="bi bi-hourglass-split me-1"></i>Loading...</div>
-              </div>
-            </li>
-            <li><hr class="dropdown-divider"></li>
-            <li class="px-3 pb-2 d-flex gap-2">
-              <button class="btn btn-sm btn-primary flex-grow-1" type="button" id="transferAlertsManageBtn">
-                <i class="bi bi-list-check me-1"></i>Manage All
-              </button>
-            </li>
-          </ul>
-        </div>
-        {% endif %}
-
-        <!-- Notifications Bell (All Users) -->
-        <div class="dropdown">
-          <button class="btn btn-outline-secondary btn-sm position-relative" type="button" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
-            <i class="bi bi-bell"></i>
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;" id="notifBadge" aria-label="Unread notifications">3</span>
-          </button>
-          <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="notifDropdown" style="min-width: 320px;">
-            <li class="dropdown-header d-flex align-items-center justify-content-between">
-              <span><i class="bi bi-bell me-1"></i>Notifications</span>
-              <span class="badge bg-secondary-subtle text-secondary">Demo</span>
-            </li>
-            <li><hr class="dropdown-divider"></li>
-            <li>
-              <a class="dropdown-item d-flex align-items-start gap-2 py-2" href="#" role="button">
-                <i class="bi bi-exclamation-triangle text-warning mt-1"></i>
-                <div class="flex-grow-1">
-                  <div class="fw-semibold small">3 assets require approval</div>
-                  <small class="text-muted">Just now</small>
-                </div>
-              </a>
-            </li>
-            <li>
-              <a class="dropdown-item d-flex align-items-start gap-2 py-2" href="#" role="button">
-                <i class="bi bi-shield-check text-success mt-1"></i>
-                <div class="flex-grow-1">
-                  <div class="fw-semibold small">Security scan completed</div>
-                  <small class="text-muted">1h ago</small>
-                </div>
-              </a>
-            </li>
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item text-center small" href="#" role="button"><i class="bi bi-list me-1"></i>View all notifications</a></li>
-          </ul>
-        </div>
-
-        <!-- Theme Toggle (World-Class Integration) -->
-        <button class="btn btn-outline-secondary btn-sm theme-toggle-navbar" 
-                type="button" 
-                id="enterpriseThemeToggle" 
-                aria-label="Toggle theme" 
-                title="Toggle dark/light mode (Ctrl+Shift+T)">
-          <i class="bi bi-moon-fill"></i>
+      <div class='dropdown'>
+        <button class='app-icon-button' type='button' data-bs-toggle='dropdown' aria-expanded='false' aria-label='Quick actions' title='Quick actions'>
+          <i class='bi bi-lightning-charge' aria-hidden='true'></i>
         </button>
+        <ul class='dropdown-menu dropdown-menu-end'>
+          <li><h2 class='dropdown-header'>Quick actions</h2></li>
+          {% if request.resolver_match.url_name != 'asset_list' %}{% if user.role != 'user' or user.is_superuser %}<li><a class='dropdown-item' href='{% url 'asset_register' %}'><i class='bi bi-plus-circle me-2'></i>Register asset</a></li>{% endif %}{% endif %}
+          <li><a class='dropdown-item' href='{% url 'asset_scan' %}'><i class='bi bi-upc-scan me-2'></i>Scan asset</a></li>
+          {% if user.role != 'user' or user.is_superuser %}
+          <li><a class='dropdown-item' href='{% url 'asset_bulk_import' %}'><i class='bi bi-upload me-2'></i>Import assets</a></li>
+          <li><button class='dropdown-item' type='button' data-export-preview data-report-type='assets' data-format='xlsx'><i class='bi bi-download me-2'></i>Export assets</button></li>
+          {% endif %}
+        </ul>
+      </div>
+      <div class='dropdown'>
+        <button class='app-icon-button position-relative' type='button' id='transferAlertsToggle' data-bs-toggle='dropdown' aria-expanded='false' aria-label='Transfer alerts'>
+          <i class='bi bi-arrow-left-right' aria-hidden='true'></i>
+          <span class='position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger d-none' id='transferAlertsBadge' aria-live='polite'>0</span>
+        </button>
+        <ul class='dropdown-menu dropdown-menu-end dropdown-menu--wide' aria-labelledby='transferAlertsToggle'>
+          <li><h2 class='dropdown-header'>Transfer requests</h2></li>
+          <li><div id='transferAlertsList' class='list-group list-group-flush small'><div class='px-3 py-3 text-muted'>Loading transfer requests...</div></div></li>
+          <li><hr class='dropdown-divider'></li>
+          <li class='px-3 pb-2'><button class='btn btn-sm btn-primary w-100' type='button' id='transferAlertsManageBtn'>Manage transfers</button></li>
+        </ul>
+      </div>
 
-        <!-- User Profile Menu -->
-        <div class="dropdown">
-          <button class="btn btn-outline-primary dropdown-toggle d-flex align-items-center gap-2 btn-sm" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-            <div class="user-avatar">
-              {% include "components/profile_avatar.html" with size=28 extra_classes="rounded-circle" %}
-            </div>
-            <span class="d-none d-lg-inline fw-semibold">{{ user.get_full_name|default:user.username|truncatechars:15 }}</span>
-          </button>
-          <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown" style="min-width: 220px;">
-            <li>
-              <div class="dropdown-header">
-                <div class="fw-bold">{{ user.get_full_name|default:user.username }}</div>
-                <small class="text-muted">{{ user.role|capfirst }} • {{ user.company.name|default:"No Company" }}</small>
-              </div>
-            </li>
-            <li><hr class="dropdown-divider"></li>
-            <li>
-              <a class="dropdown-item" href="{% url 'users:profile' %}">
-                <i class="bi bi-person me-2"></i>My Profile
-              </a>
-            </li>
-            <li>
-              <a class="dropdown-item" href="{% url 'settings:settings_dashboard' %}">
-                <i class="bi bi-gear me-2"></i>Settings
-              </a>
-            </li>
-            {% if user.role == 'admin' or user.is_superuser %}
-            <li>
-              <a class="dropdown-item" href="{% url 'settings:settings_dashboard' %}?tab=company">
-                <i class="bi bi-building me-2"></i>Company Settings
-              </a>
-            </li>
-            {% endif %}
-            <li><hr class="dropdown-divider"></li>
-            <li>
-              <a class="dropdown-item text-muted small" href="#">
-                <i class="bi bi-question-circle me-2"></i>Help & Support
-              </a>
-            </li>
-            <li><hr class="dropdown-divider"></li>
-            <li>
-              <form action="{% url 'users:logout' %}" method="post" class="mb-0">
-                {% csrf_token %}
-                <button type="submit" class="dropdown-item text-danger">
-                  <i class="bi bi-box-arrow-right me-2"></i>Sign Out
-                </button>
-              </form>
-            </li>
-          </ul>
-        </div>
+      <div class='dropdown'>
+        <button class='app-icon-button position-relative' type='button' id='notifDropdown' data-bs-toggle='dropdown' aria-expanded='false' aria-label='Notifications'>
+          <i class='bi bi-bell' aria-hidden='true'></i>
+          <span class='position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger d-none' id='notifBadge' aria-live='polite'>0</span>
+        </button>
+        <ul class='dropdown-menu dropdown-menu-end dropdown-menu--wide' aria-labelledby='notifDropdown'>
+          <li><h2 class='dropdown-header'>Notifications</h2></li>
+          <li><hr class='dropdown-divider'></li>
+          <li><div class='px-3 py-3 text-muted small'>Loading notifications...</div></li>
+        </ul>
+      </div>
+
+      <div class='dropdown'>
+        <button class='app-icon-button' type='button' id='userDropdown' data-bs-toggle='dropdown' aria-expanded='false' aria-label='Open user menu'>
+          {% include 'components/profile_avatar.html' with size=32 extra_classes='rounded-circle app-navbar__avatar' %}
+        </button>
+        <ul class='dropdown-menu dropdown-menu-end' aria-labelledby='userDropdown'>
+          <li><div class='dropdown-header'><strong class='d-block text-truncate'>{{ user.get_full_name|default:user.username }}</strong><span>{{ user.role|capfirst }}</span></div></li>
+          <li><hr class='dropdown-divider'></li>
+          <li><a class='dropdown-item' href='{% url 'users:profile' %}'><i class='bi bi-person me-2'></i>My profile</a></li>
+          <li><a class='dropdown-item' href='{% url 'settings:settings_dashboard' %}'><i class='bi bi-gear me-2'></i>Settings</a></li>
+          <li><a class='dropdown-item' href='{% url 'help_center' %}'><i class='bi bi-question-circle me-2'></i>Help</a></li>
+          <li><button class='dropdown-item' id='enterpriseThemeToggle' type='button'><i class='bi bi-moon-fill me-2'></i>Switch theme</button></li>
+          <li><hr class='dropdown-divider'></li>
+          <li><form action='{% url 'users:logout' %}' method='post'>{% csrf_token %}<button class='dropdown-item text-danger' type='submit'><i class='bi bi-box-arrow-right me-2'></i>Sign out</button></form></li>
+        </ul>
       </div>
     </div>
+  </nav>
+</header>
+<div class='offcanvas offcanvas-top app-search-panel' tabindex='-1' id='mobileSearchPanel' aria-labelledby='mobileSearchTitle'>
+  <div class='offcanvas-header'>
+    <h2 class='h5 mb-0' id='mobileSearchTitle'>Search</h2>
+    <button type='button' class='btn-close' data-bs-dismiss='offcanvas' aria-label='Close search'></button>
   </div>
-</nav>
+  <div class='offcanvas-body'>
+    <form role='search' method='get' action='{% url 'asset_list' %}'>
+      <label class='visually-hidden' for='mobile-global-search'>Search assets</label>
+      <div class='input-group'><span class='input-group-text'><i class='bi bi-search'></i></span><input class='form-control' id='mobile-global-search' type='search' name='search' placeholder='Search assets, people and categories' autocomplete='off'><button class='btn btn-primary' type='submit'>Search</button></div>
+    </form>
+  </div>
+</div>
 
-<!-- Transfer Alerts Modal -->
-<div class="modal fade" id="transferAlertsModal" tabindex="-1" aria-labelledby="transferAlertsModalTitle" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="transferAlertsModalTitle">
-          <i class="bi bi-arrow-left-right me-2"></i>Asset Transfer Requests
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body" id="transferAlertsModalBody">
-        <div class="text-center text-muted py-4">
-          <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-          Loading transfer requests...
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <a href="/assets/transfers/" class="btn btn-primary">View All Transfers</a>
-      </div>
+<div class='modal fade' id='transferAlertsModal' tabindex='-1' aria-labelledby='transferAlertsModalTitle' aria-hidden='true'>
+  <div class='modal-dialog modal-lg modal-dialog-scrollable'>
+    <div class='modal-content'>
+      <div class='modal-header'><h2 class='modal-title h5' id='transferAlertsModalTitle'>Asset transfer requests</h2><button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button></div>
+      <div class='modal-body' id='transferAlertsModalBody'><div class='text-center text-muted py-4'><span class='spinner-border spinner-border-sm me-2' role='status'></span>Loading transfer requests...</div></div>
+      <div class='modal-footer'><button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button><a href='{% url 'assets:transfer_dashboard' %}' class='btn btn-primary'>View all transfers</a></div>
     </div>
   </div>
 </div>

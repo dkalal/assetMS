@@ -77,6 +77,23 @@ class AssetCreationRequestView(LoginRequiredMixin, BranchContextMixin, CreateVie
         
         # Priority choices
         context['priority_choices'] = ApprovalRequest.PRIORITY_CHOICES
+
+        selected_category_id = self.request.POST.get('category_id')
+        context['initial_dynamic_fields'] = []
+        if selected_category_id:
+            fields = AssetCategoryField.objects.for_company(company).filter(
+                category_id=selected_category_id
+            )
+            context['initial_dynamic_fields'] = [
+                {
+                    'name': f'field_{field.key}',
+                    'label': field.label,
+                    'type': field.type,
+                    'required': field.required,
+                    'value': self.request.POST.get(f'field_{field.key}', ''),
+                }
+                for field in fields
+            ]
         
         return context
     
@@ -335,6 +352,24 @@ def api_quick_approve_asset_creation(request, request_id):
     
     if not can_approve:
         return JsonResponse({'success': False, 'error': 'You cannot approve this request.'}, status=403)
+
+    if approval_request.requested_by_id == user.pk:
+        log_audit(
+            user,
+            'security_violation',
+            details=f'User attempted to approve their own request: {approval_request.title}',
+            company=company,
+            branch=approval_request.branch,
+            metadata={
+                'request_id': approval_request.pk,
+                'violation_type': 'self_approval_attempt',
+                'request_type': approval_request.request_type,
+            },
+        )
+        return JsonResponse(
+            {'success': False, 'error': 'You cannot approve your own request.'},
+            status=403,
+        )
     
     try:
         with transaction.atomic():
@@ -356,6 +391,11 @@ def api_quick_approve_asset_creation(request, request_id):
                 'request_id': approval_request.pk,
             })
     
+    except ValidationError as e:
+        return JsonResponse({
+            'success': False,
+            'error': '; '.join(e.messages),
+        }, status=409)
     except Exception as e:
         return JsonResponse({
             'success': False,

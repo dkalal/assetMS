@@ -1,0 +1,219 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+{% block title %}Integration Settings · Asset Management{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+  <div>
+    <nav aria-label="breadcrumb" class="mb-1">
+      <ol class="breadcrumb mb-0 small">
+        <li class="breadcrumb-item"><a href="{% url 'integrations:synced_customer_list' %}">Customers</a></li>
+        <li class="breadcrumb-item active">Integration Settings</li>
+      </ol>
+    </nav>
+    <h1 class="h2 mb-1">Integration Settings</h1>
+    <p class="text-muted mb-0">Configure the external customer sync source and run manual syncs.</p>
+  </div>
+  <a href="{% url 'integrations:synced_customer_list' %}" class="btn btn-outline-secondary">
+    <i class="bi bi-people me-1"></i>View Customers
+  </a>
+</div>
+
+{% csrf_token %}
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold"><i class="bi bi-plug me-2 text-primary"></i>Source API Configuration</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label" for="sourceBaseUrl">Source Base URL</label>
+            <input type="url" class="form-control" id="sourceBaseUrl" placeholder="https://internet.example.com">
+            <div class="form-text">Site root only — do not include <code>/customers</code> or <code>/api/…</code></div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="sourceTenantSlug">Source Tenant Slug</label>
+            <input type="text" class="form-control" id="sourceTenantSlug" placeholder="tenant-slug">
+          </div>
+          <div class="col-md-8">
+            <label class="form-label" for="sourceApiToken">API Token</label>
+            <div class="input-group">
+              <input type="password" class="form-control" id="sourceApiToken" placeholder="Leave blank to keep existing token">
+              <button class="btn btn-outline-secondary" type="button" id="toggleToken" title="Show/hide token">
+                <i class="bi bi-eye" id="toggleTokenIcon"></i>
+              </button>
+            </div>
+          </div>
+          <div class="col-md-4 d-flex align-items-end pb-1">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" role="switch" id="syncEnabled" checked>
+              <label class="form-check-label" for="syncEnabled">Enable sync</label>
+            </div>
+          </div>
+        </div>
+        <div class="mt-4 d-flex gap-2 align-items-center">
+          <button type="button" class="btn btn-primary" onclick="saveConfig()">
+            <i class="bi bi-floppy me-1"></i>Save Configuration
+          </button>
+          <span class="text-muted small" id="syncTimeoutHint"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold"><i class="bi bi-arrow-repeat me-2 text-success"></i>Manual Sync</div>
+      <div class="card-body d-flex flex-column gap-3">
+        <p class="text-muted small mb-0">Trigger a full customer sync from the configured source. This will create or update all customer records for your company.</p>
+        <button type="button" class="btn btn-success" id="runSyncBtn" onclick="runSync()">
+          <i class="bi bi-arrow-repeat me-1"></i>Sync Customers Now
+        </button>
+        <div id="syncResultAlert" class="d-none"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mt-2">
+  <div class="col-md-3">
+    <div class="card shadow-sm text-center p-3">
+      <div class="text-muted small">Last Synced</div>
+      <div class="fw-semibold mt-1" id="lastSynced">—</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm text-center p-3">
+      <div class="text-muted small">Sync Status</div>
+      <div class="fw-semibold mt-1 text-capitalize" id="syncStatus">—</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm text-center p-3">
+      <div class="text-muted small">Last Success</div>
+      <div class="fw-semibold mt-1 text-success" id="successCount">0</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm text-center p-3">
+      <div class="text-muted small">Last Failures</div>
+      <div class="fw-semibold mt-1 text-danger" id="failureCount">0</div>
+    </div>
+  </div>
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="fw-semibold small">Latest Sync Run</span>
+          <span class="badge bg-secondary" id="runStatus">N/A</span>
+        </div>
+        <div class="small text-muted" id="runSummary">No sync has been run yet.</div>
+        <div class="small text-danger mt-1 d-none" id="errorMsg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+function fmt(v) {
+  if (!v) return '—';
+  const d = new Date(v);
+  return isNaN(d) ? v : d.toLocaleString();
+}
+
+function applyConfig(cfg) {
+  document.getElementById('sourceBaseUrl').value = cfg.source_base_url || '';
+  document.getElementById('sourceTenantSlug').value = cfg.source_tenant_slug || '';
+  document.getElementById('syncEnabled').checked = !!cfg.is_enabled;
+  document.getElementById('syncTimeoutHint').textContent = cfg.timeout_seconds ? `Timeout: ${cfg.timeout_seconds}s` : '';
+  document.getElementById('lastSynced').textContent = fmt(cfg.last_synced_at);
+  document.getElementById('syncStatus').textContent = cfg.last_sync_status || '—';
+  document.getElementById('successCount').textContent = cfg.last_success_count ?? 0;
+  document.getElementById('failureCount').textContent = cfg.last_failure_count ?? 0;
+  const errEl = document.getElementById('errorMsg');
+  if (cfg.last_error_message) {
+    errEl.textContent = cfg.last_error_message;
+    errEl.classList.remove('d-none');
+  } else {
+    errEl.classList.add('d-none');
+  }
+}
+
+function applyRun(run) {
+  document.getElementById('runStatus').textContent = run?.status || 'N/A';
+  document.getElementById('runSummary').textContent = run
+    ? `Started ${fmt(run.started_at)}. Created ${run.records_created}, updated ${run.records_updated}, skipped ${run.records_skipped}, failed ${run.records_failed}.`
+    : 'No sync has been run yet.';
+}
+
+async function loadConfig() {
+  const r = await fetch('/integrations/api/customer-sync-config/');
+  const d = await r.json();
+  if (d.success) { applyConfig(d.config); applyRun(d.config.latest_run); }
+}
+
+async function saveConfig() {
+  const payload = {
+    source_base_url: document.getElementById('sourceBaseUrl').value.trim(),
+    source_tenant_slug: document.getElementById('sourceTenantSlug').value.trim(),
+    api_token: document.getElementById('sourceApiToken').value.trim(),
+    is_enabled: document.getElementById('syncEnabled').checked,
+  };
+  const r = await fetch('/integrations/api/customer-sync-config/update/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+    body: JSON.stringify(payload),
+  });
+  const d = await r.json();
+  if (d.success) {
+    applyConfig(d.config);
+    showAlert('Configuration saved successfully.', 'success');
+    document.getElementById('sourceApiToken').value = '';
+  } else {
+    showAlert(d.error || 'Failed to save.', 'danger');
+  }
+}
+
+async function runSync() {
+  const btn = document.getElementById('runSyncBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Syncing…';
+  const r = await fetch('/integrations/api/customer-sync/run/', {
+    method: 'POST', headers: { 'X-CSRFToken': CSRF },
+  });
+  const d = await r.json();
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Sync Customers Now';
+  if (d.success) {
+    applyRun(d.sync);
+    await loadConfig();
+    showAlert(`Sync completed — status: ${d.sync.status}. Created: ${d.sync.created}, Updated: ${d.sync.updated}.`, d.sync.failed ? 'warning' : 'success');
+  } else {
+    showAlert(d.error || 'Sync failed.', 'danger');
+  }
+}
+
+function showAlert(msg, type) {
+  const el = document.getElementById('syncResultAlert');
+  el.className = `alert alert-${type} small`;
+  el.textContent = msg;
+  el.classList.remove('d-none');
+  setTimeout(() => el.classList.add('d-none'), 6000);
+}
+
+// Toggle token visibility
+document.getElementById('toggleToken').addEventListener('click', function() {
+  const inp = document.getElementById('sourceApiToken');
+  const icon = document.getElementById('toggleTokenIcon');
+  if (inp.type === 'password') { inp.type = 'text'; icon.className = 'bi bi-eye-slash'; }
+  else { inp.type = 'password'; icon.className = 'bi bi-eye'; }
+});
+
+loadConfig();
+</script>
+{% endblock %}

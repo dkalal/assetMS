@@ -2,9 +2,10 @@
 {% load static %}
 
 {% block title %}Create Company - System Admin{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/system-admin.css' %}">{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="system-admin-page" data-system-admin>
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card shadow-lg border-0">
@@ -14,15 +15,6 @@
                     </h3>
                 </div>
                 <div class="card-body p-4">
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                    
                     <form method="post">
                         {% csrf_token %}
                         
