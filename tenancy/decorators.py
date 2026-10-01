@@ -91,8 +91,10 @@ def branch_manager_required(view_func):
             return redirect('login')
         
         # Check if user manages any branches
-        manages_branches = Branch.objects.filter(
+        company_id = getattr(request.user, 'company_id', None)
+        manages_branches = company_id is not None and Branch.objects.filter(
             manager=request.user,
+            company_id=company_id,
             is_active=True
         ).exists()
         
@@ -138,14 +140,20 @@ def manages_branch(branch_id_param='branch_id'):
             
             # Check if user manages this branch
             try:
-                branch = Branch.objects.get(pk=branch_id, is_active=True)
+                company_id = getattr(request.user, 'company_id', None)
+                if company_id is None:
+                    raise Branch.DoesNotExist
+                branch = Branch.objects.get(
+                    pk=branch_id,
+                    company_id=company_id,
+                    is_active=True,
+                )
                 
                 # Allow if user is the manager or an admin
                 is_manager = branch.manager == request.user
                 is_admin = getattr(request.user, 'role', None) == 'admin'
-                is_superuser = request.user.is_superuser
-                
-                if not (is_manager or is_admin or is_superuser):
+
+                if not (is_manager or is_admin):
                     messages.error(
                         request,
                         f"You do not have permission to manage '{branch.name}'."

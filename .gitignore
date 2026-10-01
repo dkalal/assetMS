@@ -63,6 +63,8 @@ backup.*
 !README.md
 !CHANGELOG.md
 !docs/UI_ARCHITECTURE_INVENTORY.md
+!docs/architecture/
+!docs/architecture/*.md
 
 # Test files
 test_*.py

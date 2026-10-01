@@ -90,16 +90,12 @@ class PolicyService:
         Returns:
             bool: True if branch scoping should be enforced
         """
-        # Admins always bypass branch restrictions
-        if hasattr(user, 'role') and user.role == 'admin':
+        # Fixed tenant-wide roles bypass branch restrictions. The legacy
+        # `manager` role maps to Branch Manager and must never fall back to
+        # tenant-wide access, even if the legacy policy toggle is disabled.
+        if getattr(user, 'role', None) in {'admin', 'tenant_admin', 'asset_manager'}:
             return False
-        
-        # Check company policy
-        policy = PolicyService.get_policy(company)
-        if not policy or not policy.branch_level_access:
-            return False
-        
-        # Enforce for managers and users
+
         return True
     
     @staticmethod
@@ -114,24 +110,9 @@ class PolicyService:
         Returns:
             QuerySet or list of branch IDs
         """
-        from tenancy.models import Branch, UserBranch
-        
-        # Admins see all branches
-        if hasattr(user, 'role') and user.role == 'admin':
-            return Branch.objects.filter(company=company, is_active=True).values_list('id', flat=True)
-        
-        # Check if branch scoping is enforced
-        if not PolicyService.should_enforce_branch_scoping(user, company):
-            return Branch.objects.filter(company=company, is_active=True).values_list('id', flat=True)
-        
-        # Get user's assigned branches
-        user_branches = UserBranch.objects.filter(
-            user=user,
-            company=company,
-            branch__is_active=True
-        ).values_list('branch_id', flat=True)
-        
-        return list(user_branches)
+        from tenancy.access import accessible_branch_ids
+
+        return list(accessible_branch_ids(user, company))
     
     @staticmethod
     def update_policy(company, user, **kwargs):
